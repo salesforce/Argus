@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.alert.notifier;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
@@ -86,12 +87,12 @@ public class RefocusNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
+	protected void sendAdditionalNotification(NotificationContext context, History history) {
 		_sendRefocusNotification(context, true);
 	}
 
 	@Override
-	protected void clearAdditionalNotification(NotificationContext context) {
+	protected void clearAdditionalNotification(NotificationContext context, History history) {
 		_sendRefocusNotification(context, false);
 	}
 

@@ -1,10 +1,13 @@
 package com.salesforce.dva.argus.service;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.stream.IntStream;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.History;
+import com.salesforce.dva.argus.entity.History.JobStatus;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
@@ -33,10 +36,10 @@ public class CallbackServiceTest extends AbstractTest {
 				"* * * * *");
 		final Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
 
-		final String jsonBody = "{ \"uri\" : \"localhost:9600\", \"method\" : \"POST\", \"header\": { \"Content-Type\": \"application/json\" }, \"body\": \"{\\\"triggerName\\\": \\\"«trigger.name>»\\\", \\\"alertName\\\": \\\"«alert.name»\\\"}\",\"template\": \"ST4\"}";
+		final String jsonBody = "{ \"uri\" : \"http://localhost:9600\", \"method\" : \"POST\", \"header\": { \"Content-Type\": \"application/json\" }, \"body\": \"{ \\\"triggerName\\\": \\\"${trigger.name}\\\", \\\"alertName\\\": \\\"${alert.name}\\\" }\" }";
 		final Notification notification = new Notification("notification_name",
 				alert,
-				"notifier_ame",
+				"notifier_name",
 				Collections.singletonList(jsonBody),
 				23);
 
@@ -55,7 +58,10 @@ public class CallbackServiceTest extends AbstractTest {
 				.getAlertService()
 				.getNotifier(AlertService.SupportedNotifier.CALLBACK);
 		int notificationCounter = 3;
-		IntStream.range(0, notificationCounter).forEach(i -> notifier.sendNotification(context));
+
+		History history = new History(JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, JobStatus.SUCCESS);
+
+		IntStream.range(0, notificationCounter).forEach(i -> notifier.sendNotification(context, history));
 		assertThat("Unexpected number of triggered alerts.",
 				notifier.getAllNotifications(alert).size(),
 				is(notificationCounter));

@@ -44,6 +44,7 @@ import java.util.Set;
 import javax.persistence.EntityManager;
 
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
 import org.apache.commons.httpclient.HttpClient;
@@ -124,16 +125,16 @@ public class GusNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
+	protected void sendAdditionalNotification(NotificationContext context, History history) {
 		requireArgument(context != null, "Notification context cannot be null.");
-		super.sendAdditionalNotification(context);
+		super.sendAdditionalNotification(context, history);
 		sendGusNotification(context, NotificationStatus.TRIGGERED);
 	}
 	
     @Override
-    protected void clearAdditionalNotification(NotificationContext context) {
+    protected void clearAdditionalNotification(NotificationContext context, History history) {
         requireArgument(context != null, "Notification context cannot be null.");
-        super.clearAdditionalNotification(context);
+        super.clearAdditionalNotification(context, history);
         sendGusNotification(context, NotificationStatus.CLEARED);
     }
     

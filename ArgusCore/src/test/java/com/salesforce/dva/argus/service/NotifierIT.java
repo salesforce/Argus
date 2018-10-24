@@ -33,10 +33,12 @@ package com.salesforce.dva.argus.service;
 
 import static org.junit.Assert.assertFalse;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.salesforce.dva.argus.entity.History;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -78,7 +80,9 @@ public class NotifierIT extends AbstractTest {
         NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, new Metric("scope", "metric"));
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(supportedNotifier);
 
-        notifier.sendNotification(context);
+        History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+
+        notifier.sendNotification(context, history);
     }
 
     @Test
@@ -113,7 +117,9 @@ public class NotifierIT extends AbstractTest {
         NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1447248611000L, 0.0, new Metric("scope", "metric"));
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GUS);
 
-        notifier.sendNotification(context);
+        History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+
+        notifier.sendNotification(context, history);
     }
 
     @Test
@@ -135,7 +141,10 @@ public class NotifierIT extends AbstractTest {
         NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, System.currentTimeMillis(), 0.0, new Metric("scope", "metric"));
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.WARDENPOSTING);
 
-        notifier.sendNotification(context);
+        History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+
+        notifier.sendNotification(context, history);
+
         Thread.sleep(5000);
 
         List<Annotation> annotations = system.getServiceFactory().getAnnotationService().getAnnotations(

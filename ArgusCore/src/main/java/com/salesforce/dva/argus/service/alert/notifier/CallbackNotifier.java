@@ -15,6 +15,7 @@ package com.salesforce.dva.argus.service.alert.notifier;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
@@ -23,8 +24,12 @@ import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import javax.persistence.EntityManager;
+
+import com.salesforce.dva.argus.util.TemplateReplacer;
 import org.apache.http.HttpResponse;
 import org.slf4j.Logger;
+
+import java.text.MessageFormat;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -67,13 +72,27 @@ public class CallbackNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(DefaultAlertService.NotificationContext context) {
+	protected void sendAdditionalNotification(DefaultAlertService.NotificationContext context, History history) {
 		requireArgument(context != null, "Notification context cannot be null.");
-		super.sendAdditionalNotification(context);
+
+		String notificationName = TemplateReplacer.applyTemplateChanges(context, context.getNotification().getName());
+
+		super.sendAdditionalNotification(context, history);
 		HttpResponse response = _callbackService.sendNotification(context);
 		int code = response.getStatusLine().getStatusCode();
 		if (!(code >= 200 && code <= 300)) {
-			_logger.error("notification send response: {}", response.toString());
+			String errorMessage = MessageFormat.format("Notification {0} cannot be sent. {1}",
+					notificationName, response.getStatusLine().getReasonPhrase());
+
+			history.appendMessageNUpdateHistory(errorMessage, null, 0);
+			_logger.error(errorMessage);
+		} else {
+
+			String infoMessage = MessageFormat.format("Notification {0} sent. {1}",
+					notificationName, response.getStatusLine().getReasonPhrase());
+
+			history.appendMessageNUpdateHistory(infoMessage, null, 0);
+			_logger.error(infoMessage);
 		}
 	}
 }

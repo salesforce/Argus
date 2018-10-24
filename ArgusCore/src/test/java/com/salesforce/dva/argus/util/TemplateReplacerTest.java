@@ -2,6 +2,7 @@ package com.salesforce.dva.argus.util;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
@@ -10,6 +11,7 @@ import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import org.junit.Test;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -42,8 +44,11 @@ public class TemplateReplacerTest extends AbstractTest {
         m.setTags(tags);
         DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, m);
         AlertService.Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(AlertService.SupportedNotifier.GOC);
-        notifier.sendNotification(context);
-        assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag.tag1}-trigger_tag1-${tag.tag2}-trigger_tag2-${tag.TAg3}-${tag.tAg2}-${device}-${device}", context.getAlert().getName());
+
+        History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+
+        notifier.sendNotification(context, history);
+        assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag.tag1}-trigger_tag1-${tag.tag2}-trigger_tag2-${tag.TAg3}-${tag.tAg2}", context.getAlert().getName());
         assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag.tag1}-trigger_tag1-${tag.tag2}-trigger_tag2-${tag.tag3}-${tag.tAg2}", context.getTrigger().getName());
         assertEquals("scope-trigger_name-metric-trigger_metric-val1-trigger_tag1-val2-trigger_tag2-val3-val2-device-device", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()));
     }

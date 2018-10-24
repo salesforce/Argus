@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.alert.notifier;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Audit;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
@@ -110,7 +111,7 @@ public class AuditNotifier extends DefaultNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
+	protected void sendAdditionalNotification(NotificationContext context, History history) {
 		requireArgument(context != null, "Notification context cannot be null.");
 
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.TRIGGERED), SystemConfiguration.getHostname(), context.getAlert());
@@ -259,7 +260,7 @@ public class AuditNotifier extends DefaultNotifier {
 	}
 
 	@Override
-	protected void clearAdditionalNotification(NotificationContext context) {
+	protected void clearAdditionalNotification(NotificationContext context, History history) {
 		requireArgument(context != null, "Notification context cannot be null.");
 
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.CLEARED), SystemConfiguration.getHostname(), context.getAlert());

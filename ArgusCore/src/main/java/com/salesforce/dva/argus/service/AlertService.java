@@ -414,16 +414,14 @@ public interface AlertService extends Service {
 		/**
 		 * Sends notifications for the trigger on which the alert condition occurred.
 		 *
-		 * @param  notificationContext  The context for the notification. Cannot be null.
 		 */
-		void sendNotification(NotificationContext notificationContext);
+		void sendNotification(NotificationContext notificationContext, History history);
 
 		/**
 		 * Clears notifications for the trigger on which the alert condition occurred.
 		 *
-		 * @param  notificationContext  The context for the notification. Cannot be null.
 		 */
-		void clearNotification(NotificationContext notificationContext);
+		void clearNotification(NotificationContext notificationContext, History history);
 
 		/**
 		 * Returns the name of the notifier.

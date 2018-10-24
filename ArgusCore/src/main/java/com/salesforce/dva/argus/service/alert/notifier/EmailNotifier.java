@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.alert.notifier;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
@@ -96,9 +97,9 @@ public class EmailNotifier extends AuditNotifier {
     }
 
     @Override
-    protected void sendAdditionalNotification(NotificationContext context) {
+    protected void sendAdditionalNotification(NotificationContext context, History history) {
         requireArgument(context != null, "Notification context cannot be null.");
-        super.sendAdditionalNotification(context);
+        super.sendAdditionalNotification(context, history);
 
         String subject = getEmailSubject(context);
         String body = getEmailBody(context, NotificationStatus.TRIGGERED);
@@ -210,9 +211,9 @@ public class EmailNotifier extends AuditNotifier {
     }
 
     @Override
-    protected void clearAdditionalNotification(NotificationContext context) {
+    protected void clearAdditionalNotification(NotificationContext context, History history) {
         requireArgument(context != null, "Notification context cannot be null.");
-        super.clearAdditionalNotification(context);
+        super.clearAdditionalNotification(context, history);
 
         String subject = getEmailSubject(context);
         String body = getEmailBody(context, NotificationStatus.CLEARED);

@@ -35,6 +35,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.SuspensionRecord;
@@ -135,7 +136,7 @@ public abstract class WardenNotifier extends DefaultNotifier {
     }
 
     @Override
-    protected abstract void sendAdditionalNotification(NotificationContext context);
+    protected abstract void sendAdditionalNotification(NotificationContext context, History history);
 
     /**
      * Add annotation for user suspension to the <tt>triggers.warden</tt> metric..
@@ -232,11 +233,11 @@ public abstract class WardenNotifier extends DefaultNotifier {
      * @param notificationContext The notification context. 
      */
     @Override
-    public void clearNotification(NotificationContext notificationContext) { }
+    public void clearNotification(NotificationContext notificationContext, History history) { }
 
     /** No additional action needs to be taken for clearing warden notifications as they are not stateful.  This implementation is empty. */
     @Override
-    protected void clearAdditionalNotification(NotificationContext context) { }
+    protected void clearAdditionalNotification(NotificationContext context, History history) { }
     
     @Override
     public Properties getNotifierProperties() {

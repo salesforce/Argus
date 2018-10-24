@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.warden;
 
 import com.google.inject.Inject;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.MailService;
 import com.salesforce.dva.argus.service.MetricService;
@@ -74,7 +75,7 @@ public class WardenApiNotifier extends WardenNotifier {
     }
 
     @Override
-    protected void sendAdditionalNotification(NotificationContext context) {
+    protected void sendAdditionalNotification(NotificationContext context, History history) {
         _wardenService.suspendUser(super.getWardenUser(context.getAlert().getName()), SubSystem.API);
         super.addAnnotationSuspendedUser(context, SubSystem.API);
         super.sendWardenEmailToUser(context, SubSystem.API);
