@@ -34,7 +34,6 @@ package com.salesforce.dva.argus.service.alert.notifier;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Annotation;
-import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.AnnotationService;
@@ -95,14 +94,14 @@ public abstract class DefaultNotifier implements Notifier {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public void sendNotification(NotificationContext notificationContext, History history) {
+    public void sendNotification(NotificationContext notificationContext) {
         SystemAssert.requireArgument(notificationContext != null, "Notification context cannot be null.");
 
         Map<String, String> additionalFields = new HashMap<>();
 
         additionalFields.put("Notification status", "Notification created.");
         _createAnnotation(notificationContext, additionalFields);
-        sendAdditionalNotification(notificationContext, history);
+        sendAdditionalNotification(notificationContext);
         _dispose();
     }
 
@@ -147,7 +146,7 @@ public abstract class DefaultNotifier implements Notifier {
      * A post send hook for sub-class implementations to perform additional functionality.
      *
      */
-    protected abstract void sendAdditionalNotification(NotificationContext context, History history);
+    protected abstract void sendAdditionalNotification(NotificationContext context);
 
     @Override
     public String getName() {
@@ -186,14 +185,14 @@ public abstract class DefaultNotifier implements Notifier {
     }
 
     @Override
-    public void clearNotification(NotificationContext notificationContext, History history) {
+    public void clearNotification(NotificationContext notificationContext) {
         SystemAssert.requireArgument(notificationContext != null, "Notification context cannot be null.");
 
         Map<String, String> additionalFields = new HashMap<>();
 
         additionalFields.put("Notification status", "Notification cleared.");
         _createAnnotation(notificationContext, additionalFields);
-        clearAdditionalNotification(notificationContext, history);
+        clearAdditionalNotification(notificationContext);
         _dispose();
     }
 
@@ -201,7 +200,7 @@ public abstract class DefaultNotifier implements Notifier {
      * Defines additional implementation specific actions to take when a notification is cleared.
      *
      */
-    protected abstract void clearAdditionalNotification(NotificationContext context, History history);
+    protected abstract void clearAdditionalNotification(NotificationContext context);
 
     @Override
     public Properties getNotifierProperties(){

@@ -36,7 +36,6 @@ import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Alert;
-import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
@@ -215,13 +214,13 @@ public class GOCNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context, History history) {
-		_sendAdditionalNotification(context, NotificationStatus.TRIGGERED, history);
+	protected void sendAdditionalNotification(NotificationContext context) {
+		_sendAdditionalNotification(context, NotificationStatus.TRIGGERED);
 	}
 
 	@Override
-	protected void clearAdditionalNotification(NotificationContext context, History history) {
-		_sendAdditionalNotification(context, NotificationStatus.CLEARED, history);
+	protected void clearAdditionalNotification(NotificationContext context) {
+		_sendAdditionalNotification(context, NotificationStatus.CLEARED);
 	}
 
 	/**
@@ -230,13 +229,13 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  context  The notification context.  Cannot be null.
 	 * @param  status   The notification status.  If null, will set the notification severity to <tt>ERROR</tt>
 	 */
-	protected void _sendAdditionalNotification(NotificationContext context, NotificationStatus status, History history) {
+	protected void _sendAdditionalNotification(NotificationContext context, NotificationStatus status) {
 		requireArgument(context != null, "Notification context cannot be null.");
 		
 		if(status == NotificationStatus.TRIGGERED) {
-		    super.sendAdditionalNotification(context, history);
+		    super.sendAdditionalNotification(context);
 		}else {
-			super.clearAdditionalNotification(context, history);
+			super.clearAdditionalNotification(context);
 		}
 
 		Notification notification = null;

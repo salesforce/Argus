@@ -72,12 +72,14 @@ public class CallbackNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(DefaultAlertService.NotificationContext context, History history) {
+	protected void sendAdditionalNotification(DefaultAlertService.NotificationContext context) {
 		requireArgument(context != null, "Notification context cannot be null.");
 
 		String notificationName = TemplateReplacer.applyTemplateChanges(context, context.getNotification().getName());
 
-		super.sendAdditionalNotification(context, history);
+		History history = context.getHistory();
+
+		super.sendAdditionalNotification(context);
 		HttpResponse response = _callbackService.sendNotification(context);
 		int code = response.getStatusLine().getStatusCode();
 		if (!(code >= 200 && code <= 300)) {

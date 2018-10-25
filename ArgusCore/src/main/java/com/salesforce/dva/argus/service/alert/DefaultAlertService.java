@@ -479,7 +479,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					}
 
 					Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = _evaluateTriggers(triggersToEvaluate, 
-							metrics, history, alert.getExpression(), alertEnqueueTimestamp);
+							metrics, alert.getExpression(), alertEnqueueTimestamp);
 
 					for(Notification notification : alert.getNotifications()) {
 						if (notification.getTriggers().isEmpty()) {
@@ -702,7 +702,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 * Evaluates all triggers for the given set of metrics and returns a map of triggerIds to a map containing the triggered metric
 	 * and the trigger fired time. 
 	 */
-	private Map<BigInteger, Map<Metric, Long>> _evaluateTriggers(Set<Trigger> triggers, List<Metric> metrics, History history, String queryExpression, Long alertEnqueueTimestamp) {
+	private Map<BigInteger, Map<Metric, Long>> _evaluateTriggers(Set<Trigger> triggers, List<Metric> metrics, String queryExpression, Long alertEnqueueTimestamp) {
 		Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = new HashMap<>();
 
 		for(Trigger trigger : triggers) {
@@ -730,10 +730,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 			value = metric.getDatapoints().get(triggerFiredTime);
 		}
-		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric);
+		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric, history);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
-		notifier.sendNotification(context, history);
+		notifier.sendNotification(context);
 
 		Map<String, String> tags = new HashMap<>();
 		tags.put("status", "active");
@@ -752,11 +752,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	public void sendClearNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert, Long alertEnqueueTime) {
-		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), 0.0, metric);
+		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), 0.0, metric, history);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
-		notifier.clearNotification(context, history);
+		notifier.clearNotification(context);
 
 		Map<String, String> tags = new HashMap<>();
 		tags.put("status", "clear");
@@ -1231,6 +1231,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		private double triggerEventValue;
 		private Metric triggeredMetric;
 		private long alertEnqueueTimestamp;
+		private History history;
 
 		/**
 		 * Creates a new Notification Context object.
@@ -1240,9 +1241,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 * @param  notification       coolDownExpiration The cool down period of the notification.
 		 * @param  triggerFiredTime   The time stamp of the last data point in metric at which the trigger was decided to be fired.
 		 * @param  triggerEventValue  The value of the metric at the event trigger time.
-		 * @param triggeredMetric     The corresponding metric
+		 * @param  triggeredMetric    The corresponding metric
+		 * @param history             History object
 		 */
-		public NotificationContext(Alert alert, Trigger trigger, Notification notification, long triggerFiredTime, double triggerEventValue, Metric triggeredMetric) {
+		public NotificationContext(Alert alert, Trigger trigger, Notification notification, long triggerFiredTime, double triggerEventValue, Metric triggeredMetric, History history) {
 			this.alert = alert;
 			this.trigger = trigger;
 			this.coolDownExpiration = notification.getCooldownExpirationByTriggerAndMetric(trigger, triggeredMetric);
@@ -1251,6 +1253,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			this.triggerEventValue = triggerEventValue;
 			this.triggeredMetric = triggeredMetric;
 			this.alertEnqueueTimestamp = 0L;
+			this.history = history;
 		}
 
 		/** Creates a new NotificationContext object. */
@@ -1272,6 +1275,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 */
 		public void setAlert(Alert alert) {
 			this.alert = alert;
+		}
+
+
+		public History getHistory() {
+			return history;
 		}
 
 		/**

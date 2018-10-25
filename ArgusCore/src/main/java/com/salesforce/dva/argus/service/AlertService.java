@@ -415,13 +415,13 @@ public interface AlertService extends Service {
 		 * Sends notifications for the trigger on which the alert condition occurred.
 		 *
 		 */
-		void sendNotification(NotificationContext notificationContext, History history);
+		void sendNotification(NotificationContext notificationContext);
 
 		/**
 		 * Clears notifications for the trigger on which the alert condition occurred.
 		 *
 		 */
-		void clearNotification(NotificationContext notificationContext, History history);
+		void clearNotification(NotificationContext notificationContext);
 
 		/**
 		 * Returns the name of the notifier.
