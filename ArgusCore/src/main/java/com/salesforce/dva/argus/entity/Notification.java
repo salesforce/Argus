@@ -95,8 +95,13 @@ public class Notification extends JPAEntity implements Serializable {
 			jgen.writeStartObject();
 			
 			jgen.writeStringField("id", notification.getId().toString());
-			jgen.writeNumberField("createdDate", notification.getCreatedDate().getTime());
-			jgen.writeNumberField("modifiedDate", notification.getModifiedDate().getTime());
+			if(notification.getCreatedDate()!=null) {
+			    jgen.writeNumberField("createdDate", notification.getCreatedDate().getTime());
+			}
+			
+			if(notification.getModifiedDate()!=null) {
+			    jgen.writeNumberField("modifiedDate", notification.getModifiedDate().getTime());
+			}
 			jgen.writeStringField("name", notification.getName());
 			jgen.writeStringField("notifier", notification.getNotifierName());
 			jgen.writeNumberField("cooldownPeriod", notification.getCooldownPeriod());
@@ -148,8 +153,13 @@ public class Notification extends JPAEntity implements Serializable {
 			BigInteger id = new BigInteger(rootNode.get("id").asText());
 			notification.id = id;
 
-			notification.setModifiedDate(Date.from(Instant.ofEpochMilli(rootNode.get("modifiedDate").asLong())));
-			notification.createdDate = Date.from(Instant.ofEpochMilli(rootNode.get("createdDate").asLong()));
+			if(rootNode.get("modifiedDate")!=null) {
+			    notification.setModifiedDate(Date.from(Instant.ofEpochMilli(rootNode.get("modifiedDate").asLong())));
+			}
+			
+			if(rootNode.get("createdDate")!=null) {
+			    notification.createdDate = Date.from(Instant.ofEpochMilli(rootNode.get("createdDate").asLong()));
+			}
 			
 			String name = rootNode.get("name").asText();
 			notification.setName(name);
