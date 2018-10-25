@@ -35,6 +35,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.TransformUtil;
+
 import java.util.TreeMap;
 
 /**
@@ -50,30 +54,42 @@ public class DerivativeValueMapping implements ValueMapping {
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+		SystemAssert.requireArgument(originalDatapoints != null, "Cannot transform null metric/metrics");
+		return computeDerivedValues(originalDatapoints, -1L);
+    }
+
+    @Override
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+		SystemAssert.requireArgument(originalDatapoints != null, "Cannot transform null datapoints");
+		SystemAssert.requireArgument(constants.size() == 1,
+				"Derivative Transform can have exactly one constant");
+		String intervalSizeStr = constants.get(0);
+		Long intervalSizeInSeconds = TransformUtil.getWindowInSeconds(intervalSizeStr) * 1000;
+		return computeDerivedValues(originalDatapoints, intervalSizeInSeconds);
+    }
+
+    private Map<Long, Double> computeDerivedValues(Map<Long, Double> originalDatapoints, Long intervalSizeInSeconds) {
         Map<Long, Double> sortedDatapoints = new TreeMap<>();
 
         sortedDatapoints.putAll(originalDatapoints);
 
         Map<Long, Double> derivativeDatapoints = new HashMap<>();
-        Double prev = null;
+		Entry<Long, Double> prevEntry = null;
 
         for (Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
-            Double curr = entry.getValue();
-
-            if (prev != null) {
-                derivativeDatapoints.put(entry.getKey(), curr - prev);
+            if (prevEntry != null) {
+            	if(intervalSizeInSeconds<=0) {
+				    derivativeDatapoints.put(entry.getKey(), entry.getValue() - prevEntry.getValue());
+				}else {
+					derivativeDatapoints.put(entry.getKey(), ((entry.getValue() - prevEntry.getValue())*intervalSizeInSeconds)/(entry.getKey()-prevEntry.getKey()));
+				}
             }
-            prev = curr;
+            prevEntry = entry;
         }
         return derivativeDatapoints;
-    }
+	}
 
-    @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
-        throw new UnsupportedOperationException("Derivative Transform doesn't accept constants!");
-    }
-
-    @Override
+	@Override
     public String name() {
         return TransformFactory.Function.DERIVATIVE.name();
     }

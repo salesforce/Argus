@@ -54,7 +54,7 @@ public class MinTransformTest {
         List<String> constants = new ArrayList<String>(1);
 
         constants.add("5");
-        minTransform.transform(metrics, constants);
+        minTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -63,7 +63,7 @@ public class MinTransformTest {
         Transform minTransform = new MetricReducerTransform(new MinValueReducer());
         List<Metric> metrics = new ArrayList<Metric>();
 
-        minTransform.transform(metrics);
+        minTransform.transform(null, metrics);
     }
 
     @Test
@@ -100,7 +100,7 @@ public class MinTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = minTransform.transform(metrics);
+        List<Metric> result = minTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -139,7 +139,7 @@ public class MinTransformTest {
         expected.putAll(datapoints_1);
         expected.putAll(datapoints_2);
 
-        List<Metric> result = minTransform.transform(metrics);
+        List<Metric> result = minTransform.transform(null, metrics);
 
         assertEquals(6, result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
@@ -179,7 +179,7 @@ public class MinTransformTest {
         expected.putAll(datapoints_2);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = minTransform.transform(metrics);
+        List<Metric> result = minTransform.transform(null, metrics);
 
         assertEquals(5, result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
@@ -219,7 +219,7 @@ public class MinTransformTest {
         expected.putAll(datapoints_2);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = minTransform.transform(metrics);
+        List<Metric> result = minTransform.transform(null, metrics);
 
         assertEquals(5, result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
@@ -259,7 +259,7 @@ public class MinTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, null);
 
-        List<Metric> result = minTransform.transform(metrics);
+        List<Metric> result = minTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -289,7 +289,7 @@ public class MinTransformTest {
         metric_2.setDatapoints(datapoints_2);
 
         List<Metric> metrics = Arrays.asList(metric_1, metric_2);
-        Metric result = minTransform.transform(metrics).get(0);
+        Metric result = minTransform.transform(null, metrics).get(0);
         
         assertEquals(metric_1.getScope(), result.getScope());
     }
@@ -318,7 +318,7 @@ public class MinTransformTest {
         metric_2.setDatapoints(datapoints_2);
 
         List<Metric> metrics = Arrays.asList(metric_1, metric_2);
-        Metric result = minTransform.transform(metrics).get(0);
+        Metric result = minTransform.transform(null, metrics).get(0);
         
         assertEquals(new MinValueReducer().name(), result.getScope());
     }

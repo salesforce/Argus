@@ -83,7 +83,7 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		InterpolateTransform interpolate = new InterpolateTransform();
-		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(Aggregator.SUM.toString())));
+		List<Metric> result = interpolate.transform(null,metrics, new ArrayList<String>(Arrays.asList(Aggregator.SUM.toString())));
 
 		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>(); 
 		expectedDatapoints.put(1000L, 3.0);
@@ -135,7 +135,7 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		InterpolateTransform interpolate = new InterpolateTransform();
-		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(Aggregator.AVG.toString())));
+		List<Metric> result = interpolate.transform(null,metrics, new ArrayList<String>(Arrays.asList(Aggregator.AVG.toString())));
 
 		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>(); 
 		expectedDatapoints.put(1000L, 1.5);
@@ -188,7 +188,7 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		InterpolateTransform interpolate = new InterpolateTransform();
-		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(Aggregator.MIN.toString())));
+		List<Metric> result = interpolate.transform(null,metrics, new ArrayList<String>(Arrays.asList(Aggregator.MIN.toString())));
 
 		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>(); 
 		expectedDatapoints.put(1000L, 1.0);
@@ -240,7 +240,7 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		InterpolateTransform interpolate = new InterpolateTransform();
-		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(Aggregator.COUNT.toString())));
+		List<Metric> result = interpolate.transform(null,metrics, new ArrayList<String>(Arrays.asList(Aggregator.COUNT.toString())));
 
 		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>(); 
 		expectedDatapoints.put(1000L, 2.0);
@@ -291,7 +291,7 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		InterpolateTransform interpolate = new InterpolateTransform();
-		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(Aggregator.MAX.toString())));
+		List<Metric> result = interpolate.transform(null,metrics, new ArrayList<String>(Arrays.asList(Aggregator.MAX.toString())));
 
 		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>(); 
 		expectedDatapoints.put(1000L, 2.0);
@@ -345,7 +345,7 @@ public class InterpolateTest {
 
 		
 		InterpolateTransform interpolate = new InterpolateTransform();
-		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(InterpolationType.ZIMSUM.toString())));
+		List<Metric> result = interpolate.transform(null,metrics, new ArrayList<String>(Arrays.asList(InterpolationType.ZIMSUM.toString())));
 
 		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>(); 
 		expectedDatapoints.put(1000L, 3.0);
@@ -381,7 +381,7 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		InterpolateTransform interpolate = new InterpolateTransform();
-		List<Metric> result = interpolate.transform(metrics, new ArrayList<String>(Arrays.asList(Aggregator.SUM.toString())));
+		List<Metric> result = interpolate.transform(null, metrics, new ArrayList<String>(Arrays.asList(Aggregator.SUM.toString())));
 
 		assertEquals(datapoints, result.get(0).getDatapoints());
 	}
@@ -419,7 +419,7 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		InterpolateTransform interpolate = new InterpolateTransform();
-		List<Metric> result = interpolate.transform(metrics, new ArrayList<String>(Arrays.asList(Aggregator.SUM.toString())));
+		List<Metric> result = interpolate.transform(null, metrics, new ArrayList<String>(Arrays.asList(Aggregator.SUM.toString())));
 
 		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>();
 		expectedDatapoints.put(1000L, 1.0);
@@ -468,7 +468,7 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		InterpolateTransform interpolate = new InterpolateTransform();
-		List<Metric> result = interpolate.transform(metrics, new ArrayList<String>(Arrays.asList(InterpolationType.ZIMSUM.toString())));
+		List<Metric> result = interpolate.transform(null, metrics, new ArrayList<String>(Arrays.asList(InterpolationType.ZIMSUM.toString())));
 
 		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>();
 		expectedDatapoints.put(1000L, 1.0);

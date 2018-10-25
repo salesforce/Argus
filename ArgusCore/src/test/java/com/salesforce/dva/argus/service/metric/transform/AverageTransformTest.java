@@ -53,7 +53,7 @@ public class AverageTransformTest {
         List<String> constants = new ArrayList<String>(1);
 
         constants.add("5");
-        averageTransform.transform(metrics, constants);
+        averageTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -62,7 +62,7 @@ public class AverageTransformTest {
         Transform averageTransform = new MetricReducerTransform(new AverageValueReducer());
         List<Metric> metrics = new ArrayList<Metric>();
 
-        averageTransform.transform(metrics);
+        averageTransform.transform(null, metrics);
     }
 
     @Test
@@ -99,7 +99,7 @@ public class AverageTransformTest {
         expected.put(2000L, 51.0);
         expected.put(3000L, 501.5);
 
-        List<Metric> result = averageTransform.transform(metrics);
+        List<Metric> result = averageTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -134,7 +134,7 @@ public class AverageTransformTest {
         metrics.add(metric_2);
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        List<Metric> result = averageTransform.transform(metrics);
+        List<Metric> result = averageTransform.transform(null, metrics);
 
         assertEquals(6, result.get(0).getDatapoints().size());
         expected.putAll(datapoints_1);
@@ -176,7 +176,7 @@ public class AverageTransformTest {
         expected.putAll(datapoints_2);
         expected.put(3000L, 501.5);
 
-        List<Metric> result = averageTransform.transform(metrics);
+        List<Metric> result = averageTransform.transform(null, metrics);
 
         assertEquals(5, result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());

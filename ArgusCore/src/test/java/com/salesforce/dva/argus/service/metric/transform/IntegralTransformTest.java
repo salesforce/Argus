@@ -57,7 +57,7 @@ public class IntegralTransformTest {
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
-        List<Metric> result = integralTransform.transform(metrics);
+        List<Metric> result = integralTransform.transform(null, metrics);
 
         assertThat(result, equalTo(metrics));
 
@@ -88,7 +88,7 @@ public class IntegralTransformTest {
         m2.setDatapoints(dp2);
 
         List<Metric> metrics = Arrays.asList(m1, m2);
-        List<Metric> results = integralTransform.transform(metrics);
+        List<Metric> results = integralTransform.transform(null, metrics);
 
         assertThat(results, equalTo(metrics));
 
@@ -118,7 +118,7 @@ public class IntegralTransformTest {
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
-        List<Metric> result = integralTransform.transform(metrics);
+        List<Metric> result = integralTransform.transform(null, metrics);
 
         assertThat(result, equalTo(metrics));
 

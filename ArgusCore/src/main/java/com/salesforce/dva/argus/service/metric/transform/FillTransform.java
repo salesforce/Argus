@@ -36,6 +36,7 @@ import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.util.QueryContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -198,12 +199,12 @@ public class FillTransform implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         throw new UnsupportedOperationException("Fill Transform needs interval, offset and value!");
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
     	
     	// Last 2 constants for FILL Transform are added by MetricReader. 
     	// The last constant is used to distinguish between FILL(expr, #constants#) and FILL(#constants#).
@@ -255,7 +256,7 @@ public class FillTransform implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Fill doesb't need list of list!");
     }
 }
