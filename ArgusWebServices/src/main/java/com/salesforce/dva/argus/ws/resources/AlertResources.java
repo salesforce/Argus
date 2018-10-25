@@ -708,7 +708,6 @@ public class AlertResources extends AbstractResource {
 	public NotificationDto updateNotificationById(@Context HttpServletRequest req,
 			@PathParam("alertId") BigInteger alertId,
 			@PathParam("notificationId") BigInteger notificationId, NotificationDto notificationDto) {
-		try {
 			if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
 				throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 			}
@@ -738,9 +737,6 @@ public class AlertResources extends AbstractResource {
 				}
 			}
 			throw new WebApplicationException("The notification does not exist.", Response.Status.NOT_FOUND);
-		} catch (Exception e) {
-			throw e;
-		}
 	}
 
 	/**
@@ -812,7 +808,6 @@ public class AlertResources extends AbstractResource {
 	@Description("Creates new notifications for the given alert ID.")
 	public List<NotificationDto> addNotification(@Context HttpServletRequest req,
 			@PathParam("alertId") BigInteger alertId, NotificationDto notificationDto) {
-		try {
 			if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
 				throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 			}
@@ -843,9 +838,6 @@ public class AlertResources extends AbstractResource {
 				return NotificationDto.transformToDto(alertService.updateAlert(alert).getNotifications());
 			}
 			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
-		} catch(Exception e) {
-			throw e;
-		}
 	}
 
 	/**
