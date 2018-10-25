@@ -73,11 +73,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.salesforce.dva.argus.service.AlertService;
-import com.salesforce.dva.argus.service.alert.NotificationsCacheRefresherThread;
-
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.math.ArgumentOutsideDomainException;
-import org.apache.commons.math.exception.OutOfRangeException;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
