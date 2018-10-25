@@ -34,7 +34,9 @@ package com.salesforce.dva.argus.entity;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.util.Date;
 import java.text.MessageFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,9 +73,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.salesforce.dva.argus.service.AlertService;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.math.ArgumentOutsideDomainException;
-import org.apache.commons.math.exception.OutOfRangeException;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -87,8 +86,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 @Entity
 @Table(name = "NOTIFICATION", uniqueConstraints = @UniqueConstraint(columnNames = { "name", "alert_id" }))
 public class Notification extends JPAEntity implements Serializable {
-	
-	
+		
 	public static class Serializer extends JsonSerializer<Notification> {
 
 		@Override
@@ -97,6 +95,15 @@ public class Notification extends JPAEntity implements Serializable {
 			jgen.writeStartObject();
 			
 			jgen.writeStringField("id", notification.getId().toString());
+			
+			if(notification.getCreatedDate()!=null) {
+			    jgen.writeNumberField("createdDate", notification.getCreatedDate().getTime());
+			}
+			
+			if(notification.getModifiedDate()!=null) {
+			    jgen.writeNumberField("modifiedDate", notification.getModifiedDate().getTime());
+			}
+			
 			jgen.writeStringField("name", notification.getName());
 			jgen.writeStringField("notifier", notification.getNotifierName());
 			jgen.writeNumberField("cooldownPeriod", notification.getCooldownPeriod());
@@ -147,6 +154,14 @@ public class Notification extends JPAEntity implements Serializable {
 			
 			BigInteger id = new BigInteger(rootNode.get("id").asText());
 			notification.id = id;
+
+			if(rootNode.get("createdDate")!=null) {
+			    notification.createdDate = Date.from(Instant.ofEpochMilli(rootNode.get("createdDate").asLong()));
+			}
+			
+			if(rootNode.get("modifiedDate")!=null) {
+			    notification.setModifiedDate(Date.from(Instant.ofEpochMilli(rootNode.get("modifiedDate").asLong())));
+			}
 			
 			String name = rootNode.get("name").asText();
 			notification.setName(name);
