@@ -4,7 +4,7 @@
 
     <groupId>com.salesforce.argus</groupId>
     <artifactId>argus</artifactId>
-    <version>2.22.0</version>
+    <version>2.22.3</version>
     <packaging>pom</packaging>
 
     <name>Argus</name>
@@ -118,7 +118,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
         <dockerImages.base.name>salesforce</dockerImages.base.name>
-        <project.version>2.22.0</project.version>
+        <project.version>2.22.3</project.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.9.5</jackson.version>
         <httpclient.version>4.5.3</httpclient.version>

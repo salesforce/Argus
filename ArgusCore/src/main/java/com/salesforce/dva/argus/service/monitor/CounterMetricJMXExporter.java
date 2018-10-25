@@ -73,7 +73,7 @@ public class CounterMetricJMXExporter implements GaugeExporter {
 		String objName = "ArgusMetrics:type=Counter,scope=" + metric.getScope() + ",metric=" + metric.getMetric();
 		if (null != metric.getTags()) {
 			for (String key : metric.getTags().keySet()) {
-				objName = objName + "," + key + "=" + metric.getTags().get(key);
+				objName = objName + "," + (key.equalsIgnoreCase("type")? "_type":key) + "=" + metric.getTags().get(key);
 			}
 		}
 		return objName;
