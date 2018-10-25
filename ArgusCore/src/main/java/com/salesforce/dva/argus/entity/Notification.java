@@ -220,10 +220,6 @@ public class Notification extends JPAEntity implements Serializable {
 		
 	}
 
-	// We allow a-zA-Z0-9-_+. in the name, then @ then a-zA-Z0-9- followed by . and a-zA-Z0-9.
-	// ToDo Consider email.contains("@") if we see more issues in future
-	private static final String EMAIL_REGEX = "[a-zA-Z0-9\\-\\_\\+\\.]+@[a-zA-Z0-9\\-\\.]+\\.[a-zA-Z0-9]+";
-
     //~ Instance fields ******************************************************************************************************************************
 
     @Basic(optional = false)
@@ -441,9 +437,10 @@ public class Notification extends JPAEntity implements Serializable {
                 if (currentSubscription.isEmpty() || currentSubscription.length() < 10)
                     throw new IllegalArgumentException("GUS Subscription has to contain subjectId with more than 10 characters.");
             } else if (this.getNotifierName().equals(AlertService.SupportedNotifier.EMAIL.getName())) {
-                if (currentSubscription.isEmpty() || !currentSubscription.matches(EMAIL_REGEX)) {
-                    String errorMessage = MessageFormat.format("Email Address {0} is not allowed according to Regex {1}.",
-                            currentSubscription, EMAIL_REGEX);
+
+                if (currentSubscription.isEmpty() || !currentSubscription.contains("@")) {
+                    String errorMessage = MessageFormat.format("Email Address {0} is not allowed as @ not present.",
+                            currentSubscription);
                     throw new IllegalArgumentException(errorMessage);
                 }
             } else if (this.getNotifierName().equals(AlertService.SupportedNotifier.CALLBACK.getName()) && currentSubscription.isEmpty()) {

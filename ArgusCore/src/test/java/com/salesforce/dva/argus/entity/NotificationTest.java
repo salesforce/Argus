@@ -28,10 +28,9 @@ public class NotificationTest {
         Notification testNotification = new Notification();
         testNotification.setNotifierName(AlertService.SupportedNotifier.EMAIL.getName());
         List<String> validSubscriptions = new ArrayList<>();
-        validSubscriptions.add("foo@company@");
+        validSubscriptions.add("");
         validSubscriptions.add("bar");
         validSubscriptions.add("");
-        validSubscriptions.add("foo@bar@company.com");
         validSubscriptions.add("    ");
         testNotification.setSubscriptions(validSubscriptions);
     }
