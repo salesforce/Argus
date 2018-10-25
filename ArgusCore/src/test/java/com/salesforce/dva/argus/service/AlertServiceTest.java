@@ -361,7 +361,7 @@ public class AlertServiceTest extends AbstractTest {
 			assertTrue(actualEvenSet.contains(alert));
 		}
 
-        page = alertService.findAlertsByOwnerPaged(user, limit, 0, "O*d");
+		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "O*d");
         assertEquals(limit, page.size());
 	}
 	
