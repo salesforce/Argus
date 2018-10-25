@@ -77,12 +77,13 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, new Metric("scope", "metric"));
-        Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(supportedNotifier);
-
         History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
 
-        notifier.sendNotification(context, history);
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification,
+                1418319600000L, 0.0, new Metric("scope", "metric"), history);
+        Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(supportedNotifier);
+
+        notifier.sendNotification(context);
     }
 
     @Test
@@ -114,12 +115,13 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1447248611000L, 0.0, new Metric("scope", "metric"));
-        Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GUS);
-
         History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
 
-        notifier.sendNotification(context, history);
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification,
+                1447248611000L, 0.0, new Metric("scope", "metric"), history);
+        Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GUS);
+
+        notifier.sendNotification(context);
     }
 
     @Test
@@ -138,12 +140,13 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, System.currentTimeMillis(), 0.0, new Metric("scope", "metric"));
-        Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.WARDENPOSTING);
-
         History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
 
-        notifier.sendNotification(context, history);
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification,
+                System.currentTimeMillis(), 0.0, new Metric("scope", "metric"), history);
+        Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.WARDENPOSTING);
+
+        notifier.sendNotification(context);
 
         Thread.sleep(5000);
 

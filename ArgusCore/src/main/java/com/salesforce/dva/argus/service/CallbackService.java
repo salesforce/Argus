@@ -4,8 +4,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonRawValue;
-import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import org.apache.http.HttpResponse;
 

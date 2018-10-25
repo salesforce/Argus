@@ -71,15 +71,16 @@ public class NotifierTest extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, new Metric("scope", "metric"));
-        int count = 1 + random.nextInt(5);
-
         History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification,
+                1418319600000L, 0.0, new Metric("scope", "metric"), history);
+        int count = 1 + random.nextInt(5);
 
         for (int i = 0; i < count; i++) {
             Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.DATABASE);
 
-            notifier.sendNotification(context, history);
+            notifier.sendNotification(context);
         }
 
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.DATABASE);
