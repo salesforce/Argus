@@ -1,13 +1,16 @@
 package com.salesforce.dva.argus.util;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.service.metric.ParseException;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
 
 
 public class QueryUtils {
@@ -64,7 +67,7 @@ public class QueryUtils {
     }
 
     private static List<String> getScopesFromExpression(QueryContext queryContext) {
-	    ArrayList<String> scopes = new ArrayList<>();
+	    Set<String> scopes = new HashSet<>();
         Queue<QueryContext> bfsQueue = new LinkedList<QueryContext>();
         if(queryContext != null) {
             bfsQueue.add(queryContext);
@@ -81,8 +84,6 @@ public class QueryUtils {
                 }
             }
         }
-        return scopes;
+        return new ArrayList<>(scopes);
     }
-
-
 }

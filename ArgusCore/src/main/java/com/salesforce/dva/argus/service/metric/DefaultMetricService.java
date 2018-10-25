@@ -275,7 +275,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			List<String> currentDCList = getMatchedDCAgainstRegex(scopes, patterns.get(0));
 			if (currentDCList != null) //Case 1
 				finalDCList = (ArrayList<String>) currentDCList;
-			else { //Case 1
+			else { //Case 2
 				// Get all the expanded queries from MetricService and identify all different DCs.
 				List<MetricQuery> queries = getQueries(expression);
 				ArrayList<String> scopeFromExpandedExpressions = new ArrayList<>();

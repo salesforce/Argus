@@ -85,7 +85,13 @@ public class DataLagMonitor extends Thread{
 
                 for (String currentDC : _expressionPerDC.keySet()) {
                     completionService.submit(() -> {
-                        List<Metric> metrics = _metricService.getMetrics(_expressionPerDC.get(currentDC), currTime);
+                        List<Metric> metrics = new ArrayList<>();
+                        try {
+                            metrics = _metricService.getMetrics(_expressionPerDC.get(currentDC), currTime);
+                        } catch (Exception e) {
+                            metrics.clear();
+                            _logger.error("Metric Service failed to get metric for expression: " + _expressionPerDC.get(currentDC) + " while being queried by DataLagMonitor.");
+                        }
                         return new Pair<>(currentDC, metrics);
                     });
                 }
