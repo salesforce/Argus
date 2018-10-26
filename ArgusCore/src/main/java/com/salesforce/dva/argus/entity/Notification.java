@@ -34,14 +34,14 @@ package com.salesforce.dva.argus.entity;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.util.Date;
 import java.text.MessageFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -71,9 +71,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.salesforce.dva.argus.service.AlertService;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.math.ArgumentOutsideDomainException;
-import org.apache.commons.math.exception.OutOfRangeException;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -87,8 +84,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 @Entity
 @Table(name = "NOTIFICATION", uniqueConstraints = @UniqueConstraint(columnNames = { "name", "alert_id" }))
 public class Notification extends JPAEntity implements Serializable {
-	
-	
+		
 	public static class Serializer extends JsonSerializer<Notification> {
 
 		@Override
@@ -97,6 +93,15 @@ public class Notification extends JPAEntity implements Serializable {
 			jgen.writeStartObject();
 			
 			jgen.writeStringField("id", notification.getId().toString());
+			
+			if(notification.getCreatedDate()!=null) {
+			    jgen.writeNumberField("createdDate", notification.getCreatedDate().getTime());
+			}
+			
+			if(notification.getModifiedDate()!=null) {
+			    jgen.writeNumberField("modifiedDate", notification.getModifiedDate().getTime());
+			}
+			
 			jgen.writeStringField("name", notification.getName());
 			jgen.writeStringField("notifier", notification.getNotifierName());
 			jgen.writeNumberField("cooldownPeriod", notification.getCooldownPeriod());
@@ -147,6 +152,14 @@ public class Notification extends JPAEntity implements Serializable {
 			
 			BigInteger id = new BigInteger(rootNode.get("id").asText());
 			notification.id = id;
+
+			if(rootNode.get("createdDate")!=null) {
+			    notification.createdDate = Date.from(Instant.ofEpochMilli(rootNode.get("createdDate").asLong()));
+			}
+			
+			if(rootNode.get("modifiedDate")!=null) {
+			    notification.setModifiedDate(Date.from(Instant.ofEpochMilli(rootNode.get("modifiedDate").asLong())));
+			}
 			
 			String name = rootNode.get("name").asText();
 			notification.setName(name);
@@ -225,31 +238,27 @@ public class Notification extends JPAEntity implements Serializable {
 		
 	}
 
-	// We allow a-zA-Z0-9-_+. in the name, then @ then a-zA-Z0-9- followed by . and a-zA-Z0-9.
-	// ToDo Consider email.contains("@") if we see more issues in future
-	private static final String EMAILREGEX = "[a-zA-Z0-9\\-\\_\\+\\.]+@[a-zA-Z0-9\\-]+\\.[a-zA-Z0-9]+";
-
     //~ Instance fields ******************************************************************************************************************************
 
     @Basic(optional = false)
     @Column(name = "name", nullable = false)
     String name;
-    
+
     String notifierName;
-	
+
     @ElementCollection
 	@Column(length = 2048)
     List<String> subscriptions = new ArrayList<>(0);
-	
+
     @ElementCollection
 	List<String> metricsToAnnotate = new ArrayList<>(0);
-	
+
     long cooldownPeriod;
-    
+
 	@ManyToOne(optional = false, fetch=FetchType.LAZY)
     @JoinColumn(name = "alert_id")
     private Alert alert;
-    
+
 	@ManyToMany
     @JoinTable(
         name = "NOTIFICATION_TRIGGER", joinColumns = @JoinColumn(name = "TRIGGER_ID"), inverseJoinColumns = @JoinColumn(name = "NOTIFICATION_ID")
@@ -257,15 +266,15 @@ public class Notification extends JPAEntity implements Serializable {
     List<Trigger> triggers = new ArrayList<>(0);
 
 	boolean isSRActionable = false;
-    
+
 	int severityLevel = 5;
-    
+
     @Lob
     private String customText;
-    
+
     @ElementCollection
     private Map<String, Long> cooldownExpirationByTriggerAndMetric = new HashMap<>();
-	
+
     @ElementCollection
     private Map<String, Boolean> activeStatusByTriggerAndMetric = new HashMap<>();
 
@@ -293,40 +302,40 @@ public class Notification extends JPAEntity implements Serializable {
     protected Notification() {
         super(null);
     }
-    
+
     //~ Static Methods *******************************************************************************************************************************
-    
+
     @SuppressWarnings("unchecked")
 	public static void updateActiveStatusAndCooldown(EntityManager em, List<Notification> notifications) {
     	requireArgument(em != null, "Entity manager can not be null.");
-    	
+
     	if(notifications.isEmpty()) return;
-    	
+
     	Map<BigInteger, Notification> notificationsByIds = new HashMap<>(notifications.size());
-    	
+
     	StringBuilder sb = new StringBuilder();
     	for(Notification n : notifications) {
     		notificationsByIds.put(n.getId(), n);
     		n.activeStatusByTriggerAndMetric.clear();
     		n.cooldownExpirationByTriggerAndMetric.clear();
-    		sb.append(n.getId()).append(","); 
+    		sb.append(n.getId()).append(",");
     	}
 
     	String ids = sb.substring(0, sb.length()-1);
     	try {
     		Query q = em.createNativeQuery("select * from notification_cooldownexpirationbytriggerandmetric where notification_id IN (" + ids + ")");
         	List<Object[]> objects = q.getResultList();
-        	
+
         	for(Object[] object : objects) {
         		BigInteger notificationId = new BigInteger(String.valueOf(Long.class.cast(object[0])));
         		Long cooldownExpiration = Long.class.cast(object[1]);
         		String key = String.class.cast(object[2]);
         		notificationsByIds.get(notificationId).cooldownExpirationByTriggerAndMetric.put(key, cooldownExpiration);
         	}
-        	
+
         	q = em.createNativeQuery("select * from notification_activestatusbytriggerandmetric where notification_id IN (" + ids + ")");
         	objects = q.getResultList();
-        	
+
         	for(Object[] object : objects) {
         		BigInteger notificationId = new BigInteger(String.valueOf(Long.class.cast(object[0])));
         		Boolean isActive;
@@ -336,15 +345,15 @@ public class Notification extends JPAEntity implements Serializable {
         			// This is because Embedded Derby stores booleans as 0, 1.
         			isActive = Integer.class.cast(object[1]) == 0 ? Boolean.FALSE : Boolean.TRUE;
         		}
-        		
+
         		String key = String.class.cast(object[2]);
         		notificationsByIds.get(notificationId).activeStatusByTriggerAndMetric.put(key, isActive);
         	}
-        	
+
     	} catch(NoResultException ex) {
     		return;
     	}
-    	
+
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -443,8 +452,17 @@ public class Notification extends JPAEntity implements Serializable {
         if(subscriptions == null) return;
         for(String currentSubscription: subscriptions) {
             if (this.getNotifierName().equals(AlertService.SupportedNotifier.GUS.getName())) {
-                if (currentSubscription.length() < 10)
-                    throw new IllegalArgumentException("GUS subjectId is incorrect.");
+                if (currentSubscription.isEmpty() || currentSubscription.length() < 10)
+                    throw new IllegalArgumentException("GUS Subscription has to contain subjectId with more than 10 characters.");
+            } else if (this.getNotifierName().equals(AlertService.SupportedNotifier.EMAIL.getName())) {
+
+                if (currentSubscription.isEmpty() || !currentSubscription.contains("@")) {
+                    String errorMessage = MessageFormat.format("Email Address {0} is not allowed as @ not present.",
+                            currentSubscription);
+                    throw new IllegalArgumentException(errorMessage);
+                }
+            } else if (this.getNotifierName().equals(AlertService.SupportedNotifier.CALLBACK.getName()) && currentSubscription.isEmpty()) {
+                throw new IllegalArgumentException("Callback Notifier Subscription cannot be empty.");
             }
         }
         if (subscriptions != null && !subscriptions.isEmpty()) {

@@ -753,7 +753,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", HOSTNAME);
-		tags.put("metric", metric.getIdentifier());
+		tags.put("metric", metric.getIdentifier().hashCode()+"");
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 
 		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
