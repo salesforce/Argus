@@ -33,11 +33,13 @@ package com.salesforce.dva.argus.service;
 
 import static org.junit.Assert.assertEquals;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.util.AlertUtils;
 import org.junit.Test;
@@ -69,7 +71,10 @@ public class NotifierTest extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, new Metric("scope", "metric"));
+        History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification,
+                1418319600000L, 0.0, new Metric("scope", "metric"), history);
         int count = 1 + random.nextInt(5);
 
         for (int i = 0; i < count; i++) {

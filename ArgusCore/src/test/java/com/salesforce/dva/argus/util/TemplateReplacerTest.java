@@ -2,6 +2,7 @@ package com.salesforce.dva.argus.util;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
@@ -10,6 +11,7 @@ import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import org.junit.Test;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,10 +42,14 @@ public class TemplateReplacerTest extends AbstractTest {
         tags.put("tag3", "val3");
         tags.put("device", "device");
         m.setTags(tags);
-        DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, m);
+
+        History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+
+        DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification,
+                1418319600000L, 0.0, m, history);
         AlertService.Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(AlertService.SupportedNotifier.GOC);
+
         notifier.sendNotification(context);
-        assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag.tag1}-trigger_tag1-${tag.tag2}-trigger_tag2-${tag.TAg3}-${tag.tAg2}-${device}-${device}", context.getAlert().getName());
         assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag.tag1}-trigger_tag1-${tag.tag2}-trigger_tag2-${tag.tag3}-${tag.tAg2}", context.getTrigger().getName());
         assertEquals("scope-trigger_name-metric-trigger_metric-val1-trigger_tag1-val2-trigger_tag2-val3-val2-device-device", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()));
     }
@@ -64,7 +70,10 @@ public class TemplateReplacerTest extends AbstractTest {
         Map<String, String> tags = new HashMap<>();
         tags.put("tag","val");
         m.setTags(tags);
-        DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, m);
+
+        History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+        DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification,
+                1418319600000L, 0.0, m, history);
 
         String customTemplate = "Alert Name = ${alert.name?upper_case}, \n" +
                 "Alert Expression = ${alert.expression}, \n" +
@@ -117,7 +126,10 @@ public class TemplateReplacerTest extends AbstractTest {
         Map<String, String> tags = new HashMap<>();
         tags.put("tag","val");
         m.setTags(tags);
-        DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 1.5, m);
+
+        History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+        DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification,
+                1418319600000L, 1.5, m, history);
 
         String customTemplate = "<#if trigger.threshold <= 4> Primary Threshold is less than 4 </#if>, \n" +
                 "<#if (trigger.secondaryThreshold == 7.1)> Secondary Threshold is 7.1 </#if>, \n" +
@@ -153,7 +165,10 @@ public class TemplateReplacerTest extends AbstractTest {
         Map<String, String> tags = new HashMap<>();
         tags.put("tag","val");
         m.setTags(tags);
-        DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 1.5, m);
+
+        History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+        DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification,
+                1418319600000L, 1.5, m, history);
 
         String customTemplate = "Alert Name = ${alert.name}, Notification Name = ${notification.name}, Trigger Name = ${trigger.name}";
 
