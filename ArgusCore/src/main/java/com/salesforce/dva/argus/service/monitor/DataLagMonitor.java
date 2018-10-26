@@ -158,7 +158,7 @@ public class DataLagMonitor extends Thread{
 		if(isDataLagDCList) {
 			subject = "Alert evaluation on host - "+ _hostName + " has been stopped due to metric data lag in the following datacenters: " + dcListString;
 		}else {
-			subject = "Alert evaluation on host - "+ _hostName + " has been resumed as the metric data lag has cleared in the following datacenters: " + ;
+			subject = "Alert evaluation on host - "+ _hostName + " has been resumed as the metric data lag has cleared in the following datacenters: " + dcListString;
 		}
 		
 		StringBuilder body = new StringBuilder();
