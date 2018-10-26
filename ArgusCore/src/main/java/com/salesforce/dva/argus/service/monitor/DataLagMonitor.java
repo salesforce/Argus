@@ -95,7 +95,8 @@ public class DataLagMonitor extends Thread{
                         return new Pair<>(currentDC, metrics);
                     });
                 }
-
+                List<String> listOfDCForNotificationDataLagPresent = new ArrayList<>();
+                List<String> listOfDCForNotificationDataLagNotPresent = new ArrayList<>();
                 for (int idx = 0; idx < _expressionPerDC.size(); ++idx) {
                     Future<Pair<String, List<Metric>>> future = completionService.take();
                     Pair<String, List<Metric>> result = future.get();
@@ -106,7 +107,7 @@ public class DataLagMonitor extends Thread{
                         _logger.info("Data lag detected as metric list is empty");
                         if (!isDataLagging) {
                             _isDataLaggingbyDCMap.put(currentDC, true);
-                            sendDataLagNotification(currentDC);
+                            listOfDCForNotificationDataLagPresent.add(currentDC);
                         }
                         continue;
                     }
@@ -117,7 +118,7 @@ public class DataLagMonitor extends Thread{
                         _logger.info("Data lag detected as data point list is empty");
                         if (!isDataLagging) {
                             _isDataLaggingbyDCMap.put(currentDC, true);
-                            sendDataLagNotification(currentDC);
+                            listOfDCForNotificationDataLagPresent.add(currentDC);
                         }
                         continue;
                     } else {
@@ -131,34 +132,38 @@ public class DataLagMonitor extends Thread{
                             _logger.info("Data lag detected as the last data point recieved is more than the data threshold of " + _dataLagThreshold + " ms");
                             if (!isDataLagging) {
                                 _isDataLaggingbyDCMap.put(currentDC, true);
-                                sendDataLagNotification(currentDC);
+                                listOfDCForNotificationDataLagPresent.add(currentDC);
                             }
                             continue;
                         }
                     }
                     if (isDataLagging) {
                         _isDataLaggingbyDCMap.put(currentDC, false);
-                        sendDataLagNotification(currentDC);
+                        listOfDCForNotificationDataLagNotPresent.add(currentDC);
                     }
                 }
+                sendDataLagNotification(listOfDCForNotificationDataLagPresent, true);
+                sendDataLagNotification(listOfDCForNotificationDataLagNotPresent, false);
             } catch (Exception e) {
                 _logger.error("Exception thrown in data lag monitor thread - " + ExceptionUtils.getFullStackTrace(e));
             }
         }
 	}
 
-	private void sendDataLagNotification(String currentDC) {
+	private void sendDataLagNotification(List<String> dcList, boolean isDataLagDCList) {
 		Set<String> emailAddresseses = new HashSet<String>();
 		emailAddresseses.add(_dataLagNotificationEmailId);
 		String subject = "";
-		if(_isDataLaggingbyDCMap.get(currentDC)) {
-			subject = "Alert evaluation on host - "+ _hostName + " has been stopped due to metric data lag in datacenter " + currentDC;
+		String dcListString = dcList.toString();
+		if(isDataLagDCList) {
+			subject = "Alert evaluation on host - "+ _hostName + " has been stopped due to metric data lag in the following datacenters: " + dcListString;
 		}else {
-			subject = "Alert evaluation on host - "+ _hostName + " has been resumed as the metric data lag has cleared";
+			subject = "Alert evaluation on host - "+ _hostName + " has been resumed as the metric data lag has cleared in the following datacenters: " + ;
 		}
 		
 		StringBuilder body = new StringBuilder();
-		body.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", _expressionPerDC.get(currentDC)));
+		body.append("<b>Evaluated metric expression:  </b> <br/>");
+		for(String currentDC: dcList) body.append(_expressionPerDC.get(currentDC) + "<br/>");
         body.append(MessageFormat.format("<b>Configured data lag threshold:  </b> {0}<br/>", _dataLagThreshold));
 		
 		_mailService.sendMessage(emailAddresseses, subject, body.toString(), "text/html; charset=utf-8", MailService.Priority.NORMAL);
