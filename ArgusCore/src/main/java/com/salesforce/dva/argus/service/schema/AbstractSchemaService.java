@@ -80,6 +80,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private int bloomFilterFlushHourToStartAt;
 	private ScheduledExecutorService scheduledExecutorService;
         private String bfTagsStateFilename;
+	protected final boolean bloomFileWritingEnabled;
 
 
 	protected AbstractSchemaService(SystemConfiguration config, MonitorService monitorService) {
@@ -93,6 +94,9 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
                     _logger.error("failed to create randomBloomAppend", io);
                     randomBloomAppend = 12345;
                 }
+		bloomFileWritingEnabled = Boolean.parseBoolean(config.getValue(Property.BLOOM_FILE_WRITING_ENABLED.getName(),
+                                                                               Property.BLOOM_FILE_WRITING_ENABLED.getDefaultValue()));
+
                 String bfStateBaseDir = config.getValue(Property.BF_STATE_BASE_DIR.getName(),
                                                         Property.BF_STATE_BASE_DIR.getDefaultValue());
                 bfTagsStateFilename = bfStateBaseDir + "/bloomfilter_tags.state." +
@@ -336,27 +340,31 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
     private void createOrReadBloomFilter() {
         File bfFile = new File(this.bfTagsStateFilename);
-        if (!bfFile.exists()) {
-            _logger.info("State file for BloomFilter tags NOT present, starting fresh bloom");
-            this.bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
-                                                  bloomFilterExpectedNumberInsertions ,
-                                                  bloomFilterErrorRate);
+        if (bloomFileWritingEnabled && bfFile.exists() ) {
+            _logger.info("State file for bloom tags exists, using it to pre-populate bloom");
+            try (InputStream inputStream = new FileInputStream(bfFile)) {
+                this.bloomFilter = BloomFilter.readFrom(inputStream,
+                                                        Funnels.stringFunnel(Charset.defaultCharset()));
+            } catch (IOException io) {
+                _logger.error("tags bloomfilter read error, not using prev state", io);
+                this.bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
+                                                      bloomFilterExpectedNumberInsertions ,
+                                                      bloomFilterErrorRate);
+            }
             return;
         }
 
-        _logger.info("State file for BloomFilter tags exists, using it to pre-populate bloom");
-        try (InputStream inputStream = new FileInputStream(bfFile)) {
-            this.bloomFilter = BloomFilter.readFrom(inputStream,
-                                                    Funnels.stringFunnel(Charset.defaultCharset()));
-        } catch (IOException io) {
-            _logger.error("tags bloomfilter read error, not using prev state", io);
-            this.bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
-                                                  bloomFilterExpectedNumberInsertions ,
-                                                  bloomFilterErrorRate);
-        }
+        _logger.info("State file for bloom tags NOT present or bloomFileWritingEnabled is false, starting fresh bloom");
+        this.bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
+                                              bloomFilterExpectedNumberInsertions ,
+                                              bloomFilterErrorRate);
     }
 
     private void writeTagsBloomFilterToFile() {
+        if (!bloomFileWritingEnabled) {
+            return;
+        }
+
         File bfTagsFile = new File(this.bfTagsStateFilename);
         if (!bfTagsFile.getParentFile().exists()) {
             bfTagsFile.getParentFile().mkdir();
@@ -395,6 +403,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	 */
 	public enum Property {
 		SYNC_PUT("service.property.schema.sync.put", "false"),
+	        BLOOM_FILE_WRITING_ENABLED("service.property.schema.bloom.file.writing.enabled", "false"),
                 BF_STATE_BASE_DIR("service.property.schema.bf.state.base.dir", "bloomstate"),
 		BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.expected.number.insertions", "40"),
 		BLOOMFILTER_ERROR_RATE("service.property.schema.bloomfilter.error.rate", "0.00001"),
