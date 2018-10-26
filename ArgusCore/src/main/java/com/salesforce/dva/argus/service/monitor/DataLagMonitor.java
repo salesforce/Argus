@@ -46,6 +46,10 @@ public class DataLagMonitor extends Thread{
 
 	private SystemConfiguration _sysConfig;
 
+    private Set<String> listOfDCForNotificationDataLagPresent = new HashSet<>();
+    private Set<String> listOfDCForNotificationDataLagNotPresent = new HashSet<>();
+    private boolean isThereAnyChangesInDataLag = false;
+
 	public DataLagMonitor(SystemConfiguration sysConfig, MetricService metricService, MailService mailService, MonitorService monitorService) {
 	    _sysConfig = sysConfig;
 		_metricService = metricService;
@@ -77,7 +81,9 @@ public class DataLagMonitor extends Thread{
         final ExecutorCompletionService<Pair<String, List<Metric>>> completionService = new ExecutorCompletionService<>(pool);
         long currTime = System.currentTimeMillis();
 		boolean firstTime = true;
+
         while (!isInterrupted()) {
+            isThereAnyChangesInDataLag = false;
             try {
                 if (!firstTime) {
                     sleep(SLEEP_INTERVAL_MILLIS);
@@ -99,8 +105,6 @@ public class DataLagMonitor extends Thread{
                         return new Pair<>(currentDC, metrics);
                     });
                 }
-                List<String> listOfDCForNotificationDataLagPresent = new ArrayList<>();
-                List<String> listOfDCForNotificationDataLagNotPresent = new ArrayList<>();
                 for (int idx = 0; idx < _expressionPerDC.size(); ++idx) {
                     Future<Pair<String, List<Metric>>> future = completionService.take();
                     Pair<String, List<Metric>> result = future.get();
@@ -110,8 +114,7 @@ public class DataLagMonitor extends Thread{
                     if (metrics == null || metrics.isEmpty()) {
                         _logger.info("Data lag detected as metric list is empty");
                         if (!isDataLagging) {
-                            _isDataLaggingbyDCMap.put(currentDC, true);
-                            listOfDCForNotificationDataLagPresent.add(currentDC);
+                            updatesForDataLag(currentDC, true);
                         }
                         continue;
                     }
@@ -121,8 +124,7 @@ public class DataLagMonitor extends Thread{
                     if (currMetric.getDatapoints() == null || currMetric.getDatapoints().size() == 0) {
                         _logger.info("Data lag detected as data point list is empty");
                         if (!isDataLagging) {
-                            _isDataLaggingbyDCMap.put(currentDC, true);
-                            listOfDCForNotificationDataLagPresent.add(currentDC);
+                            updatesForDataLag(currentDC, true);
                         }
                         continue;
                     } else {
@@ -135,24 +137,35 @@ public class DataLagMonitor extends Thread{
                         if ((currTime - lastDataPointTime) > _dataLagThreshold) {
                             _logger.info("Data lag detected as the last data point recieved is more than the data threshold of " + _dataLagThreshold + " ms");
                             if (!isDataLagging) {
-                                _isDataLaggingbyDCMap.put(currentDC, true);
-                                listOfDCForNotificationDataLagPresent.add(currentDC);
+                                updatesForDataLag(currentDC, true);
                             }
                             continue;
                         }
                     }
                     if (isDataLagging) {
-                        _isDataLaggingbyDCMap.put(currentDC, false);
-                        listOfDCForNotificationDataLagNotPresent.add(currentDC);
+                        updatesForDataLag(currentDC, false);
+                        sendDataLagNotification(new ArrayList<>(listOfDCForNotificationDataLagNotPresent), false);
                     }
                 }
-                sendDataLagNotification(listOfDCForNotificationDataLagPresent, true);
-                sendDataLagNotification(listOfDCForNotificationDataLagNotPresent, false);
+                if (isThereAnyChangesInDataLag)
+                    sendDataLagNotification(new ArrayList<>(listOfDCForNotificationDataLagPresent), true);
             } catch (Exception e) {
                 _logger.error("Exception thrown in data lag monitor thread - " + ExceptionUtils.getFullStackTrace(e));
             }
         }
 	}
+
+	private void updatesForDataLag(String currentDC, boolean isDataLaggingInDC) {
+        this._isDataLaggingbyDCMap.put(currentDC, isDataLaggingInDC);
+        if (isDataLaggingInDC) {
+            isThereAnyChangesInDataLag = true;
+            listOfDCForNotificationDataLagPresent.add(currentDC);
+            listOfDCForNotificationDataLagNotPresent.remove(currentDC);
+        } else {
+            listOfDCForNotificationDataLagNotPresent.add(currentDC);
+            listOfDCForNotificationDataLagPresent.remove(currentDC);
+        }
+    }
 
 	private void sendDataLagNotification(List<String> dcList, boolean isDataLagDCList) {
 		Set<String> emailAddresseses = new HashSet<String>();
