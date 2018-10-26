@@ -708,35 +708,35 @@ public class AlertResources extends AbstractResource {
 	public NotificationDto updateNotificationById(@Context HttpServletRequest req,
 			@PathParam("alertId") BigInteger alertId,
 			@PathParam("notificationId") BigInteger notificationId, NotificationDto notificationDto) {
-		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
-			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
-		}
-		if (notificationId == null || notificationId.compareTo(BigInteger.ZERO) < 1) {
-			throw new WebApplicationException("Notification Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
-		}
-		if (notificationDto == null) {
-			throw new WebApplicationException("Null object cannot be updated.", Status.BAD_REQUEST);
-		}
-
-		PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
-		Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
-
-		if (oldAlert == null) {
-			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
-		}
-		validateResourceAuthorization(req, oldAlert.getOwner(), owner);
-		for (Notification notification : oldAlert.getNotifications()) {
-			if (notificationId.equals(notification.getId())) {
-				copyProperties(notification, notificationDto);
-				oldAlert.setModifiedBy(getRemoteUser(req));
-
-				Alert alert = alertService.updateAlert(oldAlert);
-				int index = alert.getNotifications().indexOf(notification);
-
-				return NotificationDto.transformToDto(alert.getNotifications().get(index));
+			if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
+				throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 			}
-		}
-		throw new WebApplicationException("The notification does not exist.", Response.Status.NOT_FOUND);
+			if (notificationId == null || notificationId.compareTo(BigInteger.ZERO) < 1) {
+				throw new WebApplicationException("Notification Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
+			}
+			if (notificationDto == null) {
+				throw new WebApplicationException("Null object cannot be updated.", Status.BAD_REQUEST);
+			}
+
+			PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
+			Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
+
+			if (oldAlert == null) {
+				throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
+			}
+			validateResourceAuthorization(req, oldAlert.getOwner(), owner);
+			for (Notification notification : oldAlert.getNotifications()) {
+				if (notificationId.equals(notification.getId())) {
+					copyProperties(notification, notificationDto);
+					oldAlert.setModifiedBy(getRemoteUser(req));
+
+					Alert alert = alertService.updateAlert(oldAlert);
+					int index = alert.getNotifications().indexOf(notification);
+
+					return NotificationDto.transformToDto(alert.getNotifications().get(index));
+				}
+			}
+			throw new WebApplicationException("The notification does not exist.", Response.Status.NOT_FOUND);
 	}
 
 	/**
@@ -808,36 +808,36 @@ public class AlertResources extends AbstractResource {
 	@Description("Creates new notifications for the given alert ID.")
 	public List<NotificationDto> addNotification(@Context HttpServletRequest req,
 			@PathParam("alertId") BigInteger alertId, NotificationDto notificationDto) {
-		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
-			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
-		}
-		if (notificationDto == null) {
-			throw new WebApplicationException("Null notification object cannot be created.", Status.BAD_REQUEST);
-		}
+			if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
+				throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
+			}
+			if (notificationDto == null) {
+				throw new WebApplicationException("Null notification object cannot be created.", Status.BAD_REQUEST);
+			}
 
-		Alert alert = alertService.findAlertByPrimaryKey(alertId);
+			Alert alert = alertService.findAlertByPrimaryKey(alertId);
 
-		if (alert != null) {
-			validateResourceAuthorization(req, alert.getOwner(), getRemoteUser(req));
+			if (alert != null) {
+				validateResourceAuthorization(req, alert.getOwner(), getRemoteUser(req));
 
-			Notification notification = new Notification(notificationDto.getName(), alert, notificationDto.getNotifierName(),
-					notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
-			notification.setSRActionable(notificationDto.getSRActionable());
-			notification.setSeverityLevel(notificationDto.getSeverityLevel());
-			notification.setCustomText(notificationDto.getCustomText());
+				Notification notification = new Notification(notificationDto.getName(), alert, notificationDto.getNotifierName(),
+						notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
+				notification.setSRActionable(notificationDto.getSRActionable());
+				notification.setSeverityLevel(notificationDto.getSeverityLevel());
+				notification.setCustomText(notificationDto.getCustomText());
 
-			// TODO: 14.12.16 validateAuthorizationRequest notification
+				// TODO: 14.12.16 validateAuthorizationRequest notification
 
-			notification.setMetricsToAnnotate(new ArrayList<>(notificationDto.getMetricsToAnnotate()));
+				notification.setMetricsToAnnotate(new ArrayList<>(notificationDto.getMetricsToAnnotate()));
 
-			List<Notification> notifications = new ArrayList<Notification>(alert.getNotifications());
+				List<Notification> notifications = new ArrayList<Notification>(alert.getNotifications());
 
-			notifications.add(notification);
-			alert.setNotifications(notifications);
-			alert.setModifiedBy(getRemoteUser(req));
-			return NotificationDto.transformToDto(alertService.updateAlert(alert).getNotifications());
-		}
-		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
+				notifications.add(notification);
+				alert.setNotifications(notifications);
+				alert.setModifiedBy(getRemoteUser(req));
+				return NotificationDto.transformToDto(alertService.updateAlert(alert).getNotifications());
+			}
+			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 	}
 
 	/**
