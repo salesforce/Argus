@@ -241,7 +241,9 @@ public interface MonitorService extends Service {
         BLOOMFILTER_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.approximate.element.count"),
         BLOOMFILTER_SCOPE_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.only.approximate.element.count"),
         BLOOMFILTER_SCOPE_AND_METRIC_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.and.metric.only.approximate.element.count"),
-        BLOOMFILTER_METATAGS_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.metatags.approximate.element.count");
+        BLOOMFILTER_METATAGS_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.metatags.approximate.element.count"),
+
+        DATALAG_PER_DC_COUNT("argus.core","datalag.count");
 
         private final String _scope;
         private final String _metric;

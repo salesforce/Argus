@@ -4,6 +4,7 @@ import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.*;
 
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.alert.notifier.GusNotifier;
 import javafx.util.Pair;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -35,6 +36,8 @@ public class DataLagMonitor extends Thread{
 
 	private MetricService _metricService;
 
+	private MonitorService _monitorService;
+
 	private MailService _mailService;
 
 	private static final Long SLEEP_INTERVAL_MILLIS = 60*1000L;
@@ -43,7 +46,7 @@ public class DataLagMonitor extends Thread{
 
 	private SystemConfiguration _sysConfig;
 
-	public DataLagMonitor(SystemConfiguration sysConfig, MetricService metricService, MailService mailService) {
+	public DataLagMonitor(SystemConfiguration sysConfig, MetricService metricService, MailService mailService, MonitorService monitorService) {
 	    _sysConfig = sysConfig;
 		_metricService = metricService;
 		_mailService = mailService;
@@ -51,6 +54,7 @@ public class DataLagMonitor extends Thread{
         _dataLagThreshold = Long.valueOf(sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_THRESHOLD));
 		_dataLagNotificationEmailId = sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_NOTIFICATION_EMAIL_ADDRESS);
 		_hostName = sysConfig.getHostname();
+		_monitorService = monitorService;
 		initExpressionList(_dataLagQueryExpressions);
         _logger.info("Data lag monitor initialized");
 	}
@@ -154,16 +158,24 @@ public class DataLagMonitor extends Thread{
 		Set<String> emailAddresseses = new HashSet<String>();
 		emailAddresseses.add(_dataLagNotificationEmailId);
 		String subject = "";
+		int delta = 0;
 		String dcListString = dcList.toString();
 		if(isDataLagDCList) {
 			subject = "Alert evaluation on host - "+ _hostName + " has been stopped due to metric data lag in the following datacenters: " + dcListString;
+			delta = 1;
 		}else {
 			subject = "Alert evaluation on host - "+ _hostName + " has been resumed as the metric data lag has cleared in the following datacenters: " + dcListString;
+			delta = -1;
 		}
-		
+
 		StringBuilder body = new StringBuilder();
 		body.append("<b>Evaluated metric expression:  </b> <br/>");
-		for(String currentDC: dcList) body.append(_expressionPerDC.get(currentDC) + "<br/>");
+		for(String currentDC: dcList) {
+		    body.append(_expressionPerDC.get(currentDC) + "<br/>");
+            Map<String, String> tags = new HashMap<>();
+            tags.put("DC", currentDC);
+            _monitorService.modifyCounter(MonitorService.Counter.DATALAG_PER_DC_COUNT, delta, tags);
+        }
         body.append(MessageFormat.format("<b>Configured data lag threshold:  </b> {0}<br/>", _dataLagThreshold));
 		
 		_mailService.sendMessage(emailAddresseses, subject, body.toString(), "text/html; charset=utf-8", MailService.Priority.NORMAL);
