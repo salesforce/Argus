@@ -1523,8 +1523,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		propertiesNode.set(RecordType.TAGK.getName(), _createFieldNode(FIELD_TYPE_TEXT));
 		propertiesNode.set(RecordType.TAGV.getName(), _createFieldNode(FIELD_TYPE_TEXT));
 		propertiesNode.set(RecordType.NAMESPACE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.set(RecordType.RETENTION_DISCOVERY.getName(), _createFieldNode(FIELD_TYPE_INTEGER));
-		propertiesNode.set(MetricSchemaRecord.EXPIRATION_TS, _createFieldNode(FIELD_TYPE_DATE));
+		propertiesNode.set(RecordType.RETENTION_DISCOVERY.getName(),
+                                   _createFieldNodeNoAnalyzer(FIELD_TYPE_INTEGER));
+		propertiesNode.set(MetricSchemaRecord.EXPIRATION_TS, _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
 
 		propertiesNode.set("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
 
