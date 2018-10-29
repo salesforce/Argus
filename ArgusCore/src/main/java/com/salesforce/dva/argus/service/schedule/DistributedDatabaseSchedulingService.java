@@ -325,7 +325,6 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 
 				while (!isInterrupted()) {
 					DistributedSchedulingLock distributedSchedulingLock = _distributedSchedulingService.updateNGetDistributedScheduleByType(LockType.ALERT_SCHEDULING,jobsBlockSize,SCHEDULING_REFRESH_INTERVAL_IN_MILLS);
-
 					long nextStartTime = distributedSchedulingLock.getNextScheduleStartTime();
 					int jobsFromIndex = distributedSchedulingLock.getCurrentIndex() - jobsBlockSize; 
 
