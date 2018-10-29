@@ -14,16 +14,19 @@
 package com.salesforce.dva.argus.service.callback;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.CallbackService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.TemplateReplacer;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
@@ -35,7 +38,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.slf4j.Logger;
-import org.stringtemplate.v4.ST;
 
 /**
  * Default {@link CallbackService} implementation sending the request via a shared apache HttpClient
@@ -49,8 +51,6 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 	private Logger _logger;
 	private final HttpClientPool httpClientPool;
 	private final ObjectMapper _mapper;
-	private final char delimiterStart;
-	private final char delimiterEnd;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -69,19 +69,29 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 		int refresh = Property.POOL_REFRESH_TIME.getInt(config);
 
 		httpClientPool = new HttpClientPool(poolSize, refresh, timeUnit);
-
-		delimiterStart = Property.ST4_DELIMITER_START.getChar(config);
-		delimiterEnd = Property.ST4_DELIMITER_END.getChar(config);
 	}
 
 	@Override
 	public HttpResponse sendNotification(DefaultAlertService.NotificationContext context) {
 		String subscription = context.getNotification().getSubscriptions().stream().collect(Collectors.joining());
+
+		String notificationMessage = null;
+		Request request = null;
+
 		try {
-			Request request = _mapper.readValue(subscription, Request.class);
-			return sendNotification(buildRequest(context, request));
-		} catch (IOException e) {
-			return errorResponse("illegal subscription format", e);
+			request = _mapper.readValue(subscription, Request.class);
+		} catch (Exception e) {
+			return errorResponse(subscription + " cannot be parsed. ", e);
+		}
+
+		notificationMessage = MessageFormat.format("Callback via Url {0} Method {1} Body {2}",
+				request.getUri(), request.getMethod().name(), getResolvedBody(context, request));
+
+		try {
+			HttpResponse response = sendNotification(buildRequest(context, request), notificationMessage);
+			return response;
+		} catch (Exception e) {
+			return errorResponse(notificationMessage + " failed. ", e);
 		}
 	}
 
@@ -94,32 +104,35 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 	private HttpUriRequest buildRequest(DefaultAlertService.NotificationContext context,
 			CallbackService.Request request) {
 		RequestBuilder builder = RequestBuilder
-				.create(request.method().name())
-				.setUri(request.uri())
-				.setEntity(body(context, request));
-		request.header().forEach((k, v) -> builder.addHeader(k, v));
+				.create(request.getMethod().name())
+				.setUri(request.getUri())
+				.setEntity(getBody(context, request));
+		request.getHeader().forEach((k, v) -> builder.addHeader(k, v));
+
 		return builder.build();
 	}
 
-	private HttpEntity body(DefaultAlertService.NotificationContext context,
+	private String getResolvedBody(DefaultAlertService.NotificationContext context,
+							   CallbackService.Request request) {
+
+		if (request.getBody() != null) {
+			String body = request.getBody();
+			body = TemplateReplacer.applyTemplateChanges(context, body);
+			return body;
+		}
+		return null;
+	}
+
+		private HttpEntity getBody(DefaultAlertService.NotificationContext context,
 			CallbackService.Request request)
 	{
-		if (request.body() != null) {
+		String body = getResolvedBody(context, request);
+
+		if (body != null) {
 			StringEntity entity;
-			String body = request.body();
-			if (request.template() == Template.ST4) {
-				ST st = new ST(request.body(), delimiterStart, delimiterEnd);
-				st.add("alert", context.getAlert());
-				st.add("trigger", context.getTrigger());
-				st.add("coolDownExpiration", context.getCoolDownExpiration());
-				st.add("notification", context.getNotification());
-				st.add("triggerFiredTime", context.getTriggerFiredTime());
-				st.add("triggerEventValue", context.getTriggerEventValue());
-				st.add("triggeredMetric", context.getTriggeredMetric());
-				body = st.render();
-			}
-			if (request.header().containsKey(HttpHeaders.CONTENT_TYPE)) {
-				entity = new StringEntity(body, ContentType.parse(request.header().get(HttpHeaders.CONTENT_TYPE)));
+
+			if (request.getHeader().containsKey(HttpHeaders.CONTENT_TYPE)) {
+				entity = new StringEntity(body, ContentType.parse(request.getHeader().get(HttpHeaders.CONTENT_TYPE)));
 			} else {
 				entity = new StringEntity(body, ContentType.TEXT_PLAIN);
 			}
@@ -128,14 +141,13 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 		return null;
 	}
 
-	private HttpResponse sendNotification(HttpUriRequest request) {
+	private HttpResponse sendNotification(HttpUriRequest request, String notificationMessage) {
 
-		_logger.debug(request.toString());
 		HttpClient httpClient = httpClientPool.borrowObject();
 		try {
 			return httpClient.execute(request);
 		} catch (Throwable t) {
-			return errorResponse("error executing request " + request.toString(), t);
+			return errorResponse(notificationMessage + " failed. ", t);
 		} finally {
 			httpClientPool.returnObject(httpClient);
 		}
@@ -154,9 +166,7 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 
 		POOL_SIZE("service.callback.pool.size", "10"),
 		POOL_REFRESH_TIME("service.callback.pool.refresh_time", "1"),
-		POOL_REFRESH_UNIT("service.callback.pool.refresh_unit", TimeUnit.SECONDS.name()),
-		ST4_DELIMITER_START("service.callback.ST4.del_start", "«"),
-		ST4_DELIMITER_END("service.callback.ST4.del_end", "»");
+		POOL_REFRESH_UNIT("service.callback.pool.refresh_unit", TimeUnit.SECONDS.name());
 
 		private final String _name;
 		private final String _defaultValue;

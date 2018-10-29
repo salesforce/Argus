@@ -4,11 +4,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Pattern;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
@@ -74,7 +76,9 @@ public class AlertUtilsTest extends AbstractTest {
 		alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
 		alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-		DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification, 1418320200000L, 0.0, new Metric("scope", "metric"));
+		History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+		DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification,
+				1418320200000L, 0.0, new Metric("scope", "metric"), history);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 
 		ArrayList<String> actualOutput = new ArrayList<String>();

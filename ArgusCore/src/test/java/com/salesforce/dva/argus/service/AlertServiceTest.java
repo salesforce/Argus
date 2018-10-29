@@ -337,7 +337,7 @@ public class AlertServiceTest extends AbstractTest {
 		assertEquals(page.size(), 0);
 
 		// Fetch first page of even number alerts
-		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "even");
+		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "e*eN");
 		assertEquals(page.size(), limit);
 		actualEvenAlerts.addAll(page);
 		
@@ -360,6 +360,9 @@ public class AlertServiceTest extends AbstractTest {
 		for (Alert alert : expectedEvenAlerts) {
 			assertTrue(actualEvenSet.contains(alert));
 		}
+
+		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "O*d");
+        assertEquals(limit, page.size());
 	}
 	
 	@Test
@@ -440,6 +443,18 @@ public class AlertServiceTest extends AbstractTest {
 		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("invalid_alert_name").build();
 		cnt = alertService.countAlerts(context);
 		assertEquals(cnt, 0);
+
+		// Test with wildcard expressions.
+		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("E*n").build();
+		cnt = alertService.countAlerts(context);
+		assertEquals(cnt, expectedEvenAlerts.size());
+
+		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("*dD").build();
+		cnt = alertService.countAlerts(context);
+		assertEquals(cnt, expectedOddAlerts.size());
+
+		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText(userName.replace("-","*")).build();
+		cnt = alertService.countAlerts(context);
 	}
 
 	@Test

@@ -10,7 +10,7 @@ import org.apache.http.HttpResponse;
 /**
  * Send notifications to a HTTP endpoint.
  *
- * @author svenkrause
+ * @author svenkrause, Naveen Reddy Karri (nkarri@salesforce.com)
  */
 public interface CallbackService {
 
@@ -19,57 +19,49 @@ public interface CallbackService {
 	class Request {
 		@JsonProperty(required = true)
 		private String uri;
+
 		@JsonProperty(required = true)
 		private Method method;
+
 		@JsonProperty
 		private String body;
-		@JsonProperty
-		private Template template;
+
 		@JsonProperty
 		private Map<String, String> header = new LinkedHashMap<>();
 
-		public Method method() {
+		public Method getMethod() {
 			return method;
 		}
 
-		public Request method(Method method) {
+		public Request setMethod(Method method) {
 			this.method = method;
 			return this;
 		}
 
-		public String uri() {
+		public String getUri() {
 			return uri;
 		}
 
-		public Request uri(String uri) {
+		public Request setUri(String uri) {
 			this.uri = uri;
 			return this;
 		}
 
-		public String body() {
+		public String getBody() {
 			return body;
 		}
 
-		public Request body(String body) {
+		public Request setBody(String body) {
 			this.body = body;
 			return this;
 		}
 
-		public Map<String, String> header() {
+		public Map<String, String> getHeader() {
 			return header;
 		}
 
-		public Request header(Map<String, String> header) {
+		public Request setHeader(Map<String, String> header) {
 			this.header = header;
-			return this;
-		}
-
-		public Template template() {
-			return template;
-		}
-
-		public Request template(Template template) {
-			this.template = template;
 			return this;
 		}
 	}
@@ -79,9 +71,5 @@ public interface CallbackService {
 		PUT,
 		GET,
 		DELETE
-	}
-
-	enum Template {
-		ST4
 	}
 }
