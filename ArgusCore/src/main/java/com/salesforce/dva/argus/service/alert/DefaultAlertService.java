@@ -423,7 +423,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
 				for (Iterator<Metric> iter = metrics.iterator(); iter.hasNext();) {
-					if(shouldRemoveForDataLag(alert, iter.next(), history)) {
+					if(shouldMetricBeRemovedForDataLag(alert, iter.next(), history)) {
 						history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
 						metrics.remove(iter);
 					}
@@ -499,7 +499,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return historyList;
 	}
 
-	private boolean shouldRemoveForDataLag(Alert alert, Metric m, History history) {
+	private boolean shouldMetricBeRemovedForDataLag(Alert alert, Metric m, History history) {
 		if(Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))) {
 			String currentDC = _metricService.getDCFromScope(m.getScope());
 			if (_monitorService.isDataLagging(currentDC) && (_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns)) ) {
