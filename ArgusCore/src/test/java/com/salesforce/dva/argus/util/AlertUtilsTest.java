@@ -5,6 +5,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -21,6 +24,9 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemMain;
 import org.junit.Test;
+import org.quartz.CronScheduleBuilder;
+import org.quartz.CronTrigger;
+import org.quartz.TriggerBuilder;
 
 public class AlertUtilsTest extends AbstractTest {
 
@@ -31,6 +37,50 @@ public class AlertUtilsTest extends AbstractTest {
 		assertTrue(AlertUtils.isScopePresentInWhiteList("-1d:argus.core:alerts.scheduled:zimsum:15m-sum",scopesSet));
 		assertTrue(AlertUtils.isScopePresentInWhiteList("COUNT(-75m:-15m:kafka.broker.CHI.NONE.ajna_local:kafka.server.BrokerTopicMetrics.BytesInPerSec.BytesCount{device=*}:avg:1m-avg)", scopesSet));
 		assertFalse(AlertUtils.isScopePresentInWhiteList("COUNT(-75m:-15m:kafka1.broker.CHI.NONE.ajna_local:kafka.server.BrokerTopicMetrics.BytesInPerSec.BytesCount{device=*}:avg:1m-avg)", scopesSet));
+	}
+
+	private static long _toBeginOfMinute(long millis){
+		return millis-(millis % (60*1000));
+	}
+
+	// @Test
+	public void testCronLoop() {
+		for(int i = 0; i < 5 * 120; i++)
+		{
+			try {
+				Thread.sleep(200);
+			}catch (Exception e) {
+				System.out.println("Exiting");
+				return;
+			}
+			testCronTrigger();
+		}
+	}
+
+	@Test
+	public void testCronTrigger() {
+
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+
+		String cronEntry = "* * * * *";
+		String quartzCronEntry = Cron.convertToQuartzCronEntry(cronEntry);
+
+		long minuteStartTimeMillis = _toBeginOfMinute(System.currentTimeMillis());
+		Date fireTime = new Date(minuteStartTimeMillis);
+		Date previousMinuteLastSecondTime = new Date(minuteStartTimeMillis - 1000);
+
+		CronTrigger cronTrigger = TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(quartzCronEntry)).startAt(previousMinuteLastSecondTime).build();
+
+		Date nextFireTime = cronTrigger.getFireTimeAfter(previousMinuteLastSecondTime);
+
+		if(nextFireTime.equals(fireTime))
+		{
+			System.out.println(String.format("Current Time %s: Fire Time %s Matches", sdf.format(new Date()), sdf.format(nextFireTime)));
+		} else {
+			System.out.println(String.format("Current Time %s: Fire Time %s", sdf.format(new Date()), sdf.format(nextFireTime)));
+		}
+
+		assertTrue(nextFireTime.equals(fireTime));
 	}
 
 	@Test
