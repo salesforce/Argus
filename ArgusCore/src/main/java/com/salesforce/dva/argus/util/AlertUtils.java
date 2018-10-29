@@ -2,6 +2,7 @@ package com.salesforce.dva.argus.util;
 
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,5 +125,4 @@ public class AlertUtils {
 
 		return absoluteExpression;
 	}
-
 }

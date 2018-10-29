@@ -247,10 +247,15 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			m = Pattern.compile(regex).matcher(currentScope);
 			while (m.find()) DC.add(m.group().substring(1, m.group().length() - 1).toUpperCase());
 		}
-		if (DC.size() > 0)
-			return new ArrayList<>(DC);
-		else
-			return null;
+		return new ArrayList<>(DC);
+	}
+
+	private String getMatchedDCAgainstRegex(String scope, String regex) {
+		List<String> scopes = new ArrayList<>();
+		scopes.add(scope);
+		List<String> dcList = getMatchedDCAgainstRegex(scopes, regex);
+		if(dcList.size() > 0) return dcList.get(0);
+		else return null;
 	}
 
 	public List<String> getDCFromExpression(String expression) {
@@ -263,13 +268,9 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 				":argus\\."));
 		List<String> scopes = QueryUtils.getScopesFromExpression(expression);
 
-
-		List<String> ArgusDC;
 		if (expression == null || expression.isEmpty()) {
 			_logger.error("Expression either null or empty. Cannot retrive DC from the expression. Returning default value " + defaultDC);
 			finalDCList.add(defaultDC);
-		} else if((ArgusDC = getMatchedDCAgainstRegex(scopes, patterns.get(1))) != null) {
-			finalDCList = (ArrayList<String>) ArgusDC;
 		} else {
 			//Two cases: 1. DC can be extracted from scope (don't call discovery service) 2. DC cannot be identified, call discovery service.
 			List<String> currentDCList = getMatchedDCAgainstRegex(scopes, patterns.get(0));
@@ -283,12 +284,24 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 					scopeFromExpandedExpressions.add(currentQuery.getScope());
 				finalDCList = (ArrayList<String>) getMatchedDCAgainstRegex(scopeFromExpandedExpressions, patterns.get(0));
 			}
+
+			// Default Case.
+			if(getMatchedDCAgainstRegex(scopes, patterns.get(1)).size() > 0) finalDCList.add(defaultDC);
 		}
 		if (finalDCList.size() == 0) {
 			_logger.info("Unable to identify DC from expression: " + expression +" . Returning default value PRD " + defaultDC);
 			finalDCList.add(defaultDC);
 		}
 		return new ArrayList<>(finalDCList);
+	}
+
+	public String getDCFromScope(String scope) {
+		String dcList = _configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DC_LIST).replaceAll(",","|");
+		String defaultDC = _configuration.getValue(SystemConfiguration.Property.DC_DEFAULT);
+		String pattern = "\\.(?i)(" + dcList + ")\\.";
+		String dc = getMatchedDCAgainstRegex(scope, pattern);
+		if(dc != null) return dc;
+		else return defaultDC;
 	}
 }
 	/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
