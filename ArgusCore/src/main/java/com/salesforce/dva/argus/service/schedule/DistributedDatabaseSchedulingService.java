@@ -324,9 +324,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 				}
 
 				while (!isInterrupted()) {
-					DistributedSchedulingLock distributedSchedulingLock = _distributedSchedulingService.updateNGetDistributedScheduleByType(LockType.ALERT_SCHEDULING,
-							jobsBlockSize,
-							SCHEDULING_REFRESH_INTERVAL_IN_MILLS);
+					DistributedSchedulingLock distributedSchedulingLock = _distributedSchedulingService.updateNGetDistributedScheduleByType(LockType.ALERT_SCHEDULING,jobsBlockSize,SCHEDULING_REFRESH_INTERVAL_IN_MILLS);
 
 					long nextStartTime = distributedSchedulingLock.getNextScheduleStartTime();
 					int jobsFromIndex = distributedSchedulingLock.getCurrentIndex() - jobsBlockSize; 
@@ -348,9 +346,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 							_logger.info("Adding alerts between {} and {} to scheduler",  jobsFromIndex, jobsToIndex);
 							_alertsQueue.addAll(enabledAlerts.subList(jobsFromIndex, jobsToIndex));
 
-							distributedSchedulingLock = _distributedSchedulingService.updateNGetDistributedScheduleByType(LockType.ALERT_SCHEDULING,
-									jobsBlockSize,
-									SCHEDULING_REFRESH_INTERVAL_IN_MILLS);
+							distributedSchedulingLock = _distributedSchedulingService.updateNGetDistributedScheduleByType(LockType.ALERT_SCHEDULING,jobsBlockSize,SCHEDULING_REFRESH_INTERVAL_IN_MILLS);
 							jobsFromIndex = distributedSchedulingLock.getCurrentIndex() - jobsBlockSize; 
 						}
 					}

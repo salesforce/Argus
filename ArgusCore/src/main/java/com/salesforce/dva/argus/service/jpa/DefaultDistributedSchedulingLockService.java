@@ -72,7 +72,7 @@ public class DefaultDistributedSchedulingLockService extends DefaultJPAService i
 
 
 	@Override
-	public DistributedSchedulingLock updateNGetDistributedScheduleByType(LockType type, int jobsBlockSize, long schedulingRefreshInterval) {
+	public DistributedSchedulingLock updateNGetDistributedScheduleByType(LockType type,int jobsBlockSize, long schedulingRefreshInterval) {
 		requireNotDisposed();
 		requireArgument(type != null, "Lock type cannot be null.");
 
