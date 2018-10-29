@@ -36,6 +36,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.util.QueryContext;
+import com.salesforce.dva.argus.util.QueryUtils;
 import com.salesforce.dva.argus.util.TransformUtil;
 
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
@@ -59,6 +60,8 @@ import java.util.TreeMap;
 public class DownsampleTransform implements Transform {
 
 	//~ Methods **************************************************************************************************************************************
+
+	public static final String ABSOLUTE = "abs";
 
 	/**
 	 * Implements down sampling.
@@ -136,23 +139,40 @@ public class DownsampleTransform implements Transform {
 			return metrics;
 		}
 
-		SystemAssert.requireArgument(constants.size() == 1 || constants.size()==4,
-				"Downsampler Transform can either have exactly one constant or 4 constants");
-		SystemAssert.requireArgument(constants.get(0).contains("-"), "This downsampler expression is not valid.");
+		SystemAssert.requireArgument(constants.size()>=1, "Downsample transform needs atleast one constant to specify the rollup interval and aggregator");
+		SystemAssert.requireArgument(constants.size()<=4, "Downsampler Transform can have a maximum of 4 constants");
+		SystemAssert.requireArgument(constants.get(0).contains("-"), "The first constant in the downsample expression is in the wrong format. The format should be like e.g. #1h-sum#");
 
 		String[] expArr = constants.get(0).split("-");
 
-		SystemAssert.requireArgument(expArr.length == 2, "This downsampler expression need both unit and type.");
+		SystemAssert.requireArgument(expArr.length == 2, "The first constant in the downsample expression needs to include both unit and type like e.g. #1h-sum#");
+
+		if(constants.size()==2) {
+			SystemAssert.requireArgument(!constants.get(1).toLowerCase().equals(ABSOLUTE), "ABS constant cannot be specified without specifying a default value constant before it");
+		}
+		
+		if(constants.size()==3) {
+			SystemAssert.requireArgument(constants.get(2).toLowerCase().equals(ABSOLUTE), "ABS has to be specified as the last argument when there are 3 constants for the downsampling function");
+		}
 
 		Long startTime = null;
 		Long endTime = null;
 		Double defaultValue = null;
+		boolean useAbsInterval = false;
 		if(constants.size()==4) {
 			// calculating till end of current minute to be more in line with how opentsdb does downsampling
 			long currMinuteEndTime = 60*1000*(System.currentTimeMillis()/(60*1000)) + 60*1000;
 			startTime = MetricReader.getTime(currMinuteEndTime, constants.get(1));
 			endTime = MetricReader.getTime(currMinuteEndTime, constants.get(2));
 			defaultValue = Double.parseDouble(constants.get(3));
+		}else if(constants.size()==2 || constants.size()==3){
+			Long[] startAndEndTimes = QueryUtils.getStartAndEndTimesWithMaxInterval(queryContext);
+			startTime = startAndEndTimes[0];
+			endTime = startAndEndTimes[1];
+			defaultValue = Double.parseDouble(constants.get(1));
+			if(constants.size()==3 && constants.get(2).toLowerCase().equals(ABSOLUTE)) {
+				useAbsInterval = true;
+			}
 		}
 		// init windowSize
 		String windowSizeStr = expArr[0];
@@ -161,12 +181,12 @@ public class DownsampleTransform implements Transform {
 		String downsampleType = expArr[1];
 
 		for (Metric metric : metrics) {
-			metric.setDatapoints(createDownsampleDatapoints(metric.getDatapoints(), windowSize, downsampleType, windowUnit, startTime, endTime, defaultValue));
+			metric.setDatapoints(createDownsampleDatapoints(metric.getDatapoints(), windowSize, downsampleType, windowUnit, startTime, endTime, defaultValue, useAbsInterval));
 		}
 		return metrics;
 	}
 
-	private Map<Long, Double> createDownsampleDatapoints(Map<Long, Double> originalDatapoints, long windowSize, String type, String windowUnit, Long startTime, Long endTime, Double defaultValue) {
+	private Map<Long, Double> createDownsampleDatapoints(Map<Long, Double> originalDatapoints, long windowSize, String type, String windowUnit, Long startTime, Long endTime, Double defaultValue, boolean useAbsInterval) {
 		Map<Long, Double> downsampleDatapoints = new HashMap<>();
 
 		if (originalDatapoints==null || originalDatapoints.isEmpty()){
@@ -176,7 +196,7 @@ public class DownsampleTransform implements Transform {
 		Long windowStart = null;
 		if(startTime==null) {
 			TreeMap<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapoints);
-			windowStart = getWindowStartTime(sortedDatapoints.firstKey(),windowUnit,windowSize);
+			windowStart = getWindowStartTime(sortedDatapoints.firstKey(),windowUnit,windowSize, useAbsInterval);
 			List<Double> values = new ArrayList<>();
 			for (Map.Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
 				Long timestamp = entry.getKey();
@@ -209,7 +229,7 @@ public class DownsampleTransform implements Transform {
 				startTime -= timeDrift;
 				endTime -= timeDrift;
 			}
-			windowStart = getWindowStartTime(startTime, windowUnit, windowSize);
+			windowStart = getWindowStartTime(startTime, windowUnit, windowSize, useAbsInterval);
 			List<Double> values = new ArrayList<>();
 			while(windowStart<endTime) {
 				long currWindowEndTime = windowStart + windowSize;
@@ -239,7 +259,10 @@ public class DownsampleTransform implements Transform {
 		return result;
 	}
 
-	private long getWindowStartTime(long time, String windowUnit, long windowSize){
+	private long getWindowStartTime(long time, String windowUnit, long windowSize, boolean useAbsInterval){
+		if(useAbsInterval) {
+			return time;
+		}
 		switch (windowUnit) {
 		case "m":
 			return truncateTimeField(time, Calendar.SECOND);

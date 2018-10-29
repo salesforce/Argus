@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.util.QueryContext;
+import com.salesforce.dva.argus.util.QueryUtils;
 
 import org.junit.Test;
 
@@ -130,6 +132,44 @@ public class PropagateTransformTest {
         List<Metric> result = propagateTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 6);
+        assertEquals(expected, result.get(0).getDatapoints());
+    }
+    
+    @Test
+    public void testPropagateWithFillingDatapointsAtEnd() {
+        Transform propagateTransform = new PropagateTransform();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+
+        datapoints.put(2000L, 1.0);
+        datapoints.put(4000L, 4.0);
+
+
+        Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric.setDatapoints(datapoints);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("1s");
+
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+
+        expected.put(2000L, 1.0);
+        expected.put(3000L, 1.0);
+        expected.put(4000L, 4.0);
+        expected.put(5000L, 4.0);
+        expected.put(6000L, 4.0);
+        expected.put(7000L, 4.0);
+        expected.put(8000L, 4.0);
+
+        QueryContext context = QueryUtils.getQueryContext("1000:8000:argus.core:alerts.evaluated:zimsum:1m-sum", 0L);
+        List<Metric> result = propagateTransform.transform(context, metrics, constants);
+
+        assertEquals(result.get(0).getDatapoints().size(), 7);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
