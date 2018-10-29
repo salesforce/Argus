@@ -6,8 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -17,12 +15,10 @@ import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
-import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
-import com.salesforce.dva.argus.system.SystemMain;
 import org.junit.Test;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
