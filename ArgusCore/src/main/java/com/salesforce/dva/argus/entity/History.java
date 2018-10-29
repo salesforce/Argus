@@ -36,8 +36,12 @@ import static org.joda.time.DateTimeConstants.MILLIS_PER_WEEK;
 
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import javax.persistence.Basic;
 import javax.persistence.Column;
@@ -157,6 +161,17 @@ public class History implements Serializable, Identifiable {
 
     /** Creates a new History object. */
     protected History() { }
+
+    public static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
+
+        @Override
+        protected SimpleDateFormat initialValue() {
+            SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss z");
+
+            sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+            return sdf;
+        }
+    };
 
     //~ Methods **************************************************************************************************************************************
 
@@ -346,6 +361,15 @@ public class History implements Serializable, Identifiable {
         this.entityId = entityId;
     }
 
+    public void appendMessageNUpdateHistory(String message, JobStatus jobStatus, long executionTime) {
+        String oldMessage = getMessage();
+        setMessage(oldMessage + addDateToMessage(message));
+        if(jobStatus != null) {
+            setJobStatus(jobStatus);
+        }
+        setExecutionTime(executionTime);
+    }
+
     @Override
     public String toString() {
         return "History{" + "creationTime=" + getCreationTime() + ", message= Too large to display here, hostName=" +
@@ -384,7 +408,10 @@ public class History implements Serializable, Identifiable {
 			return false;
 		return true;
 	}
-    
+
+    public static String addDateToMessage(String message) {
+        return MessageFormat.format("\n {0} : {1}", DATE_FORMATTER.get().format(new Date()), message);
+    }
 
     //~ Enums ****************************************************************************************************************************************
 
