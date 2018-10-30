@@ -36,6 +36,7 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.util.QueryContext;
+import com.salesforce.dva.argus.util.QueryUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,20 +52,20 @@ public class PropagateTransform implements Transform {
 
     //~ Methods **************************************************************************************************************************************
 
-    private void _propagateMetricTransform(Metric metric, long windowSizeInSeconds) {
+    private void _propagateMetricTransform(Metric metric, long windowSizeInSeconds, QueryContext queryContext) {
     	
     	// if the datapoint set is empty or has a single datapoint, return directly
     	if(metric.getDatapoints().isEmpty() || metric.getDatapoints().size() == 1) {
     		return;
     	}
-    	
+      	Long[] startAndEndTimestamps = QueryUtils.getStartAndEndTimesWithMaxInterval(queryContext);
         Map<Long, Double> propagateDatapoints = new TreeMap<>();
         Map<Long, Double> sortedDatapoints = new TreeMap<>(metric.getDatapoints());
         Long[] sortedTimestamps = new Long[sortedDatapoints.size()];
         sortedDatapoints.keySet().toArray(sortedTimestamps);
 
         Long startTimestamp = sortedTimestamps[0];
-        Long endTimestamp = sortedTimestamps[sortedTimestamps.length - 1];
+        Long endTimestamp = Math.max(sortedTimestamps[sortedTimestamps.length - 1], startAndEndTimestamps[1]);
 
         // create a new datapoints map propagateDatpoints, which have all the
         // expected timestamps, then fill the missing value
@@ -72,7 +73,8 @@ public class PropagateTransform implements Transform {
         while (startTimestamp <= endTimestamp) {
             propagateDatapoints.put(startTimestamp, sortedDatapoints.containsKey(startTimestamp) ? sortedDatapoints.get(startTimestamp) : null);
             if (index >= sortedDatapoints.size()) {
-                break;
+             	startTimestamp = startTimestamp + windowSizeInSeconds * 1000;
+                continue;
             }
             if ((startTimestamp + windowSizeInSeconds * 1000) < sortedTimestamps[index]) {
                 startTimestamp = startTimestamp + windowSizeInSeconds * 1000;
@@ -140,7 +142,7 @@ public class PropagateTransform implements Transform {
         long windowSizeInSeconds = parseTimeIntervalInSeconds(window);
 
         for (Metric metric : metrics) {
-            _propagateMetricTransform(metric, windowSizeInSeconds);
+            _propagateMetricTransform(metric, windowSizeInSeconds, queryContext);
         }
         return metrics;
     }
