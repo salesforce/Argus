@@ -97,10 +97,17 @@ public class AlertDefinitionsCache {
 
 		for(String cronEntry : alertsMapByCronEntry.keySet()) {
 			try {
+
+				Date minuteStartTime = new Date(minuteStartTimeMillis);
 				String quartzCronEntry = Cron.convertToQuartzCronEntry(cronEntry);
-				CronTrigger cronTrigger = TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(quartzCronEntry)).build();
-				Date nextFireTime = cronTrigger.getFireTimeAfter(new Date(minuteStartTimeMillis-1000));
-				if(nextFireTime.equals(new Date(minuteStartTimeMillis))) {
+				Date previousMinuteLastSecondTime = new Date(minuteStartTimeMillis - 1000);
+
+				// CronTrigger getFireTimeAfter only works for current and future time. For checking from a previous point of time
+				// we need to change startAtTime.
+				// https://stackoverflow.com/questions/7029196/quartz-crontrigger-getting-next-fire-time
+				CronTrigger cronTrigger = TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(quartzCronEntry)).startAt(previousMinuteLastSecondTime).build();
+				Date nextFireTime = cronTrigger.getFireTimeAfter(previousMinuteLastSecondTime);
+				if(nextFireTime.equals(minuteStartTime)) {
 					enabledAlertIds.addAll(alertsMapByCronEntry.get(cronEntry));
 				}
 			}catch(Exception e) {
