@@ -1099,7 +1099,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		int endIndex = sortedDatapoints.size();
 
-        if(trigger.getType().equals(TriggerType.NO_DATA)) {
+        if(trigger.getType().equals(TriggerType.NO_DATA) && trigger.getInertia()>0) {
             Long[] queryTimes = AlertUtils.getStartAndEndTimes(queryExpression, alertEnqueueTimestamp);
             if(((sortedDatapoints.get(0).getKey()-queryTimes[0]) > trigger.getInertia())){ 
             	    return sortedDatapoints.get(0).getKey();
