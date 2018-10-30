@@ -452,7 +452,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			Set<Trigger> missingDataTriggers = new HashSet<Trigger>();
 
 			for(Trigger trigger : alert.getTriggers()) {
-                if(trigger.getType().equals(TriggerType.NO_DATA)) {
+				if(trigger.getType().equals(TriggerType.NO_DATA)) {
 					missingDataTriggers.add(trigger);
 				}
 			}
@@ -543,7 +543,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	private void handleAlertEvaluationException(Alert alert, long jobStartTime, Long alertEnqueueTimestamp, History history,
-												Set<Trigger> missingDataTriggers, Exception ex, Boolean isDataMissing) {
+			Set<Trigger> missingDataTriggers, Exception ex, Boolean isDataMissing) {
 		long jobEndTime;
 		String logMessage;
 		jobEndTime = System.currentTimeMillis();
@@ -748,12 +748,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		Map<String, String> tags = new HashMap<>();
 		tags.put("status", "active");
-		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", HOSTNAME);
-		tags.put("metric", metric.getIdentifier().hashCode()+"");
+		tags.put("metricId", metric.getIdentifier().hashCode()+"");
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 
 		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
@@ -771,12 +771,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		Map<String, String> tags = new HashMap<>();
 		tags.put("status", "clear");
-		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", HOSTNAME);
-		tags.put("metric", metric.getIdentifier().hashCode()+"");
+		tags.put("metricId", metric.getIdentifier().hashCode()+"");
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/,tags);
 
 		String logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
@@ -792,7 +792,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		if(tags!=null) {
 			trackingMetric.setTags(tags);
 		}
-		
+
 		this.exportMetric(trackingMetric, value);
 		try {
 			_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackingMetric}));
@@ -1119,23 +1119,25 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		int endIndex = sortedDatapoints.size();
 
-        if(trigger.getType().equals(TriggerType.NO_DATA)) {
-            Long[] queryTimes = AlertUtils.getStartAndEndTimes(queryExpression, alertEnqueueTimestamp);
-            if(((sortedDatapoints.get(0).getKey()-queryTimes[0]) > trigger.getInertia())){ 
-            	    return sortedDatapoints.get(0).getKey();
-            }
-            	
-            if((queryTimes[1] - sortedDatapoints.get(sortedDatapoints.size()-1).getKey()) > trigger.getInertia()) {
-            	    return sortedDatapoints.get(sortedDatapoints.size()-1).getKey();
-            }
-            
-            if(sortedDatapoints.size()>1) {
-            	    for(int i=1; i<sortedDatapoints.size(); i++) {
-            	    	    if((sortedDatapoints.get(i).getKey()-sortedDatapoints.get(i-1).getKey()) > trigger.getInertia()) {
-            	    	    	    return sortedDatapoints.get(i-1).getKey();
-            	    	    }
-            	    }
-            }
+		if(trigger.getType().equals(TriggerType.NO_DATA)) {
+			if(trigger.getInertia()>0) {
+				Long[] queryTimes = AlertUtils.getStartAndEndTimes(queryExpression, alertEnqueueTimestamp);
+				if(((sortedDatapoints.get(0).getKey()-queryTimes[0]) > trigger.getInertia())){ 
+					return sortedDatapoints.get(0).getKey();
+				}
+
+				if((queryTimes[1] - sortedDatapoints.get(sortedDatapoints.size()-1).getKey()) > trigger.getInertia()) {
+					return sortedDatapoints.get(sortedDatapoints.size()-1).getKey();
+				}
+
+				if(sortedDatapoints.size()>1) {
+					for(int i=1; i<sortedDatapoints.size(); i++) {
+						if((sortedDatapoints.get(i).getKey()-sortedDatapoints.get(i-1).getKey()) > trigger.getInertia()) {
+							return sortedDatapoints.get(i-1).getKey();
+						}
+					}
+				}
+			}
 		}else {
 			for(int startIndex=sortedDatapoints.size()-1; startIndex>=0; startIndex--){
 				if(Trigger.evaluateTrigger(trigger, sortedDatapoints.get(startIndex).getValue())){
