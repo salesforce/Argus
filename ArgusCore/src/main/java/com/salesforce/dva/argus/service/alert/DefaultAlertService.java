@@ -737,12 +737,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		Map<String, String> tags = new HashMap<>();
 		tags.put("status", "active");
-		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", HOSTNAME);
-		tags.put("metric", metric.getIdentifier().hashCode()+"");
+		tags.put("metricId", metric.getIdentifier().hashCode()+"");
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 
 		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
@@ -760,12 +760,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		Map<String, String> tags = new HashMap<>();
 		tags.put("status", "clear");
-		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", HOSTNAME);
-		tags.put("metric", metric.getIdentifier().hashCode()+"");
+		tags.put("metricId", metric.getIdentifier().hashCode()+"");
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/,tags);
 
 		String logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
