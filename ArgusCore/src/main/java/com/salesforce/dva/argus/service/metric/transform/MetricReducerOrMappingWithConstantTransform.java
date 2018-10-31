@@ -86,9 +86,6 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
 		List<Metric> result = new ArrayList<Metric>();
 
 		if (constants.size() == 1) {
-			if(!DEFAULT_FULL_JOIN_EXCLUDE_CLASSES.contains(valueReducerOrMapping.getClass())) {
-			    fulljoinIndicator = true;
-			}
 			result = Arrays.asList(reduce(metrics, constants));
 		} else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(FULLJOIN)) {
 			fulljoinIndicator = true;

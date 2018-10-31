@@ -189,7 +189,7 @@ public class PercentileTransformTest {
         expected.put(4000L, 50.0);
         expected.put(5000L, 35.0);
         expected.put(6000L, 40.0);
-        
+        percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
         result = percentileTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 6);
@@ -267,6 +267,7 @@ public class PercentileTransformTest {
         expected.put(3000L, 50.0);
         expected.put(4000L, 35.0);
         expected.put(5000L, 40.0);
+        percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
         result = percentileTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 5);
