@@ -76,7 +76,6 @@ public class RangeTransformTest {
 
         expected.put(1000L, 1.0);
         expected.put(3000L, 3.0);
-
         List<Metric> result = rangeTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 2);
