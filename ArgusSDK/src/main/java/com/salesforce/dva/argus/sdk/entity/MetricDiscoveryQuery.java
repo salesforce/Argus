@@ -1,8 +1,11 @@
 package com.salesforce.dva.argus.sdk.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.io.Serializable;
 
 @SuppressWarnings("serial")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MetricDiscoveryQuery implements Serializable{
 	
 	private static int DEFAULT_LIMIT = 50;
