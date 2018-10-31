@@ -31,7 +31,6 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
-import com.salesforce.dva.argus.service.alert.AlertDefinitionsCacheRefresherThread;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import java.util.HashMap;
@@ -51,7 +50,7 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
 
     //~ Methods **************************************************************************************************************************************
 
-	private final Logger _logger = LoggerFactory.getLogger(AlertDefinitionsCacheRefresherThread.class);
+	private final Logger _logger = LoggerFactory.getLogger(DivideValueReducerOrMapping.class);
 	
     @Override
     public Double reduce(List<Double> values) {
