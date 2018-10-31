@@ -61,13 +61,17 @@ public class RangeTransformWrap implements Transform {
         if (metrics.size() == 1) {
             return rangeOfOneMetric(metrics.get(0));
         } else {
-            return new MetricReducerOrMappingTransform(new RangeValueReducerOrMapping()).transform(null, metrics);
+            return new MetricReducerOrMappingTransform(new RangeValueReducerOrMapping()).transform(context, metrics);
         }
     }
 
     @Override
     public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
-        throw new UnsupportedOperationException("Range Transform doesn't accept constants!");
+        if (metrics.size() == 1) {
+            return rangeOfOneMetric(metrics.get(0));
+        } else {
+            return new MetricReducerOrMappingTransform(new RangeValueReducerOrMapping()).transform(queryContext, metrics, constants);
+        }
     }
 
     @Override
