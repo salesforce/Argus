@@ -30,6 +30,8 @@
  */
 package com.salesforce.dva.argus.sdk.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.Map;
 import java.util.Objects;
 
@@ -38,6 +40,7 @@ import java.util.Objects;
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Annotation extends TSDBEntity {
 
     //~ Instance fields ******************************************************************************************************************************
