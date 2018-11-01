@@ -39,6 +39,9 @@ import com.salesforce.dva.argus.service.TSDBService.QueryTimeWindow;
 import com.salesforce.dva.argus.service.TSDBService.QueryTimeSeriesExpansion;
 import com.salesforce.dva.argus.system.SystemException;
 import com.google.inject.Inject;
+import com.salesforce.dva.argus.util.QueryContext;
+import com.salesforce.dva.argus.util.QueryContextHolder;
+import com.salesforce.dva.argus.util.TSDBQueryExpression;
 import static com.salesforce.dva.argus.system.SystemAssert.*;
 
 public class MetricReader<T> {
@@ -52,7 +55,7 @@ public class MetricReader<T> {
   	private Integer numDiscoveryQueries = 0;
 
 	@Inject
-    MetricReader(TSDBService tsdbService, DiscoveryService discoveryService, TransformFactory factory) {
+    public MetricReader(TSDBService tsdbService, DiscoveryService discoveryService, TransformFactory factory) {
         this((Reader)null);
         this.tsdbService = tsdbService;
         this.discoveryService = discoveryService;
@@ -263,20 +266,24 @@ boolean isValidExpression(String expression) :
 {}
 {
   	{
-  	  	return start(expression, 0, true, (Class<T>) Metric.class) != null;
+  	  	return start(expression, 0, true, (Class<T>) Metric.class, new QueryContextHolder()) != null;
   	}
 }
 
-List<T> parse(String expression, long relativeTo, Class<T> clazz) :
-{}
+List<T> parse(String expression, long relativeTo, Class<T> clazz, QueryContextHolder queryContextHolder, boolean syntaxOnly) :
+{
+    List<T> result = new ArrayList<T>();
+}
 {
   	{
-  	  	return start(expression, relativeTo, false, clazz);
+  	  	result = start(expression, relativeTo, syntaxOnly, clazz, queryContextHolder);
+  	    queryContextHolder.setContextToRootElement();
+        return result;
   	}
 }
 
 
-private List<T> start(String expression, long relativeTo, boolean syntaxOnly, Class<T> clazz) :
+private List<T> start(String expression, long relativeTo, boolean syntaxOnly, Class<T> clazz, QueryContextHolder queryContextHolder) :
 {
   	List<T> result = new ArrayList<T>();
 }
@@ -285,13 +292,14 @@ private List<T> start(String expression, long relativeTo, boolean syntaxOnly, Cl
         requireState(syntaxOnly || tsdbService != null, "TSDB service can only be null when syntax validation is being performed.");
         ReInit(new StringReader(expression));
   	}
-        (result = expression(relativeTo, syntaxOnly, clazz) | result = function(relativeTo, syntaxOnly, clazz))<EOF>
+        (result = expression(relativeTo, syntaxOnly, clazz, queryContextHolder.getCurrentQueryContext()) | result = function(relativeTo, syntaxOnly, clazz, queryContextHolder))<EOF>
 	{
+	    queryContextHolder.setContextToRootElement();
         return result;
     }
 }
 
-private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
+private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz, QueryContextHolder queryContextHolder) :
 {
   	List<T> totalResult = new ArrayList<T>();
   	List<T> result = new ArrayList<T>();
@@ -301,16 +309,16 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
   	boolean constantsOnly = true;
 }
 {
-	functionName = functionName()
+	functionName = getFunctionNameAndUpdateContext(queryContextHolder)
 	<LEFT_PARENTHESIS>
 		(
-		result = expression(relativeTo, syntaxOnly, clazz)
+		result = expression(relativeTo, syntaxOnly, clazz, queryContextHolder.getCurrentQueryContext())
 		{ 
 			totalResult.addAll(result);
-			constantsOnly = false;
+			constantsOnly = false;		
 		}
 		| 
-		result = function(relativeTo, syntaxOnly, clazz)
+		result = function(relativeTo, syntaxOnly, clazz, queryContextHolder)
 		{ 
 			totalResult.addAll(result);
 			constantsOnly = false;
@@ -326,10 +334,10 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
 		(
 		  <COMMA>
           ( 
-            result = expression(relativeTo, syntaxOnly, clazz)
+            result = expression(relativeTo, syntaxOnly, clazz, queryContextHolder.getCurrentQueryContext())
             { totalResult.addAll(result); }
 			|
-            result = function(relativeTo, syntaxOnly, clazz)
+            result = function(relativeTo, syntaxOnly, clazz, queryContextHolder)
             { totalResult.addAll(result); }
 			|
 			t = <CONSTANT>
@@ -342,192 +350,384 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
 		)*
 	<RIGHT_PARENTHESIS>
 	{
-	  	return evaluateFunction(functionName, totalResult, constants, relativeTo, syntaxOnly, clazz, constantsOnly);
+	    queryContextHolder.getCurrentQueryContext().setConstants(constants);
+	  	List<T> functionResult = evaluateFunction(functionName, totalResult, constants, relativeTo, syntaxOnly, clazz, constantsOnly, queryContextHolder.getCurrentQueryContext());
+	  	if(queryContextHolder.getCurrentQueryContext().getParentContext()!=null){
+	  	    queryContextHolder.setCurrentQueryContext(queryContextHolder.getCurrentQueryContext().getParentContext());
+	  	}
+	  	return functionResult;
 	}
 }
 
-
-private String functionName() :
+private String getFunctionNameAndUpdateContext(QueryContextHolder contextHolder) :
 {
   	Token t = null;
 }
 {
 	t = <IDENTITY>
-	{ return t.image; }			
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   		
 	|
 	t = <MULTIPLY>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <AVERAGE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <INTEGRAL>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <DERIVATIVE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <MIN>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <MAX>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <ZEROIFMISSINGSUM>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <ABSOLUTE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <UNION>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <COUNT>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <GROUP>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <AVERAGEBELOW>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <PERCENTILE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <MOVINGAVERAGE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <MOVING>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <SCALE>
-	{ return t.image; } 
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <SCALE_V>
-	{ return t.image; } 
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <DIFF>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <DIFF_V>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <SUM>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <SUM_V>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <DIVIDE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <DIVIDE_V>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <ALIAS>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <ALIASBYTAG>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <PROPAGATE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <NORMALIZE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <NORMALIZE_V>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <ABOVE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <BELOW>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <INCLUDE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <EXCLUDE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <HIGHEST>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <LOWEST>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <LIMIT>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <RANGE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <FILL>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <FILL_CALCULATE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <LOG>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <CULL_ABOVE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <CULL_BELOW>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <SORT>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <SHIFT>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <DOWNSAMPLE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <DEVIATION>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|	
 	t = <JOIN>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
     |    
     t = <CONSECUTIVE>
-    { return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }
 	|
 	t = <HW_FORECAST>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <HW_DEVIATION>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <ANOMALY_STL>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
     |
 	t = <ANOMALY_DENSITY>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
 	t = <ANOMALY_ZSCORE>
-	{ return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }   
 	|
     t = <ANOMALY_KMEANS>
-    { return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }
     |
     t = <ANOMALY_RPCA>
-    { return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }
     | 
     t = <GROUPBY>
-    { return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }
     |
     t = <GROUPBYTAG>
-    { return t.image; }
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }
     |
     t = <INTERPOLATE>
-    { return t.image; }    
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }    
 }
 
-private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, long relativeTo, boolean syntaxOnly, Class<T> clazz, boolean constantsOnly) :
+private void updateQueryContextWithFunction(String functionName, QueryContextHolder contextHolder) :
+{}
+{
+    {
+       QueryContext context = new QueryContext();
+       context.setTransform(functionName);
+       if(contextHolder.getCurrentQueryContext().getTransform()!=null){
+           contextHolder.getCurrentQueryContext().getChildQueryContexts().add(context);
+           context.setParentContext(contextHolder.getCurrentQueryContext());
+        }
+        contextHolder.setCurrentQueryContext(context);
+    }
+}
+
+private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, long relativeTo, boolean syntaxOnly, Class<T> clazz, boolean constantsOnly, QueryContext currentQueryContext) :
 {}
 {
   	{
@@ -543,7 +743,7 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
 	  	  	    }
 	  	  	    
 	  	  	  	Transform transform = factory.getTransform(functionName);
-				return (List<T>) ((constants == null || constants.isEmpty()) ? transform.transform((List<Metric>) result) : transform.transform((List<Metric>) result, constants));
+				return (List<T>) ((constants == null || constants.isEmpty()) ? transform.transform(currentQueryContext, (List<Metric>) result) : transform.transform(currentQueryContext, (List<Metric>) result, constants));
 	  	  	}
 	  	} else {
 	  	  	throw new IllegalArgumentException("Invalid class type: " + clazz);
@@ -563,7 +763,7 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
  * we decided to move it to the very end. 
  *  
  */
-private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
+private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, QueryContext currentQueryContext) :
 {
   	Long startTimestamp = null;
   	Long endTimestamp = null;
@@ -575,6 +775,7 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz) 
   	Aggregator downsampler = null;
   	Long downsamplingPeriod = null;
   	String downsampleTokenStr = null;
+  	TSDBQueryExpression expression = new TSDBQueryExpression();
 }
 { 	
   	startTimestamp = getTime(relativeTo)<COLON>
@@ -585,10 +786,23 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz) 
   	(LOOKAHEAD(2) <COLON>downsampleTokenStr = getDownsampleToken())?
   	(<COLON>namespace = getString())?
 	{
+	    	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
+	    downsamplingPeriod = downsampleTokenStr != null ? getDownsamplingPeriod(downsampleTokenStr): null;
+	    endTimestamp = endTimestamp == null ? relativeTo : endTimestamp;
+        
+	    expression.setNamespace(namespace);
+        expression.setScope(scope);
+        expression.setMetric(metric);
+        expression.setAggregator(aggregator);
+        expression.setTags(tags);
+        expression.setStartTimestamp(startTimestamp);
+        expression.setEndTimestamp(endTimestamp);
+        expression.setEndTimestamp(endTimestamp);
+        	expression.setDownsampler(downsampler);
+        expression.setDownsamplingPeriod(downsamplingPeriod);
+        currentQueryContext.getChildExpressions().add(expression);
 	  	if(MetricQuery.class.equals(clazz)) {
-	  	  	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
-			downsamplingPeriod = downsampleTokenStr != null ? getDownsamplingPeriod(downsampleTokenStr): null;
-			endTimestamp = endTimestamp == null ? relativeTo : endTimestamp;
+	  	  
 	        MetricQuery query = new MetricQuery(scope, metric, tags, startTimestamp, endTimestamp);
 	        query.setNamespace(namespace);
 	        query.setAggregator(aggregator);
@@ -600,9 +814,6 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz) 
 			if(syntaxOnly) {
 	            return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
 	        } else {
-	          	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
-				downsamplingPeriod = downsampleTokenStr != null ? getDownsamplingPeriod(downsampleTokenStr): null;
-				endTimestamp = endTimestamp == null ? relativeTo : endTimestamp;
 		        MetricQuery query = new MetricQuery(scope, metric, tags, startTimestamp, endTimestamp);
 		        query.setNamespace(namespace);
 		        query.setAggregator(aggregator);

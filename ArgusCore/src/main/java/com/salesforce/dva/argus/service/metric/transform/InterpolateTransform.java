@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
+import com.salesforce.dva.argus.util.QueryContext;
 
 /**
  * Interpolates multiple time series that will be used for aggregation.
@@ -38,13 +39,13 @@ public class InterpolateTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics) {
+	public List<Metric> transform(QueryContext context, List<Metric> metrics) {
 		throw new UnsupportedOperationException("Interpolation Transform needs an interpolation type to be specified");
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
 
 		List<Metric> resultMetric = new ArrayList<Metric>();
 
@@ -208,7 +209,7 @@ public class InterpolateTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric>... listOfList) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
 		throw new UnsupportedOperationException("Interpolation Transform is not supposed to be used with a list of metric list!");
 	}
 

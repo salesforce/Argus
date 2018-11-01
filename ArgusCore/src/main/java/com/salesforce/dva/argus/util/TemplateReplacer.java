@@ -2,6 +2,7 @@ package com.salesforce.dva.argus.util;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
+import freemarker.core.InvalidReferenceException;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
@@ -16,11 +17,17 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Class for templatizing the components of alerts
+ *
+ * @author  Sudhanshu Bahety (sudhanshu.bahety@salesforce.com)
+ */
+
 public class TemplateReplacer {
 
     private static final Logger _logger = LoggerFactory.getLogger(TemplateReplacer.class);
     private static Configuration cfg = null;
-    private static int MAX_ITERATIONS = 100;
+    private static int MAX_ITERATIONS = 10;
     private static void init() {
         if ( cfg == null ) {
             cfg = new Configuration(Configuration.VERSION_2_3_28);
@@ -49,6 +56,10 @@ public class TemplateReplacer {
         return lowercasedString;
     }
 
+    private static String makeExceptionForCertainTag(String templateString) {
+        return templateString.replace("${device}", "${tag.device}");
+    }
+
     public static String applyTemplateChanges(DefaultAlertService.NotificationContext context, String templateString) {
 
         init();
@@ -70,6 +81,7 @@ public class TemplateReplacer {
         do {
             templateString = generatedString;
             templateString = replaceKeywordsToLowerCase(templateString);
+            templateString = makeExceptionForCertainTag(templateString);
             try {
                 Template configuredTemplate = new Template("configuredTemplate", new StringReader(templateString), cfg);
                 StringWriter stringWriter = new StringWriter();
@@ -77,7 +89,8 @@ public class TemplateReplacer {
                 generatedString = stringWriter.toString();
             } catch (Exception e) {
                 _logger.error(MessageFormat.format("Exception occurred while applying template change on {0}, with error message {1}.", templateString, e.getMessage()));
-                return originalString;
+                generatedString = MessageFormat.format("ERROR occurred during applying template change to the following variable: {0}\n\n Detailed Message: {1}",((InvalidReferenceException) e).getBlamedExpressionString(), e.getMessage());
+                break;
             }
         } while(!generatedString.equals(templateString) && ++numOfIterations < MAX_ITERATIONS); // If we unwrap alert.name, it may also be templatize, we should replace that as well.
 

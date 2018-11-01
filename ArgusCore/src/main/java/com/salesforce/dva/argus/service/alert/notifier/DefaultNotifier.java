@@ -145,7 +145,6 @@ public abstract class DefaultNotifier implements Notifier {
     /**
      * A post send hook for sub-class implementations to perform additional functionality.
      *
-     * @param  context  The notification context.
      */
     protected abstract void sendAdditionalNotification(NotificationContext context);
 
@@ -200,7 +199,6 @@ public abstract class DefaultNotifier implements Notifier {
     /**
      * Defines additional implementation specific actions to take when a notification is cleared.
      *
-     * @param  context  The notification context.  Cannot be null.
      */
     protected abstract void clearAdditionalNotification(NotificationContext context);
 

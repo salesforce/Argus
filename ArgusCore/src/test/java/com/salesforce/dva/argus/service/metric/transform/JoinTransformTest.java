@@ -50,7 +50,7 @@ public class JoinTransformTest {
         Transform joinTransform = new JoinTransform();
         List<Metric> metrics_1 = new ArrayList<Metric>();
         List<Metric> metrics_2 = new ArrayList<Metric>();
-        List<Metric> result = joinTransform.transform(metrics_1, metrics_2);
+        List<Metric> result = joinTransform.transform(null, metrics_1, metrics_2);
 
         assertEquals(result.size(), 0);
     }
@@ -61,7 +61,7 @@ public class JoinTransformTest {
         List<Metric> metrics = new ArrayList<Metric>();
         List<String> constants = new ArrayList<String>();
 
-        joinTransform.transform(metrics, constants);
+        joinTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -119,7 +119,7 @@ public class JoinTransformTest {
         expected_3.put(8000L, 0.01);
         expected_3.put(9000L, 0.0001);
 
-        List<Metric> result = joinTransform.transform(metrics_1, metrics_2, metrics_3);
+        List<Metric> result = joinTransform.transform(null, metrics_1, metrics_2, metrics_3);
 
         assertEquals(result.size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -150,7 +150,7 @@ public class JoinTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = joinTransform.transform(metrics);
+        List<Metric> result = joinTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());

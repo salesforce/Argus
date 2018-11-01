@@ -1,0 +1,126 @@
+#!/usr/bin/env python
+import re
+import sys
+
+class termcolors:
+    OKGREEN = '\033[92m'
+    WARN = '\033[93m'
+    ENDC = '\033[0m'
+
+PARENT_PATH = 'pom.xml'
+ENV_FILE_PATH = 'project.version'
+CHILD_PATHS = [
+    'ArgusClient/pom.xml',
+    'ArgusCore/pom.xml',
+    'ArgusSDK/pom.xml',
+    'ArgusWeb/pom.xml',
+    'ArgusWebServices/pom.xml'
+]
+AG_WEB_PATHS = [
+    'ArgusWeb/config/config.js',
+    'ArgusWeb/app/js/config.js'
+]
+SPEC_PATHS = [
+    'SPECS/argus-client.spec',
+    'SPECS/argus-ui.spec',
+    'SPECS/argus-webservices.spec',
+]
+
+RX_PARENT = re.compile('(<artifactId>argus</artifactId>\n\s*<version>).*(</version>)', re.MULTILINE)
+RX_PARENT_PROJ = re.compile('(<project.version>).*(</project.version>)')
+def update_parent_verison(version):
+    with open(PARENT_PATH, 'r+') as file:
+        s = file.read()
+        replacement = '\g<1>' + version + '\g<2>'
+        s = re.sub(RX_PARENT, replacement, s, re.M)
+        s = re.sub(RX_PARENT_PROJ, replacement, s)
+        overwrite_file(file, s)
+
+RX_CHILD = re.compile('(<groupId>com.salesforce.argus</groupId>\n\s*<version>).*(</version>)', re.MULTILINE)
+def update_children_versions(verison):
+    for path in CHILD_PATHS:
+        with open(path, 'r+') as file:
+            s = file.read()
+            replacement = '\g<1>' + version + '\g<2>'
+            s = re.sub(RX_CHILD, replacement, s, re.M)
+            overwrite_file(file, s)
+
+def update_env_version(version):
+    with open(ENV_FILE_PATH, 'r+') as file:
+        overwrite_file(file, 'export PROJECT_VERSION=' + version + '\n')
+
+RX_CONFIGJS = re.compile("(\s*version: ')\d+\.\d+(')")
+def update_web_versions(version):
+    minor_version = re.sub(r'(\d+\.\d+)\.\d+', r'\1', version)
+    for path in AG_WEB_PATHS:
+        with open(path, 'r+') as file:
+            s = file.read()
+            replacement = '\g<1>' + minor_version + '\g<2>'
+            s = re.sub(RX_CONFIGJS, replacement, s)
+            overwrite_file(file, s)
+
+RX_SPEC = re.compile('Version:\s*(\d+\.\d+)')
+def read_spec_versions():
+    versions = []
+    for path in SPEC_PATHS:
+        with open(path, 'r') as file:
+            lines = file.readlines()
+            matches = [RX_SPEC.match(line).group(1) for line in lines if RX_SPEC.match(line) is not None]
+            if len(matches) != 1:
+                print('Could not find RPM version in file: ' + path)
+                continue
+            versions.append((path, matches[0]))
+    if len(set([pair[1] for pair in versions])) != 1:
+        print('RPM verison numbers in SPEC files do not match:')
+        [sys.stdout.write('   - ' + pair[0].split('/')[1] + ': ' + pair[1] + '\n') for pair in versions]
+        print('Please fix and re-run script')
+        return None
+    return versions[0][1]
+
+RX_SUB_SPEC = re.compile('(Version:\s*)\d+\.\d+')
+def update_spec_versions(version):
+    for path in SPEC_PATHS:
+        with open(path, 'r+') as file:
+            s = file.read()
+            replacement = '\g<1>' + version
+            s = re.sub(RX_SUB_SPEC, replacement, s)
+            overwrite_file(file, s)
+
+def get_next_spec_version(spec_version):
+    minor = spec_version.split('.')[1]
+    return spec_version.split('.')[0] + '.' + str(int(minor) + 1)
+
+def overwrite_file(file, s):
+    file.seek(0)
+    file.write(s)
+    file.truncate()
+
+if __name__ == '__main__':
+    # Python 2 + 3 compatibility
+    input_func = input
+    if sys.version_info[0] < 3:
+        input_func = raw_input
+    print('This script will locally update all Argus version numbers and the RPM version numbers\n')
+
+    # Read the current spec version and ask user for the next one
+    spec_version = read_spec_versions()
+    if not spec_version:
+        sys.exit(1)
+    new_spec_version = input_func('Found SPEC RPM version ' + spec_version +
+                                  '\nRPM Version number to update to [Press ENTER for default ' + get_next_spec_version(spec_version) + ']: ')
+    while not (re.match(r'^\d+\.\d+$', new_spec_version) or len(new_spec_version) == 0):
+        new_spec_version = input_func(termcolors.WARN + 'Received improperly formatted SPEC RPM verison number. Expecting major.minor format, please try again\n' + termcolors.ENDC + 'SPEC RPM Verison number to update to: ')
+    if len(new_spec_version) == 0:
+        new_spec_version = get_next_spec_version(spec_version)
+
+    # Ask the user for the next POM version
+    version = input_func('Argus POM version number to update to: ')
+    while not re.match(r'^\d+\.\d+\.\d+$', version):
+        version = input_func(termcolors.WARN + 'Received improperly formatted POM verison number. Expecting major.minor.hotfix format, please try again\n' + termcolors.ENDC + 'POM Verison number to update to: ')
+    update_spec_versions(new_spec_version)
+    update_parent_verison(version)
+    update_children_versions(version)
+    update_env_version(version)
+    update_web_versions(version)
+
+    print(termcolors.OKGREEN + 'All files updated successfully')

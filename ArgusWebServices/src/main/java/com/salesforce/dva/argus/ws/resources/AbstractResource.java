@@ -42,6 +42,7 @@ import org.apache.commons.beanutils.BeanUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -247,8 +248,10 @@ public abstract class AbstractResource {
     protected void copyProperties(Object dest, Object source) {
         try {
             BeanUtils.copyProperties(dest, source);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new WebApplicationException(e.toString(), Status.BAD_REQUEST);
+        } catch (Exception e) {
+            String errorMessage = MessageFormat.format("M:{0};;E:{1}",
+                    e.getCause().getMessage(), e.toString());
+            throw new WebApplicationException(errorMessage, Status.BAD_REQUEST);
         }
     }
 

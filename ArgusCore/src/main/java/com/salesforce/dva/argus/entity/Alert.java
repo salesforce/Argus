@@ -354,7 +354,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 				query = em.createNamedQuery("Alert.countByOwner", Long.class);
 			} else {
 				query = em.createNamedQuery("Alert.countByOwnerWithSearchText", Long.class);
-				query.setParameter(SEARCHTEXT_KEY, "%" + searchText.toLowerCase() + "%");
+				query.setParameter(SEARCHTEXT_KEY, _convertSearchTextWildCardForQuery(searchText));
 			}
 
 			query.setHint(QueryHints.REFRESH, HintValues.TRUE);
@@ -685,7 +685,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 				query = em.createNamedQuery("Alert.countSharedAlerts", Long.class);
 			} else {
 				query = em.createNamedQuery("Alert.countSharedAlertsWithSearchText", Long.class);
-				query.setParameter(SEARCHTEXT_KEY, "%" + searchText.toLowerCase() + "%");
+				query.setParameter(SEARCHTEXT_KEY, _convertSearchTextWildCardForQuery(searchText));
 			}
 
 			query.setHint(QueryHints.REFRESH, HintValues.TRUE);
@@ -730,8 +730,6 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * 
 	 * @param em
 	 *            The entity manager to user. Cannot be null.
-	 * @param owner
-	 *            The owner to filter on
 	 * @param limit
 	 *            The maximum number of rows to return.
 	 * @param offset
@@ -844,7 +842,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 				query = em.createNamedQuery("Alert.countPrivateAlertsForPrivilegedUser", Long.class);
 			} else {
 				query = em.createNamedQuery("Alert.countPrivateAlertsForPrivilegedUserWithSearchText", Long.class);
-				query.setParameter(SEARCHTEXT_KEY, "%" + searchText.toLowerCase() + "%");
+				query.setParameter(SEARCHTEXT_KEY, _convertSearchTextWildCardForQuery(searchText));
 			}
 
 			query.setHint(QueryHints.REFRESH, HintValues.TRUE);
@@ -919,7 +917,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		// Filter on alert name and owner name if not empty. All values are
 		// normalized to lower case for case insensitive search.
 		if (searchText != null && !searchText.isEmpty()) {
-			String searchPattern = "%" + searchText.toLowerCase() + "%";
+			String searchPattern = _convertSearchTextWildCardForQuery(searchText);
 			Expression<String> alertName = e.get("name");
 			Expression<String> ownerName = e.join("owner").get("userName");
 			predicates.add(cb.or(cb.like(cb.function("LOWER", String.class, alertName), searchPattern),
@@ -972,6 +970,10 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		}
 
 		return alerts;
+	}
+
+	private static String _convertSearchTextWildCardForQuery(String searchText) {
+		return "%" + searchText.toLowerCase().replace("*", "%").replace("?","_") + "%";
 	}
 	
 	/**

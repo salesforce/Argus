@@ -64,7 +64,7 @@ public class LowestTransformTest {
 
         constants.add("5w");
         constants.add("average");
-        lowestTransform.transform(metrics, constants);
+        lowestTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -86,7 +86,7 @@ public class LowestTransformTest {
 
         constants.add("5");
         constants.add("foobar");
-        lowestTransform.transform(metrics, constants);
+        lowestTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -107,7 +107,7 @@ public class LowestTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("min");
-        lowestTransform.transform(metrics, constants);
+        lowestTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -118,7 +118,7 @@ public class LowestTransformTest {
 
         constants.add("2");
         constants.add("average");
-        lowestTransform.transform(metrics, constants);
+        lowestTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -176,7 +176,7 @@ public class LowestTransformTest {
         expected_2.put(2000L, 2.0);
         expected_2.put(3000L, 2.0);
 
-        List<Metric> result = lowestTransform.transform(metrics, constants);
+        List<Metric> result = lowestTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -239,7 +239,7 @@ public class LowestTransformTest {
         expected_2.put(2000L, 2.0);
         expected_2.put(3000L, 2.0);
 
-        List<Metric> result = lowestTransform.transform(metrics, constants);
+        List<Metric> result = lowestTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -308,7 +308,7 @@ public class LowestTransformTest {
         expected_3.put(2000L, 300.0);
         expected_3.put(3000L, 300.0);
 
-        List<Metric> result = lowestTransform.transform(metrics, constants);
+        List<Metric> result = lowestTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -378,7 +378,7 @@ public class LowestTransformTest {
         expected_3.put(2000L, 3.0);
         expected_3.put(3000L, 300.0);
 
-        List<Metric> result = lowestTransform.transform(metrics, constants);
+        List<Metric> result = lowestTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -442,7 +442,7 @@ public class LowestTransformTest {
         expected_2.put(2000L, 200.0);
         expected_2.put(3000L, 2.0);
 
-        List<Metric> result = lowestTransform.transform(metrics, constants);
+        List<Metric> result = lowestTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -504,7 +504,7 @@ public class LowestTransformTest {
         expected_2.put(2000L, null);
         expected_2.put(3000L, null);
 
-        List<Metric> result = lowestTransform.transform(metrics, constants);
+        List<Metric> result = lowestTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());

@@ -87,7 +87,7 @@ public class FillCalculateTransformTest {
         expected_1.put(9000L, 10.0);
         expected_1.put(10000L, 10.0);
 
-        List<Metric> result = fillCalculateTransform.transform(metrics, constants);
+        List<Metric> result = fillCalculateTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(result.get(0).getDatapoints().size(), 10);
@@ -134,7 +134,7 @@ public class FillCalculateTransformTest {
         expected_1.put(9000L, 9.2);
         expected_1.put(10000L, 9.2);
 
-        List<Metric> result = fillCalculateTransform.transform(metrics, constants);
+        List<Metric> result = fillCalculateTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -168,7 +168,7 @@ public class FillCalculateTransformTest {
         expected_1.put(9000L, 1.0);
         expected_1.put(10000L, 1.0);
 
-        List<Metric> result = fillCalculateTransform.transform(metrics, constants);
+        List<Metric> result = fillCalculateTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(result.get(0).getDatapoints().size(), 10);
@@ -203,7 +203,7 @@ public class FillCalculateTransformTest {
         expected_1.put(9000L, 10.0);
         expected_1.put(10000L, 10.0);
 
-        List<Metric> result = fillCalculateTransform.transform(metrics, constants);
+        List<Metric> result = fillCalculateTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(result.get(0).getDatapoints().size(), 10);
@@ -238,7 +238,7 @@ public class FillCalculateTransformTest {
         expected_1.put(9000L, 5.5);
         expected_1.put(10000L, 5.5);
 
-        List<Metric> result = fillCalculateTransform.transform(metrics, constants);
+        List<Metric> result = fillCalculateTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(result.get(0).getDatapoints().size(), 10);
@@ -259,7 +259,7 @@ public class FillCalculateTransformTest {
         List<String> constants = new ArrayList<>();
 
         constants.add("dev");
-        fillCalculateTransform.transform(metrics, constants);
+        fillCalculateTransform.transform(null, metrics, constants);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
