@@ -28,9 +28,9 @@ after_success:
 - df -h
 - ls -lah /home/travis/
 - du -h /home
-deploy:
-  provider: script
-  script: bash ${TRAVIS_BUILD_DIR}/.travis.deploy.sh
-  skip_cleanup: true
-  on:
-    branch: master
+#deploy:
+#  provider: script
+#  script: bash ${TRAVIS_BUILD_DIR}/.travis.deploy.sh
+#  skip_cleanup: true
+#  on:
+#    branch: master
