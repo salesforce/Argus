@@ -244,6 +244,7 @@ TOKEN : { < ANOMALY_RPCA : "ANOMALY_RPCA" > }
 TOKEN : { < GROUPBY : "GROUPBY" > }
 TOKEN : { < GROUPBYTAG : "GROUPBYTAG" > }
 TOKEN : { < INTERPOLATE : "INTERPOLATE" > }
+TOKEN : { < RATE : "RATE" > }
 
 TOKEN : { < COLON : ":" > }
 TOKEN : { < COMMA : "," > }
@@ -707,6 +708,12 @@ private String getFunctionNameAndUpdateContext(QueryContextHolder contextHolder)
     }
     |
     t = <INTERPOLATE>
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }  
+    |  
+    t = <RATE>
     { 
         updateQueryContextWithFunction(t.image, contextHolder);
         return t.image; 
