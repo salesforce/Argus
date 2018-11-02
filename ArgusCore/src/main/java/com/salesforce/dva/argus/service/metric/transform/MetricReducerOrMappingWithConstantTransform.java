@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
@@ -50,51 +50,55 @@ import java.util.List;
  */
 public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOrMappingTransform {
 
-    //~ Constructors *********************************************************************************************************************************
+	//~ Constructors *********************************************************************************************************************************
 
-    /**
-     * Creates a new ReduceTransform object.
-     *
-     * @param  valueReducerOrMapping  The valueMapping.
-     */
-    protected MetricReducerOrMappingWithConstantTransform(ValueReducerOrMapping valueReducerOrMapping) {
-        super(valueReducerOrMapping);
-    }
+	/**
+	 * Creates a new ReduceTransform object.
+	 *
+	 * @param  valueReducerOrMapping  The valueMapping.
+	 */
+	protected MetricReducerOrMappingWithConstantTransform(ValueReducerOrMapping valueReducerOrMapping) {
+		super(valueReducerOrMapping);
+	}
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    @Override
-    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
-        throw new UnsupportedOperationException("This Transform cannot be used without a constant");
-    }
+	@Override
+	public List<Metric> transform(QueryContext context, List<Metric> metrics) {
+		throw new UnsupportedOperationException("This Transform cannot be used without a constant");
+	}
 
-    /**
-     * If constants is not null, apply mapping transform to metrics list. Otherwise, apply reduce transform to metrics list
-     * @param   metrics    list of metrics
-     * @param   constants  constants input
-     *
-     * @return  A list of metrics after mapping.
-     */
-    @Override
-    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
-        SystemAssert.requireArgument(metrics != null, "Metric List cannot be null");
-        SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "This Transform cannot be used without a constant");
-        if (metrics.isEmpty()) {
-            return metrics;
-        }
+	/**
+	 * If constants is not null, apply mapping transform to metrics list. Otherwise, apply reduce transform to metrics list
+	 * @param   metrics    list of metrics
+	 * @param   constants  constants input
+	 *
+	 * @return  A list of metrics after mapping.
+	 */
+	@Override
+	public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
+		SystemAssert.requireArgument(metrics != null, "Metric List cannot be null");
+		SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "This Transform cannot be used without a constant");
+		if (metrics.isEmpty()) {
+			return metrics;
+		}
 
-        List<Metric> result = new ArrayList<Metric>();
+		List<Metric> result = new ArrayList<Metric>();
 
-        if (constants.size() == 1) {
-            result = Arrays.asList(reduce(metrics, constants));
-        } else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(FULLJOIN)) {
-        	fulljoinIndicator = true;
-        	constants.remove(1);
-        	result = Arrays.asList(reduce(metrics, constants));
-        } else if (constants.size() > 1) {
-            result = mapping(metrics, constants);
-        }
-        return result;
-    }
+		if (constants.size() == 1) {
+			result = Arrays.asList(reduce(metrics, constants));
+		} else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(FULLJOIN)) {
+			fulljoinIndicator = true;
+			constants.remove(1);
+			result = Arrays.asList(reduce(metrics, constants));
+		}else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(INTERSECT)) { 
+			fulljoinIndicator = false;
+			constants.remove(1);
+			result = Arrays.asList(reduce(metrics, constants));	        
+		}else if (constants.size() > 1) {
+			result = mapping(metrics, constants);
+		}
+		return result;
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
