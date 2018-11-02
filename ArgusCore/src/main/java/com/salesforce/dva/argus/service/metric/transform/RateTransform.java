@@ -18,14 +18,14 @@ import com.salesforce.dva.argus.util.QueryUtils;
  */
 public class RateTransform implements Transform{
 	private static long DEFAULT_INTERVAL=60*1000;
-	private static boolean DEFAULT_SKIP_NAGATIVE_VALUES=true;
+	private static boolean DEFAULT_SKIP_NEGATIVE_VALUES=true;
 	private static boolean DEFAULT_INTERPOLATE_MISSING_DATAPOINTS=true;
 
 	@Override
 	public List<Metric> transform(QueryContext queryContext, List<Metric> metrics) {
 		Long[] startAndEndTimestamps = QueryUtils.getStartAndEndTimesWithMaxInterval(queryContext);
 		return performRate(metrics, startAndEndTimestamps[0], startAndEndTimestamps[1], DEFAULT_INTERVAL, 
-				DEFAULT_SKIP_NAGATIVE_VALUES, DEFAULT_INTERPOLATE_MISSING_DATAPOINTS);
+				DEFAULT_SKIP_NEGATIVE_VALUES, DEFAULT_INTERPOLATE_MISSING_DATAPOINTS);
 	}
 
 	@Override
