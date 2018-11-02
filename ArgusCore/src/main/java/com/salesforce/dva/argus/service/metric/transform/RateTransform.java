@@ -11,6 +11,7 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.util.QueryContext;
 import com.salesforce.dva.argus.util.QueryUtils;
+import com.salesforce.dva.argus.util.TransformUtil;
 /**
  * It provides methods to implement Rate transform
  * @author Raj Sarkapally (rsarkapally@salesforce.com)
@@ -35,7 +36,7 @@ public class RateTransform implements Transform{
 				"Rate Transform needs 3 constants (interval, skipNegativeValues, interpolateMissingValues)!");
 
 		Long[] startAndEndTimestamps = QueryUtils.getStartAndEndTimesWithMaxInterval(queryContext);
-		long intervalInMilli = _getTimeIntervalInMilliSeconds(constants.get(0));
+		long intervalInMilli = TransformUtil.getWindowInSeconds(constants.get(0)) * 1000;
 		return performRate(metrics, startAndEndTimestamps[0], startAndEndTimestamps[1], intervalInMilli, 
 				Boolean.valueOf(constants.get(1)), Boolean.valueOf(constants.get(2)));
 	}
@@ -149,16 +150,4 @@ public class RateTransform implements Transform{
 		double result = prevDP.getValue() + slope*(timestamp-prevDP.getKey()); 
 		return result;
 	}
-
-	private static long _getTimeIntervalInMilliSeconds(String interval) {
-		MetricReader.TimeUnit timeunit = null;
-		try {
-			timeunit = MetricReader.TimeUnit.fromString(interval.substring(interval.length() - 1));
-			long timeDigits = Long.parseLong(interval.substring(0, interval.length() - 1));
-			return timeDigits * timeunit.getValue();
-		} catch (Exception t) {
-			throw new SystemException("Please input a valid time interval!");
-		}
-	}
-
 }
