@@ -443,11 +443,10 @@ public class DeviationTransformTest {
 
         expected.put(1000L, 1.0);
         expected.put(2000L, 2.0);
-        expected.put(3000L, null);
-
+        
         List<Metric> result = devTransform.transform(null, metrics, constants);
 
-        assertEquals(result.get(0).getDatapoints().size(), 3);
+        assertEquals(result.get(0).getDatapoints().size(), 2);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
@@ -574,11 +573,10 @@ public class DeviationTransformTest {
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
         expected.put(3000L, 0.0);
-        expected.put(4000L, null);
 
         List<Metric> result = devTransform.transform(null, metrics, constants);
 
-        assertEquals(result.get(0).getDatapoints().size(), 2);
+        assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 }

@@ -37,6 +37,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Calculates an quotient. If a constant is provided, it is divided into each data point in the set of input metrics, otherwise the data point values
  * of each time stamp for all but the first metric are divided into the data point value of the first metric.
@@ -47,6 +50,8 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
 
     //~ Methods **************************************************************************************************************************************
 
+	private final Logger _logger = LoggerFactory.getLogger(DivideValueReducerOrMapping.class);
+	
     @Override
     public Double reduce(List<Double> values) {
         Double quotient = values.get(0);
@@ -57,8 +62,9 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
             if (value == null) {
                 continue;
             }
-            if (value == 0.0) { // Sys Require argument
-                throw new ArithmeticException("this datapoints sets have a value of zero!");
+            if (value == 0.0) {
+            	    _logger.debug("Encountered zero denominator when executing the DivideValueReducerOrMapping. So, skipping the value");
+            	    return null;
             }
             quotient /= value;
         }
