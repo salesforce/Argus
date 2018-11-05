@@ -67,7 +67,7 @@ public class ExcludeTransformTest {
         Transform excludeTransform = new ExcludeTransformWrap();
         List<Metric> metrics = new ArrayList<Metric>();
 
-        excludeTransform.transform(metrics);
+        excludeTransform.transform(null, metrics);
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -75,7 +75,7 @@ public class ExcludeTransformTest {
         Transform excludeTransform = new ExcludeTransformWrap();
         List<Metric> metrics = new ArrayList<Metric>();
 
-        excludeTransform.transform(metrics);
+        excludeTransform.transform(null, metrics);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -86,7 +86,7 @@ public class ExcludeTransformTest {
 
         constants.add(TEST_INCLUDE_LITERAL);
         constants.add(TEST_BAD_STRING);
-        excludeTransform.transform(metrics, constants);
+        excludeTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -97,7 +97,7 @@ public class ExcludeTransformTest {
 
         constants.add(TEST_INCLUDE_LITERAL);
         constants.add(TEST_BAD_STRING);
-        excludeTransform.transform(metrics, constants);
+        excludeTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -131,7 +131,7 @@ public class ExcludeTransformTest {
 
         constants.add(TEST_INCLUDE_REGEX);
 
-        List<Metric> result = excludeTransform.transform(metrics, constants);
+        List<Metric> result = excludeTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(TEST_DISPLAYNAME_1, result.get(0).getDisplayName());
@@ -168,7 +168,7 @@ public class ExcludeTransformTest {
 
         constants.add(TEST_INCLUDE_LITERAL);
 
-        List<Metric> result = excludeTransform.transform(metrics, constants);
+        List<Metric> result = excludeTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(TEST_DISPLAYNAME_1, result.get(0).getDisplayName());

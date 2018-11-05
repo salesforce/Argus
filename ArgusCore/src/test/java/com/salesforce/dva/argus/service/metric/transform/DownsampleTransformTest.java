@@ -32,6 +32,9 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.util.QueryContext;
+import com.salesforce.dva.argus.util.QueryUtils;
+
 import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -40,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
 
@@ -66,7 +70,7 @@ public class DownsampleTransformTest {
 		List<String> constants = new ArrayList<String>();
 
 		constants.add("2k-avg");
-		downsampleTransform.transform(metrics, constants);
+		downsampleTransform.transform(null, metrics, constants);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -87,7 +91,7 @@ public class DownsampleTransformTest {
 		List<String> constants = new ArrayList<String>();
 
 		constants.add("2s-foobar");
-		downsampleTransform.transform(metrics, constants);
+		downsampleTransform.transform(null, metrics, constants);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -108,7 +112,7 @@ public class DownsampleTransformTest {
 		List<String> constants = new ArrayList<String>();
 
 		constants.add("-min");
-		downsampleTransform.transform(metrics, constants);
+		downsampleTransform.transform(null, metrics, constants);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -129,7 +133,7 @@ public class DownsampleTransformTest {
 		List<String> constants = new ArrayList<String>();
 
 		constants.add("6s-");
-		downsampleTransform.transform(metrics, constants);
+		downsampleTransform.transform(null, metrics, constants);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -150,7 +154,7 @@ public class DownsampleTransformTest {
 		List<String> constants = new ArrayList<String>();
 
 		constants.add("***test");
-		downsampleTransform.transform(metrics, constants);
+		downsampleTransform.transform(null, metrics, constants);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -161,7 +165,7 @@ public class DownsampleTransformTest {
 
 		constants.add("2");
 		constants.add("average");
-		downsampleTransform.transform(metrics, constants);
+		downsampleTransform.transform(null, metrics, constants);
 	}
 
 	@Test
@@ -200,7 +204,7 @@ public class DownsampleTransformTest {
 		expected_1.put(6000L, 6.5);
 		expected_1.put(8000L, 8.5);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -242,7 +246,7 @@ public class DownsampleTransformTest {
 		expected_1.put(6000L, 6.0);
 		expected_1.put(8000L, 8.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -284,7 +288,7 @@ public class DownsampleTransformTest {
 		expected_1.put(6000L, 7.0);
 		expected_1.put(8000L, 9.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -323,7 +327,7 @@ public class DownsampleTransformTest {
 		expected_1.put(5000L, 5.0);
 
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -365,7 +369,7 @@ public class DownsampleTransformTest {
 		expected_1.put(6000L, 13.0);
 		expected_1.put(8000L, 17.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -407,7 +411,7 @@ public class DownsampleTransformTest {
 		expected_1.put(3000L, 1.0);
 		expected_1.put(6000L, 1.0);
 		expected_1.put(9000L, 0.0);
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -474,7 +478,7 @@ public class DownsampleTransformTest {
 		expected_2.put(6000L, 650.0);
 		expected_2.put(8000L, 850.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 2);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -512,7 +516,7 @@ public class DownsampleTransformTest {
 
 		expected_1.put(1000L, 5.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -545,7 +549,7 @@ public class DownsampleTransformTest {
 		expected_1.put(5000L, 5.0);
 		expected_1.put(9000L, 9.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -585,7 +589,7 @@ public class DownsampleTransformTest {
 		expected_1.put(5000L, 0.0);
 		expected_1.put(7000L, 0.0);
 		expected_1.put(9000L, 9.0);
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -620,7 +624,7 @@ public class DownsampleTransformTest {
 		expected_1.put(1453806000000L, 3.0);
 		expected_1.put(1453809600000L, 4.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -662,7 +666,7 @@ public class DownsampleTransformTest {
 		expected_1.put(6000L, 3.0);
 		expected_1.put(9000L, 1.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
 	}
@@ -702,7 +706,7 @@ public class DownsampleTransformTest {
 		expected_1.put(6000L, 1.0);
 		expected_1.put(9000L, 1.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
 	}
@@ -720,7 +724,7 @@ public class DownsampleTransformTest {
 		List<String> constants = new ArrayList<String>();
 		constants.add("3s-count");
 		Map<Long, Double> expected = new HashMap<Long, Double>();
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 		assertEquals(result.size(), 1);
 		assertEquals(expected, result.get(0).getDatapoints());
 	}
@@ -760,7 +764,7 @@ public class DownsampleTransformTest {
 		expected_1.put(7000L, 8.0);
 		expected_1.put(9000L, 9.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -820,7 +824,7 @@ public class DownsampleTransformTest {
 
 		expected_2.put(0L, 99.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(2, result.size());
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -859,7 +863,7 @@ public class DownsampleTransformTest {
 		expected_1.put(3000L, 1.0);
 		expected_1.put(7000L, 2.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -893,7 +897,7 @@ public class DownsampleTransformTest {
 		expected_1.put(60000L, 3.0);
 		expected_1.put(420000L, 1.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -936,7 +940,7 @@ public class DownsampleTransformTest {
 		calendar.set(Calendar.HOUR_OF_DAY, 6);
 		expected_1.put(calendar.getTimeInMillis(), 1.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
@@ -984,14 +988,14 @@ public class DownsampleTransformTest {
 		calendar.set(Calendar.DAY_OF_MONTH, 16);
 		expected_1.put(calendar.getTimeInMillis(), 2.0);
 
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
 	}
 
 	@Test
-	public void testDownsampleWithAbsoluteIntervals() {
+	public void testDownsampleWithFillDefaultValues() {
 		Transform downsampleTransform = new DownsampleTransform();
 		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
         long startMillis = 1534368960000L; 
@@ -1030,8 +1034,54 @@ public class DownsampleTransformTest {
 		expected_1.put(startMillis+8*60000L, 8.0);
 		expected_1.put(startMillis+9*60000L, 0.0);
 		
-		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
+
+	@Test
+	public void testDownsampleWithAbsoluteIntervals() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        long startMillis = 1534368960000L; 
+		datapoints_1.put(startMillis, 1.0);
+		datapoints_1.put(startMillis+60000L, 1.0);
+		datapoints_1.put(startMillis+2*60000L, 2.0);
+		datapoints_1.put(startMillis+3*60000L, 3.0);
+		datapoints_1.put(startMillis+4*60000L, 4.0);
+		datapoints_1.put(startMillis+7*60000L, 7.0);
+		datapoints_1.put(startMillis+8*60000L, 8.0);
+
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+		metric_1.setDatapoints(datapoints_1);
+
+		List<Metric> metrics = new ArrayList<Metric>();
+
+		metrics.add(metric_1);
+
+		List<String> constants = new ArrayList<String>();
+
+		constants.add("1m-sum");
+		constants.add("0.0");
+		constants.add("abs");
+		Map<Long, Double> expected_1 = new TreeMap<Long, Double>();
+
+		expected_1.put(startMillis, 1.0);
+		expected_1.put(startMillis+60000L, 1.0);
+		expected_1.put(startMillis+2*60000L, 2.0);
+		expected_1.put(startMillis+3*60000L, 3.0);
+		expected_1.put(startMillis+4*60000L, 4.0);
+		expected_1.put(startMillis+5*60000L, 0.0);
+		expected_1.put(startMillis+6*60000L, 0.0);
+		expected_1.put(startMillis+7*60000L, 7.0);
+		expected_1.put(startMillis+8*60000L, 8.0);
+		expected_1.put(startMillis+9*60000L, 0.0);	
+
+        QueryContext context = QueryUtils.getQueryContext(1534368960000L+":"+(1534368960000L+10*60000L)+":argus.core:alerts.evaluated:zimsum:1m-sum", 0L);
+		List<Metric> result = downsampleTransform.transform(context, metrics, constants);
+		
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
 	}

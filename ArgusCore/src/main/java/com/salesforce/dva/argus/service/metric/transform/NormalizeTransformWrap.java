@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -76,7 +78,7 @@ public class NormalizeTransformWrap implements Transform {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
         if (metrics.isEmpty()) {
             return metrics;
@@ -84,7 +86,7 @@ public class NormalizeTransformWrap implements Transform {
 
         // do a union transform, the reducer perform a sum calculation
         Transform unionTransform = new MetricUnionTransform(new CountValueUnionReducer());
-        List<Metric> sumUnitMetric = unionTransform.transform(metrics);
+        List<Metric> sumUnitMetric = unionTransform.transform(null, metrics);
 
         // union of all timestamp
         Set<Long> unionKeyset = sumUnitMetric.get(0).getDatapoints().keySet();
@@ -117,17 +119,17 @@ public class NormalizeTransformWrap implements Transform {
         // Transform divide_vTransform = transformFactory.createMetricZipperTransform(Function.DIVIDE_V);
         Transform divide_vTransform = new MetricZipperTransform(new DivideValueZipper());
 
-        return divide_vTransform.transform(paddingMetrics);
+        return divide_vTransform.transform(null, paddingMetrics);
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
         if (metrics.isEmpty()) {
             return metrics;
         }
         if (constants == null || constants.isEmpty()) {
-            return transform(metrics);
+            return transform(null, metrics);
         } else {
             SystemAssert.requireArgument(constants.size() == 1, "Normalize Transform must provide only one constants if any.");
             SystemAssert.requireArgument(Double.parseDouble(constants.get(0)) != 0.0, "Normalize unit can't be ZERO.");
@@ -135,7 +137,7 @@ public class NormalizeTransformWrap implements Transform {
 
         Transform divideByConstantTransform = new MetricMappingTransform(new DivideByConstantValueMapping());
 
-        return divideByConstantTransform.transform(metrics, constants);
+        return divideByConstantTransform.transform(null, metrics, constants);
     }
 
     @Override
@@ -144,7 +146,7 @@ public class NormalizeTransformWrap implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
         throw new UnsupportedOperationException("NormalizeTransformWrap doesn't support list of list!");
     }
 

@@ -148,7 +148,7 @@ public interface TSDBService extends Service {
 		}
 
 
-		return transform.transform(metrics);
+		return transform.transform(null, metrics);
 	}
 
 	static void downsample(MetricQuery query, List<Metric> metrics, Transform downsampleTransform) {
@@ -157,7 +157,7 @@ public interface TSDBService extends Service {
 		}
 
 		String downsampler = query.getDownsamplingPeriod() / 1000 + "s-" + query.getDownsampler().getDescription();
-		metrics = downsampleTransform.transform(metrics, Arrays.asList(downsampler));
+		metrics = downsampleTransform.transform(null, metrics, Arrays.asList(downsampler));
 	}    
 
 	/**

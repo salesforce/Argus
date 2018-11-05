@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -79,13 +81,12 @@ public class MetricUnionTransform implements Transform {
 
     /**
      * If constants is not null, apply mapping transform to metrics list. Otherwise, apply reduce transform to metrics list
-     *
      * @param   metrics  The metrics to transform.
      *
      * @return  The transformed metrics.
      */
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         return union(metrics);
     }
 
@@ -175,12 +176,12 @@ public class MetricUnionTransform implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Union transform can't be used with constants!");
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Union doesn't need list of list");
     }
 }

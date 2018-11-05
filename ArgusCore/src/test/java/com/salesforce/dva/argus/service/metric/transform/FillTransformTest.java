@@ -33,6 +33,9 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.util.QueryContext;
+import com.salesforce.dva.argus.util.QueryUtils;
+
 import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +43,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
 
@@ -58,7 +62,7 @@ public class FillTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        fillTransform.transform(metrics, constants);
+        fillTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -71,7 +75,7 @@ public class FillTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        fillTransform.transform(metrics, constants);
+        fillTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = SystemException.class)
@@ -89,7 +93,7 @@ public class FillTransformTest {
         constants.add(System.currentTimeMillis() + "");
         constants.add("false");
         
-        fillTransform.transform(metrics, constants);
+        fillTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -106,7 +110,7 @@ public class FillTransformTest {
         constants.add("100.0");
         constants.add("false");
         
-        fillTransform.transform(metrics, constants);
+        fillTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = SystemException.class)
@@ -124,7 +128,7 @@ public class FillTransformTest {
         constants.add(System.currentTimeMillis() + "");
         constants.add("false");
         
-        fillTransform.transform(metrics, constants);
+        fillTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -132,7 +136,7 @@ public class FillTransformTest {
         Transform fillTransform = new FillTransform();
         List<String> constants = new ArrayList<String>(5);
 
-        fillTransform.transform(null, constants);
+        fillTransform.transform(null, null, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -141,7 +145,7 @@ public class FillTransformTest {
         List<String> constants = new ArrayList<String>(5);
 
         constants.add("1w");
-        fillTransform.transform(null, constants);
+        fillTransform.transform(null, null, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -151,7 +155,7 @@ public class FillTransformTest {
 
         constants.add("10s");
         constants.add("2s");
-        fillTransform.transform(null, constants);
+        fillTransform.transform(null, null, constants);
     }
 
     @Test
@@ -188,9 +192,53 @@ public class FillTransformTest {
         expected.put(5000L, 5.0);
         expected.put(6000L, 6.0);
 
-        List<Metric> result = fillTransform.transform(metrics, constants);
+        List<Metric> result = fillTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 5);
+        assertEquals(expected, result.get(0).getDatapoints());
+    }
+
+
+    @Test
+    public void testFillingDatapointsAtEdges() {
+        Transform fillTransform = new FillTransform();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+
+        datapoints.put(4000L, 4.0);
+        datapoints.put(5000L, 5.0);
+        datapoints.put(6000L, 6.0);
+
+        Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric.setDatapoints(datapoints);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("1s");
+        constants.add("0m");
+        constants.add("100.0");
+        constants.add(System.currentTimeMillis() + "");
+        constants.add("false");
+        
+        QueryContext context = QueryUtils.getQueryContext("1000:8000:argus.core:alerts.evaluated:zimsum:1m-sum", 0L);
+        Map<Long, Double> expected = new TreeMap<Long, Double>();
+
+        expected.put(1000L, 100.0);
+        expected.put(2000L, 100.0);
+        expected.put(3000L, 100.0);
+        expected.put(4000L, 4.0);
+        expected.put(5000L, 5.0);
+        expected.put(6000L, 6.0);
+        expected.put(7000L, 100.0);
+        expected.put(8000L, 100.0);
+        
+        List<Metric> result = fillTransform.transform(context, metrics, constants);
+
+        assertEquals(result.get(0).getDatapoints().size(), 8);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
@@ -228,7 +276,7 @@ public class FillTransformTest {
         expected.put(5000L, 5.0);
         expected.put(6000L, 6.0);
 
-        List<Metric> result = fillTransform.transform(metrics, constants);
+        List<Metric> result = fillTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 5);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -267,7 +315,7 @@ public class FillTransformTest {
         expected.put(5000L, 5.0);
         expected.put(6000L, 6.0);
 
-        List<Metric> result = fillTransform.transform(metrics, constants);
+        List<Metric> result = fillTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 4);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -304,7 +352,7 @@ public class FillTransformTest {
         expected.put(3000L, 3.0);
         expected.put(6000L, 6.0);
 
-        List<Metric> result = fillTransform.transform(metrics, constants);
+        List<Metric> result = fillTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -360,7 +408,7 @@ public class FillTransformTest {
         expected_2.put(4000L, 100.0);
         expected_2.put(6000L, 26.0);
 
-        List<Metric> result = fillTransform.transform(metrics, constants);
+        List<Metric> result = fillTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(result.get(1).getDatapoints().size(), 4);
@@ -395,7 +443,7 @@ public class FillTransformTest {
 
         expected.put(1000L, 1.0);
 
-        List<Metric> result = fillTransform.transform(metrics, constants);
+        List<Metric> result = fillTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -432,7 +480,7 @@ public class FillTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = fillTransform.transform(metrics, constants);
+        List<Metric> result = fillTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -457,7 +505,7 @@ public class FillTransformTest {
         expected.put(3000L, 100.0);
         expected.put(4000L, 100.0);
 
-        List<Metric> result = fillTransform.transform(null, constants);
+        List<Metric> result = fillTransform.transform(null, null, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -481,7 +529,7 @@ public class FillTransformTest {
         expected.put(-1000L, 100.0);
         expected.put(1000L, 100.0);
 
-        List<Metric> result = fillTransform.transform(null, constants);
+        List<Metric> result = fillTransform.transform(null, null, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 2);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -505,7 +553,7 @@ public class FillTransformTest {
         expected.put(-1000L, 100.0);
         expected.put(2000L, 100.0);
 
-        List<Metric> result = fillTransform.transform(null, constants);
+        List<Metric> result = fillTransform.transform(null, null, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 2);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -528,7 +576,7 @@ public class FillTransformTest {
 
         expected.put(0L, 100.0);
 
-        List<Metric> result = fillTransform.transform(null, constants);
+        List<Metric> result = fillTransform.transform(null, null, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -552,7 +600,7 @@ public class FillTransformTest {
         Long expectedStartTimestamp = now - 1L * 86400L * 1000L;
         Long expectedEndTimestamp = now - 12L * 3600L * 1000L;
         int expectedSize = (int) ((expectedEndTimestamp - expectedStartTimestamp) / (10 * 60 * 1000) + 1);
-        List<Metric> result = fillTransform.transform(null, constants);
+        List<Metric> result = fillTransform.transform(null, null, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), expectedSize);
 
@@ -582,7 +630,7 @@ public class FillTransformTest {
         Long expectedStartTimestamp = now - 7L * 86400L * 1000L;
         Long expectedEndTimestamp = now - 0L * 60L * 1000L;
         int expectedSize = (int) ((expectedEndTimestamp - expectedStartTimestamp) / (10 * 60 * 1000) + 1);
-        List<Metric> result = fillTransform.transform(null, constants);
+        List<Metric> result = fillTransform.transform(null, null, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), expectedSize);
 
@@ -610,7 +658,7 @@ public class FillTransformTest {
         Long expectedStartTimestamp = System.currentTimeMillis() - 1L * 86400L * 1000L;
         Long expectedEndTimestamp = System.currentTimeMillis();
         int expectedSize = (int) ((expectedEndTimestamp - expectedStartTimestamp) / (10 * 60 * 1000) + 1);
-        List<Metric> result = fillTransform.transform(null, constants);
+        List<Metric> result = fillTransform.transform(null, null, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), expectedSize);
 
@@ -635,7 +683,7 @@ public class FillTransformTest {
         constants.add(System.currentTimeMillis() + "");
         constants.add("false");
         
-        List<Metric> metrics = fillTransform.transform(Arrays.asList(m), constants);
+        List<Metric> metrics = fillTransform.transform(null, Arrays.asList(m), constants);
     	assertEquals(metrics.size(), 1);
     }
     
@@ -650,7 +698,7 @@ public class FillTransformTest {
         constants.add(System.currentTimeMillis() + "");
         constants.add("false");
         
-        List<Metric> metrics = fillTransform.transform(Arrays.asList(), constants);
+        List<Metric> metrics = fillTransform.transform(null, Arrays.asList(), constants);
     	assertEquals(metrics.size(), 0);
     }
     
