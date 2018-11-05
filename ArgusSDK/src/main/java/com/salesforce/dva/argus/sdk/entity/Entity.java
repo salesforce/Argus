@@ -30,6 +30,8 @@
  */
 package com.salesforce.dva.argus.sdk.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Date;
@@ -41,6 +43,7 @@ import java.util.Objects;
  * @author  Tom Valine (tvaline@salesforce.com)
  */
 @SuppressWarnings("serial")
+@JsonIgnoreProperties(ignoreUnknown = true)
 abstract class Entity implements Serializable {
 
     //~ Instance fields ******************************************************************************************************************************
