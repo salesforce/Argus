@@ -642,7 +642,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		for(Trigger trigger : notification.getTriggers()) {
 			if(triggers.contains(trigger)) {
-				Metric m = new Metric("argus","argus");
+				Metric m = new Metric("unknown","unknown");
 				if(isDataMissing) {
 					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is fired as data for the metric expression {1} does not exist", trigger.getName(), alert.getExpression());
 					history.appendMessageNUpdateHistory(logMessage, null, 0);
