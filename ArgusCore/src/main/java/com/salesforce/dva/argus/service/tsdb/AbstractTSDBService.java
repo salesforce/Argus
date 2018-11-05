@@ -202,7 +202,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		requireArgument(connTimeout >= 1, "Timeout must be greater than 0.");
 
 		_keyUidCache = CacheBuilder.newBuilder()
-				.maximumSize(100000)
+				.maximumSize(1000000)
 				.expireAfterAccess(1, TimeUnit.HOURS)
 				.build();
 
@@ -451,17 +451,19 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				}
 			}
 
-			// query TSDB to get uids for annotations.
-			Map<String, String> keyUidMap = getUidMapFromTsdb(keyAnnotationMap);
+			if(!keyAnnotationMap.isEmpty()) {
+				// query TSDB to get uids for annotations.
+				Map<String, String> keyUidMap = getUidMapFromTsdb(keyAnnotationMap);
 
-			for(Map.Entry<String, String> keyUidEntry : keyUidMap.entrySet()) {
+				for (Map.Entry<String, String> keyUidEntry : keyUidMap.entrySet()) {
 
-				// We add new uids to the cache and create AnnotationWrapper objects.
-				_keyUidCache.put(keyUidEntry.getKey(), keyUidEntry.getValue());
-				AnnotationWrapper wrapper = new AnnotationWrapper(keyUidEntry.getValue(),
-						keyAnnotationMap.get(keyUidEntry.getKey()));
+					// We add new uids to the cache and create AnnotationWrapper objects.
+					_keyUidCache.put(keyUidEntry.getKey(), keyUidEntry.getValue());
+					AnnotationWrapper wrapper = new AnnotationWrapper(keyUidEntry.getValue(),
+							keyAnnotationMap.get(keyUidEntry.getKey()));
 
-				addToWrapperList(wrapperList, wrapper);
+					addToWrapperList(wrapperList, wrapper);
+				}
 			}
 
 			_logger.debug("putAnnotations CacheStats hitCount {} requestCount {} " +
@@ -528,11 +530,12 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 			queries.add(query);
 		}
 
-		long backOff = 1000L;
+		putMetrics(metrics);
+
+		long backOff = 500L;
 
 		for (int attempts = 0; attempts < 3; attempts++) {
 
-			putMetrics(metrics);
 			try {
 				Thread.sleep(backOff);
 			} catch (InterruptedException ex) {
@@ -551,7 +554,8 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				return keyUidMap;
 
 			} catch (Exception e) {
-				backOff += 1000L;
+				_logger.warn("Exception while trying to get uids for annotations", e);
+				backOff += 500L;
 			}
 		}
 
