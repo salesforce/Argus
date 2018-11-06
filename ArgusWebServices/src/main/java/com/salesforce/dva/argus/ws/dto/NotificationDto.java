@@ -63,6 +63,10 @@ public class NotificationDto extends EntityDTO {
     private String customText;
     private int severityLevel = 5;
     private boolean isSRActionable;
+    private String articleNumber = null;
+    private String eventName = null;
+    private String elementName = null;
+    private String productTag = null;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -283,6 +287,29 @@ public class NotificationDto extends EntityDTO {
         return severityLevel;
     }
 
+    public String getArticleNumber() { return articleNumber; }
+
+
+    public void setArticleNumber(String articleNumber) { this.articleNumber = articleNumber; }
+
+
+    public String getElementName() { return elementName; }
+
+
+    public void setElementName(String elementName) { this.elementName = elementName; }
+
+
+    public String getEventName() { return eventName; }
+
+
+    public void setEventName(String eventName) { this.eventName = eventName; }
+
+
+    public String getProductTag() { return productTag; }
+
+
+    public void setProductTag(String productTag) { this.productTag = productTag; }
+
     /**
      * Sets the severity level of notification
      *
@@ -308,9 +335,13 @@ public class NotificationDto extends EntityDTO {
         result.setName("sample-notification");
         result.setNotifierName("email");
         result.setSeverityLevel(5);
-        result.setSRActionable(false);
+        result.setSRActionable(true);
+        result.setArticleNumber("sample-articleNumber");
+        result.setElementName("sample-elementName");
+        result.setEventName("sample-eventName");
+        result.setProductTag("sample-productTag");
         result.setSubscriptions(Arrays.asList(new String[] { "joe.smith@salesforce.com" }));
-        result.setCustomText("Sample custom text to include in the notification"); 
+        result.setCustomText("Sample custom text to include in the notification");
         return result;
     }
 }

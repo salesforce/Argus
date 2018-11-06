@@ -108,9 +108,11 @@ public class Notification extends JPAEntity implements Serializable {
 			jgen.writeBooleanField("srActionable", notification.getSRActionable());
 			jgen.writeNumberField("severityLevel", notification.getSeverityLevel());
 			
-			if(notification.getCustomText() != null) {
-				jgen.writeStringField("customText", notification.getCustomText());
-			}
+			String customText = notification.getCustomText();
+            String articleNumber = notification.getArticleNumber();
+            String eventName = notification.getEventName();
+            String elementName = notification.getElementName();
+            String productTag = notification.getProductTag();
 			
 			jgen.writeArrayFieldStart("subscriptions");
 			for(String subscription : notification.getSubscriptions()) {
@@ -129,6 +131,26 @@ public class Notification extends JPAEntity implements Serializable {
 				jgen.writeString(trigger.getId().toString());
 			}
 			jgen.writeEndArray();
+
+            if(customText != null) {
+                jgen.writeStringField("customText", notification.getCustomText());
+            }
+
+			if(articleNumber != null) {
+                jgen.writeStringField("articleNumber", articleNumber);
+            }
+
+            if(eventName != null) {
+                jgen.writeStringField("eventName", eventName);
+            }
+
+            if(elementName != null) {
+                jgen.writeStringField("elementName", elementName);
+            }
+
+            if(productTag != null) {
+                jgen.writeStringField("productTag", productTag);
+            }
 			
 			// Getting these values requires a lot of queries to rdbms at runtime, and so these are excluded for now 
 			// as the current usecases do not need these values to be serialized
@@ -179,7 +201,23 @@ public class Notification extends JPAEntity implements Serializable {
 			if(rootNode.get("customText") != null) {
 				notification.setCustomText(rootNode.get("customText").asText());
 			}
-			
+
+			if(rootNode.get("articleNumber") != null) {
+			    notification.setArticleNumber(rootNode.get("articleNumber").asText());
+            }
+
+            if(rootNode.get("eventName") != null) {
+			    notification.setEventName(rootNode.get("eventName").asText());
+            }
+
+            if(rootNode.get("elementName") != null) {
+                notification.setElementName(rootNode.get("elementName").asText());
+            }
+
+            if(rootNode.get("productTag") != null) {
+                notification.setElementName(rootNode.get("productTag").asText());
+            }
+
 			List<String> subscriptions = new ArrayList<>();
 			JsonNode subscriptionsArrayNode = rootNode.get("subscriptions");
 			if(subscriptionsArrayNode.isArray()) {
@@ -272,6 +310,14 @@ public class Notification extends JPAEntity implements Serializable {
     @Lob
     private String customText;
 
+    String articleNumber = null;
+
+    String elementName = null;
+
+    String eventName = null;
+
+    String productTag = null;
+
     @ElementCollection
     private Map<String, Long> cooldownExpirationByTriggerAndMetric = new HashMap<>();
 
@@ -282,8 +328,7 @@ public class Notification extends JPAEntity implements Serializable {
 
     /**
      * Creates a new Notification object with a cool down of one hour and having specified no metrics on which to create annotations.
-     *
-     * @param  name            The notification name. Cannot be null or empty.
+     *  @param  name            The notification name. Cannot be null or empty.
      * @param  alert           The alert with which the notification is associated.
      * @param  notifierName    The notifier implementation class name.
      * @param  subscriptions   The notifier specific list of subscriptions to which notification shall be sent.
@@ -678,6 +723,37 @@ public class Notification extends JPAEntity implements Serializable {
 		this.customText = customText;
 	}
 
+
+    public String getArticleNumber() { return articleNumber; }
+
+
+    public void setArticleNumber(String articleNumber) {
+	    if (this.isSRActionable == true) {
+	        this.articleNumber = articleNumber;
+        }
+	    else {
+	        throw new IllegalArgumentException(MessageFormat.format("Trying to set article number as {0}, without having SRActionable set", articleNumber));
+        }
+	}
+
+
+    public String getElementName() { return elementName; }
+
+
+    public void setElementName(String elementName) { this.elementName = elementName; }
+
+
+    public String getEventName() { return eventName; }
+
+
+    public void setEventName(String eventName) { this.eventName = eventName; }
+
+
+    public String getProductTag() { return productTag; }
+
+
+    public void setProductTag(String productTag) { this.productTag = productTag; }
+
 	@Override
     public int hashCode() {
         int hash = 5;
@@ -710,7 +786,8 @@ public class Notification extends JPAEntity implements Serializable {
     @Override
     public String toString() {
         return "Notification{" + "name=" + name + ", notifierName=" + notifierName + ", subscriptions=" + subscriptions + ", metricsToAnnotate=" +
-            metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" +  triggers + ", severity=" + severityLevel + ", srActionable=" + isSRActionable +  ", customText;" + customText + '}';
+            metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" +  triggers + ", severity=" + severityLevel + ", srActionable=" + isSRActionable +  ", customText;" + customText +
+                ", articleNumber=" + articleNumber + ", eventName=" + eventName + " ,elementName=" + elementName + ", productTag=" + productTag  + '}';
     }
 
 
