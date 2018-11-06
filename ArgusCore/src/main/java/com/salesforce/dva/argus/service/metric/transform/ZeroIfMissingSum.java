@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,7 +56,7 @@ public class ZeroIfMissingSum implements Transform {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         if (metrics == null) {
             throw new MissingDataException("The metrics list cannot be null or empty while performing arithmetic transformations.");
         }
@@ -88,7 +90,7 @@ public class ZeroIfMissingSum implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a constant");
     }
 
@@ -110,7 +112,7 @@ public class ZeroIfMissingSum implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a list of metric list!");
     }
 }

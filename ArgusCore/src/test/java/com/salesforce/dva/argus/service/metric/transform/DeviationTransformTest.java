@@ -52,7 +52,7 @@ public class DeviationTransformTest {
         List<String> constants = new ArrayList<String>(1);
 
         constants.add("5");
-        devTransform.transform(metrics, constants);
+        devTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -65,7 +65,7 @@ public class DeviationTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        devTransform.transform(metrics, constants);
+        devTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -84,7 +84,7 @@ public class DeviationTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("-1");
-        devTransform.transform(metrics, constants);
+        devTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -99,7 +99,7 @@ public class DeviationTransformTest {
 
         constants.add("0.1");
         constants.add("-99");
-        devTransform.transform(metrics, constants);
+        devTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -114,7 +114,7 @@ public class DeviationTransformTest {
 
         constants.add("5");
         constants.add("10");
-        devTransform.transform(metrics, constants);
+        devTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -142,7 +142,7 @@ public class DeviationTransformTest {
 
         expected.put(2000L, 0.0);
 
-        List<Metric> result = devTransform.transform(metrics, constants);
+        List<Metric> result = devTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -174,7 +174,7 @@ public class DeviationTransformTest {
 
         expected.put(3000L, 2.0);
 
-        List<Metric> result = devTransform.transform(metrics, constants);
+        List<Metric> result = devTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -207,7 +207,7 @@ public class DeviationTransformTest {
 
         expected.put(4000L, 3.0);
 
-        List<Metric> result = devTransform.transform(metrics, constants);
+        List<Metric> result = devTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -269,7 +269,7 @@ public class DeviationTransformTest {
 
         expected_3.put(4000L, 3.0);
 
-        List<Metric> result = devTransform.transform(metrics, constants);
+        List<Metric> result = devTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -333,7 +333,7 @@ public class DeviationTransformTest {
 
         expected_3.put(4000L, null);
 
-        List<Metric> result = devTransform.transform(metrics, constants);
+        List<Metric> result = devTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -390,7 +390,7 @@ public class DeviationTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = devTransform.transform(metrics, constants);
+        List<Metric> result = devTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -443,11 +443,10 @@ public class DeviationTransformTest {
 
         expected.put(1000L, 1.0);
         expected.put(2000L, 2.0);
-        expected.put(3000L, null);
+        
+        List<Metric> result = devTransform.transform(null, metrics, constants);
 
-        List<Metric> result = devTransform.transform(metrics, constants);
-
-        assertEquals(result.get(0).getDatapoints().size(), 3);
+        assertEquals(result.get(0).getDatapoints().size(), 2);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
@@ -484,7 +483,7 @@ public class DeviationTransformTest {
         constants.add("0.1");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        List<Metric> result = devTransform.transform(metrics, constants);
+        List<Metric> result = devTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -531,7 +530,7 @@ public class DeviationTransformTest {
         expected.put(2000L, 0.0);
         expected.put(3000L, 0.0);
         
-        List<Metric> result = devTransform.transform(metrics, constants);
+        List<Metric> result = devTransform.transform(null, metrics, constants);
 
         assertEquals(6, result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
@@ -574,11 +573,10 @@ public class DeviationTransformTest {
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
         expected.put(3000L, 0.0);
-        expected.put(4000L, null);
 
-        List<Metric> result = devTransform.transform(metrics, constants);
+        List<Metric> result = devTransform.transform(null, metrics, constants);
 
-        assertEquals(result.get(0).getDatapoints().size(), 2);
+        assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 }

@@ -80,7 +80,7 @@ public class MovingTransformTest {
 
         constants.add("2s");
 
-        List<Metric> result = movingTransform.transform(metrics, constants);
+        List<Metric> result = movingTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), actual.size());
         assertEquals(result.get(0).getDatapoints(), actual);
@@ -122,7 +122,7 @@ public class MovingTransformTest {
         constants.add("2s");
         constants.add("median");
 
-        List<Metric> result = movingTransform.transform(metrics, constants);
+        List<Metric> result = movingTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), actual.size());
         assertEquals(result.get(0).getDatapoints(), actual);
@@ -164,7 +164,7 @@ public class MovingTransformTest {
         constants.add("2s");
         constants.add("sum");
 
-        List<Metric> result = movingTransform.transform(metrics, constants);
+        List<Metric> result = movingTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), actual.size());
         assertEquals(result.get(0).getDatapoints(), actual);
@@ -206,7 +206,7 @@ public class MovingTransformTest {
         constants.add("2s");
         constants.add("avg");
 
-        List<Metric> result = movingTransform.transform(metrics, constants);
+        List<Metric> result = movingTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), actual.size());
         assertEquals(result.get(0).getDatapoints(), actual);
@@ -248,7 +248,7 @@ public class MovingTransformTest {
         constants.add("2s");
         constants.add("median");
 
-        List<Metric> result = movingTransform.transform(metrics, constants);
+        List<Metric> result = movingTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), actual.size());
         assertEquals(result.get(0).getDatapoints(), actual);
@@ -282,7 +282,7 @@ public class MovingTransformTest {
         constants.add("120s");
         constants.add("avg");
 
-        List<Metric> result = movingTransform.transform(metrics, constants);
+        List<Metric> result = movingTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(result.get(0).getDatapoints(), actual);
@@ -312,7 +312,7 @@ public class MovingTransformTest {
         constants.add("120s");
         constants.add("avg");
 
-        List<Metric> result = movingTransform.transform(metrics, constants);
+        List<Metric> result = movingTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(result.get(0).getDatapoints(), actual);
@@ -326,7 +326,7 @@ public class MovingTransformTest {
 
         Transform movingTransform = new MetricMappingTransform(new MovingValueMapping());
 
-        movingTransform.transform(metrics);
+        movingTransform.transform(null, metrics);
     }
     
     @Test(expected = IllegalArgumentException.class)
@@ -339,7 +339,7 @@ public class MovingTransformTest {
         
         List<String> constants = new ArrayList<String>(1);
 
-        movingTransform.transform(metrics, constants);
+        movingTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -353,7 +353,7 @@ public class MovingTransformTest {
 
         constants.add("2");
         constants.add("foobar");
-        movingTransform.transform(metrics, constants);
+        movingTransform.transform(null, metrics, constants);
     }
 
     @Test

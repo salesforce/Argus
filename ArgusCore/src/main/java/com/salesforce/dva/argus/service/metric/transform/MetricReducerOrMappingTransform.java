@@ -28,16 +28,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * For some function, it either does a mapping transform or reduce transform which depends on the constant input This class provides a general
@@ -50,117 +54,125 @@ import java.util.Map;
  */
 public class MetricReducerOrMappingTransform implements Transform {
 
-    //~ Instance fields ******************************************************************************************************************************
+	//~ Instance fields ******************************************************************************************************************************
 
-    protected ValueReducerOrMapping valueReducerOrMapping;
-    protected String defaultScope;
-    protected String defaultMetricName;
-    protected static String FULLJOIN = "UNION";
-    protected Boolean fulljoinIndicator=false;
+	protected ValueReducerOrMapping valueReducerOrMapping;
+	protected String defaultScope;
+	protected String defaultMetricName;
+	protected static String FULLJOIN = "UNION";
+	protected static String INTERSECT = "INTERSECT";
+	protected Boolean fulljoinIndicator=true;
+	public static final Set<Class> DEFAULT_FULL_JOIN_EXCLUDE_CLASSES = new HashSet<Class>(Arrays.asList(new Class[] {DivideValueReducerOrMapping.class, DiffValueReducerOrMapping.class, DeviationValueReducerOrMapping.class}));
 
-    //~ Constructors *********************************************************************************************************************************
+	//~ Constructors *********************************************************************************************************************************
 
-    /**
-     * Creates a new ReduceTransform object.
-     *
-     * @param  valueReducerOrMapping  The valueMapping.
-     */
-    protected MetricReducerOrMappingTransform(ValueReducerOrMapping valueReducerOrMapping) {
-        this.valueReducerOrMapping = valueReducerOrMapping;
-        this.defaultScope = valueReducerOrMapping.name();
-        this.defaultMetricName = TransformFactory.DEFAULT_METRIC_NAME;
-    }
+	/**
+	 * Creates a new ReduceTransform object.
+	 *
+	 * @param  valueReducerOrMapping  The valueMapping.
+	 */
+	protected MetricReducerOrMappingTransform(ValueReducerOrMapping valueReducerOrMapping) {
+		this.valueReducerOrMapping = valueReducerOrMapping;
+		this.defaultScope = valueReducerOrMapping.name();
+		this.defaultMetricName = TransformFactory.DEFAULT_METRIC_NAME;
+		if(DEFAULT_FULL_JOIN_EXCLUDE_CLASSES.contains(valueReducerOrMapping.getClass())) {
+			fulljoinIndicator = false;
+		}
+	}
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    @Override
-    public String getResultScopeName() {
-        return defaultScope;
-    }
+	@Override
+	public String getResultScopeName() {
+		return defaultScope;
+	}
 
-    @Override
-    public List<Metric> transform(List<Metric> metrics) {
-        return Arrays.asList(reduce(metrics, null));
-    }
+	@Override
+	public List<Metric> transform(QueryContext context, List<Metric> metrics) {
+		return Arrays.asList(reduce(metrics, null));
+	}
 
-    /**
-     * If constants is not null, apply mapping transform to metrics list. Otherwise, apply reduce transform to metrics list
-     *
-     * @param   metrics    list of metrics
-     * @param   constants  constants input
-     *
-     * @return  A list of metrics after mapping.
-     */
-    @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        if (constants == null || constants.isEmpty()) {
-            return transform(metrics);
-        }
-        
-        if (constants.size() == 1 && constants.get(0).toUpperCase().equals(FULLJOIN)){
-        	fulljoinIndicator=true;
-        	return transform(metrics);
-        }
-        
-        return mapping(metrics, constants);
-    }
+	/**
+	 * If constants is not null, apply mapping transform to metrics list. Otherwise, apply reduce transform to metrics list
+	 * @param   metrics    list of metrics
+	 * @param   constants  constants input
+	 *
+	 * @return  A list of metrics after mapping.
+	 */
+	@Override
+	public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
+		if (constants == null || constants.isEmpty()) {
+			return transform(queryContext, metrics);
+		}
 
-    /**
-     * Mapping a list of metric, only massage its datapoints.
-     *
-     * @param   metrics    The list of metrics to be mapped. constants The list of constants used for mapping
-     * @param   constants  constants input
-     *
-     * @return  A list of metrics after mapping.
-     */
-    protected List<Metric> mapping(List<Metric> metrics, List<String> constants) {
-        SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics");
-        
-        if (metrics.isEmpty()) {
-            return metrics;
-        }
+		if (constants.size() == 1) {
+			if (constants.get(0).toUpperCase().equals(FULLJOIN)){
+				fulljoinIndicator=true;
+				return transform(queryContext, metrics);
+			}else if(constants.get(0).toUpperCase().equals(INTERSECT)) {
+				fulljoinIndicator=false;
+				return transform(queryContext, metrics);
+			}
+		}
+		return mapping(metrics, constants);
+	}
 
-        List<Metric> newMetricsList = new ArrayList<Metric>();
+	/**
+	 * Mapping a list of metric, only massage its datapoints.
+	 *
+	 * @param   metrics    The list of metrics to be mapped. constants The list of constants used for mapping
+	 * @param   constants  constants input
+	 *
+	 * @return  A list of metrics after mapping.
+	 */
+	protected List<Metric> mapping(List<Metric> metrics, List<String> constants) {
+		SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics");
 
-        for (Metric metric : metrics) {
-            metric.setDatapoints(this.valueReducerOrMapping.mapping(metric.getDatapoints(), constants));
-            newMetricsList.add(metric);
-        }
-        return newMetricsList;
-    }
+		if (metrics.isEmpty()) {
+			return metrics;
+		}
 
-    /**
-     * Reduce transform for the list of metrics.
-     *
-     * @param   metrics    The list of metrics to reduce.
-     * @param   constants  The list of transform specific constants supplied to the transform or null.
-     *
-     * @return  The reduced metric.
-     */
-    protected Metric reduce(List<Metric> metrics, List<String> constants) {
-        SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
-        if(valueReducerOrMapping instanceof DivideValueReducerOrMapping && metrics.size() < 2) {
-    		throw new IllegalArgumentException("DIVIDE Transform needs at least 2 metrics to perform the operation.");
-    	}
+		List<Metric> newMetricsList = new ArrayList<Metric>();
 
-        MetricDistiller distiller = new MetricDistiller();
+		for (Metric metric : metrics) {
+			metric.setDatapoints(this.valueReducerOrMapping.mapping(metric.getDatapoints(), constants));
+			newMetricsList.add(metric);
+		}
+		return newMetricsList;
+	}
 
-        distiller.distill(metrics);
+	/**
+	 * Reduce transform for the list of metrics.
+	 *
+	 * @param   metrics    The list of metrics to reduce.
+	 * @param   constants  The list of transform specific constants supplied to the transform or null.
+	 *
+	 * @return  The reduced metric.
+	 */
+	protected Metric reduce(List<Metric> metrics, List<String> constants) {
+		SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
+		if(valueReducerOrMapping instanceof DivideValueReducerOrMapping && metrics.size() < 2) {
+			throw new IllegalArgumentException("DIVIDE Transform needs at least 2 metrics to perform the operation.");
+		}
 
-        Map<Long, List<Double>> collated = collate(metrics);
-        Map<Long, Double> reducedDatapoints = reduce(collated, constants, metrics);
-        String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
-        String newScopeName = distiller.getScope() == null ? defaultScope : distiller.getScope();
-        Metric newMetric = new Metric(newScopeName, newMetricName);
+		MetricDistiller distiller = new MetricDistiller();
 
-        newMetric.setDisplayName(distiller.getDisplayName());
-        newMetric.setUnits(distiller.getUnits());
-        newMetric.setTags(distiller.getTags());
-        newMetric.setDatapoints(reducedDatapoints);
-        return newMetric;
-    }
-    
-    /*
+		distiller.distill(metrics);
+
+		Map<Long, List<Double>> collated = collate(metrics);
+		Map<Long, Double> reducedDatapoints = reduce(collated, constants, metrics);
+		String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
+		String newScopeName = distiller.getScope() == null ? defaultScope : distiller.getScope();
+		Metric newMetric = new Metric(newScopeName, newMetricName);
+
+		newMetric.setDisplayName(distiller.getDisplayName());
+		newMetric.setUnits(distiller.getUnits());
+		newMetric.setTags(distiller.getTags());
+		newMetric.setDatapoints(reducedDatapoints);
+		return newMetric;
+	}
+
+	/*
     private Map<Long, Double> reduce(Map<Long, List<Double>> collated, List<Metric> metrics) {
         Map<Long, Double> reducedDatapoints = new HashMap<>();
         for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
@@ -171,43 +183,45 @@ public class MetricReducerOrMappingTransform implements Transform {
         }
         return reducedDatapoints;
     }
-    */
-    
-    protected Map<Long, Double> reduce(Map<Long, List<Double>> collated, List<String> constants, List<Metric> metrics) {
-        Map<Long, Double> reducedDatapoints = new HashMap<>();
+	 */
 
-        for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
-            if (entry.getValue().size() < metrics.size()  && !fulljoinIndicator) {
-                continue;
-            }
-            
-            Double reducedValue = constants == null || constants.isEmpty() ? 
-										            		this.valueReducerOrMapping.reduce(entry.getValue()) :
-										            		this.valueReducerOrMapping.reduce(entry.getValue(), constants);
-            reducedDatapoints.put(entry.getKey(), reducedValue);
-        }
-        return reducedDatapoints;
-    }
-    
-    protected Map<Long, List<Double>> collate(List<Metric> metrics) {
-        Map<Long, List<Double>> collated = new HashMap<>();
+	protected Map<Long, Double> reduce(Map<Long, List<Double>> collated, List<String> constants, List<Metric> metrics) {
+		Map<Long, Double> reducedDatapoints = new HashMap<>();
 
-        for (Metric metric : metrics) {
-            for (Map.Entry<Long, Double> point : metric.getDatapoints().entrySet()) {
-                if (!collated.containsKey(point.getKey())) {
-                    collated.put(point.getKey(), new ArrayList<Double>());
-                }
-                collated.get(point.getKey()).add(point.getValue());
-            }
-        }
-        return collated;
-    }
+		for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
+			if (entry.getValue().size() < metrics.size()  && !fulljoinIndicator) {
+				continue;
+			}
 
-   
-    @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("ReducerOrMapping doesn't need list of list!");
-    }
+			Double reducedValue = constants == null || constants.isEmpty() ? 
+					this.valueReducerOrMapping.reduce(entry.getValue()) :
+						this.valueReducerOrMapping.reduce(entry.getValue(), constants);
+					if(reducedValue!=null) {
+					    reducedDatapoints.put(entry.getKey(), reducedValue);
+					}
+		}
+		return reducedDatapoints;
+	}
+
+	protected Map<Long, List<Double>> collate(List<Metric> metrics) {
+		Map<Long, List<Double>> collated = new HashMap<>();
+
+		for (Metric metric : metrics) {
+			for (Map.Entry<Long, Double> point : metric.getDatapoints().entrySet()) {
+				if (!collated.containsKey(point.getKey())) {
+					collated.put(point.getKey(), new ArrayList<Double>());
+				}
+				collated.get(point.getKey()).add(point.getValue());
+			}
+		}
+		return collated;
+	}
+
+
+	@Override
+	public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
+		throw new UnsupportedOperationException("ReducerOrMapping doesn't need list of list!");
+	}
 
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

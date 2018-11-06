@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.List;
 
 /**
@@ -56,12 +58,12 @@ public class AliasTransform implements Transform {
     // ~ Methods
     // **************************************************************************************************************************************
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         throw new UnsupportedOperationException("Alias Transform cannot be performed without an alias expression and an alias type");
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null or empty metrics");
         SystemAssert.requireArgument(constants != null && (constants.size() == 2 || constants.size() == 4), "Alias Transform must provide either 2 or 4 constants.");
         
@@ -122,7 +124,7 @@ public class AliasTransform implements Transform {
     }
 
     @Override
-    public List<Metric> transform(@SuppressWarnings("unchecked") List<Metric>... listOfList) {
+    public List<Metric> transform(QueryContext queryContext, @SuppressWarnings("unchecked") List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Alias doesn't need list of list!");
     }
 }

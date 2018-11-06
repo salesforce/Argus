@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import java.util.ArrayList;
@@ -172,12 +174,12 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics) {
+	public List<Metric> transform(QueryContext context, List<Metric> metrics) {
 		throw new UnsupportedOperationException("Filter transform need constant input!");
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
 		SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
 		if (metrics.isEmpty()) {
 			return metrics;
@@ -209,7 +211,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric>... listOfList) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
 		throw new UnsupportedOperationException("Filter doesn't need list of list!");
 	}
 }

@@ -56,7 +56,7 @@ public class AliasTransformTest {
         Transform aliasTransform = new AliasTransform();
         List<Metric> metrics = new ArrayList<Metric>();
 
-        aliasTransform.transform(metrics);
+        aliasTransform.transform(null, metrics);
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -64,7 +64,7 @@ public class AliasTransformTest {
         Transform aliasTransform = new AliasTransform();
         List<Metric> metrics = new ArrayList<Metric>();
 
-        aliasTransform.transform(metrics);
+        aliasTransform.transform(null, metrics);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -74,7 +74,7 @@ public class AliasTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add(TEST_ALIAS_LITERAL);
-        aliasTransform.transform(metrics, constants);
+        aliasTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -88,7 +88,7 @@ public class AliasTransformTest {
 
         constants.add(TEST_ALIAS_LITERAL);
         constants.add(TEST_BAD_STRING);
-        aliasTransform.transform(metrics, constants);
+        aliasTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -102,7 +102,7 @@ public class AliasTransformTest {
 
         constants.add(TEST_BAD_STRING);
         constants.add(TEST_ALIAS_REGEX);
-        aliasTransform.transform(metrics, constants);
+        aliasTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -122,7 +122,7 @@ public class AliasTransformTest {
         constants.add(TEST_ALIAS_REGEX);
         constants.add(TEST_TYPE_REGEX);
 
-        List<Metric> result = aliasTransform.transform(metrics, constants);
+        List<Metric> result = aliasTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(TEST_METRIC_NAME_1, result.get(0).getMetric());
@@ -147,7 +147,7 @@ public class AliasTransformTest {
         constants.add(TEST_ALIAS_LITERAL);
         constants.add(TEST_TYPE_LITERAL);
 
-        List<Metric> result = aliasTransform.transform(metrics, constants);
+        List<Metric> result = aliasTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(TEST_ALIAS_LITERAL, result.get(0).getMetric());
@@ -174,7 +174,7 @@ public class AliasTransformTest {
         constants.add("s");
         constants.add(TEST_TYPE_LITERAL);
 
-        List<Metric> result = aliasTransform.transform(metrics, constants);
+        List<Metric> result = aliasTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals("m", result.get(0).getMetric());

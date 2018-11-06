@@ -14,6 +14,7 @@ import com.salesforce.dva.argus.service.MQService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.util.QueryContextHolder;
 
 import java.io.IOException;
 import java.util.*;
@@ -127,7 +128,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
 
         MetricReader<Metric> reader = _metricReaderProviderForMetrics.get();
         try {
-            List<Metric> results = reader.parse(query.getExpression(), query.getRelativeTo(), Metric.class);
+            List<Metric> results = reader.parse(query.getExpression(), query.getRelativeTo(), Metric.class, new QueryContextHolder(), false);
             query.setStatus(Status.DONE);
             if (results.size() != 0) {
                 query.setResult(results.get(0));
