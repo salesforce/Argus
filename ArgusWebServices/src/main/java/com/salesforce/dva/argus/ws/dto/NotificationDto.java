@@ -274,8 +274,17 @@ public class NotificationDto extends EntityDTO {
      *
      * @param  isSRActionable  True if  SR should monitor the notification
      */
-    public void setSRActionable(boolean isSRActionable) {
+    public void setSRActionable(boolean isSRActionable, String articleNumber) {
         this.isSRActionable = isSRActionable;
+        articleNumber = articleNumber.trim();
+        if (isSRActionable == true ) {
+            if (articleNumber == null || articleNumber.isEmpty()) {
+                throw new IllegalArgumentException("SR Actionable is set as true, without providing the Article Number.");
+            }
+            else {
+                setArticleNumber(articleNumber);
+            }
+        }
     }
     
     /**
@@ -290,7 +299,7 @@ public class NotificationDto extends EntityDTO {
     public String getArticleNumber() { return articleNumber; }
 
 
-    public void setArticleNumber(String articleNumber) { this.articleNumber = articleNumber; }
+    private void setArticleNumber(String articleNumber) { this.articleNumber = articleNumber; }
 
 
     public String getElementName() { return elementName; }
@@ -335,8 +344,7 @@ public class NotificationDto extends EntityDTO {
         result.setName("sample-notification");
         result.setNotifierName("email");
         result.setSeverityLevel(5);
-        result.setSRActionable(true);
-        result.setArticleNumber("sample-articleNumber");
+        result.setSRActionable(true, "sample-articleNumber");
         result.setElementName("sample-elementName");
         result.setEventName("sample-eventName");
         result.setProductTag("sample-productTag");

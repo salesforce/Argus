@@ -822,10 +822,9 @@ public class AlertResources extends AbstractResource {
 
 				Notification notification = new Notification(notificationDto.getName(), alert, notificationDto.getNotifierName(),
 						notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
-				notification.setSRActionable(notificationDto.getSRActionable());
+				notification.setSRActionable(notificationDto.getSRActionable(), notificationDto.getArticleNumber());
 				notification.setSeverityLevel(notificationDto.getSeverityLevel());
 				notification.setCustomText(notificationDto.getCustomText());
-				notification.setArticleNumber(notificationDto.getArticleNumber());
 				notification.setEventName(notificationDto.getEventName());
 				notification.setElementName(notificationDto.getElementName());
 				notification.setProductTag(notificationDto.getProductTag());

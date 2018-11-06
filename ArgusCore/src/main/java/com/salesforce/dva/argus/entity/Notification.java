@@ -192,7 +192,8 @@ public class Notification extends JPAEntity implements Serializable {
 			notification.setCooldownPeriod(cooldownPeriod);
 			
 			boolean srActionable = rootNode.get("srActionable").asBoolean();
-			notification.setSRActionable(srActionable);
+
+			notification.setSRActionable(srActionable, rootNode.get("articleNumber").asText());
 			
 			int severity = rootNode.get("severityLevel").asInt();
 			notification.setSeverityLevel(severity);
@@ -200,10 +201,6 @@ public class Notification extends JPAEntity implements Serializable {
 			if(rootNode.get("customText") != null) {
 				notification.setCustomText(rootNode.get("customText").asText());
 			}
-
-			if(rootNode.get("articleNumber") != null) {
-			    notification.setArticleNumber(rootNode.get("articleNumber").asText());
-            }
 
             if(rootNode.get("eventName") != null) {
 			    notification.setEventName(rootNode.get("eventName").asText());
@@ -673,8 +670,17 @@ public class Notification extends JPAEntity implements Serializable {
      *
      * @param  isSRActionable  True if  SR should monitor the notification
      */
-    public void setSRActionable(boolean isSRActionable) {
+    public void setSRActionable(boolean isSRActionable, String articleNumber) {
         this.isSRActionable = isSRActionable;
+        articleNumber = articleNumber.trim();
+        if (isSRActionable == true ) {
+            if (articleNumber == null || articleNumber.isEmpty()) {
+                throw new IllegalArgumentException("SR Actionable is set as true, without providing the Article Number.");
+            }
+            else {
+                setArticleNumber(articleNumber);
+            }
+        }
     }
 
     /**
@@ -726,14 +732,7 @@ public class Notification extends JPAEntity implements Serializable {
     public String getArticleNumber() { return articleNumber; }
 
 
-    public void setArticleNumber(String articleNumber) {
-	    if (this.isSRActionable == true) {
-	        this.articleNumber = articleNumber;
-        }
-	    else {
-	        throw new IllegalArgumentException(MessageFormat.format("Trying to set article number as {0}, without having SRActionable set", articleNumber));
-        }
-	}
+    private void setArticleNumber(String articleNumber) { this.articleNumber = articleNumber; }
 
 
     public String getElementName() { return elementName; }
