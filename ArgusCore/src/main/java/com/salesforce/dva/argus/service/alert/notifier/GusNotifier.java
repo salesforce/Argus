@@ -186,9 +186,15 @@ public class GusNotifier extends AuditNotifier {
 		}	else {
 			sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
 		}
-		if(!trigger.getType().equals(TriggerType.NO_DATA) && status == NotificationStatus.TRIGGERED){
-			sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
+		
+		if(context.getTriggeredMetric()!=null) {
+			if(status == NotificationStatus.TRIGGERED){
+				sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+			}else {
+				sb.append(MessageFormat.format("<b>Cleared on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+			}
 		}
+		
 		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger, context)));
 		if(!trigger.getType().equals(TriggerType.NO_DATA) && status == NotificationStatus.TRIGGERED){
 			sb.append(MessageFormat.format("Triggering event value:  {0}\n", context.getTriggerEventValue()));
