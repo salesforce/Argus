@@ -424,10 +424,10 @@ public class GOCNotifier extends AuditNotifier {
 		private static final String SM_SEVERITY__C_FIELD = "SM_Severity__c";
 		private static final String SM_SOURCEDOMAIN__C_FIELD = "SM_SourceDomain__c";
 		private static final String SR_ACTIONABLE__C_FIELD = "SR_Actionable__c";
-		private static final String SM_USERDEFINED2__C_FIELD = "SR_Userdefined2__c";
-		private static final String SM_USERDEFINED3__C_FIELD = "SR_Userdefined3__c";
-		private static final String SM_USERDEFINED10__C_FIELD = "SR_Userdefined10__c";
-		private static final String SM_USERDEFINED12__C_FIELD = "SR_Userdefined12__c";
+		private static final String SM_USERDEFINED2__C_FIELD = "SM_Userdefined2__c";
+		private static final String SM_USERDEFINED3__C_FIELD = "SM_Userdefined3__c";
+		private static final String SM_USERDEFINED10__C_FIELD = "SM_Userdefined10__c";
+		private static final String SM_USERDEFINED12__C_FIELD = "SM_Userdefined12__c";
 
 		//~ Instance fields ******************************************************************************************************************************
 
