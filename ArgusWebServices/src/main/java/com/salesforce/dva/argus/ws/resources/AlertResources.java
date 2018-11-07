@@ -728,6 +728,7 @@ public class AlertResources extends AbstractResource {
 			for (Notification notification : oldAlert.getNotifications()) {
 				if (notificationId.equals(notification.getId())) {
 					copyProperties(notification, notificationDto);
+
 					oldAlert.setModifiedBy(getRemoteUser(req));
 
 					Alert alert = alertService.updateAlert(oldAlert);

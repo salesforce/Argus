@@ -276,9 +276,8 @@ public class NotificationDto extends EntityDTO {
      */
     public void setSRActionable(boolean isSRActionable, String articleNumber) {
         this.isSRActionable = isSRActionable;
-        articleNumber = articleNumber.trim();
         if (isSRActionable == true ) {
-            if (articleNumber == null || articleNumber.isEmpty()) {
+            if (articleNumber == null || articleNumber.trim().isEmpty()) {
                 throw new IllegalArgumentException("SR Actionable is set as true, without providing the Article Number.");
             }
             else {
