@@ -49,6 +49,12 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 public abstract class TSDBEntity implements Serializable {
 	
     private static final int NUM_TAGS = 50;
+    
+    /*
+     * Argus only supports letters, digits and ./-_ for namespace, scope,
+     * metric and tags. All other characters will be replaced by this.
+     */
+    private static final String UNSUPPORTED_CHARACTER_REPLACEMENT = "__";
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -175,6 +181,12 @@ public abstract class TSDBEntity implements Serializable {
                 //TODO: Validate that the tags contain only permissible characters.
         	}
     	}
+	}
+    
+	public static String replaceUnsupportedChars(String input) {
+	    if(input != null){
+	        return input.replaceAll("[^a-zA-Z0-9\\./\\-_]+", UNSUPPORTED_CHARACTER_REPLACEMENT);
+	    } else return input;
 	}
 
 	/**
