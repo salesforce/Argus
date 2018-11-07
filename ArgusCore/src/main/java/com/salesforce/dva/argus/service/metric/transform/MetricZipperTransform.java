@@ -141,7 +141,10 @@ public class MetricZipperTransform implements Transform {
             // if base datapoints doesn't have the key, give it null
             Double baseVal = baseDatapoints.containsKey(originalKey) ? baseDatapoints.get(originalKey) : null;
 
-            zippedDP.put(originalKey, this.valueZipper.zip(originalVal, baseVal));
+            Double zippedValue = this.valueZipper.zip(originalVal, baseVal);
+            if(zippedValue!=null) {
+                zippedDP.put(originalKey, zippedValue);
+            }
         }
         
         // if a point exists in the baseDP but does not exist in the original set, 
@@ -151,7 +154,10 @@ public class MetricZipperTransform implements Transform {
                 Long baseDPKey = baseDP.getKey();
 
                 if(!zippedDP.containsKey(baseDPKey)) {
-                    zippedDP.put(baseDPKey, this.valueZipper.zip(null, baseDP.getValue()));
+                    Double zippedValue = this.valueZipper.zip(null, baseDP.getValue());
+                    if(zippedValue!=null) {
+                        zippedDP.put(baseDPKey, zippedValue);
+                    }
                 }
             }
         }
