@@ -31,6 +31,17 @@
 	 
 package com.salesforce.dva.argus.service.alert.notifier;
 
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TreeMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Annotation;
@@ -42,16 +53,7 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationCo
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.TemplateReplacer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.TreeMap;
 
 /**
  * Default implementation of the Notifier interface. It creates an annotation on the specific time series specified in the alert expression which
@@ -94,15 +96,17 @@ public abstract class DefaultNotifier implements Notifier {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public void sendNotification(NotificationContext notificationContext) {
+    public boolean sendNotification(NotificationContext notificationContext) {
         SystemAssert.requireArgument(notificationContext != null, "Notification context cannot be null.");
 
         Map<String, String> additionalFields = new HashMap<>();
 
         additionalFields.put("Notification status", "Notification created.");
         _createAnnotation(notificationContext, additionalFields);
-        sendAdditionalNotification(notificationContext);
+        boolean rc = sendAdditionalNotification(notificationContext);
         _dispose();
+        
+        return rc;
     }
 
     private void _createAnnotation(NotificationContext notificationContext, Map<String, String> additionalFields) {
@@ -145,8 +149,10 @@ public abstract class DefaultNotifier implements Notifier {
     /**
      * A post send hook for sub-class implementations to perform additional functionality.
      *
+     * @param  context  The notification context.
+     * @return true successs, false failure
      */
-    protected abstract void sendAdditionalNotification(NotificationContext context);
+    protected abstract boolean sendAdditionalNotification(NotificationContext context);
 
     @Override
     public String getName() {
@@ -185,22 +191,24 @@ public abstract class DefaultNotifier implements Notifier {
     }
 
     @Override
-    public void clearNotification(NotificationContext notificationContext) {
+    public boolean clearNotification(NotificationContext notificationContext) {
         SystemAssert.requireArgument(notificationContext != null, "Notification context cannot be null.");
 
         Map<String, String> additionalFields = new HashMap<>();
 
         additionalFields.put("Notification status", "Notification cleared.");
         _createAnnotation(notificationContext, additionalFields);
-        clearAdditionalNotification(notificationContext);
+        boolean rc = clearAdditionalNotification(notificationContext);
         _dispose();
+        
+        return rc;
     }
 
     /**
      * Defines additional implementation specific actions to take when a notification is cleared.
      *
      */
-    protected abstract void clearAdditionalNotification(NotificationContext context);
+    protected abstract boolean clearAdditionalNotification(NotificationContext context);
 
     @Override
     public Properties getNotifierProperties(){
