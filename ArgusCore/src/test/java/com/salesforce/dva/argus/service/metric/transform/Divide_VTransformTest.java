@@ -97,7 +97,6 @@ public class Divide_VTransformTest {
         divide_vTransform.transform(null, metrics);
     }
 
-    @Test(expected = SystemException.class)
     public void testDivide_VTransformVectorWithZeroAsDividend() {
         Transform divide_vTransform = new MetricZipperTransform(new DivideValueZipper());
         Map<Long, Double> datapoints = new HashMap<Long, Double>();
@@ -120,7 +119,11 @@ public class Divide_VTransformTest {
 
         metrics.add(metric);
         metrics.add(vector);
-        divide_vTransform.transform(null, metrics);
+        List<Metric> result = divide_vTransform.transform(null, metrics);
+        
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+        assertEquals(result.get(0).getDatapoints().size(), 0);
+        assertEquals(expected, result.get(0).getDatapoints());
     }
 
     @Test
