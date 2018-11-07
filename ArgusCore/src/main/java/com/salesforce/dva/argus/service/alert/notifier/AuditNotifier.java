@@ -31,6 +31,21 @@
 
 package com.salesforce.dva.argus.service.alert.notifier;
 
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
+import java.math.BigInteger;
+import java.net.URLEncoder;
+import java.sql.Date;
+import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.Properties;
+import java.util.TimeZone;
+
+import javax.persistence.EntityManager;
+
+import org.joda.time.DateTimeConstants;
+
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Audit;
@@ -45,18 +60,6 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationCo
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
-import org.joda.time.DateTimeConstants;
-import java.math.BigInteger;
-import java.net.URLEncoder;
-import java.sql.Date;
-import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.Properties;
-import java.util.TimeZone;
-import javax.persistence.EntityManager;
-
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
  * A notifier that sends notification to a database.
@@ -110,12 +113,15 @@ public class AuditNotifier extends DefaultNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
+	protected boolean sendAdditionalNotification(NotificationContext context) {
 		requireArgument(context != null, "Notification context cannot be null.");
 
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.TRIGGERED), SystemConfiguration.getHostname(), context.getAlert());
 
 		_auditService.createAudit(audit);
+		
+		// the previous call does not return any status, nor throw exception
+		return true;
 	}
 
 	/**
@@ -264,12 +270,14 @@ public class AuditNotifier extends DefaultNotifier {
 	}
 
 	@Override
-	protected void clearAdditionalNotification(NotificationContext context) {
+	protected boolean clearAdditionalNotification(NotificationContext context) {
 		requireArgument(context != null, "Notification context cannot be null.");
 
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.CLEARED), SystemConfiguration.getHostname(), context.getAlert());
 
 		_auditService.createAudit(audit);
+		
+		return true;
 	}
 
 	@Override

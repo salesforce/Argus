@@ -43,9 +43,6 @@ import java.util.Set;
 
 import javax.persistence.EntityManager;
 
-import com.salesforce.dva.argus.entity.Alert;
-import com.salesforce.dva.argus.util.AlertUtils;
-import com.salesforce.dva.argus.util.TemplateReplacer;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -57,6 +54,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
@@ -65,9 +63,10 @@ import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MailService;
 import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.AlertService.Notifier.NotificationStatus;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.AlertUtils;
+import com.salesforce.dva.argus.util.TemplateReplacer;
 
 import joptsimple.internal.Strings;
 
@@ -124,20 +123,22 @@ public class GusNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
+	protected boolean sendAdditionalNotification(NotificationContext context) {
 		requireArgument(context != null, "Notification context cannot be null.");
-		super.sendAdditionalNotification(context);
-		sendGusNotification(context, NotificationStatus.TRIGGERED);
+		if (!super.sendAdditionalNotification(context)){
+			return false;
+		}
+		return sendGusNotification(context, NotificationStatus.TRIGGERED);
 	}
 	
     @Override
-    protected void clearAdditionalNotification(NotificationContext context) {
+    protected boolean clearAdditionalNotification(NotificationContext context) {
         requireArgument(context != null, "Notification context cannot be null.");
         super.clearAdditionalNotification(context);
-        sendGusNotification(context, NotificationStatus.CLEARED);
+        return sendGusNotification(context, NotificationStatus.CLEARED);
     }
     
-    private void sendGusNotification(NotificationContext context, NotificationStatus status) {
+    private boolean sendGusNotification(NotificationContext context, NotificationStatus status) {
 		Notification notification = null;
 		Trigger trigger = null;
 
@@ -159,7 +160,7 @@ public class GusNotifier extends AuditNotifier {
 		Set<String> to = new HashSet<String>(notification.getSubscriptions());
 		String feed = generateGusFeed(notification, trigger, context, status);
 
-		postToGus(to, feed);
+		return postToGus(to, feed);
     }
 
 	private String generateGusFeed(Notification notification, Trigger trigger, NotificationContext context, NotificationStatus status) {
@@ -209,7 +210,7 @@ public class GusNotifier extends AuditNotifier {
 		return sb.toString();
 	}
 
-	private void postToGus(Set<String> to, String feed) {
+	private boolean postToGus(Set<String> to, String feed) {
 
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GUS_ENABLED))) {
 			// So far works for only one group, will accept a set of string in future.
@@ -233,12 +234,15 @@ public class GusNotifier extends AuditNotifier {
 				}
 			} catch (Exception e) {
 				_logger.error("Throws Exception {} when posting to gus group {}", e, groupId);
+				return false;
 			} finally {
 				gusPost.releaseConnection();
 			}
 		} else {
 			_logger.info("Sending GUS notification is disabled.  Not sending message to groups '{}'.", to);
 		}
+		
+		return true;
 	}
 
 	private String generateAccessToken() {

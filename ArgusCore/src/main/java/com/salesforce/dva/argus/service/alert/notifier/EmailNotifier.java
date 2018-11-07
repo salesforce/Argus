@@ -31,6 +31,15 @@
 	 
 package com.salesforce.dva.argus.service.alert.notifier;
 
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
+import java.sql.Date;
+import java.text.MessageFormat;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.persistence.EntityManager;
+
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Alert;
@@ -47,15 +56,6 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
-
-import java.sql.Date;
-import java.text.MessageFormat;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.persistence.EntityManager;
-
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
  * Implementation of notifier interface for notifying via email.
@@ -97,7 +97,7 @@ public class EmailNotifier extends AuditNotifier {
     }
 
     @Override
-    protected void sendAdditionalNotification(NotificationContext context) {
+    protected boolean sendAdditionalNotification(NotificationContext context) {
         requireArgument(context != null, "Notification context cannot be null.");
         super.sendAdditionalNotification(context);
 
@@ -105,7 +105,7 @@ public class EmailNotifier extends AuditNotifier {
         String body = getEmailBody(context, NotificationStatus.TRIGGERED);
         Set<String> to = _getNotificationSubscriptions(context);
 
-        _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
+        return _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
     }
 
     private Set<String> _getNotificationSubscriptions(NotificationContext context) {
@@ -217,7 +217,7 @@ public class EmailNotifier extends AuditNotifier {
     }
 
     @Override
-    protected void clearAdditionalNotification(NotificationContext context) {
+    protected boolean clearAdditionalNotification(NotificationContext context) {
         requireArgument(context != null, "Notification context cannot be null.");
         super.clearAdditionalNotification(context);
 
@@ -225,7 +225,7 @@ public class EmailNotifier extends AuditNotifier {
         String body = getEmailBody(context, NotificationStatus.CLEARED);
         Set<String> to = _getNotificationSubscriptions(context);
 
-        _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
+        return _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

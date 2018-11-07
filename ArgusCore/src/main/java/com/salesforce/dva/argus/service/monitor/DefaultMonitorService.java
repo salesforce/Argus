@@ -737,7 +737,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 	@Override
 	public void exportMetric(Metric metric, Double value) {
-		_gaugeExporter.exportGauge(metric, value);		
+		_gaugeExporter.exportGauge(metric, value);
 	}
 
 }

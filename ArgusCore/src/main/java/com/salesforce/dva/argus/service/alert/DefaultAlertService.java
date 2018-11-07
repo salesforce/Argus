@@ -759,20 +759,38 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric, history);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
-		notifier.sendNotification(context);
 
 		Map<String, String> tags = new HashMap<>();
-		tags.put("status", "active");
+		tags.put("action", "triggered");
 		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		String logMessage = "";
+		
+		boolean rc = true;
+		try{
+			rc = notifier.sendNotification(context);
+		}catch (Exception e){
+			_logger.error("sendNotification() hit exception", e);
+			rc = false;
+		}
+		
+		if (rc) {
+			tags.put("status", "succeeded");
+ 			logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
+					getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
+		}else {
+			tags.put("status", "failed");			
+			logMessage = MessageFormat.format("Fail to send notifiction to {}", notification.getNotifierName());
+		}
+
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
+
 		tags = new HashMap<>();
-		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", HOSTNAME);
 		tags.put("metricId", metric.getIdentifier().hashCode()+"");
+		tags.put("notification_id", notification.getId().intValue()+"");
+		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 
-		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
-				getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
 		_logger.info(logMessage);
 		history.appendMessageNUpdateHistory(logMessage, null, 0);
 	}
@@ -782,27 +800,50 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
-		notifier.clearNotification(context);
-
+		String logMessage ="";
 		Map<String, String> tags = new HashMap<>();
-		tags.put("status", "clear");
+		tags.put("action", "cleared");
 		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		
+		boolean rc = true;
+		try {
+			rc = notifier.clearNotification(context);
+		}catch (Exception e){
+			_logger.error("clearnNotification() hit exception", e);
+			rc = false;
+		}
+		if (rc) {
+			tags.put("status", "succeeded");
+ 			logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
+		}else {
+			tags.put("status", "failed");
+			logMessage = MessageFormat.format("Failed to send clear notifiction to {}", notification.getNotifierName());
+		}
+
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
+		
 		tags = new HashMap<>();
-		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", HOSTNAME);
 		tags.put("metricId", metric.getIdentifier().hashCode()+"");
+		tags.put("notification_id", notification.getId().intValue()+"");
+		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/,tags);
 
-		String logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
 		_logger.info(logMessage);
 		history.appendMessageNUpdateHistory(logMessage, null, 0);
 	}
 
-	private void publishAlertTrackingMetric(String scope, BigInteger alertId, double value, Map<String, String> tags) {
+	private void publishAlertTrackingMetric(String metric, BigInteger alertId, double value, Map<String, String> tags) {
+		if (!tags.containsKey("alertId")) {
+			tags.put("alertId", alertId.toString());
+		}
+		publishAlertTrackingMetric("argus.core", metric + ".alert", value, tags);
+	}
+	
+	private void publishAlertTrackingMetric(String scope, String metric, double value, Map<String, String> tags) {
 		Map<Long, Double> datapoints = new HashMap<>();
 		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), value);
-		Metric trackingMetric = new Metric(scope, "alert-" + alertId.intValue());
+		Metric trackingMetric = new Metric(scope, metric);
 		trackingMetric.addDatapoints(datapoints);
 		if(tags!=null) {
 			trackingMetric.setTags(tags);
@@ -830,7 +871,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 	private void _sendEmailToAdmin(Alert alert, BigInteger alertId, Throwable ex) {
 		Set<String> to = new HashSet<>();
-
+		
 		to.add(_configuration.getValue(SystemConfiguration.Property.ADMIN_EMAIL));
 
 		String subject = "Alert evaluation failure notification.";
@@ -864,11 +905,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		message.append(MessageFormat.format("<br> Alert name: {0}" , alert.getName()));
 		message.append(MessageFormat.format("<br> No data found for the following metric expression: {0}", alert.getExpression()));
 		message.append(MessageFormat.format("<br> Time stamp: {0}", History.DATE_FORMATTER.get().format(new Date(System.currentTimeMillis()))));
-		_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
+		boolean rc = _mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
 
 		Map<String, String> tags = new HashMap<>();
-		tags.put("status", "missingdata");
-		tags.put("type", SupportedNotifier.EMAIL.name());
+		tags.put("action", "missingdata");
+		tags.put("status", rc ? "succeeded": "failed");
+		tags.put("notify-target", SupportedNotifier.EMAIL.name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 	}
 
@@ -1419,6 +1461,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		this._monitorService.exportMetric(metric, value);
 	}
 
-
+	@Override
+	public void updateCounter(Counter counter, Double value) {
+		this._monitorService.updateCounter(counter, value, null);
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

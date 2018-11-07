@@ -74,10 +74,11 @@ public class WardenPostingNotifier extends WardenNotifier {
     }
 
     @Override
-    protected void sendAdditionalNotification(NotificationContext context) {
+    protected boolean sendAdditionalNotification(NotificationContext context) {
         _wardenService.suspendUser(super.getWardenUser(context.getAlert().getName()), SubSystem.POSTING);
         super.addAnnotationSuspendedUser(context, SubSystem.POSTING);
         super.sendWardenEmailToUser(context, SubSystem.POSTING);
+        return true;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
