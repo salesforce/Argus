@@ -193,7 +193,7 @@ public class Annotation extends TSDBEntity implements Serializable {
      * @param  scope  The scope of the collection. Cannot be null or empty.
      */
     @Override
-    protected void setScope(String scope) {
+    public void setScope(String scope) {
         requireArgument(scope != null && !scope.trim().isEmpty(), "Scope cannot be null or empty.");
         super.setScope(scope);
     }
@@ -204,7 +204,7 @@ public class Annotation extends TSDBEntity implements Serializable {
      * @param  metric  The metric with which the annotation is associated. If not null, it cannot be empty.
      */
     @Override
-    protected void setMetric(String metric) {
+    public void setMetric(String metric) {
         requireArgument(metric == null || !metric.trim().isEmpty(), "Metric can be null, but if specified, cannot be empty");
         super.setMetric(metric);
     }

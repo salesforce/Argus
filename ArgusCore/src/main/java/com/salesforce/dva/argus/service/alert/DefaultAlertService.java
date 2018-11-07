@@ -381,11 +381,37 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				continue;
 			}
 
+			if(alertEnqueueTimestampsByAlertId.containsKey(alert.getId())) {
+				String logMessage = MessageFormat.format("Found alert {0}:{1} with multiple timestamps. ExistingTime:{2} NewTime:{3}. Existing evaluation will be overwritten.",
+						alert.getId(), alert.getName(), alertEnqueueTimestampsByAlertId.get(alert.getId()), alertWithTimestamp.getAlertEnqueueTime());
+				_logger.warn(logMessage);
+
+				// Treating this as a failure.
+				logAlertStatsOnFailure(alert.getId(), alert.getOwner().getUserName());
+			}
+
 			alertEnqueueTimestampsByAlertId.put(alert.getId(), alertWithTimestamp.getAlertEnqueueTime());
 
 			List<Notification> notifications = new ArrayList<>(alert.getNotifications());
 			alert.setNotifications(null);
+
+			if(notifications.size() == 0) {
+				String logMessage = MessageFormat.format("Found alert {0}:{1} with no notification.", alert.getId(), alert.getName());
+				_logger.warn(logMessage);
+
+				// Treating this as a failure.
+				logAlertStatsOnFailure(alert.getId(), alert.getOwner().getUserName());
+				continue;
+			}
+
 			for(Notification n : notifications) {
+
+				if(alertsByNotificationId.containsKey(n.getId())) {
+					String logMessage = MessageFormat.format("Found alert {0}:{1} where notification {2} is present multiple times. ",
+							alert.getId(), alert.getName(), n.getId());
+					_logger.warn(logMessage);
+				}
+
 				alertsByNotificationId.put(n.getId(), alert);
 			}
 			allNotifications.addAll(notifications);
@@ -402,6 +428,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 
 		Set<Alert> alerts = new HashSet<>(alertsByNotificationId.values());
+
 		for (Alert alert : alerts) {
 			long jobStartTime = System.currentTimeMillis();
 			long jobEndTime = 0;
@@ -505,14 +532,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);
+
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
 			} catch (MissingDataException mde) {
 				handleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, mde, true);
 			} catch (Exception ex) {
 				handleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, ex, false);
 			} finally {
-				Map<String, String> tags = new HashMap<>();
-				tags.put(USERTAG, alert.getOwner().getUserName());
-				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
 				history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
 				historyList.add(history);
 			}
@@ -642,7 +668,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		for(Trigger trigger : notification.getTriggers()) {
 			if(triggers.contains(trigger)) {
-				Metric m = new Metric("argus","argus");
+				Metric m = new Metric("unknown","unknown");
 				if(isDataMissing) {
 					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is fired as data for the metric expression {1} does not exist", trigger.getName(), alert.getExpression());
 					history.appendMessageNUpdateHistory(logMessage, null, 0);
@@ -737,12 +763,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		Map<String, String> tags = new HashMap<>();
 		tags.put("status", "active");
-		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", HOSTNAME);
-		tags.put("metric", metric.getIdentifier().hashCode()+"");
+		tags.put("metricId", metric.getIdentifier().hashCode()+"");
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 
 		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
@@ -760,12 +786,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		Map<String, String> tags = new HashMap<>();
 		tags.put("status", "clear");
-		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", HOSTNAME);
-		tags.put("metric", metric.getIdentifier().hashCode()+"");
+		tags.put("metricId", metric.getIdentifier().hashCode()+"");
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/,tags);
 
 		String logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());

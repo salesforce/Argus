@@ -30,6 +30,8 @@
  */
 package com.salesforce.dva.argus.sdk.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.Objects;
 
 /**
@@ -39,6 +41,7 @@ import java.util.Objects;
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public final class MetricSchemaRecord {
 
     //~ Instance fields ******************************************************************************************************************************

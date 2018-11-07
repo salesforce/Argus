@@ -294,7 +294,7 @@ public class GOCNotifier extends AuditNotifier {
 		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 		String notificationMessage = notificationStatus == NotificationStatus.TRIGGERED ? "Triggered" : "Cleared";
 		
-		sb.append(MessageFormat.format("Alert {0} was {1} at 21}\n", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), notificationMessage,
+		sb.append(MessageFormat.format("Alert {0} was {1} at {2}\n", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), notificationMessage,
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
 		String customText = context.getNotification().getCustomText();
 		if( customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){

@@ -31,6 +31,9 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 
@@ -45,14 +48,18 @@ public class DivideValueZipper implements ValueZipper {
 
     //~ Methods **************************************************************************************************************************************
 
+	private final Logger _logger = LoggerFactory.getLogger(DivideValueZipper.class);
+	
     @Override
     public Double zip(Double originalDp, Double baseDp) {
         try {
             Double original = (originalDp == null) ? 0.0 : originalDp;
             Double base = (baseDp == null) ? 1.0 : baseDp;
 
-            SystemAssert.requireArgument(base != 0.0, "Datapoints in base metric shouldn't contain zero!");
-            
+            if (base == 0.0) {
+        	        _logger.debug("Encountered zero denominator when executing the DivideValueZipper. So, skipping the value");
+        	        return null;
+            }
             return (original / base);
         } catch (Exception e) {
             throw new SystemException("Fail to parse the double value of original Datapoint or base Datapoint!", e);

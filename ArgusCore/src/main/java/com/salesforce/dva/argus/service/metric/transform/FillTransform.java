@@ -78,8 +78,15 @@ public class FillTransform implements Transform {
 
         Long[] startAndEndTimestamps = QueryUtils.getStartAndEndTimesWithMaxInterval(queryContext);
         
+        //if interval size is more than a minute, rounding the start and end times to nearest minute
+        if(windowSizeInSeconds >= 60) {
+         	startAndEndTimestamps[0] = (startAndEndTimestamps[0]/(60*1000))*(60*1000);
+         	startAndEndTimestamps[1] = (startAndEndTimestamps[1]/(60*1000))*(60*1000);
+        }
+        
         Long startTimestamp = startAndEndTimestamps[0]>0 ? startAndEndTimestamps[0] : sortedTimestamps[0];
         Long endTimestamp = startAndEndTimestamps[1]>0 ? startAndEndTimestamps[1] : sortedTimestamps[sortedTimestamps.length - 1];
+
 
         // create a new datapoints map propagateDatpoints, which have all the
         // expected timestamps, then fill the missing value
