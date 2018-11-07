@@ -193,7 +193,12 @@ public class Notification extends JPAEntity implements Serializable {
 			
 			boolean srActionable = rootNode.get("srActionable").asBoolean();
 
-			notification.setSRActionable(srActionable, rootNode.get("articleNumber").asText());
+			if (rootNode.get("articleNumber") != null) {
+                notification.setSRActionable(srActionable, rootNode.get("articleNumber").asText());
+            } else {
+                notification.setSRActionable(srActionable, null);
+            }
+
 			
 			int severity = rootNode.get("severityLevel").asInt();
 			notification.setSeverityLevel(severity);
