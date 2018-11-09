@@ -170,14 +170,29 @@ public class PercentileTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("30");
-
+        constants.add("intersect");
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
         expected.put(1000L, 19.0);
-
+        
         List<Metric> result = percentileTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
+        assertEquals(expected, result.get(0).getDatapoints());
+        
+        constants = new ArrayList<String>();
+        constants.add("30");
+        expected = new HashMap<Long, Double>();
+        expected.put(1000L, 19.0);
+        expected.put(2000L, 20.0);
+        expected.put(3000L, 15.0);
+        expected.put(4000L, 50.0);
+        expected.put(5000L, 35.0);
+        expected.put(6000L, 40.0);
+        percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
+        result = percentileTransform.transform(null, metrics, constants);
+
+        assertEquals(result.get(0).getDatapoints().size(), 6);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
@@ -235,12 +250,28 @@ public class PercentileTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("30");
+        constants.add("intersect");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
         List<Metric> result = percentileTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
+        
+        constants = new ArrayList<String>();
+        constants.add("30");
+
+        expected = new HashMap<Long, Double>();
+        expected.put(1000L, 20.0);
+        expected.put(2000L, 15.0);
+        expected.put(3000L, 50.0);
+        expected.put(4000L, 35.0);
+        expected.put(5000L, 40.0);
+        percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
+        result = percentileTransform.transform(null, metrics, constants);
+
+        assertEquals(result.get(0).getDatapoints().size(), 5);
+        assertEquals(expected, result.get(0).getDatapoints());   
     }
     
     
