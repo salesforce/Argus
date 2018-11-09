@@ -92,7 +92,12 @@ public class FillTransform implements Transform {
         // expected timestamps, then fill the missing value
         int index = 1;
         int numDatapoints = 0;
-        while (startTimestamp <= endTimestamp && numDatapoints++ < MAX_DATAPOINTS_FOR_FILL) {
+        
+        if(startTimestamp < endTimestamp && ((endTimestamp - startTimestamp)/(windowSizeInSeconds * 1000) >= MAX_DATAPOINTS_FOR_FILL)) {
+        	    throw new RuntimeException("Fill transform cannot generate more than -" + MAX_DATAPOINTS_FOR_FILL + " datapoints");
+        }
+
+        while (startTimestamp <= endTimestamp) {
             filledDatapoints.put(startTimestamp, sortedDatapoints.containsKey(startTimestamp) ? sortedDatapoints.get(startTimestamp) : null);
             if (index >= sortedDatapoints.size()) {
               	startTimestamp = startTimestamp + windowSizeInSeconds * 1000;
