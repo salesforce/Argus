@@ -3,7 +3,7 @@
 #
 BuildArch:     noarch
 Name:          argusui
-Version:       4.51
+Version:       4.52
 Release:       1
 License:       BSD-3-Clause
 Group:         Applications/System
