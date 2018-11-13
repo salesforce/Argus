@@ -257,9 +257,6 @@ public class RateTransformTest {
 		Map<Long, Double> expectedDPs = new HashMap<>();
 
 		expectedDPs.put(2*MINUTE, 1d);
-		expectedDPs.put(3*MINUTE, 1d);
-		expectedDPs.put(4*MINUTE, 1d);
-		expectedDPs.put(5*MINUTE, 1d);
 		expectedDPs.put(6*MINUTE, 1d);
 		expectedDPs.put(7*MINUTE, 1d);
 		expectedDPs.put(8*MINUTE, 1d);
@@ -291,9 +288,6 @@ public class RateTransformTest {
 		Map<Long, Double> expectedDPs = new HashMap<>();
 
 		expectedDPs.put(2*MINUTE, 1d);
-		expectedDPs.put(3*MINUTE, 1.25d);
-		expectedDPs.put(4*MINUTE, 1.50d);
-		expectedDPs.put(5*MINUTE, 1.75d);
 		expectedDPs.put(6*MINUTE, 2d);
 		expectedDPs.put(7*MINUTE, 2d);
 		expectedDPs.put(8*MINUTE, 2d);
@@ -325,9 +319,6 @@ public class RateTransformTest {
 		Map<Long, Double> expectedDPs = new HashMap<>();
 
 		expectedDPs.put(2*MINUTE, 1d);
-		expectedDPs.put(3*MINUTE, 1.25d);
-		expectedDPs.put(4*MINUTE, 1.50d);
-		expectedDPs.put(5*MINUTE, 1.75d);
 		expectedDPs.put(6*MINUTE, 2d);
 		expectedDPs.put(7*MINUTE, 2d);
 		expectedDPs.put(8*MINUTE, 2d);
