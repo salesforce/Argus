@@ -111,7 +111,10 @@ public class DefaultTSDBService extends AbstractTSDBService{
         requireNotDisposed();
         requireArgument(queries != null, "Metric Queries cannot be null.");
         _logger.debug("Active Threads in the pool = " + ((ThreadPoolExecutor) _executorService).getActiveCount());
-
+        int noFailedQueries = 0;
+        Exception lastFailedException = null;
+        MetricQuery failedMetricQuery = null;
+        
         long start = System.currentTimeMillis();
         Map<MetricQuery, List<Metric>> metricsMap = new HashMap<>();
         Map<MetricQuery, Future<List<Metric>>> futures = new HashMap<>();
@@ -144,10 +147,20 @@ public class DefaultTSDBService extends AbstractTSDBService{
                 
                 instrumentQueryLatency(_monitorService, entry.getKey(), queryStartExecutionTime.get(entry.getKey()), "metrics");
                 metricsMap.put(entry.getKey(), metrics);
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (ExecutionException e){
+                lastFailedException = e;
+                failedMetricQuery  = entry.getKey();
+                noFailedQueries++;
+                continue;
+            } catch (InterruptedException e) {
                 throw new SystemException("Failed to get metrics. The query was: " + entry.getKey() + "\\n", e);
             }
         }
+        
+        if(noFailedQueries !=0 && noFailedQueries == queries.size()){
+            throw new SystemException("Failed to get metrics. The query was: " + failedMetricQuery  + "\\n", lastFailedException);
+        }
+        
         _logger.debug("Time to get Metrics = " + (System.currentTimeMillis() - start));
         return metricsMap;
     }

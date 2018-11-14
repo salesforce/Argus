@@ -64,8 +64,9 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 	}
 
 	public void run() {
+		long lastExecutionTime = 0L;
 		while (!isInterrupted()) {
-			long executionTime = 0L, lastExecutionTime = 0L, currentExecutionTime = 0L;
+			long executionTime = 0L, currentExecutionTime = 0L;
 			try {
 				_logger.info("Starting alert definitions cache refresh");
 				long startTime = System.currentTimeMillis();
@@ -89,7 +90,7 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 					if(modifiedAlerts!=null && modifiedAlerts.size()>0) {
 						for(Alert a : modifiedAlerts) {
 							// calculate the time to discover the update or the creation
-							long timeToDiscover = startTime - a.getModifiedDate().getTime();
+							long timeToDiscover = currentExecutionTime - a.getModifiedDate().getTime();
 							
 							// if the creationTime is after last execution, then we treat this as newly
 							// created and record the time to discover of newly created alert.
@@ -97,16 +98,16 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 							//       miss datapoint, I hope that by judging whether updated time is less
 							//       then 1 seconds away from the creation time, we can recognized
 							//       the potentially missed creation.
-							if (lastExecutionTime > 0 && (a.getCreatedDate().getTime() >= lastExecutionTime || 
-									Math.abs(a.getModifiedDate().getTime() - a.getCreatedDate().getTime()) < 1000)) {
-								timeToDiscover = startTime - a.getCreatedDate().getTime();
-								sumTimeToDiscoverNew += timeToDiscover;
-								newAlertsCount ++;
-							}
-							
-							if (lastExecutionTime > 0 && a.getModifiedDate().getTime() >= lastExecutionTime) {
-								sumTimeToDiscover += timeToDiscover;
-								updatedAlertsCount ++;
+							if (lastExecutionTime > 0) {
+								if (a.getCreatedDate().getTime() >= lastExecutionTime || 
+									Math.abs(a.getModifiedDate().getTime() - a.getCreatedDate().getTime()) < 1000) {
+									timeToDiscover = startTime - a.getCreatedDate().getTime();
+									sumTimeToDiscoverNew += timeToDiscover;
+									newAlertsCount ++;
+								}else if (a.getModifiedDate().getTime() >= lastExecutionTime) {
+									sumTimeToDiscover += timeToDiscover;
+									updatedAlertsCount ++;
+								}
 							}
 							_logger.debug("Processing modified alert - {},{},{},{} after {} milliseconds ", a.getId(),
 									a.getName(), a.getCronEntry(), a.getExpression(), timeToDiscover);
@@ -132,7 +133,7 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 					
 					if (updatedAlertsCount > 0) {
 						long avgTimeToDiscover = sumTimeToDiscover / updatedAlertsCount;
-						alertService.updateCounter(Counter.ALERTS_UPDATE_LATENCY_AGGREGATE, (double)avgTimeToDiscover);
+						alertService.updateCounter(Counter.ALERTS_UPDATE_LATENCY, (double)avgTimeToDiscover);
 						_logger.info("Average time to discovery of change - " + avgTimeToDiscover + " milliseconds");
 					}
 
