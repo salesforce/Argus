@@ -89,7 +89,7 @@ class Alerter implements Runnable {
                 LOGGER.error("Exception in alerter: {}", ExceptionUtils.getFullStackTrace(ex));
             }
         }
-        LOGGER.warn(MessageFormat.format("Alerter thread interrupted. {} alerts evaluated by this thread.", jobCounter.get()));
+        LOGGER.warn("Alerter thread interrupted. {} alerts evaluated by this thread.", jobCounter.get());
         service.dispose();
     }
 }

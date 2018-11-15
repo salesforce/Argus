@@ -779,7 +779,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
 		}else {
 			tags.put("status", "failed");			
-			logMessage = MessageFormat.format("Fail to send notifiction to {}", notification.getNotifierName());
+			logMessage = MessageFormat.format("Failed to send notifiction to {0}", notification.getNotifierName());
 		}
 
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
@@ -817,7 +817,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
  			logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
 		}else {
 			tags.put("status", "failed");
-			logMessage = MessageFormat.format("Failed to send clear notifiction to {}", notification.getNotifierName());
+			logMessage = MessageFormat.format("Failed to send clear notifiction to {0}", notification.getNotifierName());
 		}
 
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
