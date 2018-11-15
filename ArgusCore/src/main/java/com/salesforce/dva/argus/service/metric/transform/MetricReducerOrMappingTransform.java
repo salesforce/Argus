@@ -62,7 +62,7 @@ public class MetricReducerOrMappingTransform implements Transform {
 	protected static String FULLJOIN = "UNION";
 	protected static String INTERSECT = "INTERSECT";
 	protected Boolean fulljoinIndicator=true;
-	public static final Set<Class> DEFAULT_FULL_JOIN_EXCLUDE_CLASSES = new HashSet<Class>(Arrays.asList(new Class[] {DivideValueReducerOrMapping.class, DiffValueReducerOrMapping.class, DeviationValueReducerOrMapping.class}));
+	public static final Set<Class> DEFAULT_FULL_JOIN_EXCLUDE_CLASSES = new HashSet<Class>(Arrays.asList(new Class[] {DivideValueReducerOrMapping.class, DiffValueReducerOrMapping.class, DeviationValueReducerOrMapping.class, ScaleValueReducerOrMapping.class}));
 
 	//~ Constructors *********************************************************************************************************************************
 

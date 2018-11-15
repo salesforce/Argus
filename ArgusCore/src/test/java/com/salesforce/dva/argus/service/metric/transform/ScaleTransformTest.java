@@ -247,26 +247,10 @@ public class ScaleTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>();
-        constants.add("intersect");
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        scaleTransform = new MetricReducerOrMappingTransform(new ScaleValueReducerOrMapping());
         List<Metric> result = scaleTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
-        assertEquals(expected, result.get(0).getDatapoints());
-        
-        constants = new ArrayList<String>(1);
-        expected = new HashMap<Long, Double>();
-        expected.put(1000L, 1.0);
-        expected.put(2000L, 2.0);
-        expected.put(3000L, 3.0);
-        expected.put(100L, 10.0);
-        expected.put(200L, 100.0);
-        expected.put(300L, 1000.0);
-        scaleTransform = new MetricReducerOrMappingTransform(new ScaleValueReducerOrMapping());
-        result = scaleTransform.transform(null, metrics, constants);
-
-        assertEquals(result.get(0).getDatapoints().size(), 6);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
@@ -299,26 +283,13 @@ public class ScaleTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>(1);
-        constants.add("intersect");
         Map<Long, Double> expected = new HashMap<Long, Double>();
+
         expected.put(3000L, 3000.0);
 
         List<Metric> result = scaleTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
-        assertEquals(expected, result.get(0).getDatapoints());
-        
-        constants = new ArrayList<String>(1);
-        expected = new HashMap<Long, Double>();
-        expected.put(1000L, 1.0);
-        expected.put(2000L, 2.0);
-        expected.put(3000L, 3000.0);
-        expected.put(100L, 10.0);
-        expected.put(200L, 100.0);
-        scaleTransform = new MetricReducerOrMappingTransform(new ScaleValueReducerOrMapping());
-        result = scaleTransform.transform(null, metrics, constants);
-
-        assertEquals(result.get(0).getDatapoints().size(), 5);
         assertEquals(expected, result.get(0).getDatapoints());
     }
     
