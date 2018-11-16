@@ -466,7 +466,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					boolean alertEvaluated = false;
 					while(System.currentTimeMillis() < currCycleEndTime) {
 						try {
-							List<Metric> metrics = _metricService.getMetrics("-5m:argus.core:notifications.sent.alert{alertId="+alert.getId().intValue()+"}:zimsum:1m-sum");
+							List<Metric> metrics = _metricService.getMetrics("-5m:argus.alerts:notifications.sent{alertId="+alert.getId().intValue()+"}:zimsum:1m-sum");
 							if(metrics!=null && !metrics.isEmpty()) {
 								_logger.info("AlertEvaluationKPIReporter: Found notifications.sent.alert for dedicated test alert:{}", alert.getId());
 								for(Metric metric : metrics) {

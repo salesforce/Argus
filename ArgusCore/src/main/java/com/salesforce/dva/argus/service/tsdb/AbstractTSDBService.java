@@ -413,7 +413,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				put(objects, endpoint + urlPath, httpMethod, chunkSize);
 				return;
 			} catch(Exception ex) {
-				_logger.info("Failed while trying to push data. We will retry for {} more times", RETRY_COUNT-i);
+				_logger.info("Failed while trying to push data. We will retry for {} more times", RETRY_COUNT-i-1);
 			}
 		}
 

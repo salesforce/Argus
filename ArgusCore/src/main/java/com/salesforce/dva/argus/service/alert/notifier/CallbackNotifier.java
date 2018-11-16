@@ -81,7 +81,7 @@ public class CallbackNotifier extends AuditNotifier {
 		History history = context.getHistory();
 
 		super.sendAdditionalNotification(context);
-		HttpResponse response = _callbackService.sendNotification(context);
+		HttpResponse response = _callbackService.sendNotification(context, this);
 		int code = response.getStatusLine().getStatusCode();
 		if (!(code >= 200 && code <= 300)) {
 			String errorMessage = MessageFormat.format("Notification {0} cannot be sent. {1}",

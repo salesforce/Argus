@@ -752,17 +752,17 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public void sendNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert,
 			Long triggerFiredTime, Long alertEnqueueTime) {
 
-		double value = 0.0;
+		double triggerValue = 0.0;
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
-			value = metric.getDatapoints().get(triggerFiredTime);
+			triggerValue = metric.getDatapoints().get(triggerFiredTime);
 		}
-		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric, history);
+		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, triggerValue, metric, history);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
 		Map<String, String> tags = new HashMap<>();
 		tags.put("action", "triggered");
-		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put("notifyTarget", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		String logMessage = "";
 		
 		boolean rc = true;
@@ -787,8 +787,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags = new HashMap<>();
 		tags.put("host", HOSTNAME);
 		tags.put("metricId", metric.getIdentifier().hashCode()+"");
-		tags.put("notification_id", notification.getId().intValue()+"");
-		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put("notificationId", notification.getId().intValue()+"");
+		tags.put("notifyTarget", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 
 		_logger.info(logMessage);
@@ -803,13 +803,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		String logMessage ="";
 		Map<String, String> tags = new HashMap<>();
 		tags.put("action", "cleared");
-		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put("notifyTarget", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		
 		boolean rc = true;
 		try {
 			rc = notifier.clearNotification(context);
 		}catch (Exception e){
-			_logger.error("clearnNotification() hit exception", e);
+			_logger.error("clearNotification() hit exception", e);
 			rc = false;
 		}
 		if (rc) {
@@ -825,8 +825,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags = new HashMap<>();
 		tags.put("host", HOSTNAME);
 		tags.put("metricId", metric.getIdentifier().hashCode()+"");
-		tags.put("notification_id", notification.getId().intValue()+"");
-		tags.put("notify-target", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put("notificationId", notification.getId().intValue()+"");
+		tags.put("notifyTarget", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/,tags);
 
 		_logger.info(logMessage);
@@ -837,7 +837,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		if (!tags.containsKey("alertId")) {
 			tags.put("alertId", alertId.toString());
 		}
-		publishAlertTrackingMetric("argus.core", metric + ".alert", value, tags);
+		publishAlertTrackingMetric("argus.alerts", metric, value, tags);
 	}
 	
 	private void publishAlertTrackingMetric(String scope, String metric, double value, Map<String, String> tags) {
@@ -910,7 +910,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		Map<String, String> tags = new HashMap<>();
 		tags.put("action", "missingdata");
 		tags.put("status", rc ? "succeeded": "failed");
-		tags.put("notify-target", SupportedNotifier.EMAIL.name());
+		tags.put("target", SupportedNotifier.EMAIL.name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 	}
 
