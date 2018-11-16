@@ -910,7 +910,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		Map<String, String> tags = new HashMap<>();
 		tags.put("action", "missingdata");
 		tags.put("status", rc ? "succeeded": "failed");
-		tags.put("target", SupportedNotifier.EMAIL.name());
+		tags.put("notifyTarget", SupportedNotifier.EMAIL.name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 	}
 
