@@ -75,10 +75,10 @@ public class Divide_VTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        divide_vTransform.transform(null, metrics, constants);
+        List<Metric> result = divide_vTransform.transform(null, metrics, constants);
+        assertEquals(result.get(0).getDatapoints().size(), 0);
     }
 
-    @Test(expected = IllegalArgumentException.class)
     public void testDivide_VTransformVectorWithoutPoints() {
         Transform divide_vTransform = new MetricZipperTransform(new DivideValueZipper());
         Map<Long, Double> datapoints = new HashMap<Long, Double>();

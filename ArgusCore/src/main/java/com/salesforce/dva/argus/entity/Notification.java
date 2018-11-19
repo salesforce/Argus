@@ -113,7 +113,7 @@ public class Notification extends JPAEntity implements Serializable {
 			
 			jgen.writeArrayFieldStart("subscriptions");
 			for(String subscription : notification.getSubscriptions()) {
-				jgen.writeString(subscription);
+				jgen.writeString(subscription.trim());
 			}
 			jgen.writeEndArray();
 			
@@ -183,7 +183,7 @@ public class Notification extends JPAEntity implements Serializable {
 			JsonNode subscriptionsArrayNode = rootNode.get("subscriptions");
 			if(subscriptionsArrayNode.isArray()) {
 				for(JsonNode subscriptionNode : subscriptionsArrayNode) {
-					subscriptions.add(subscriptionNode.asText());
+					subscriptions.add(subscriptionNode.asText().trim());
 				}
 			}
 			notification.setSubscriptions(subscriptions);

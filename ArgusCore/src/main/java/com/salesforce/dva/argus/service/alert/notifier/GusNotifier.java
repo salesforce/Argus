@@ -190,9 +190,9 @@ public class GusNotifier extends AuditNotifier {
 		
 		if(context.getTriggeredMetric()!=null) {
 			if(status == NotificationStatus.TRIGGERED){
-				sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+				sb.append(MessageFormat.format("Triggered on Metric: {0}", context.getTriggeredMetric().getIdentifier()));
 			}else {
-				sb.append(MessageFormat.format("<b>Cleared on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+				sb.append(MessageFormat.format("Cleared on Metric: {0}", context.getTriggeredMetric().getIdentifier()));
 			}
 		}
 		

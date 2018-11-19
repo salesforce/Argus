@@ -77,7 +77,6 @@ public class Diff_VTransformTest {
         diff_vTransform.transform(null, metrics, constants);
     }
 
-    @Test(expected = IllegalArgumentException.class)
     public void testDiff_VTransformVectorWithoutPoints() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
         Map<Long, Double> datapoints = new HashMap<Long, Double>();
@@ -93,7 +92,9 @@ public class Diff_VTransformTest {
 
         metrics.add(metric);
         metrics.add(vector);
-        diff_vTransform.transform(null, metrics);
+        List<Metric> result = diff_vTransform.transform(null, metrics);
+
+        assertEquals(result.get(0).getDatapoints().size(), 0);
     }
 
     @Test
