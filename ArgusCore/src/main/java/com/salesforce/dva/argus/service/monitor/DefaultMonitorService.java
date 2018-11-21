@@ -681,7 +681,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 					try {
 						_pushCounters();
 					} catch (Exception ex) {
-						_logger.error("Error occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, ex.getMessage());
+						_logger.error("Error occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, ex);
 					}
 				}
 			}
