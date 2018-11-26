@@ -38,7 +38,6 @@ import static java.math.BigInteger.ZERO;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -104,7 +102,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private static final String USERTAG = "user";
 	private static final BigInteger DEFAULTALERTID = new BigInteger("0");
 	private static final String DEFAULTUSER = "none";
-
+	private static final Long EVALUATIONDELAY = 1000L * 60;
 	//~ Instance fields ******************************************************************************************************************************
 
 	private final Logger _logger = LoggerFactory.getLogger(DefaultAlertService.class);
@@ -363,6 +361,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		for(AlertWithTimestamp alertWithTimestamp : alertsWithTimestamp) {
 			String serializedAlert = alertWithTimestamp.getSerializedAlert();
+
+			_logger.debug(MessageFormat.format("serializedAlert {0}", serializedAlert));
+
 			Alert alert;
 			try {
 				alert = _mapper.readValue(serializedAlert, Alert.class);
@@ -378,6 +379,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			if(!_shouldEvaluateAlert(alert, alert.getId())) {
 
 				logAlertStatsOnFailure(alert.getId(), alert.getOwner().getUserName());
+
 				continue;
 			}
 
@@ -430,10 +432,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		Set<Alert> alerts = new HashSet<>(alertsByNotificationId.values());
 
 		for (Alert alert : alerts) {
+
 			long jobStartTime = System.currentTimeMillis();
 			long jobEndTime = 0;
 			Long alertEnqueueTimestamp = 0L;
 
+			updateAlertStartEvaluationStats(alertEnqueueTimestampsByAlertId, alert, jobStartTime);
 
 			String logMessage = null;
 			History history = null;
@@ -482,12 +486,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						_sendNotificationForMissingData(alert);
 						logMessage = MessageFormat.format("Metric data does not exist for alert expression: {0}. Sent notification for missing data.",
 								alert.getExpression());
-						_logger.info(logMessage);
+						_logger.debug(logMessage);
 						history.appendMessageNUpdateHistory(logMessage, null, 0);
 					} else {
 						logMessage = MessageFormat.format("Metric data does not exist for alert expression: {0}. Missing data notification was not enabled.",
 								alert.getExpression());
-						_logger.info(logMessage);
+						_logger.debug(logMessage);
 						history.appendMessageNUpdateHistory(logMessage, null, 0);
 					}
 
@@ -544,6 +548,24 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		} // end for
 		return historyList;
+	}
+
+	private void updateAlertStartEvaluationStats(Map<BigInteger, Long> alertEnqueueTimestampsByAlertId, Alert alert, long jobStartTime) {
+		Long alertEnqueueTimestamp = 0L;
+
+		Map<String, String> tags = new HashMap<>();
+		tags.put(USERTAG, alert.getOwner().getUserName());
+
+		if(alertEnqueueTimestampsByAlertId.containsKey(alert.getId())) {
+
+			alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
+
+			if(jobStartTime - alertEnqueueTimestamp > EVALUATIONDELAY) {
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_DELAYED, 1, tags);
+			} else {
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_STARTED, 1, tags);
+			}
+		}
 	}
 
 	private void logAlertStatsOnFailure(BigInteger alertid, String user) {
@@ -779,7 +801,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
 		}else {
 			tags.put("status", "failed");			
-			logMessage = MessageFormat.format("Failed to send notifiction to {0}", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+			logMessage = MessageFormat.format("Failed to send notification to {0}", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		}
 
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
@@ -791,7 +813,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags.put("notifyTarget", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 
-		_logger.info(logMessage);
+		_logger.debug(logMessage);
 		history.appendMessageNUpdateHistory(logMessage, null, 0);
 	}
 
@@ -934,6 +956,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			AlertWithTimestamp obj;
 			try {
 				String serializedAlert = _mapper.writeValueAsString(alert);
+
+				_logger.debug(MessageFormat.format("serializedAlert {0}", serializedAlert));
+
 				obj = new AlertWithTimestamp(serializedAlert, System.currentTimeMillis());
 			} catch (JsonProcessingException e) {
 				_logger.warn("Failed to serialize alert: {}.", alert.getId().intValue());
