@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
+import com.salesforce.dva.argus.service.alert.notifier.CallbackNotifier;
 import org.apache.http.HttpResponse;
 
 /**
@@ -14,9 +15,9 @@ import org.apache.http.HttpResponse;
  */
 public interface CallbackService {
 
-	HttpResponse sendNotification(DefaultAlertService.NotificationContext context);
+	HttpResponse sendNotification(DefaultAlertService.NotificationContext context, CallbackNotifier notifier);
 
-	class Request {
+	class CallbackRequest {
 		@JsonProperty(required = true)
 		private String uri;
 
@@ -33,7 +34,7 @@ public interface CallbackService {
 			return method;
 		}
 
-		public Request setMethod(Method method) {
+		public CallbackRequest setMethod(Method method) {
 			this.method = method;
 			return this;
 		}
@@ -42,7 +43,7 @@ public interface CallbackService {
 			return uri;
 		}
 
-		public Request setUri(String uri) {
+		public CallbackRequest setUri(String uri) {
 			this.uri = uri;
 			return this;
 		}
@@ -51,7 +52,7 @@ public interface CallbackService {
 			return body;
 		}
 
-		public Request setBody(String body) {
+		public CallbackRequest setBody(String body) {
 			this.body = body;
 			return this;
 		}
@@ -60,7 +61,7 @@ public interface CallbackService {
 			return header;
 		}
 
-		public Request setHeader(Map<String, String> header) {
+		public CallbackRequest setHeader(Map<String, String> header) {
 			this.header = header;
 			return this;
 		}

@@ -77,7 +77,6 @@ public class Sum_VTransformTest {
         sum_vTransform.transform(null, metrics, constants);
     }
 
-    @Test(expected = IllegalArgumentException.class)
     public void testSum_VTransformVectorWithoutPoints() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
         Map<Long, Double> datapoints = new HashMap<Long, Double>();
@@ -93,7 +92,8 @@ public class Sum_VTransformTest {
 
         metrics.add(metric);
         metrics.add(vector);
-        sum_vTransform.transform(null, metrics);
+        List<Metric> result = sum_vTransform.transform(null, metrics);
+        assertEquals(result.get(0).getDatapoints().size(), 0);
     }
 
     @Test

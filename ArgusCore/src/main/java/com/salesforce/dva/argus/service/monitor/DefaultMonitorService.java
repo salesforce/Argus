@@ -52,7 +52,6 @@ import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.ServiceManagementService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.UserService;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory.Function;
@@ -682,7 +681,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 					try {
 						_pushCounters();
 					} catch (Exception ex) {
-						_logger.error("Error occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, ex.getMessage());
+						_logger.error("Error occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, ex);
 					}
 				}
 			}

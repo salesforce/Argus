@@ -70,7 +70,7 @@ public class AnnotationCommitter extends AbstractCommitter {
                 int count = collectionService.commitAnnotations(ANNOTATION_CHUNK_SIZE, TIMEOUT);
 
                 if (count > 0) {
-                    LOGGER.info(MessageFormat.format("Committed {0} annotations.", count));
+                    LOGGER.info("Committed {} annotations.", count);
                     jobCounter.addAndGet(count);
                 }
                 Thread.sleep(POLL_INTERVAL_MS);
@@ -82,7 +82,7 @@ public class AnnotationCommitter extends AbstractCommitter {
                 LOGGER.info("Error occurred while committing annotations. Reason {}", ex.toString());
             }
         }
-        LOGGER.warn(MessageFormat.format("Annotation committer thread interrupted. {} annotations committed by this thread.", jobCounter.get()));
+        LOGGER.warn("Annotation committer thread interrupted. {} annotations committed by this thread.", jobCounter.get());
         collectionService.dispose();
         monitorService.dispose();
     }

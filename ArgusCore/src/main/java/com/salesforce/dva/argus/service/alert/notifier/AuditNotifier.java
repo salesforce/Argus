@@ -70,7 +70,7 @@ public class AuditNotifier extends DefaultNotifier {
 
 	//~ Static fields/initializers *******************************************************************************************************************
 
-	protected static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
+	public static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
 
 		@Override
 		protected SimpleDateFormat initialValue() {
@@ -201,7 +201,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 *
 	 * @return  The trigger detail information.
 	 */
-	protected String getTriggerDetails(Trigger trigger, NotificationContext context) {
+	public String getTriggerDetails(Trigger trigger, NotificationContext context) {
 		if (trigger != null) {
 			String triggerString = trigger.toString();
 			triggerString = TemplateReplacer.applyTemplateChanges(context, triggerString);
@@ -220,7 +220,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 *
 	 * @return  The fully constructed URL for the metric.
 	 */
-	protected String getMetricUrl(String metricToAnnotate, long triggerFiredTime) {
+	public String getMetricUrl(String metricToAnnotate, long triggerFiredTime) {
 		long start = triggerFiredTime - (6L * DateTimeConstants.MILLIS_PER_HOUR);
 		long end = Math.min(System.currentTimeMillis(), triggerFiredTime + (6L * DateTimeConstants.MILLIS_PER_HOUR));
 		String expression = MessageFormat.format("{0,number,#}:{1,number,#}:{2}", start, end, metricToAnnotate);
@@ -235,7 +235,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 * @return  The fully constructed URL for the expression.
 	 */
 	@SuppressWarnings("deprecation")
-	protected String getExpressionUrl(String expression) {
+	public String getExpressionUrl(String expression) {
 		String template = _config.getValue(Property.AUDIT_METRIC_URL_TEMPLATE.getName(), Property.AUDIT_METRIC_URL_TEMPLATE.getDefaultValue());
 		try {
 			expression = URLEncoder.encode(expression, "UTF-8");
@@ -252,7 +252,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 *
 	 * @return  The fully constructed URL for the alert.
 	 */
-	protected String getAlertUrl(BigInteger id) {
+	public String getAlertUrl(BigInteger id) {
 		String template = _config.getValue(Property.AUDIT_ALERT_URL_TEMPLATE.getName(), Property.AUDIT_ALERT_URL_TEMPLATE.getDefaultValue());
 
 		return template.replaceAll("\\$alertid\\$", String.valueOf(id));
@@ -301,9 +301,9 @@ public class AuditNotifier extends DefaultNotifier {
 		/** The prodoutage email to send notification. */
 		AUDIT_PRODOUTAGE_EMAIL_TEMPLATE("notifier.property.goc.prodoutage.email", "prodoutage@yourcompany.com"),
 		/** The alert URL template to use in notifications. */
-		AUDIT_ALERT_URL_TEMPLATE("notifier.property.alert.alerturl.template", "http://localhost:8080/argus/alertId"),
+		AUDIT_ALERT_URL_TEMPLATE("notifier.property.alert.alerturl.template", "http://localhost:8080/argus/#/alerts/$alertid$"),
 		/** The metric URL template to use in notifications. */
-		AUDIT_METRIC_URL_TEMPLATE("notifier.property.alert.metricurl.template", "http://localhost:8080/argus/metrics");
+		AUDIT_METRIC_URL_TEMPLATE("notifier.property.alert.metricurl.template", "http://localhost:8080/argus/#/viewmetrics?expression=$expression$");
 
 
 		private final String _name;

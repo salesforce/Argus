@@ -202,6 +202,8 @@ public interface MonitorService extends Service {
         ALERTS_SCHEDULED("argus.core", "alerts.scheduled"),
         ALERTS_SCHEDULING_QUEUE_SIZE("argus.core", "alerts.scheduleQueue.size"),
         ALERTS_EVALUATED("argus.core", "alerts.evaluated"),
+        ALERTS_EVALUATION_STARTED("argus.alerts", "evaluation.started"),
+        ALERTS_EVALUATION_DELAYED("argus.alerts", "evaluation.delayed"),
         ALERTS_FAILED("argus.core", "alerts.failed"),
         ALERTS_EVALUATION_LATENCY("argus.core", "alerts.evaluation.latency"),
         ALERTS_UPDATE_LATENCY("argus.core","alerts.update.latency"),
