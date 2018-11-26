@@ -111,10 +111,10 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 		request.setHeader(header);
 
 		notificationMessage = MessageFormat.format("Callback via Url {0} Method {1} Body {2}",
-				request.getUri(), request.getMethod().name(), getResolvedBody(context, request));
+				request.getUri(), request.getMethod().name(), payload);
 
 		try {
-			HttpResponse response = sendNotification(buildRequest(context, request), notificationMessage);
+			HttpResponse response = sendNotification(buildRequest(request), notificationMessage);
 			return response;
 		} catch (Exception e) {
 			return errorResponse(notificationMessage + " failed. ", e);
@@ -191,7 +191,8 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 
 		if(!expression.equals("")) {
-			alertBuilder.add("evaluatedMetricUrl", notifier.getMetricUrl(expression, context.getTriggerFiredTime()));
+
+			alertBuilder.add("evaluatedMetricUrl", notifier.getExpressionUrl(expression));
 		}else {
 			alertBuilder.add("evaluatedMetric", alert.getExpression());
 		}
@@ -209,32 +210,19 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 		super.dispose();
 	}
 
-	private HttpUriRequest buildRequest(DefaultAlertService.NotificationContext context,
-			CallbackService.CallbackRequest request) {
+	private HttpUriRequest buildRequest(CallbackService.CallbackRequest request) {
 		RequestBuilder builder = RequestBuilder
 				.create(request.getMethod().name())
 				.setUri(request.getUri())
-				.setEntity(getBody(context, request));
+				.setEntity(getBody(request));
 		request.getHeader().forEach((k, v) -> builder.addHeader(k, v));
 
 		return builder.build();
 	}
 
-	private String getResolvedBody(DefaultAlertService.NotificationContext context,
-							   CallbackService.CallbackRequest request) {
-
-		if (request.getBody() != null) {
-			String body = request.getBody();
-			body = TemplateReplacer.applyTemplateChanges(context, body);
-			return body;
-		}
-		return null;
-	}
-
-		private HttpEntity getBody(DefaultAlertService.NotificationContext context,
-			CallbackService.CallbackRequest request)
+		private HttpEntity getBody(CallbackService.CallbackRequest request)
 	{
-		String body = getResolvedBody(context, request);
+		String body = request.getBody();
 
 		if (body != null) {
 			StringEntity entity;
