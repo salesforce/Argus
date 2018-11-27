@@ -95,9 +95,10 @@ public class MetricZipperTransform implements Transform {
             return metrics;
         }
         
-        
-        SystemAssert.requireArgument(metrics.size() >= 2 && metrics.get(metrics.size() - 1) != null,
-            "Cannot transform without a base metric as second param!");
+        if(metrics.size() < 2) {
+          	_logger.debug( "Zipper transform requires a base metric as second param! Since this is not present, skipping the metric");
+          	return new ArrayList<Metric>();
+        }
         
         return zip(metrics.subList(0, metrics.size() - 1), metrics.get(metrics.size() - 1));
     }
