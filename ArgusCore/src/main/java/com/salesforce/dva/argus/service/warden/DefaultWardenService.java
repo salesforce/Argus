@@ -415,8 +415,11 @@ public class DefaultWardenService extends DefaultJPAService implements WardenSer
         if (wardenAlert == null) {
             wardenAlert = _constructWardenAlertForUser(user, counter);
         }
-        wardenAlert.setEnabled(true);
-        _alertService.updateAlert(wardenAlert);
+        
+        if(!wardenAlert.isEnabled()) {
+            wardenAlert.setEnabled(true);
+           _alertService.updateAlert(wardenAlert);
+        }
     }
 
     private void _enableWarden(boolean enabled) {

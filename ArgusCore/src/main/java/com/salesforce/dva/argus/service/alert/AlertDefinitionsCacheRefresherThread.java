@@ -33,7 +33,6 @@ package com.salesforce.dva.argus.service.alert;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.service.AlertService;
+import com.salesforce.dva.argus.service.MonitorService.Counter;
 
 public class AlertDefinitionsCacheRefresherThread extends Thread{
 
@@ -64,13 +64,15 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 	}
 
 	public void run() {
+		long lastExecutionTime = 0L;
 		while (!isInterrupted()) {
-			long executionTime = 0L;
+			long executionTime = 0L, currentExecutionTime = 0L;
 			try {
 				_logger.info("Starting alert definitions cache refresh");
 				long startTime = System.currentTimeMillis();
 				if(!alertDefinitionsCache.isAlertsCacheInitialized()) {
 					List<Alert> enabledAlerts = alertService.findAlertsByStatus(true);
+					lastExecutionTime = System.currentTimeMillis();
 					Map<BigInteger, Alert> enabledAlertsMap = enabledAlerts.stream().collect(Collectors.toMap(alert -> alert.getId(), alert -> alert));
 					for(Alert a : enabledAlerts) {
 						addEntrytoCronMap(a);
@@ -79,10 +81,37 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 					alertDefinitionsCache.setAlertsCacheInitialized(true);
 				}else {
 					List<Alert> modifiedAlerts = alertService.findAlertsModifiedAfterDate(new Date(startTime - Math.max(executionTime + REFRESH_INTERVAL_MILLIS, LOOKBACK_PERIOD_FOR_REFRESH_MILLIS)));
+					currentExecutionTime = System.currentTimeMillis();
 					// updating only the modified/deleted alerts in the cache
+					long sumTimeToDiscover = 0L;
+					long sumTimeToDiscoverNew = 0L;
+					int newAlertsCount = 0;
+					int updatedAlertsCount = 0;
 					if(modifiedAlerts!=null && modifiedAlerts.size()>0) {
 						for(Alert a : modifiedAlerts) {
-							_logger.debug("Processing modified alert - {},{},{},{} ", a.getId(), a.getName(), a.getCronEntry(), a.getExpression());
+							// calculate the time to discover the update or the creation
+							long timeToDiscover = currentExecutionTime - a.getModifiedDate().getTime();
+							
+							// if the creationTime is after last execution, then we treat this as newly
+							// created and record the time to discover of newly created alert.
+							// NOTE: due to time difference between DB and this machine there could be 
+							//       miss datapoint, I hope that by judging whether updated time is less
+							//       then 1 seconds away from the creation time, we can recognized
+							//       the potentially missed creation.
+							if (lastExecutionTime > 0) {
+								if (a.getCreatedDate().getTime() >= lastExecutionTime && a.getCreatedDate().getTime() < currentExecutionTime) {
+									timeToDiscover = currentExecutionTime - a.getCreatedDate().getTime();
+									sumTimeToDiscoverNew += timeToDiscover;
+									newAlertsCount ++;
+									_logger.debug("Found new alert {} which was created at {}, lastExecutionTime {}, currentExecutionTime {}, timeToDiscover {}", 
+											a.getId().toString(), a.getCreatedDate().getTime(), lastExecutionTime, currentExecutionTime, timeToDiscover);
+								}else if (a.getModifiedDate().getTime() >= lastExecutionTime) {
+									sumTimeToDiscover += timeToDiscover;
+									updatedAlertsCount ++;
+								}
+							}
+							_logger.debug("Processing modified alert - {},{},{},{} after {} milliseconds ", a.getId(),
+									a.getName(), a.getCronEntry(), a.getExpression(), timeToDiscover);
 							if(alertDefinitionsCache.getAlertsMapById().containsKey(a.getId())) {
 								if(a.isDeleted() || !a.isEnabled()) {
 									alertDefinitionsCache.getAlertsMapById().remove(a.getId());  
@@ -99,8 +128,29 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 							}
 						}
 					}
+					
+					alertService.updateCounter(Counter.ALERTS_UPDATED_COUNT, (double)modifiedAlerts.size());
 					_logger.info("Number of modified alerts since last refresh - " + modifiedAlerts.size());
+					
+					if (updatedAlertsCount > 0) {
+						long avgTimeToDiscover = sumTimeToDiscover / updatedAlertsCount;
+						alertService.updateCounter(Counter.ALERTS_UPDATE_LATENCY, (double)avgTimeToDiscover);
+						_logger.info("Average time to discovery of change - " + avgTimeToDiscover + " milliseconds");
+					}
+
+					if (newAlertsCount > 0) {
+						_logger.info("Number of created alerts since last refresh - " + newAlertsCount);
+						long avgTimeToDiscoverNewAlert = sumTimeToDiscoverNew / newAlertsCount;
+						alertService.updateCounter(Counter.ALERTS_NEW_LATENCY, (double)avgTimeToDiscoverNewAlert);
+						_logger.info("Average time to discovery of new alert - " + avgTimeToDiscoverNewAlert + " milliseconds");
+					}
 				}
+				
+				if (lastExecutionTime > 0) {
+					_logger.info("AlertCache was refreshed after {} millisec", currentExecutionTime - lastExecutionTime);
+				}
+
+				lastExecutionTime = currentExecutionTime;
 				executionTime = System.currentTimeMillis() - startTime;
 				_logger.info("Alerts cache refreshed successfully in {} millis. Number of alerts in cache - {}", executionTime, alertDefinitionsCache.getAlertsMapById().keySet().size());
 				if(executionTime < REFRESH_INTERVAL_MILLIS) {

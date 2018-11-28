@@ -3,7 +3,7 @@
 #
 BuildArch:     noarch
 Name:          argusclient
-Version:       4.50
+Version:       4.53
 Release:       1
 License:       BSD-3-Clause
 Group:         Applications/System

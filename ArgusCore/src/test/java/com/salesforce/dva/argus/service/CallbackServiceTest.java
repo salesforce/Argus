@@ -36,12 +36,13 @@ public class CallbackServiceTest extends AbstractTest {
 				"* * * * *");
 		final Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
 
-		final String jsonBody = "{ \"uri\" : \"http://localhost:9600\", \"method\" : \"POST\", \"header\": { \"Content-Type\": \"application/json\" }, \"body\": \"{ \\\"triggerName\\\": \\\"${trigger.name}\\\", \\\"alertName\\\": \\\"${alert.name}\\\" }\" }";
 		final Notification notification = new Notification("notification_name",
 				alert,
 				"notifier_name",
-				Collections.singletonList(jsonBody),
+				Collections.singletonList("http://localhost:9600"),
 				23);
+
+		notification.setCustomText("{ \"triggerName\": \"${trigger.name}\", \"alertName\": \"${alert.name}\" }");
 
 		alert.setTriggers(Collections.singletonList(trigger));
 		alert.setNotifications(Collections.singletonList(notification));
@@ -59,9 +60,7 @@ public class CallbackServiceTest extends AbstractTest {
 		CallbackNotifier notifier = (CallbackNotifier) system.getServiceFactory()
 				.getAlertService()
 				.getNotifier(AlertService.SupportedNotifier.CALLBACK);
-		int notificationCounter = 3;
-
-
+		int notificationCounter = 5;
 
 		IntStream.range(0, notificationCounter).forEach(i -> notifier.sendNotification(context));
 		assertThat("Unexpected number of triggered alerts.",

@@ -74,10 +74,11 @@ public class WardenApiNotifier extends WardenNotifier {
     }
 
     @Override
-    protected void sendAdditionalNotification(NotificationContext context) {
+    protected boolean sendAdditionalNotification(NotificationContext context) {
         _wardenService.suspendUser(super.getWardenUser(context.getAlert().getName()), SubSystem.API);
         super.addAnnotationSuspendedUser(context, SubSystem.API);
         super.sendWardenEmailToUser(context, SubSystem.API);
+        return true;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

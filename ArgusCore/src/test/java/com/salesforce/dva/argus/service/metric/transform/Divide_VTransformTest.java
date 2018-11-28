@@ -55,14 +55,15 @@ public class Divide_VTransformTest {
         divide_vTransform.transform(null, metrics);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testDivide_VTransformWithOnlyOneMetric() {
         Transform divide_vTransform = new MetricZipperTransform(new DivideValueZipper());
         List<Metric> metrics = new ArrayList<Metric>();
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metrics.add(metric);
-        divide_vTransform.transform(null, metrics);
+        List<Metric> result = divide_vTransform.transform(null, metrics);
+        assertEquals(result.size(), 0);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -75,10 +76,10 @@ public class Divide_VTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        divide_vTransform.transform(null, metrics, constants);
+        List<Metric> result = divide_vTransform.transform(null, metrics, constants);
+        assertEquals(result.get(0).getDatapoints().size(), 0);
     }
 
-    @Test(expected = IllegalArgumentException.class)
     public void testDivide_VTransformVectorWithoutPoints() {
         Transform divide_vTransform = new MetricZipperTransform(new DivideValueZipper());
         Map<Long, Double> datapoints = new HashMap<Long, Double>();
@@ -97,7 +98,6 @@ public class Divide_VTransformTest {
         divide_vTransform.transform(null, metrics);
     }
 
-    @Test(expected = SystemException.class)
     public void testDivide_VTransformVectorWithZeroAsDividend() {
         Transform divide_vTransform = new MetricZipperTransform(new DivideValueZipper());
         Map<Long, Double> datapoints = new HashMap<Long, Double>();
@@ -120,7 +120,11 @@ public class Divide_VTransformTest {
 
         metrics.add(metric);
         metrics.add(vector);
-        divide_vTransform.transform(null, metrics);
+        List<Metric> result = divide_vTransform.transform(null, metrics);
+        
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+        assertEquals(result.get(0).getDatapoints().size(), 0);
+        assertEquals(expected, result.get(0).getDatapoints());
     }
 
     @Test

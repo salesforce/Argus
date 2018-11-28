@@ -38,6 +38,7 @@ import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.entity.TSDBEntity;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener.InjectLogger;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.CollectionService;
@@ -168,6 +169,17 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
         requireArgument(annotations != null, "The list of annotaions to submit cannot be null.");
         checkSubmitAnnotationPolicyRequirementsMet(submitter, annotations);
         _monitorService.modifyCounter(Counter.ANNOTATION_WRITES, annotations.size(), null);
+        
+        /* Replace unsupported characters in annotation */
+        for (Annotation annotation : annotations) {
+            annotation.setScope(TSDBEntity.replaceUnsupportedChars(annotation.getScope()));
+            annotation.setMetric(TSDBEntity.replaceUnsupportedChars(annotation.getMetric()));
+            Map<String, String> filteredTags = new HashMap<>();
+            for(String tagKey : annotation.getTags().keySet()) {
+                filteredTags.put(TSDBEntity.replaceUnsupportedChars(tagKey), TSDBEntity.replaceUnsupportedChars(annotation.getTags().get(tagKey)));
+            }
+            annotation.setTags(filteredTags);
+        }
         _mqService.enqueue(ANNOTATION.getQueueName(), annotations);
     }
 
@@ -308,6 +320,20 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
                 batches.add(batch);
                 batch = new ArrayList<Metric>(BATCH_METRICS);
             }
+            
+            /*
+             * We are doing the unsupported character replacement before we write to the queue.
+             * This way the same data is seen by any downstream schema or metric consumers, and both will be in sync.
+             */
+            metric.setScope(TSDBEntity.replaceUnsupportedChars(metric.getScope()));
+            metric.setMetric(TSDBEntity.replaceUnsupportedChars(metric.getMetric()));
+            metric.setNamespace(TSDBEntity.replaceUnsupportedChars(metric.getNamespace()));
+            Map<String, String> filteredTags = new HashMap<>();
+            for(String tagKey : metric.getTags().keySet()) {
+                filteredTags.put(TSDBEntity.replaceUnsupportedChars(tagKey), TSDBEntity.replaceUnsupportedChars(metric.getTags().get(tagKey)));
+            }
+            metric.setTags(filteredTags);
+            
             batch.add(metric);
             count++;
         }

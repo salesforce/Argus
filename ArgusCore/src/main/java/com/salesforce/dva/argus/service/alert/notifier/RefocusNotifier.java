@@ -86,16 +86,16 @@ public class RefocusNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
-		_sendRefocusNotification(context, true);
+	protected boolean sendAdditionalNotification(NotificationContext context) {
+		return _sendRefocusNotification(context, true);
 	}
 
 	@Override
-	protected void clearAdditionalNotification(NotificationContext context) {
-		_sendRefocusNotification(context, false);
+	protected boolean clearAdditionalNotification(NotificationContext context) {
+		return _sendRefocusNotification(context, false);
 	}
 
-	private void _sendRefocusNotification(NotificationContext context, boolean isTriggerActive) {
+	private boolean _sendRefocusNotification(NotificationContext context, boolean isTriggerActive) {
 		List<String> aspectPaths = context.getNotification().getSubscriptions();
 
 		//TODO: get customer specified refocus sample values when UI is ready, currently use 1 for active trigger and 0 for non-active trigger
@@ -106,6 +106,9 @@ public class RefocusNotifier extends AuditNotifier {
 			sendMessage(aspect,  isTriggerActive);
 		}
 
+		//NOTE: If we failed in sending certain aspect of Refocus, but not all, do we say refocus is available?
+		//      Ignore it for now.
+		return true;
 	}
 
 	/**

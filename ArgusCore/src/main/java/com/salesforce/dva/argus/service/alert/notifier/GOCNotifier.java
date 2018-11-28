@@ -31,6 +31,23 @@
 
 package com.salesforce.dva.argus.service.alert.notifier;
 
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.sql.Date;
+import java.text.MessageFormat;
+import java.util.Properties;
+
+import javax.persistence.EntityManager;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
+import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
+import org.slf4j.Logger;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
@@ -44,29 +61,11 @@ import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.AlertService.Notifier.NotificationStatus;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.sql.Date;
-import java.text.MessageFormat;
-import java.util.Properties;
-
-import javax.persistence.EntityManager;
-
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
-import org.slf4j.Logger;
-
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
  * Implementation of notifier interface for notifying GOC++.
@@ -130,8 +129,9 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  srActionable  Is the GOC notification SR actionable
 	 * @param  lastNotified  The last message time. (typically current time)
 	 * @param triggeredOnMetric The corresponding metric
+	 * @return true if succeed, false if fail
 	 */
-	public void sendMessage(Severity severity, String className, String elementName, String eventName, String message,
+	public boolean sendMessage(Severity severity, String className, String elementName, String eventName, String message,
 							int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
 		requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
 		requireArgument(eventName != null && !eventName.isEmpty(), "EventName cannot be null or empty.");
@@ -180,10 +180,12 @@ public class GOCNotifier extends AuditNotifier {
 						} else {
 							_logger.error("Failure - send GOC++ having element '{}' event '{}' severity {}. Response code '{}' response '{}'",
 									elementName, eventName, severity.name(), respCode, post.getResponseBodyAsString());
+							return false;
 						}
 					} catch (Exception e) {
 						_logger.error("Failure - send GOC++ having element '{}' event '{}' severity {}. Exception '{}'", elementName, eventName,
 								severity.name(), e);
+						return false;
 					} finally {
 						if(post != null){
 							post.releaseConnection();
@@ -197,6 +199,8 @@ public class GOCNotifier extends AuditNotifier {
 			_logger.info("Sending GOC++ notification is disabled.  Not sending message for element '{}' event '{}' severity {}.", elementName,
 					eventName, severity.name());
 		}
+		
+		return true;
 	}
 
 	private static String _truncateIfSizeGreaterThan(String str, int maxAllowed) {
@@ -214,13 +218,13 @@ public class GOCNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
-		_sendAdditionalNotification(context, NotificationStatus.TRIGGERED);
+	protected boolean sendAdditionalNotification(NotificationContext context) {
+		return _sendAdditionalNotification(context, NotificationStatus.TRIGGERED);
 	}
 
 	@Override
-	protected void clearAdditionalNotification(NotificationContext context) {
-		_sendAdditionalNotification(context, NotificationStatus.CLEARED);
+	protected boolean clearAdditionalNotification(NotificationContext context) {
+		return _sendAdditionalNotification(context, NotificationStatus.CLEARED);
 	}
 
 	/**
@@ -228,8 +232,9 @@ public class GOCNotifier extends AuditNotifier {
 	 *
 	 * @param  context  The notification context.  Cannot be null.
 	 * @param  status   The notification status.  If null, will set the notification severity to <tt>ERROR</tt>
+	 * @throws SendNotificationException 
 	 */
-	protected void _sendAdditionalNotification(NotificationContext context, NotificationStatus status) {
+	protected boolean _sendAdditionalNotification(NotificationContext context, NotificationStatus status) {
 		requireArgument(context != null, "Notification context cannot be null.");
 		
 		if(status == NotificationStatus.TRIGGERED) {
@@ -259,7 +264,7 @@ public class GOCNotifier extends AuditNotifier {
 		String body = getGOCMessageBody(notification, trigger, context, status);
 		Severity sev = status == NotificationStatus.CLEARED ? Severity.OK : Severity.ERROR;
 
-		sendMessage(sev, TemplateReplacer.applyTemplateChanges(context, context.getNotification().getName()), TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName()), body,
+		return sendMessage(sev, TemplateReplacer.applyTemplateChanges(context, context.getNotification().getName()), TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName()), body,
 				context.getNotification().getSeverityLevel(),context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric());
 	}
 
@@ -300,9 +305,9 @@ public class GOCNotifier extends AuditNotifier {
 
 		if(context.getTriggeredMetric()!=null) {
 			if(notificationStatus == NotificationStatus.TRIGGERED){
-				sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+				sb.append(MessageFormat.format("Triggered on Metric: {0}", context.getTriggeredMetric().getIdentifier()));
 			}else {
-				sb.append(MessageFormat.format("<b>Cleared on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+				sb.append(MessageFormat.format("Cleared on Metric: {0}", context.getTriggeredMetric().getIdentifier()));
 			}
 		}
 		

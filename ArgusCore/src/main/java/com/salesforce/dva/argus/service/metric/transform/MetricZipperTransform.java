@@ -40,6 +40,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * This class transforms a list of metrics in a mapping way, which means apply the same function to every metric. More specifically, an interface
  * valueMapping will be passed in , which implements how to apply a mapping function to datapoints of every metric.
@@ -55,6 +58,8 @@ public class MetricZipperTransform implements Transform {
     protected static String FULLJOIN = "UNION";
     protected Boolean fulljoinIndicator = false;
 
+	private final Logger _logger = LoggerFactory.getLogger(MetricZipperTransform.class);
+	
     //~ Constructors *********************************************************************************************************************************
 
     /**
@@ -90,8 +95,10 @@ public class MetricZipperTransform implements Transform {
             return metrics;
         }
         
-        SystemAssert.requireArgument(metrics.size() >= 2 && metrics.get(metrics.size() - 1) != null,
-            "Cannot transform without a base metric as second param!");
+        if(metrics.size() < 2) {
+          	_logger.debug( "Zipper transform requires a base metric as second param! Since this is not present, skipping the metric");
+          	return new ArrayList<Metric>();
+        }
         
         return zip(metrics.subList(0, metrics.size() - 1), metrics.get(metrics.size() - 1));
     }
@@ -105,9 +112,12 @@ public class MetricZipperTransform implements Transform {
      * @return  The merged metrics.
      */
     public List<Metric> zip(List<Metric> metrics, Metric baseMetric) {
-        SystemAssert.requireArgument(baseMetric != null, "Zipper transform requires base metric as second param!");
-
         List<Metric> zippedMetrics = new ArrayList<Metric>();
+        if(baseMetric == null) {
+            _logger.debug( "Zipper transform requires base metric as second param! Since this is null, skipping the metric");
+            return zippedMetrics;
+        }
+        
         Map<Long, Double> baseDatapoints = baseMetric.getDatapoints();
 
         for (Metric metric : metrics) {
@@ -129,10 +139,11 @@ public class MetricZipperTransform implements Transform {
      * @return  The merged data points.
      */
     public Map<Long, Double> zip(Map<Long, Double> originalDatapoints, Map<Long, Double> baseDatapoints) {
-        SystemAssert.requireArgument(baseDatapoints != null && !baseDatapoints.isEmpty(),
-            "Zipper transform requires valid baseDatapoints from base metric!");
-
         Map<Long, Double> zippedDP = new HashMap<>();
+        if(baseDatapoints == null || baseDatapoints.isEmpty()) {
+            _logger.debug("Zipper transform requires valid baseDatapoints from base metric. Since this is empty, skipping the metric");
+            return zippedDP; 
+        }
 
         for (Map.Entry<Long, Double> originalDP : originalDatapoints.entrySet()) {
             Long originalKey = originalDP.getKey();
@@ -141,7 +152,10 @@ public class MetricZipperTransform implements Transform {
             // if base datapoints doesn't have the key, give it null
             Double baseVal = baseDatapoints.containsKey(originalKey) ? baseDatapoints.get(originalKey) : null;
 
-            zippedDP.put(originalKey, this.valueZipper.zip(originalVal, baseVal));
+            Double zippedValue = this.valueZipper.zip(originalVal, baseVal);
+            if(zippedValue!=null) {
+                zippedDP.put(originalKey, zippedValue);
+            }
         }
         
         // if a point exists in the baseDP but does not exist in the original set, 
@@ -151,7 +165,10 @@ public class MetricZipperTransform implements Transform {
                 Long baseDPKey = baseDP.getKey();
 
                 if(!zippedDP.containsKey(baseDPKey)) {
-                    zippedDP.put(baseDPKey, this.valueZipper.zip(null, baseDP.getValue()));
+                    Double zippedValue = this.valueZipper.zip(null, baseDP.getValue());
+                    if(zippedValue!=null) {
+                        zippedDP.put(baseDPKey, zippedValue);
+                    }
                 }
             }
         }

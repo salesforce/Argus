@@ -78,8 +78,12 @@ class Alerter implements Runnable {
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
+                int currentAlertCount = jobCounter.get();
                 jobCounter.addAndGet(service.executeScheduledAlerts(50, timeout).size());
-                LOGGER.info("alerts evaluated so far: {}", jobCounter.get()); 
+
+                if(jobCounter.get() != currentAlertCount) {
+                    LOGGER.info("alerts evaluated so far: {}", jobCounter.get());
+                }
                 Thread.sleep(POLL_INTERVAL_MS);
             } catch (InterruptedException ex) {
                 LOGGER.info("Execution was interrupted.");
@@ -89,7 +93,7 @@ class Alerter implements Runnable {
                 LOGGER.error("Exception in alerter: {}", ExceptionUtils.getFullStackTrace(ex));
             }
         }
-        LOGGER.warn(MessageFormat.format("Alerter thread interrupted. {} alerts evaluated by this thread.", jobCounter.get()));
+        LOGGER.warn("Alerter thread interrupted. {} alerts evaluated by this thread.", jobCounter.get());
         service.dispose();
     }
 }

@@ -95,7 +95,7 @@ public class MetricCommitter extends AbstractCommitter {
                 LOGGER.info("Error occurred while committing metrics. Reason {}", ex.toString());
             }
         }
-        LOGGER.warn(MessageFormat.format("Metric committer thread interrupted. {} datapoints committed by this thread.", jobCounter.get()));
+        LOGGER.warn("Metric committer thread interrupted. {} datapoints committed by this thread.", jobCounter.get());
         collectionService.dispose();
         monitorService.dispose();
     }

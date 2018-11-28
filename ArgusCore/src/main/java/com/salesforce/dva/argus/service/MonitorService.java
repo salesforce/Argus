@@ -31,11 +31,10 @@
 
 package com.salesforce.dva.argus.service;
 
+import java.util.Map;
+
 import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.service.monitor.GaugeExporter;
-
-import java.util.Map;
 
 /**
  * Provides methods to update and record system counters to be used in monitoring and alerting. All counters are reset after their values have been
@@ -203,8 +202,13 @@ public interface MonitorService extends Service {
         ALERTS_SCHEDULED("argus.core", "alerts.scheduled"),
         ALERTS_SCHEDULING_QUEUE_SIZE("argus.core", "alerts.scheduleQueue.size"),
         ALERTS_EVALUATED("argus.core", "alerts.evaluated"),
+        ALERTS_EVALUATION_STARTED("argus.alerts", "evaluation.started"),
+        ALERTS_EVALUATION_DELAYED("argus.alerts", "evaluation.delayed"),
         ALERTS_FAILED("argus.core", "alerts.failed"),
         ALERTS_EVALUATION_LATENCY("argus.core", "alerts.evaluation.latency"),
+        ALERTS_UPDATE_LATENCY("argus.core","alerts.update.latency"),
+        ALERTS_NEW_LATENCY("argus.core","alerts.new.latency"),
+        ALERTS_UPDATED_COUNT("argus.core","alerts.updated"),
         ALERTS_SKIPPED("argus.core", "alerts.skipped"),
         NOTIFICATIONS_SENT("argus.core", "notifications.sent"),
         TRIGGERS_VIOLATED("argus.core", "triggers.violated"),
