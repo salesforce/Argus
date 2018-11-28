@@ -54,14 +54,15 @@ public class Scale_VTransformTest {
         scale_vTransform.transform(null, metrics);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testScale_VTransformWithOnlyOneMetric() {
         Transform scale_vTransform = new MetricZipperTransform(new ScaleValueZipper());
         List<Metric> metrics = new ArrayList<Metric>();
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metrics.add(metric);
-        scale_vTransform.transform(null, metrics);
+        List<Metric> result = scale_vTransform.transform(null, metrics);
+        assertEquals(result.size(), 0);
     }
 
     @Test(expected = IllegalArgumentException.class)

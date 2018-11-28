@@ -55,14 +55,15 @@ public class Divide_VTransformTest {
         divide_vTransform.transform(null, metrics);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testDivide_VTransformWithOnlyOneMetric() {
         Transform divide_vTransform = new MetricZipperTransform(new DivideValueZipper());
         List<Metric> metrics = new ArrayList<Metric>();
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metrics.add(metric);
-        divide_vTransform.transform(null, metrics);
+        List<Metric> result = divide_vTransform.transform(null, metrics);
+        assertEquals(result.size(), 0);
     }
 
     @Test(expected = IllegalArgumentException.class)

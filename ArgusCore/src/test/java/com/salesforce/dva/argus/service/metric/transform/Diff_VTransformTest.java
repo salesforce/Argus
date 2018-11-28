@@ -54,14 +54,15 @@ public class Diff_VTransformTest {
         diff_vTransform.transform(null, metrics);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testDiff_VTransformWithOnlyOneMetric() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
         List<Metric> metrics = new ArrayList<Metric>();
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metrics.add(metric);
-        diff_vTransform.transform(null, metrics);
+        List<Metric> result = diff_vTransform.transform(null, metrics);
+        assertEquals(result.size(), 0);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -69,7 +70,6 @@ public class Diff_VTransformTest {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
         List<Metric> metrics = new ArrayList<Metric>();
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
-
         metrics.add(metric);
 
         List<String> constants = new ArrayList<String>();
