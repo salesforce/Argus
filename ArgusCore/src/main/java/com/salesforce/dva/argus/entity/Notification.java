@@ -46,31 +46,19 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.EntityManager;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.Lob;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.NoResultException;
-import javax.persistence.Query;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
+import javax.persistence.*;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.salesforce.dva.argus.service.AlertService;
+import scala.util.parsing.json.JSONObject;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -165,7 +153,7 @@ public class Notification extends JPAEntity implements Serializable {
 	public static class Deserializer extends JsonDeserializer<Notification> {
 
 		@Override
-		public Notification deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+		public Notification deserialize(com.fasterxml.jackson.core.JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
 			
 			Notification notification = new Notification();
 			
@@ -310,14 +298,32 @@ public class Notification extends JPAEntity implements Serializable {
 
     @Lob
     private String customText;
+    @Transient
+    private String CUSTOM_TEXT_KEY = "customText";
 
-    String articleNumber = null;
+    @Transient
+    private String eventName = null;
+    @Transient
+    private String EVENT_NAME_KEY = "eventName";
 
-    String elementName = null;
+    @Transient
+    private String elementName = null;
+    @Transient
+    private String ELEMENT_NAME_KEY = "elementName";
 
-    String eventName = null;
+    @Transient
+    private String productTag = null;
+    @Transient
+    private String PRODUCT_TAG_KEY = "productTag";
 
-    String productTag = null;
+    @Transient
+    private String articleNumber = null;
+    @Transient
+    private String ARTICLE_NUMBER_KEY = "articleNumber";
+
+    @Transient
+    private JsonObject GOCFields = null;
+
 
     @ElementCollection
     private Map<String, Long> cooldownExpirationByTriggerAndMetric = new HashMap<>();
@@ -720,41 +726,59 @@ public class Notification extends JPAEntity implements Serializable {
      * Return the custom text in order to include in the notification
 	 * @return the customText is optional
 	 */
-	public String getCustomText() {
-		return customText;
-	}
+	public String getCustomText() { return getGOCField(CUSTOM_TEXT_KEY); }
 
 	/**
 	 * Sets the custom text to the notification
 	 * @param customText customText is optional
 	 */
 	public void setCustomText(String customText) {
-		this.customText = customText;
+		setGOCField(CUSTOM_TEXT_KEY, customText);
 	}
 
 
-    public String getArticleNumber() { return articleNumber; }
+    public String getArticleNumber() { return getGOCField(ARTICLE_NUMBER_KEY); }
 
 
-    private void setArticleNumber(String articleNumber) { this.articleNumber = articleNumber; }
+    private void setArticleNumber(String articleNumber) { setGOCField(ARTICLE_NUMBER_KEY, articleNumber); }
 
 
-    public String getElementName() { return elementName; }
+    public String getElementName() { return getGOCField(ELEMENT_NAME_KEY); }
 
 
-    public void setElementName(String elementName) { this.elementName = elementName; }
+    public void setElementName(String elementName) { setGOCField(ELEMENT_NAME_KEY, elementName); }
 
 
-    public String getEventName() { return eventName; }
+    public String getEventName() { return getGOCField(EVENT_NAME_KEY); }
 
 
-    public void setEventName(String eventName) { this.eventName = eventName; }
+    public void setEventName(String eventName) { setGOCField(EVENT_NAME_KEY, eventName); }
 
 
-    public String getProductTag() { return productTag; }
+    public String getProductTag() { return getGOCField(PRODUCT_TAG_KEY); }
 
 
     public void setProductTag(String productTag) { this.productTag = productTag; }
+
+    private JsonObject getJsonObject() {
+        if (GOCFields == null) {
+            GOCFields = new JsonObject();
+            GOCFields = new JsonParser().parse(this.customText).getAsJsonObject();
+        }
+        return GOCFields;
+    }
+
+    private void setGOCField(final String fieldName, final String fieldValue) {
+        GOCFields = getJsonObject();
+        GOCFields.addProperty(fieldName, fieldValue);
+        this.customText = GOCFields.toString();
+    }
+
+    private String getGOCField(final String fieldName) {
+	    GOCFields = getJsonObject();
+	    return GOCFields.get(fieldName).getAsString();
+    }
+
 
 	@Override
     public int hashCode() {

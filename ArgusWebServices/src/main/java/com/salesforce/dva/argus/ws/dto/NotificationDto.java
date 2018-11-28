@@ -90,6 +90,15 @@ public class NotificationDto extends EntityDTO {
         for (Trigger trigger : notification.getTriggers()) {
             result.addTriggersIds(trigger);
         }
+
+        // Add values for GOC Objects.
+        result.setArticleNumber(notification.getArticleNumber());
+        result.setElementName(notification.getElementName());
+        result.setEventName(notification.getEventName());
+        result.setProductTag(notification.getProductTag());
+
+        //Override Custom Text Field
+        result.setCustomText(notification.getCustomText());
         return result;
     }
 
@@ -274,17 +283,7 @@ public class NotificationDto extends EntityDTO {
      *
      * @param  isSRActionable  True if  SR should monitor the notification
      */
-    public void setSRActionable(boolean isSRActionable, String articleNumber) {
-        this.isSRActionable = isSRActionable;
-        if (isSRActionable == true ) {
-            if (articleNumber == null || articleNumber.trim().isEmpty()) {
-                throw new IllegalArgumentException("SR Actionable is set as true, without providing the Article Number.");
-            }
-            else {
-                setArticleNumber(articleNumber);
-            }
-        }
-    }
+    public void setSRActionable(boolean isSRActionable) { this.isSRActionable = isSRActionable; }
     
     /**
      * Gets the severity level of notification
@@ -298,7 +297,7 @@ public class NotificationDto extends EntityDTO {
     public String getArticleNumber() { return articleNumber; }
 
 
-    private void setArticleNumber(String articleNumber) { this.articleNumber = articleNumber; }
+    public void setArticleNumber(String articleNumber) { this.articleNumber = articleNumber; }
 
 
     public String getElementName() { return elementName; }
@@ -343,7 +342,8 @@ public class NotificationDto extends EntityDTO {
         result.setName("sample-notification");
         result.setNotifierName("email");
         result.setSeverityLevel(5);
-        result.setSRActionable(true, "sample-articleNumber");
+        result.setSRActionable(true);
+        result.setArticleNumber("sample-articleNumber");
         result.setElementName("sample-elementName");
         result.setEventName("sample-eventName");
         result.setProductTag("sample-productTag");

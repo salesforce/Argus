@@ -739,6 +739,15 @@ public class AlertResources extends AbstractResource {
 				if (notificationId.equals(notification.getId())) {
 					copyProperties(notification, notificationDto);
 
+					//Add values for GOC Objects.
+					notification.setSRActionable(notification.getSRActionable(), notificationDto.getArticleNumber());
+					notification.setElementName(notificationDto.getElementName());
+					notification.setEventName(notificationDto.getEventName());
+					notification.setProductTag(notificationDto.getProductTag());
+
+					//Override Custom Text Field.
+					notification.setCustomText(notificationDto.getCustomText());
+
 					oldAlert.setModifiedBy(getRemoteUser(req));
 
 					Alert alert = alertService.updateAlert(oldAlert);
