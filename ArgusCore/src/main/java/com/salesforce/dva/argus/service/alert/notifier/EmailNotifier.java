@@ -105,7 +105,12 @@ public class EmailNotifier extends AuditNotifier {
         String body = getEmailBody(context, NotificationStatus.TRIGGERED);
         Set<String> to = _getNotificationSubscriptions(context);
 
-        return _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
+        boolean isSent = _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
+        if (!isSent) {
+            context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to send email for triggered notification: {0}.",
+                    context.getNotification().getName()), null, 0);
+        }
+        return isSent;
     }
 
     private Set<String> _getNotificationSubscriptions(NotificationContext context) {
@@ -225,7 +230,13 @@ public class EmailNotifier extends AuditNotifier {
         String body = getEmailBody(context, NotificationStatus.CLEARED);
         Set<String> to = _getNotificationSubscriptions(context);
 
-        return _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
+        boolean isSent = _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
+        if (!isSent) {
+            context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to send email for cleared notification: {0}.",
+                    context.getNotification().getName()), null, 0);
+
+        }
+        return isSent;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
