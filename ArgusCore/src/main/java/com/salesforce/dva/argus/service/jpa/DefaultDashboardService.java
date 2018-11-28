@@ -44,6 +44,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Date;
 import javax.persistence.EntityManager;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -109,7 +110,7 @@ public class DefaultDashboardService extends DefaultJPAService implements Dashbo
     public Dashboard updateDashboard(Dashboard dashboard) {
         requireNotDisposed();
         requireArgument(dashboard != null, "Cannot update a null dashboard");
-
+        dashboard.setModifiedDate(new Date());
         EntityManager em = emf.get();
         Dashboard result = mergeEntity(em, dashboard);
 

@@ -278,7 +278,7 @@ public class GOCNotifier extends AuditNotifier {
 		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 		String notificationMessage = notificationStatus == NotificationStatus.TRIGGERED ? "Triggered" : "Cleared";
 		
-		sb.append(MessageFormat.format("Alert {0} was {1} at 21}\n", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), notificationMessage,
+		sb.append(MessageFormat.format("Alert {0} was {1} at {2}\n", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), notificationMessage,
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
 		String customText = context.getNotification().getCustomText();
 		if( customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
@@ -429,10 +429,10 @@ public class GOCNotifier extends AuditNotifier {
 		private static final String SM_SEVERITY__C_FIELD = "SM_Severity__c";
 		private static final String SM_SOURCEDOMAIN__C_FIELD = "SM_SourceDomain__c";
 		private static final String SR_ACTIONABLE__C_FIELD = "SR_Actionable__c";
-		private static final String SM_USERDEFINED2__C_FIELD = "SR_Userdefined2__c";
-		private static final String SM_USERDEFINED3__C_FIELD = "SR_Userdefined3__c";
-		private static final String SM_USERDEFINED10__C_FIELD = "SR_Userdefined10__c";
-		private static final String SM_USERDEFINED12__C_FIELD = "SR_Userdefined12__c";
+		private static final String SM_USERDEFINED2__C_FIELD = "SM_Userdefined2__c";
+		private static final String SM_USERDEFINED3__C_FIELD = "SM_Userdefined3__c";
+		private static final String SM_USERDEFINED10__C_FIELD = "SM_Userdefined10__c";
+		private static final String SM_USERDEFINED12__C_FIELD = "SM_Userdefined12__c";
 
 		//~ Instance fields ******************************************************************************************************************************
 

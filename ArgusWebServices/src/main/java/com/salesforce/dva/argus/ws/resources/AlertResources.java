@@ -718,8 +718,18 @@ public class AlertResources extends AbstractResource {
 				throw new WebApplicationException("Null object cannot be updated.", Status.BAD_REQUEST);
 			}
 
-			PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
-			Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
+		        PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
+
+		        //Refocus Notification V1 release only for search team (and for Argus team testing)
+		        if (AlertService.SupportedNotifier.REFOCUS.getName().equals(notificationDto.getNotifierName())) {
+			    String ownerUserName = owner.getUserName();
+			    if (!"svc_monocle".equalsIgnoreCase(ownerUserName)  // search team username
+					&& !"svc_perfeng_tools".equalsIgnoreCase(ownerUserName)) { // argus team username
+				throw new WebApplicationException(Status.FORBIDDEN.getReasonPhrase(), Status.FORBIDDEN);
+		  	    }
+		        }
+
+		        Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
 
 			if (oldAlert == null) {
 				throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
