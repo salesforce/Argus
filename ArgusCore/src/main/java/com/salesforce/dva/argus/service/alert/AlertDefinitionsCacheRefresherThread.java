@@ -99,11 +99,12 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 							//       then 1 seconds away from the creation time, we can recognized
 							//       the potentially missed creation.
 							if (lastExecutionTime > 0) {
-								if (a.getCreatedDate().getTime() >= lastExecutionTime || 
-									Math.abs(a.getModifiedDate().getTime() - a.getCreatedDate().getTime()) < 1000) {
-									timeToDiscover = startTime - a.getCreatedDate().getTime();
+								if (a.getCreatedDate().getTime() >= lastExecutionTime && a.getCreatedDate().getTime() < currentExecutionTime) {
+									timeToDiscover = currentExecutionTime - a.getCreatedDate().getTime();
 									sumTimeToDiscoverNew += timeToDiscover;
 									newAlertsCount ++;
+									_logger.debug("Found new alert {} which was created at {}, lastExecutionTime {}, currentExecutionTime {}, timeToDiscover {}", 
+											a.getId().toString(), a.getCreatedDate().getTime(), lastExecutionTime, currentExecutionTime, timeToDiscover);
 								}else if (a.getModifiedDate().getTime() >= lastExecutionTime) {
 									sumTimeToDiscover += timeToDiscover;
 									updatedAlertsCount ++;
@@ -145,6 +146,10 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 					}
 				}
 				
+				if (lastExecutionTime > 0) {
+					_logger.info("AlertCache was refreshed after {} millisec", currentExecutionTime - lastExecutionTime);
+				}
+
 				lastExecutionTime = currentExecutionTime;
 				executionTime = System.currentTimeMillis() - startTime;
 				_logger.info("Alerts cache refreshed successfully in {} millis. Number of alerts in cache - {}", executionTime, alertDefinitionsCache.getAlertsMapById().keySet().size());
