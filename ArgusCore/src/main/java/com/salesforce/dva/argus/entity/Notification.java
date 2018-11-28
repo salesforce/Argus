@@ -120,7 +120,7 @@ public class Notification extends JPAEntity implements Serializable {
 			jgen.writeEndArray();
 
             if(customText != null) {
-                jgen.writeStringField("customText", notification.getCustomText());
+                jgen.writeStringField("customText", customText);
             }
 
 			if(articleNumber != null) {
@@ -761,9 +761,14 @@ public class Notification extends JPAEntity implements Serializable {
     public void setProductTag(String productTag) { this.productTag = productTag; }
 
     private JsonObject getJsonObject() {
-        if (GOCFields == null) {
+        if (GOCFields == null && this.customText != null) {
             GOCFields = new JsonObject();
-            GOCFields = new JsonParser().parse(this.customText).getAsJsonObject();
+            try {
+                GOCFields = new JsonParser().parse(this.customText).getAsJsonObject();
+            } catch (Exception e) {
+                GOCFields.addProperty(CUSTOM_TEXT_KEY, this.customText);
+                this.customText = GOCFields.toString();
+            }
         }
         return GOCFields;
     }
@@ -776,7 +781,11 @@ public class Notification extends JPAEntity implements Serializable {
 
     private String getGOCField(final String fieldName) {
 	    GOCFields = getJsonObject();
-	    return GOCFields.get(fieldName).getAsString();
+	    if (GOCFields != null && GOCFields.has(fieldName)) {
+	        return GOCFields.get(fieldName).getAsString();
+        } else {
+	        return null;
+        }
     }
 
 
