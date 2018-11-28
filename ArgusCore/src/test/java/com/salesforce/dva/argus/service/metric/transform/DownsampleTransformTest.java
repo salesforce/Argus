@@ -32,6 +32,9 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.util.QueryContext;
+import com.salesforce.dva.argus.util.QueryUtils;
+
 import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -40,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
 
@@ -991,7 +995,7 @@ public class DownsampleTransformTest {
 	}
 
 	@Test
-	public void testDownsampleWithAbsoluteIntervals() {
+	public void testDownsampleWithFillDefaultValues() {
 		Transform downsampleTransform = new DownsampleTransform();
 		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
         long startMillis = 1534368960000L; 
@@ -1032,6 +1036,52 @@ public class DownsampleTransformTest {
 		
 		List<Metric> result = downsampleTransform.transform(null, metrics, constants);
 
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
+
+	@Test
+	public void testDownsampleWithAbsoluteIntervals() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        long startMillis = 1534368960000L; 
+		datapoints_1.put(startMillis, 1.0);
+		datapoints_1.put(startMillis+60000L, 1.0);
+		datapoints_1.put(startMillis+2*60000L, 2.0);
+		datapoints_1.put(startMillis+3*60000L, 3.0);
+		datapoints_1.put(startMillis+4*60000L, 4.0);
+		datapoints_1.put(startMillis+7*60000L, 7.0);
+		datapoints_1.put(startMillis+8*60000L, 8.0);
+
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+		metric_1.setDatapoints(datapoints_1);
+
+		List<Metric> metrics = new ArrayList<Metric>();
+
+		metrics.add(metric_1);
+
+		List<String> constants = new ArrayList<String>();
+
+		constants.add("1m-sum");
+		constants.add("0.0");
+		constants.add("abs");
+		Map<Long, Double> expected_1 = new TreeMap<Long, Double>();
+
+		expected_1.put(startMillis, 1.0);
+		expected_1.put(startMillis+60000L, 1.0);
+		expected_1.put(startMillis+2*60000L, 2.0);
+		expected_1.put(startMillis+3*60000L, 3.0);
+		expected_1.put(startMillis+4*60000L, 4.0);
+		expected_1.put(startMillis+5*60000L, 0.0);
+		expected_1.put(startMillis+6*60000L, 0.0);
+		expected_1.put(startMillis+7*60000L, 7.0);
+		expected_1.put(startMillis+8*60000L, 8.0);
+		expected_1.put(startMillis+9*60000L, 0.0);	
+
+        QueryContext context = QueryUtils.getQueryContext(1534368960000L+":"+(1534368960000L+10*60000L)+":argus.core:alerts.evaluated:zimsum:1m-sum", 0L);
+		List<Metric> result = downsampleTransform.transform(context, metrics, constants);
+		
 		assertEquals(result.size(), 1);
 		assertEquals(expected_1, result.get(0).getDatapoints());
 	}

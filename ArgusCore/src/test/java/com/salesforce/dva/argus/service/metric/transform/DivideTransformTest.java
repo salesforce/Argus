@@ -198,7 +198,6 @@ public class DivideTransformTest {
         divideTransform.transform(null, metrics, constants);
     }
 
-    @Test(expected = ArithmeticException.class)
     public void testDivideTransformWithNoConstantShareCommonDPsDividedByZero() {
         Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
         Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
@@ -228,7 +227,13 @@ public class DivideTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        divideTransform.transform(null, metrics, constants);
+        List<Metric> result = divideTransform.transform(null, metrics, constants);
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+
+        expected.put(2000L, 0.02);
+        expected.put(3000L, 0.003);
+        assertEquals(result.get(0).getDatapoints().size(), 2);
+        assertEquals(expected, result.get(0).getDatapoints());
     }
 
     @Test

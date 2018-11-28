@@ -17,7 +17,7 @@ public class QueryUtils {
 	}
 	
 	public static Long[] getStartAndEndTimesWithMaxInterval(QueryContext context) {
-		Long[] queryStartAndEndTimes = new Long[2];
+		Long[] queryStartAndEndTimes = new Long[]{0L, 0L};
 		Queue<QueryContext> bfsQueue = new LinkedList<QueryContext>();
 		if(context!=null) {
 			bfsQueue.add(context);
@@ -40,6 +40,9 @@ public class QueryUtils {
 				}
 			}
 		}
+		// rounding up to nearest second
+		queryStartAndEndTimes[0] = (queryStartAndEndTimes[0]/1000)*1000;
+		queryStartAndEndTimes[1] = (queryStartAndEndTimes[1]/1000)*1000;
 		return queryStartAndEndTimes;
 	}
 

@@ -76,26 +76,12 @@ public class RangeTransformTest {
 
         expected.put(1000L, 1.0);
         expected.put(3000L, 3.0);
-
         List<Metric> result = rangeTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 2);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testRangeTransformWithConstants() {
-        Transform rangeTransform = new RangeTransformWrap();
-        Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
-        List<Metric> metrics = new ArrayList<Metric>();
-
-        metrics.add(metric);
-
-        List<String> constants = new ArrayList<String>();
-
-        constants.add("5");
-        rangeTransform.transform(null, metrics, constants);
-    }
 
     @Test
     public void testRangeTransformShareCommonDPs() {
@@ -166,9 +152,21 @@ public class RangeTransformTest {
         metrics.add(metric_2);
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        List<Metric> result = rangeTransform.transform(null, metrics);
+        List<String> constants = new ArrayList<String>();
+        constants.add("intersect");
+        List<Metric> result = rangeTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
+        assertEquals(expected, result.get(0).getDatapoints());
+        
+        result = rangeTransform.transform(null, metrics);
+        expected.put(1000L, 0.0);
+        expected.put(2000L, 0.0);
+        expected.put(3000L, 0.0);
+        expected.put(100L,  0.0);
+        expected.put(200L,  0.0);
+        expected.put(300L,  0.0);
+        assertEquals(result.get(0).getDatapoints().size(), 6);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
@@ -203,10 +201,22 @@ public class RangeTransformTest {
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
         expected.put(3000L, 997.0);
-
-        List<Metric> result = rangeTransform.transform(null, metrics);
+        List<String> constants = new ArrayList<String>();
+        constants.add("intersect");
+        
+        List<Metric> result = rangeTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
+        assertEquals(expected, result.get(0).getDatapoints());
+        
+        result = rangeTransform.transform(null, metrics);
+        expected = new HashMap<Long, Double>();
+        expected.put(1000L, 0.0);
+        expected.put(2000L, 0.0);
+        expected.put(100L, 0.0);
+        expected.put(200L, 0.0);
+        expected.put(3000L, 997.0);
+        assertEquals(result.get(0).getDatapoints().size(), 5);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 

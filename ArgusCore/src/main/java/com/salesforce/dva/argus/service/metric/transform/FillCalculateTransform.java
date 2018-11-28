@@ -157,7 +157,7 @@ public class FillCalculateTransform implements Transform {
                 List<Metric> singleMetric = new ArrayList<>();
 
                 singleMetric.add(metric);
-                fillCalculateMetricListWithOffset.addAll(fillTransform.transform(null, singleMetric, newConstants));
+                fillCalculateMetricListWithOffset.addAll(fillTransform.transform(queryContext, singleMetric, newConstants));
             }
             return fillCalculateMetricListWithOffset;
         }

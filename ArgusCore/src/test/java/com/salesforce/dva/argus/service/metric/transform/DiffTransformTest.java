@@ -284,7 +284,7 @@ public class DiffTransformTest {
 
         List<String> constants = new ArrayList<String>(1);
         Map<Long, Double> expected = new HashMap<Long, Double>();
-
+        constants.add("intersect");
         expected.put(3000L, -997.0);
 
         List<Metric> result = diffTransform.transform(null, metrics, constants);
