@@ -765,7 +765,7 @@ public class Notification extends JPAEntity implements Serializable {
 
 
     public void setProductTag(String productTag) {
-        this.productTag = productTag;
+        setGOCField(PRODUCT_TAG_KEY, productTag);
     }
 
     private JsonObject getJsonObject() {
@@ -790,11 +790,16 @@ public class Notification extends JPAEntity implements Serializable {
     }
 
     private String getGOCField(final String fieldName) {
-        GOCFields = getJsonObject();
-        if (GOCFields != null && GOCFields.has(fieldName)) {
-            return GOCFields.get(fieldName).isJsonNull() ? null : GOCFields.get(fieldName).getAsString();
-        } else {
-            return null;
+        try {
+            GOCFields = getJsonObject();
+            if (GOCFields != null && GOCFields.has(fieldName)) {
+                return GOCFields.get(fieldName).isJsonNull() ? null : GOCFields.get(fieldName).getAsString();
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
         }
     }
 

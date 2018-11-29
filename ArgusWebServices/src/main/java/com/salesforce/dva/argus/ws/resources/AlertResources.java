@@ -704,18 +704,18 @@ public class AlertResources extends AbstractResource {
 				throw new WebApplicationException("Null object cannot be updated.", Status.BAD_REQUEST);
 			}
 
-		        PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
+			PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
 
-		        //Refocus Notification V1 release only for search team (and for Argus team testing)
-		        if (AlertService.SupportedNotifier.REFOCUS.getName().equals(notificationDto.getNotifierName())) {
-			    String ownerUserName = owner.getUserName();
-			    if (!"svc_monocle".equalsIgnoreCase(ownerUserName)  // search team username
+			//Refocus Notification V1 release only for search team (and for Argus team testing)
+			if (AlertService.SupportedNotifier.REFOCUS.getName().equals(notificationDto.getNotifierName())) {
+				String ownerUserName = owner.getUserName();
+				if (!"svc_monocle".equalsIgnoreCase(ownerUserName)  // search team username
 					&& !"svc_perfeng_tools".equalsIgnoreCase(ownerUserName)) { // argus team username
 				throw new WebApplicationException(Status.FORBIDDEN.getReasonPhrase(), Status.FORBIDDEN);
-		  	    }
-		        }
+				}
+			}
 
-		        Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
+			Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
 
 			if (oldAlert == null) {
 				throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
@@ -723,6 +723,10 @@ public class AlertResources extends AbstractResource {
 			validateResourceAuthorization(req, oldAlert.getOwner(), owner);
 			for (Notification notification : oldAlert.getNotifications()) {
 				if (notificationId.equals(notification.getId())) {
+
+					if (!NotificationDto.validateSRActionableUpdate(notificationDto))
+						throw new WebApplicationException("SR Actionable should be set if and only if article number is provided.");
+
 					copyProperties(notification, notificationDto);
 
 					oldAlert.setModifiedBy(getRemoteUser(req));

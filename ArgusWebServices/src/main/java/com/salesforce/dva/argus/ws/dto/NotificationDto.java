@@ -34,13 +34,14 @@ package com.salesforce.dva.argus.ws.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
+
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response.Status;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response.Status;
 
 /**
  * Notification Dto.
@@ -114,6 +115,13 @@ public class NotificationDto extends EntityDTO {
             result.add(transformToDto(notification));
         }
         return result;
+    }
+
+    public static boolean validateSRActionableUpdate(NotificationDto notificationDto) {
+        boolean isSRActionable = notificationDto.getSRActionable();
+        String articleNumber = notificationDto.getArticleNumber();
+        return ( (isSRActionable && ( articleNumber != null && articleNumber.trim().length() > 0 )) ||
+                 (!isSRActionable && ( articleNumber == null || articleNumber.trim().length() == 0 )) );
     }
 
     //~ Methods **************************************************************************************************************************************
