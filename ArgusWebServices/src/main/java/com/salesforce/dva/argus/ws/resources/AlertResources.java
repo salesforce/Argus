@@ -737,23 +737,27 @@ public class AlertResources extends AbstractResource {
 			validateResourceAuthorization(req, oldAlert.getOwner(), owner);
 			for (Notification notification : oldAlert.getNotifications()) {
 				if (notificationId.equals(notification.getId())) {
-					copyProperties(notification, notificationDto);
+					try {
+						copyProperties(notification, notificationDto);
 
-					//Add values for GOC Objects.
-					notification.setSRActionable(notification.getSRActionable(), notificationDto.getArticleNumber());
-					notification.setElementName(notificationDto.getElementName());
-					notification.setEventName(notificationDto.getEventName());
-					notification.setProductTag(notificationDto.getProductTag());
+						//Add values for GOC Objects.
+//						notification.setSRActionable(notification.getSRActionable(), notificationDto.getArticleNumber());
+//						notification.setElementName(notificationDto.getElementName());
+//						notification.setEventName(notificationDto.getEventName());
+//						notification.setProductTag(notificationDto.getProductTag());
 
-					//Override Custom Text Field.
-					notification.setCustomText(notificationDto.getCustomText());
+						//Override Custom Text Field.
+//						notification.setCustomText(notificationDto.getCustomText());
 
-					oldAlert.setModifiedBy(getRemoteUser(req));
+						oldAlert.setModifiedBy(getRemoteUser(req));
 
-					Alert alert = alertService.updateAlert(oldAlert);
-					int index = alert.getNotifications().indexOf(notification);
+						Alert alert = alertService.updateAlert(oldAlert);
+						int index = alert.getNotifications().indexOf(notification);
 
-					return NotificationDto.transformToDto(alert.getNotifications().get(index));
+						return NotificationDto.transformToDto(alert.getNotifications().get(index));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
 			}
 			throw new WebApplicationException("The notification does not exist.", Response.Status.NOT_FOUND);
@@ -838,26 +842,32 @@ public class AlertResources extends AbstractResource {
 			Alert alert = alertService.findAlertByPrimaryKey(alertId);
 
 			if (alert != null) {
-				validateResourceAuthorization(req, alert.getOwner(), getRemoteUser(req));
+				try {
+					validateResourceAuthorization(req, alert.getOwner(), getRemoteUser(req));
 
-				Notification notification = new Notification(notificationDto.getName(), alert, notificationDto.getNotifierName(),
-						notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
-				notification.setSRActionable(notificationDto.getSRActionable(), notificationDto.getArticleNumber());
-				notification.setSeverityLevel(notificationDto.getSeverityLevel());
-				notification.setCustomText(notificationDto.getCustomText());
-				notification.setEventName(notificationDto.getEventName());
-				notification.setElementName(notificationDto.getElementName());
-				notification.setProductTag(notificationDto.getProductTag());
-				// TODO: 14.12.16 validateAuthorizationRequest notification
+					Notification notification = new Notification(notificationDto.getName(), alert, notificationDto.getNotifierName(),
+							notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
+					notification.setSRActionable(notificationDto.getSRActionable(), notificationDto.getArticleNumber());
+					notification.setSeverityLevel(notificationDto.getSeverityLevel());
 
-				notification.setMetricsToAnnotate(new ArrayList<>(notificationDto.getMetricsToAnnotate()));
+					notification.setCustomText(notificationDto.getCustomText());
+					notification.setEventName(notificationDto.getEventName());
+					notification.setElementName(notificationDto.getElementName());
+					notification.setProductTag(notificationDto.getProductTag());
 
-				List<Notification> notifications = new ArrayList<Notification>(alert.getNotifications());
+					// TODO: 14.12.16 validateAuthorizationRequest notification
 
-				notifications.add(notification);
-				alert.setNotifications(notifications);
-				alert.setModifiedBy(getRemoteUser(req));
-				return NotificationDto.transformToDto(alertService.updateAlert(alert).getNotifications());
+					notification.setMetricsToAnnotate(new ArrayList<>(notificationDto.getMetricsToAnnotate()));
+
+					List<Notification> notifications = new ArrayList<Notification>(alert.getNotifications());
+
+					notifications.add(notification);
+					alert.setNotifications(notifications);
+					alert.setModifiedBy(getRemoteUser(req));
+					return NotificationDto.transformToDto(alertService.updateAlert(alert).getNotifications());
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 	}

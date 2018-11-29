@@ -63,10 +63,10 @@ public class NotificationDto extends EntityDTO {
     private String customText;
     private int severityLevel = 5;
     private boolean isSRActionable;
-    private String articleNumber = null;
-    private String eventName = null;
-    private String elementName = null;
-    private String productTag = null;
+    private String articleNumber;
+    private String eventName;
+    private String elementName;
+    private String productTag;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -92,13 +92,13 @@ public class NotificationDto extends EntityDTO {
         }
 
         // Add values for GOC Objects.
-        result.setArticleNumber(notification.getArticleNumber());
-        result.setElementName(notification.getElementName());
-        result.setEventName(notification.getEventName());
-        result.setProductTag(notification.getProductTag());
+//        result.setArticleNumber(notification.getArticleNumber());
+//        result.setElementName(notification.getElementName());
+//        result.setEventName(notification.getEventName());
+//        result.setProductTag(notification.getProductTag());
 
         //Override Custom Text Field
-        result.setCustomText(notification.getCustomText());
+//        result.setCustomText(notification.getCustomText());
         return result;
     }
 

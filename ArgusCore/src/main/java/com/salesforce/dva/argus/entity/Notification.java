@@ -55,6 +55,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.salesforce.dva.argus.service.AlertService;
@@ -302,27 +304,27 @@ public class Notification extends JPAEntity implements Serializable {
     private String CUSTOM_TEXT_KEY = "customText";
 
     @Transient
-    private String eventName = null;
+    private String eventName;
     @Transient
     private String EVENT_NAME_KEY = "eventName";
 
     @Transient
-    private String elementName = null;
+    private String elementName;
     @Transient
     private String ELEMENT_NAME_KEY = "elementName";
 
     @Transient
-    private String productTag = null;
+    private String productTag;
     @Transient
     private String PRODUCT_TAG_KEY = "productTag";
 
     @Transient
-    private String articleNumber = null;
+    private String articleNumber;
     @Transient
     private String ARTICLE_NUMBER_KEY = "articleNumber";
 
     @Transient
-    private JsonObject GOCFields = null;
+    private JsonObject GOCFields;
 
 
     @ElementCollection
@@ -761,13 +763,15 @@ public class Notification extends JPAEntity implements Serializable {
     public void setProductTag(String productTag) { this.productTag = productTag; }
 
     private JsonObject getJsonObject() {
-        if (GOCFields == null && this.customText != null) {
+        if (GOCFields == null) {
             GOCFields = new JsonObject();
-            try {
-                GOCFields = new JsonParser().parse(this.customText).getAsJsonObject();
-            } catch (Exception e) {
-                GOCFields.addProperty(CUSTOM_TEXT_KEY, this.customText);
-                this.customText = GOCFields.toString();
+            if (this.customText != null) {
+                try {
+                    GOCFields = new JsonParser().parse(this.customText).getAsJsonObject();
+                } catch (Exception e) {
+                    GOCFields.addProperty(CUSTOM_TEXT_KEY, this.customText);
+                    this.customText = GOCFields.toString();
+                }
             }
         }
         return GOCFields;
@@ -782,7 +786,7 @@ public class Notification extends JPAEntity implements Serializable {
     private String getGOCField(final String fieldName) {
 	    GOCFields = getJsonObject();
 	    if (GOCFields != null && GOCFields.has(fieldName)) {
-	        return GOCFields.get(fieldName).getAsString();
+	        return GOCFields.get(fieldName).isJsonNull()? null: GOCFields.get(fieldName).getAsString();
         } else {
 	        return null;
         }
