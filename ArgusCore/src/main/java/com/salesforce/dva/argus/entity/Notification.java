@@ -678,6 +678,10 @@ public class Notification extends JPAEntity implements Serializable {
             } else {
                 setArticleNumber(articleNumber);
             }
+        } else {
+            if (articleNumber != null && articleNumber.trim().length() > 0)
+                throw new IllegalArgumentException("SR Actionable is set as false, while providing the Article Number.");
+
         }
     }
 
@@ -790,16 +794,11 @@ public class Notification extends JPAEntity implements Serializable {
     }
 
     private String getGOCField(final String fieldName) {
-        try {
-            GOCFields = getJsonObject();
-            if (GOCFields != null && GOCFields.has(fieldName)) {
-                return GOCFields.get(fieldName).isJsonNull() ? null : GOCFields.get(fieldName).getAsString();
-            } else {
-                return null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
+        GOCFields = getJsonObject();
+        if (GOCFields != null && GOCFields.has(fieldName)) {
+            return GOCFields.get(fieldName).isJsonNull() ? null : GOCFields.get(fieldName).getAsString();
+        } else {
+            return null;
         }
     }
 
