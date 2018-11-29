@@ -91,14 +91,6 @@ public class NotificationDto extends EntityDTO {
             result.addTriggersIds(trigger);
         }
 
-        // Add values for GOC Objects.
-//        result.setArticleNumber(notification.getArticleNumber());
-//        result.setElementName(notification.getElementName());
-//        result.setEventName(notification.getEventName());
-//        result.setProductTag(notification.getProductTag());
-
-        //Override Custom Text Field
-//        result.setCustomText(notification.getCustomText());
         return result;
     }
 
