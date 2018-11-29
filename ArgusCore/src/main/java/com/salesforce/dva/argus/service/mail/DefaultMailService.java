@@ -100,7 +100,7 @@ public class DefaultMailService extends DefaultService implements MailService {
     }
 
     @Override
-    public void sendMessage(Set<String> to, String subject, String body, String contentType, Priority priority) {
+    public boolean sendMessage(Set<String> to, String subject, String body, String contentType, Priority priority) {
         requireState(!isDisposed(), "Cannot call methods on a disposed service.");
         requireArgument(to != null && !to.isEmpty(), "Recipients cannot be null or empty.");
         if (contentType == null || contentType.isEmpty()) {
@@ -136,13 +136,16 @@ public class DefaultMailService extends DefaultService implements MailService {
             	
                 transport.sendMessage(message, message.getAllRecipients());
                 _logger.info("Sent email having subject '{}' to {}.", subject, to);
+                return true;
             } catch (Exception ex) {
                 _logger.error("MailService: Failed to send an email notification.", ex);
                 throw new SystemException("Failed to send an email notification.", ex);
             }
         } else {
-            _logger.info("Sending email is disabled.  Not sending email having subject '{}' to {}.", subject, to);
+            _logger.warn("Sending email is disabled.  Not sending email having subject '{}' to {}.", subject, to);
         }
+        
+        return false;
     }
 
     private Address[] getEmailToAddresses(Set<String> recipientEmailAddresses) throws AddressException {

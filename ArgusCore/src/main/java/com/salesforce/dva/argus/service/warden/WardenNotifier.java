@@ -135,7 +135,7 @@ public abstract class WardenNotifier extends DefaultNotifier {
     }
 
     @Override
-    protected abstract void sendAdditionalNotification(NotificationContext context);
+    protected abstract boolean sendAdditionalNotification(NotificationContext context);
 
     /**
      * Add annotation for user suspension to the <tt>triggers.warden</tt> metric..
@@ -232,11 +232,11 @@ public abstract class WardenNotifier extends DefaultNotifier {
      * @param notificationContext The notification context. 
      */
     @Override
-    public void clearNotification(NotificationContext notificationContext) { }
+    public boolean clearNotification(NotificationContext notificationContext) {  return true; }
 
     /** No additional action needs to be taken for clearing warden notifications as they are not stateful.  This implementation is empty. */
     @Override
-    protected void clearAdditionalNotification(NotificationContext context) { }
+    protected boolean clearAdditionalNotification(NotificationContext context) { return true; }
     
     @Override
     public Properties getNotifierProperties() {

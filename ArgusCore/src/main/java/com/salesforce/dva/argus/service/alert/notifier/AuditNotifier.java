@@ -31,6 +31,21 @@
 
 package com.salesforce.dva.argus.service.alert.notifier;
 
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
+import java.math.BigInteger;
+import java.net.URLEncoder;
+import java.sql.Date;
+import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.Properties;
+import java.util.TimeZone;
+
+import javax.persistence.EntityManager;
+
+import org.joda.time.DateTimeConstants;
+
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Audit;
@@ -45,18 +60,6 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationCo
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
-import org.joda.time.DateTimeConstants;
-import java.math.BigInteger;
-import java.net.URLEncoder;
-import java.sql.Date;
-import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.Properties;
-import java.util.TimeZone;
-import javax.persistence.EntityManager;
-
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
  * A notifier that sends notification to a database.
@@ -67,7 +70,7 @@ public class AuditNotifier extends DefaultNotifier {
 
 	//~ Static fields/initializers *******************************************************************************************************************
 
-	protected static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
+	public static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
 
 		@Override
 		protected SimpleDateFormat initialValue() {
@@ -110,12 +113,21 @@ public class AuditNotifier extends DefaultNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
+	protected boolean sendAdditionalNotification(NotificationContext context) {
 		requireArgument(context != null, "Notification context cannot be null.");
 
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.TRIGGERED), SystemConfiguration.getHostname(), context.getAlert());
 
-		_auditService.createAudit(audit);
+		Audit res = _auditService.createAudit(audit);
+		
+		// the previous call does not return any status, nor throw exception
+		if (null != res) {
+			return true;
+		} else {
+			context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to create a new audit record for triggered notification: {0}.",
+					context.getNotification().getName()), null, 0);
+			return false;
+		}
 	}
 
 	/**
@@ -195,7 +207,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 *
 	 * @return  The trigger detail information.
 	 */
-	protected String getTriggerDetails(Trigger trigger, NotificationContext context) {
+	public String getTriggerDetails(Trigger trigger, NotificationContext context) {
 		if (trigger != null) {
 			String triggerString = trigger.toString();
 			triggerString = TemplateReplacer.applyTemplateChanges(context, triggerString);
@@ -214,7 +226,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 *
 	 * @return  The fully constructed URL for the metric.
 	 */
-	protected String getMetricUrl(String metricToAnnotate, long triggerFiredTime) {
+	public String getMetricUrl(String metricToAnnotate, long triggerFiredTime) {
 		long start = triggerFiredTime - (6L * DateTimeConstants.MILLIS_PER_HOUR);
 		long end = Math.min(System.currentTimeMillis(), triggerFiredTime + (6L * DateTimeConstants.MILLIS_PER_HOUR));
 		String expression = MessageFormat.format("{0,number,#}:{1,number,#}:{2}", start, end, metricToAnnotate);
@@ -229,7 +241,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 * @return  The fully constructed URL for the expression.
 	 */
 	@SuppressWarnings("deprecation")
-	protected String getExpressionUrl(String expression) {
+	public String getExpressionUrl(String expression) {
 		String template = _config.getValue(Property.AUDIT_METRIC_URL_TEMPLATE.getName(), Property.AUDIT_METRIC_URL_TEMPLATE.getDefaultValue());
 		try {
 			expression = URLEncoder.encode(expression, "UTF-8");
@@ -246,7 +258,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 *
 	 * @return  The fully constructed URL for the alert.
 	 */
-	protected String getAlertUrl(BigInteger id) {
+	public String getAlertUrl(BigInteger id) {
 		String template = _config.getValue(Property.AUDIT_ALERT_URL_TEMPLATE.getName(), Property.AUDIT_ALERT_URL_TEMPLATE.getDefaultValue());
 
 		return template.replaceAll("\\$alertid\\$", String.valueOf(id));
@@ -264,12 +276,20 @@ public class AuditNotifier extends DefaultNotifier {
 	}
 
 	@Override
-	protected void clearAdditionalNotification(NotificationContext context) {
+	protected boolean clearAdditionalNotification(NotificationContext context) {
 		requireArgument(context != null, "Notification context cannot be null.");
 
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.CLEARED), SystemConfiguration.getHostname(), context.getAlert());
 
-		_auditService.createAudit(audit);
+		Audit res = _auditService.createAudit(audit);
+
+		if (null != res) {
+			return true;
+		} else {
+			context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to create a new audit record for cleared notification: {0}.",
+					context.getNotification().getName()), null, 0);
+			return false;
+		}
 	}
 
 	@Override
@@ -293,9 +313,9 @@ public class AuditNotifier extends DefaultNotifier {
 		/** The prodoutage email to send notification. */
 		AUDIT_PRODOUTAGE_EMAIL_TEMPLATE("notifier.property.goc.prodoutage.email", "prodoutage@yourcompany.com"),
 		/** The alert URL template to use in notifications. */
-		AUDIT_ALERT_URL_TEMPLATE("notifier.property.alert.alerturl.template", "http://localhost:8080/argus/alertId"),
+		AUDIT_ALERT_URL_TEMPLATE("notifier.property.alert.alerturl.template", "http://localhost:8080/argus/#/alerts/$alertid$"),
 		/** The metric URL template to use in notifications. */
-		AUDIT_METRIC_URL_TEMPLATE("notifier.property.alert.metricurl.template", "http://localhost:8080/argus/metrics");
+		AUDIT_METRIC_URL_TEMPLATE("notifier.property.alert.metricurl.template", "http://localhost:8080/argus/#/viewmetrics?expression=$expression$");
 
 
 		private final String _name;

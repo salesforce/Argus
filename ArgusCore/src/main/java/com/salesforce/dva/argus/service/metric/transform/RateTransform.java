@@ -65,9 +65,6 @@ public class RateTransform implements Transform{
 				sortedDatapoints = calculateRateValues(sortedDatapoints, intervalInMilli);
 				if(skipNegativeValues) {
 					sortedDatapoints = removeNegativeValues(sortedDatapoints);
-					if(interpolateMissingDP) {
-						sortedDatapoints=performInterpolation(sortedDatapoints, intervalInMilli);
-					}
 				}
 				metric.setDatapoints(sortedDatapoints);
 				result.add(metric);

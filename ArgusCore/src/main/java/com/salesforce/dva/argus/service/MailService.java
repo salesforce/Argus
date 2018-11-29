@@ -50,8 +50,9 @@ public interface MailService extends Service {
      * @param  message      The message body.
      * @param  contentType  The content type.
      * @param  priority     The message priority.
+     * @return true for success, false when there's error
      */
-    void sendMessage(Set<String> to, String subject, String message, String contentType, Priority priority);
+    boolean sendMessage(Set<String> to, String subject, String message, String contentType, Priority priority);
 
     //~ Enums ****************************************************************************************************************************************
 

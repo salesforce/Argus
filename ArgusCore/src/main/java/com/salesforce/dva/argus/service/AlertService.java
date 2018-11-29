@@ -37,6 +37,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.alert.AlertsCountContext;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.*;
@@ -338,6 +339,14 @@ public interface AlertService extends Service {
 	int countAlerts(AlertsCountContext context);
 	
 	/**
+	 * This is helper function to post counter value to tsdb and JMX exporter
+	 * 
+	 * @param counter the counter to export
+	 * @param value   the value of the counterx
+	 */
+	void updateCounter(Counter counter, Double value);
+
+	/**
 	 * This is helper function so that we can export metrics to JMX metric exporter everywhere in the
 	 * system
 	 * 
@@ -413,15 +422,17 @@ public interface AlertService extends Service {
 
 		/**
 		 * Sends notifications for the trigger on which the alert condition occurred.
-		 *
+		 * 
+		 * @param  notificationContext  The context for the notification. Cannot be null.
+		 * @return true for success, false for failure
 		 */
-		void sendNotification(NotificationContext notificationContext);
+		boolean sendNotification(NotificationContext notificationContext);
 
 		/**
 		 * Clears notifications for the trigger on which the alert condition occurred.
-		 *
+		 * @return true for success, false for failure
 		 */
-		void clearNotification(NotificationContext notificationContext);
+		boolean clearNotification(NotificationContext notificationContext);
 
 		/**
 		 * Returns the name of the notifier.

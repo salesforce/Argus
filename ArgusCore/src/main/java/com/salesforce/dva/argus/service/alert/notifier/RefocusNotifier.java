@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.alert.notifier;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
@@ -46,9 +47,11 @@ import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 
 import javax.persistence.EntityManager;
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.Properties;
 
@@ -86,35 +89,42 @@ public class RefocusNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
-		_sendRefocusNotification(context, true);
+	protected boolean sendAdditionalNotification(NotificationContext context) {
+		return _sendRefocusNotification(context, true);
 	}
 
 	@Override
-	protected void clearAdditionalNotification(NotificationContext context) {
-		_sendRefocusNotification(context, false);
+	protected boolean clearAdditionalNotification(NotificationContext context) {
+		return _sendRefocusNotification(context, false);
 	}
 
-	private void _sendRefocusNotification(NotificationContext context, boolean isTriggerActive) {
+	private boolean _sendRefocusNotification(NotificationContext context, boolean isTriggerActive) {
+		requireArgument(context != null, "Notification context cannot be null.");
 		List<String> aspectPaths = context.getNotification().getSubscriptions();
 
 		//TODO: get customer specified refocus sample values when UI is ready, currently use 1 for active trigger and 0 for non-active trigger
 
 		requireArgument(aspectPaths!=null && !aspectPaths.isEmpty(), "aspect paths (subscriptions) cannot be empty.");
 
-		for (String aspect : aspectPaths) {
-			sendMessage(aspect,  isTriggerActive);
+		if(isTriggerActive) {
+			super.sendAdditionalNotification(context);
+		}else {
+			super.clearAdditionalNotification(context);
 		}
 
+		boolean result = true;
+		History history = context.getHistory();
+		for (String aspect : aspectPaths) {
+			boolean tmp = sendMessage(history, aspect,  isTriggerActive);
+			result = result && tmp;
+		}
+
+		return result;
 	}
 
-	/**
-	 * Sends an Refocus sample.
-	 *
-	 * @param  aspectPath    The Refocus aspect path.
-	 * @param  fired         If the trigger is fired or not.
-	 */
-	private void sendMessage(String aspectPath, boolean fired) {
+	private boolean sendMessage(History history, String aspectPath, boolean fired) {
+		String failureMsg = null;
+
 		if (Boolean.valueOf(_config.getValue(SystemConfiguration.Property.REFOCUS_ENABLED))) {
 			int refreshMaxTimes = Integer.parseInt(_config.getValue(Property.REFOCUS_CONNECTION_REFRESH_MAX_TIMES.getName(), Property.REFOCUS_CONNECTION_REFRESH_MAX_TIMES.getDefaultValue()));
 			try {
@@ -137,19 +147,30 @@ public class RefocusNotifier extends AuditNotifier {
 
 						// Check for success
 						if (respCode == 200 || respCode == 201 || respCode == 204) {
-							_logger.info("Success - send Refocus sample '{}'.", refocusSample.toJSON());
-							break;
+							String infoMsg = MessageFormat.format("Refocus Sample {0} sent.",
+									refocusSample.toJSON());
+							_logger.info(infoMsg);
+							history.appendMessageNUpdateHistory(infoMsg, null, 0);
+							return true;
 						} else if (respCode == 401) {
 							// Indication that the session timedout, Need to refresh and retry
+							failureMsg = MessageFormat.format("Failure - send Refocus Sample {0} due to session time out.",
+									refocusSample.toJSON());
+							_logger.warn(failureMsg);
+
 							continue;
 						} else {
-							_logger.error("Failure - send Refocus sample '{}'. Response code '{}' response '{}'",
+							failureMsg = MessageFormat.format("Failure - send Refocus sample {0}. Response code {1} response {2}",
 									refocusSample.toJSON(), respCode, post.getResponseBodyAsString());
+							_logger.error(failureMsg);
+
 							break;
 						}
 					}
 				} catch (Exception e) {
-					_logger.error("Failure - send Refocus sample '{}'. Exception '{}'", refocusSample.toJSON(), e);
+					failureMsg = MessageFormat.format("Failure - send Refocus sample {0}. Exception {1}",
+							refocusSample.toJSON(), e.getMessage());
+					_logger.error(failureMsg);
 				} finally {
 					if (post != null) {
 						post.releaseConnection();
@@ -157,11 +178,21 @@ public class RefocusNotifier extends AuditNotifier {
 				}
 
 			} catch (RuntimeException ex) {
+				failureMsg = MessageFormat.format("Failure - send Refocus sample to aspect: {0}. Exception {1}",
+						aspectPath, ex.getMessage());
+				_logger.error(failureMsg);
+				history.appendMessageNUpdateHistory(failureMsg, null, 0);
 				throw new SystemException("Failed to send an Refocus notification.", ex);
 			}
 		} else {
-			_logger.info("Sending Refocus notification is disabled.  Not sending message for aspect '{}'.", aspectPath);
+			failureMsg = MessageFormat.format("Sending Refocus notification is disabled.  Not sending message for aspect {0}.", aspectPath);
+			_logger.warn(failureMsg);
 		}
+
+		if (StringUtils.isNotBlank(failureMsg))
+			history.appendMessageNUpdateHistory(failureMsg, null, 0);
+
+		return false;
 	}
 
 	@Override

@@ -14,18 +14,29 @@
 package com.salesforce.dva.argus.service.callback;
 
 import java.io.IOException;
+import java.io.StringReader;
+import java.sql.Date;
 import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
+import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
+import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
+import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.CallbackService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
+import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
+import com.salesforce.dva.argus.service.alert.notifier.CallbackNotifier;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -37,7 +48,16 @@ import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
+
+import javax.json.Json;
+import javax.json.JsonBuilderFactory;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
+import javax.json.stream.JsonGenerator;
+import javax.security.auth.callback.Callback;
 
 /**
  * Default {@link CallbackService} implementation sending the request via a shared apache HttpClient
@@ -72,27 +92,116 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 	}
 
 	@Override
-	public HttpResponse sendNotification(DefaultAlertService.NotificationContext context) {
-		String subscription = context.getNotification().getSubscriptions().stream().collect(Collectors.joining());
+	public HttpResponse sendNotification(DefaultAlertService.NotificationContext context, CallbackNotifier notifier) {
+
+		Notification notification = context.getNotification();
+		String subscription = notification.getSubscriptions().stream().collect(Collectors.joining());
 
 		String notificationMessage = null;
-		Request request = null;
+		CallbackRequest request = new CallbackRequest();
 
-		try {
-			request = _mapper.readValue(subscription, Request.class);
-		} catch (Exception e) {
-			return errorResponse(subscription + " cannot be parsed. ", e);
-		}
+		request.setUri(subscription);
+		request.setMethod(Method.POST);
+
+		String payload = createPayload(context, notifier);
+		request.setBody(payload);
+
+		Map<String, String> header = new HashMap<>();
+		header.put("Content-Type", "application/json");
+		request.setHeader(header);
 
 		notificationMessage = MessageFormat.format("Callback via Url {0} Method {1} Body {2}",
-				request.getUri(), request.getMethod().name(), getResolvedBody(context, request));
+				request.getUri(), request.getMethod().name(), payload);
 
 		try {
-			HttpResponse response = sendNotification(buildRequest(context, request), notificationMessage);
+			HttpResponse response = sendNotification(buildRequest(request), notificationMessage);
 			return response;
 		} catch (Exception e) {
 			return errorResponse(notificationMessage + " failed. ", e);
 		}
+	}
+
+	protected String createPayload(DefaultAlertService.NotificationContext context,
+								   CallbackNotifier notifier) {
+
+		Notification notification = context.getNotification();
+		Trigger trigger = context.getTrigger();
+		Alert alert = context.getAlert();
+
+		Map<String, Object> config = new HashMap<>();
+		config.put(JsonGenerator.PRETTY_PRINTING, true);
+
+		JsonBuilderFactory factory = Json.createBuilderFactory(config);
+
+		JsonObjectBuilder alertBuilder = factory.createObjectBuilder();
+		JsonObjectBuilder triggerBuilder = factory.createObjectBuilder();
+		JsonObjectBuilder notificationBuilder = factory.createObjectBuilder();
+
+		alertBuilder.add("name", TemplateReplacer.applyTemplateChanges(context, alert.getName()));
+		alertBuilder.add("alertUrl", notifier.getAlertUrl(alert.getId()));
+		alertBuilder.add("firedAt", context.getTriggerFiredTime());
+
+		notificationBuilder.add("name", TemplateReplacer.applyTemplateChanges(context, notification.getName()));
+		notificationBuilder.add("status", "Triggered");
+		notificationBuilder.add("CoolDownUntil", AuditNotifier.DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration())));
+
+		triggerBuilder.add("name", TemplateReplacer.applyTemplateChanges(context, trigger.getName()));
+
+		Trigger.TriggerType triggerType = trigger.getType();
+
+		triggerBuilder.add("type", triggerType.toString());
+
+		if (triggerType == Trigger.TriggerType.BETWEEN || triggerType == Trigger.TriggerType.NOT_BETWEEN) {
+			triggerBuilder.add("primaryThreshold", trigger.getThreshold());
+			triggerBuilder.add("secondaryThreshold", trigger.getSecondaryThreshold());
+		} else {
+			triggerBuilder.add("threshold", trigger.getThreshold());
+		}
+
+		triggerBuilder.add("inertia", trigger.getInertia());
+
+		if(!trigger.getType().equals(Trigger.TriggerType.NO_DATA)) {
+			triggerBuilder.add("triggeredValue", context.getTriggerEventValue());
+		}
+
+		if(context.getTriggeredMetric() != null) {
+			triggerBuilder.add("triggeredMetric", context.getTriggeredMetric().getIdentifier());
+		}
+
+		JsonObjectBuilder rootBuilder = factory.createObjectBuilder();
+
+		String customText = context.getNotification().getCustomText();
+
+		if( customText != null && customText.length() > 0){
+			customText = TemplateReplacer.applyTemplateChanges(context, customText);
+
+			JsonReader reader = null;
+
+			try  {
+				reader = Json.createReader(new StringReader(customText));
+				JsonObject customJson = reader.readObject();
+				rootBuilder.add("custom", customJson);
+			} finally {
+				if(reader != null) {
+					reader.close();
+				}
+			}
+		}
+
+		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
+
+		if(!expression.equals("")) {
+
+			alertBuilder.add("evaluatedMetricUrl", notifier.getExpressionUrl(expression));
+		}else {
+			alertBuilder.add("evaluatedMetric", alert.getExpression());
+		}
+
+		rootBuilder.add("alert", alertBuilder)
+				.add("notification", notificationBuilder)
+				.add("trigger", triggerBuilder);
+
+		return rootBuilder.build().toString();
 	}
 
 	@Override
@@ -101,32 +210,19 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 		super.dispose();
 	}
 
-	private HttpUriRequest buildRequest(DefaultAlertService.NotificationContext context,
-			CallbackService.Request request) {
+	private HttpUriRequest buildRequest(CallbackService.CallbackRequest request) {
 		RequestBuilder builder = RequestBuilder
 				.create(request.getMethod().name())
 				.setUri(request.getUri())
-				.setEntity(getBody(context, request));
+				.setEntity(getBody(request));
 		request.getHeader().forEach((k, v) -> builder.addHeader(k, v));
 
 		return builder.build();
 	}
 
-	private String getResolvedBody(DefaultAlertService.NotificationContext context,
-							   CallbackService.Request request) {
-
-		if (request.getBody() != null) {
-			String body = request.getBody();
-			body = TemplateReplacer.applyTemplateChanges(context, body);
-			return body;
-		}
-		return null;
-	}
-
-		private HttpEntity getBody(DefaultAlertService.NotificationContext context,
-			CallbackService.Request request)
+		private HttpEntity getBody(CallbackService.CallbackRequest request)
 	{
-		String body = getResolvedBody(context, request);
+		String body = request.getBody();
 
 		if (body != null) {
 			StringEntity entity;
@@ -145,11 +241,11 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 
 		HttpClient httpClient = httpClientPool.borrowObject();
 		try {
-			return httpClient.execute(request);
+			HttpResponse response = httpClient.execute(request);
+			EntityUtils.consume(response.getEntity());
+			return response;
 		} catch (Throwable t) {
 			return errorResponse(notificationMessage + " failed. ", t);
-		} finally {
-			httpClientPool.returnObject(httpClient);
 		}
 	}
 

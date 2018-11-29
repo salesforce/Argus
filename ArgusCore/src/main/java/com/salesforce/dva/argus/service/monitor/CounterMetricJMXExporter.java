@@ -48,9 +48,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MutableGauge;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
-
-import scala.collection.mutable.ArrayBuilder.ofBoolean;
 
 /**
  * This is the implementation for @GaugeExporter to export metrics to JMX. It 
@@ -82,7 +79,7 @@ public class CounterMetricJMXExporter implements GaugeExporter {
 	
 	@Inject
 	public CounterMetricJMXExporter() {
-		_logger.info("CounterMetricJMXExporter created.");
+		_logger.info("CounterMetricJMXExporter created. {}", this.hashCode());
 	}
 
 	@Override
@@ -100,7 +97,7 @@ public class CounterMetricJMXExporter implements GaugeExporter {
 					mbeanServer.registerMBean(gauge, new ObjectName(objectName));
 				} catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException
 						| MalformedObjectNameException e) {
-					_logger.error("exportGauge(): failed to register internal counter {} to JMX {}", objectName, e);
+					_logger.error("exportGauge()({}): failed to register internal counter {} to JMX {}", this.hashCode(), objectName, e);
 				}
 			} else {
 				_exportedMetrics.get(objectName).setValue(value);

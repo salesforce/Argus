@@ -130,7 +130,7 @@ public class DefaultAuditService extends DefaultJPAService implements AuditServi
         JPAEntity entity = findEntity(em, entityId, JPAEntity.class);
 
         if (entity == null) {
-            throw new IllegalArgumentException(MessageFormat.format("The entity with Id {} does not exist.", entityId));
+            throw new IllegalArgumentException(MessageFormat.format("The entity with Id {0} does not exist.", entityId));
         }
 
         List<Audit> result = limit == null ? Audit.findByEntity(em, entity) : Audit.findByEntity(em, entity, limit);
