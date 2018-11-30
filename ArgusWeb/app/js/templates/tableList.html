@@ -45,7 +45,7 @@
         current-page="currentPage">
         <td ng-if="colName.id">{{item.id}}</td>
         <td ng-if="colName.name">
-            <a ng-if="properties.type !== 'Authorized Apps'" ng-href="#/{{properties.type}}/{{item.id}}">{{item.name}}</a>
+            <a ng-if="properties.type !== 'Authorized Apps'" ng-href="#/{{properties.path}}/{{item.id}}">{{item.name}}</a>
             <span ng-if="properties.type === 'Authorized Apps'">{{item.name}}</span>
         </td>
         <td ng-if="colName.description">{{item.description}}</td>
