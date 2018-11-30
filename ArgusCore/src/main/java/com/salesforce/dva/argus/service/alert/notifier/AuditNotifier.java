@@ -159,18 +159,23 @@ public class AuditNotifier extends DefaultNotifier {
 		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context,notification.getName())));
 		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName())));
 		if(notificationStatus == NotificationStatus.TRIGGERED) {
-		    sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
-				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
+			sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
+					DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		}
 		if (!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
 		else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
 		if(!expression.equals("")) {
 			sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/>");
 		}
-		
-		if(!trigger.getType().equals(TriggerType.NO_DATA) && notificationStatus == NotificationStatus.TRIGGERED){
-			sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+
+		if(context.getTriggeredMetric()!=null) {
+			if(notificationStatus == NotificationStatus.TRIGGERED){
+				sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+			}else {
+				sb.append(MessageFormat.format("<b>Cleared on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+			}
 		}
+
 		sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger, context)));
 		if(!trigger.getType().equals(TriggerType.NO_DATA) && notificationStatus == NotificationStatus.TRIGGERED){
 			sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
