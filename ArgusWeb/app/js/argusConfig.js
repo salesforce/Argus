@@ -61,12 +61,30 @@ angular.module('argus.config', [])
 				reloadOnSearch: false
 			}).
 			when('/alerts', {
+				redirectTo: function() {
+					window.location.href = '/argusmvp/#/alerts';
+				}
+				// templateUrl: 'js/templates/alert-list.html',
+				// controller: 'Alerts',
+				// label: 'Alerts List',
+				// activeTab: 'alerts'
+			}).
+			when('/alerts/:alertId', {
+				redirectTo: function(parameters) {
+					window.location.href = '/argusmvp/#/alerts/'+parameters.alertId;
+				}
+				// templateUrl: 'js/templates/alert-detail.html',
+				// controller: 'AlertsDetail',
+				// label: '{{alerts.alertId}}',
+				// activeTab: 'alerts'
+			}).
+			when('/alertsdeprecated', {
 				templateUrl: 'js/templates/alert-list.html',
 				controller: 'Alerts',
 				label: 'Alerts List',
 				activeTab: 'alerts'
 			}).
-			when('/alerts/:alertId', {
+			when('/alertsdeprecated/:alertId',{
 				templateUrl: 'js/templates/alert-detail.html',
 				controller: 'AlertsDetail',
 				label: '{{alerts.alertId}}',
