@@ -130,7 +130,7 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param articleNumber
      * @return true if succeed, false if fail
 	 */
-	public boolean sendMessage(History history, Severity severity, String className, String elementName, String eventName, String message,
+	private boolean sendMessage(History history, Severity severity, String className, String elementName, String eventName, String message,
 							int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric, String productTag, String articleNumber) {
     	requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
 		requireArgument(eventName != null && !eventName.isEmpty(), "EventName cannot be null or empty.");
