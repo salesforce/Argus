@@ -43,11 +43,13 @@ import java.util.Set;
 
 import javax.persistence.EntityManager;
 
+import com.salesforce.dva.argus.entity.History;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 
 import com.google.gson.Gson;
@@ -160,7 +162,7 @@ public class GusNotifier extends AuditNotifier {
 		Set<String> to = new HashSet<String>(notification.getSubscriptions());
 		String feed = generateGusFeed(notification, trigger, context, status);
 
-		return postToGus(to, feed);
+		return postToGus(context.getHistory(),to, feed);
     }
 
 	private String generateGusFeed(Notification notification, Trigger trigger, NotificationContext context, NotificationStatus status) {
@@ -210,8 +212,9 @@ public class GusNotifier extends AuditNotifier {
 		return sb.toString();
 	}
 
-	private boolean postToGus(Set<String> to, String feed) {
+	private boolean postToGus(History history, Set<String> to, String feed) {
 
+		String failureMsg = null;
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GUS_ENABLED))) {
 			// So far works for only one group, will accept a set of string in future.
 			String groupId = to.toArray(new String[to.size()])[0];
@@ -228,21 +231,29 @@ public class GusNotifier extends AuditNotifier {
 				int respCode = httpclient.executeMethod(gusPost);
 				_logger.info("Gus message response code '{}'", respCode);
 				if (respCode == 201 || respCode == 204) {
-					_logger.info("Success - send to GUS group {}", groupId);
+					String infoMsg = MessageFormat.format("Success - send to GUS group {0}", groupId);
+					_logger.info(infoMsg);
+					history.appendMessageNUpdateHistory(infoMsg, null, 0);
+					return true;
 				} else {
-					_logger.error("Failure - send to GUS group {}. Cause {}", groupId, gusPost.getResponseBodyAsString());
+					failureMsg = MessageFormat.format("Failure - send to GUS group {0}. Cause {1}", groupId, gusPost.getResponseBodyAsString());
+					_logger.error(failureMsg);
 				}
 			} catch (Exception e) {
-				_logger.error("Throws Exception {} when posting to gus group {}", e, groupId);
-				return false;
+				failureMsg = MessageFormat.format("Throws Exception {0} when posting to gus group {1}", e, groupId);
+				_logger.error(failureMsg);
 			} finally {
 				gusPost.releaseConnection();
 			}
 		} else {
-			_logger.info("Sending GUS notification is disabled.  Not sending message to groups '{}'.", to);
+			failureMsg = MessageFormat.format("Sending GUS notification is disabled.  Not sending message to groups '{0}'.", to);
+			_logger.warn(failureMsg);
 		}
-		
-		return true;
+
+		if (StringUtils.isNotBlank(failureMsg)) {
+			history.appendMessageNUpdateHistory(failureMsg, null, 0);
+		}
+		return false;
 	}
 
 	private String generateAccessToken() {

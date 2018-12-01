@@ -118,10 +118,16 @@ public class AuditNotifier extends DefaultNotifier {
 
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.TRIGGERED), SystemConfiguration.getHostname(), context.getAlert());
 
-		_auditService.createAudit(audit);
+		Audit res = _auditService.createAudit(audit);
 		
 		// the previous call does not return any status, nor throw exception
-		return true;
+		if (null != res) {
+			return true;
+		} else {
+			context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to create a new audit record for triggered notification: {0}.",
+					context.getNotification().getName()), null, 0);
+			return false;
+		}
 	}
 
 	/**
@@ -275,9 +281,15 @@ public class AuditNotifier extends DefaultNotifier {
 
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.CLEARED), SystemConfiguration.getHostname(), context.getAlert());
 
-		_auditService.createAudit(audit);
-		
-		return true;
+		Audit res = _auditService.createAudit(audit);
+
+		if (null != res) {
+			return true;
+		} else {
+			context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to create a new audit record for cleared notification: {0}.",
+					context.getNotification().getName()), null, 0);
+			return false;
+		}
 	}
 
 	@Override
