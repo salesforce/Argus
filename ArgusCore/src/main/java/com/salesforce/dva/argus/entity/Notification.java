@@ -749,7 +749,7 @@ public class Notification extends JPAEntity implements Serializable {
 	}
 
 
-	private void setArticleNumber(String articleNumber) {
+	public void setArticleNumber(String articleNumber) {
 		setGOCField(ARTICLE_NUMBER_KEY, articleNumber);
 	}
 
