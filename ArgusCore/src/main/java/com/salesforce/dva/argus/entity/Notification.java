@@ -688,10 +688,6 @@ public class Notification extends JPAEntity implements Serializable {
 			} else {
 				setArticleNumber(articleNumber);
 			}
-		} else {
-			if (articleNumber != null && articleNumber.trim().length() > 0)
-				throw new IllegalArgumentException("SR Actionable is set as false, while providing the Article Number.");
-
 		}
 	}
 
