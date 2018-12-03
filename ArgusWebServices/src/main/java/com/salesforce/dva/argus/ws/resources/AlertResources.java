@@ -725,7 +725,7 @@ public class AlertResources extends AbstractResource {
 				if (notificationId.equals(notification.getId())) {
 
 					if (!NotificationDto.validateSRActionableUpdate(notificationDto))
-						throw new WebApplicationException("Article Number should be set if SR Actionable is set.");
+						throw new WebApplicationException("Article Number should be present if SR Actionable is set.");
 
 					copyProperties(notification, notificationDto);
 					notification.setSRActionable(notificationDto.getSRActionable(), notificationDto.getArticleNumber());

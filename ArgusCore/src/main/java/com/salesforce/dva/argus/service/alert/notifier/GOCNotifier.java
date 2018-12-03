@@ -494,7 +494,7 @@ public class GOCNotifier extends AuditNotifier {
 		private final String smUserdefined3c;
 		private final String smUserdefined10c;
 		private final String smUserdefined12c;
-		private final String smArticleNumber; // Should be present if srActionable is checked.
+		private final String smArticleNumber;
 		private final String smProductTag; // Product Tag associated with the alert object.
 
 
