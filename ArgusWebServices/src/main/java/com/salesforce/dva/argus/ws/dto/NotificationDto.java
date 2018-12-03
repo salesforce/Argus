@@ -120,7 +120,7 @@ public class NotificationDto extends EntityDTO {
     public static boolean validateSRActionableUpdate(NotificationDto notificationDto) {
         boolean isSRActionable = notificationDto.getSRActionable();
         String articleNumber = notificationDto.getArticleNumber();
-        return (isSRActionable && ( articleNumber != null && articleNumber.trim().length() > 0 ));
+        return (!isSRActionable || ( articleNumber != null && articleNumber.trim().length() > 0 ));
     }
 
     //~ Methods **************************************************************************************************************************************
