@@ -214,18 +214,21 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
 			var agg_Str = '';
 			var namespace_Str = (n && n.length > 1) ? ':' + n : '';
+			var defaultDownsampler;
 
 			/* Add default settings for: start, aggregator
 				full:  -1h:scope:metric{tags}:avg:namespace
 				start: -1h
 				aggregator: avg
+				default downsampler: 1m-avg
 			**/
 			if (addDefaultValues) {
 				start_Str = '-1h:';
-				agg_Str = ':avg';
+				agg_Str = ':avg:';
+				defaultDownsampler = '1m-avg';
 			}
 
-			return start_Str + scope_Str + metric_Str + tag_Str + agg_Str + namespace_Str;
+			return start_Str + scope_Str + metric_Str + tag_Str + agg_Str + defaultDownsampler + namespace_Str;
 		}
 
 		// show newExpression in page view
