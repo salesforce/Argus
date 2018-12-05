@@ -299,7 +299,7 @@ public class GOCNotifier extends AuditNotifier {
 		}
 
 		return sendMessage(context.getHistory(), sev, TemplateReplacer.applyTemplateChanges(context, notification.getName()), elementName, eventName, body,
-				context.getNotification().getSeverityLevel(),context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric(), notification.getProductTag(), notification.getArticleNumber());
+				context.getNotification().getSeverityLevel(), context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric(), notification.getProductTag(), notification.getArticleNumber());
 	}
 
 	/**

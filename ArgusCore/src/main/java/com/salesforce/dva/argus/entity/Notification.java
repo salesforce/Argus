@@ -792,8 +792,10 @@ public class Notification extends JPAEntity implements Serializable {
 				} catch (Exception e) {
 					GOCFields.addProperty(CUSTOM_TEXT_KEY, this.customText);
 				} finally {
-					if (!GOCFields.has(CUSTOM_TEXT_KEY))
+					if (!GOCFields.has(CUSTOM_TEXT_KEY)) {
+						GOCFields = new JsonObject();
 						GOCFields.addProperty(CUSTOM_TEXT_KEY, this.customText);
+					}
 					this.customText = GOCFields.toString();
 				}
 			}
