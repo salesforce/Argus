@@ -43,28 +43,14 @@ import com.salesforce.dva.argus.ws.dto.ItemsCountDto;
 import com.salesforce.dva.argus.ws.dto.NotificationDto;
 import com.salesforce.dva.argus.ws.dto.TriggerDto;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import java.math.BigInteger;
+import java.util.*;
 
 /**
  * Web services for Alert.
@@ -718,18 +704,18 @@ public class AlertResources extends AbstractResource {
 				throw new WebApplicationException("Null object cannot be updated.", Status.BAD_REQUEST);
 			}
 
-		        PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
+			PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
 
-		        //Refocus Notification V1 release only for search team (and for Argus team testing)
-		        if (AlertService.SupportedNotifier.REFOCUS.getName().equals(notificationDto.getNotifierName())) {
-			    String ownerUserName = owner.getUserName();
-			    if (!"svc_monocle".equalsIgnoreCase(ownerUserName)  // search team username
+			//Refocus Notification V1 release only for search team (and for Argus team testing)
+			if (AlertService.SupportedNotifier.REFOCUS.getName().equals(notificationDto.getNotifierName())) {
+				String ownerUserName = owner.getUserName();
+				if (!"svc_monocle".equalsIgnoreCase(ownerUserName)  // search team username
 					&& !"svc_perfeng_tools".equalsIgnoreCase(ownerUserName)) { // argus team username
 				throw new WebApplicationException(Status.FORBIDDEN.getReasonPhrase(), Status.FORBIDDEN);
-		  	    }
-		        }
+				}
+			}
 
-		        Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
+			Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
 
 			if (oldAlert == null) {
 				throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
@@ -737,7 +723,13 @@ public class AlertResources extends AbstractResource {
 			validateResourceAuthorization(req, oldAlert.getOwner(), owner);
 			for (Notification notification : oldAlert.getNotifications()) {
 				if (notificationId.equals(notification.getId())) {
+
+					if (!NotificationDto.validateSRActionableUpdate(notificationDto))
+						throw new WebApplicationException("Article Number should be present if SR Actionable is set.");
+
 					copyProperties(notification, notificationDto);
+					notification.setSRActionable(notificationDto.getSRActionable(), notificationDto.getArticleNumber());
+
 					oldAlert.setModifiedBy(getRemoteUser(req));
 
 					Alert alert = alertService.updateAlert(oldAlert);
@@ -832,9 +824,14 @@ public class AlertResources extends AbstractResource {
 
 				Notification notification = new Notification(notificationDto.getName(), alert, notificationDto.getNotifierName(),
 						notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
-				notification.setSRActionable(notificationDto.getSRActionable());
+				notification.setSRActionable(notificationDto.getSRActionable(), notificationDto.getArticleNumber());
+				notification.setArticleNumber(notificationDto.getArticleNumber());
 				notification.setSeverityLevel(notificationDto.getSeverityLevel());
+
 				notification.setCustomText(notificationDto.getCustomText());
+				notification.setEventName(notificationDto.getEventName());
+				notification.setElementName(notificationDto.getElementName());
+				notification.setProductTag(notificationDto.getProductTag());
 
 				// TODO: 14.12.16 validateAuthorizationRequest notification
 
