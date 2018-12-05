@@ -40,14 +40,13 @@ import com.salesforce.dva.argus.ws.filter.AuthFilter;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 import org.apache.commons.beanutils.BeanUtils;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -248,10 +247,8 @@ public abstract class AbstractResource {
     protected void copyProperties(Object dest, Object source) {
         try {
             BeanUtils.copyProperties(dest, source);
-        } catch (Exception e) {
-            String errorMessage = MessageFormat.format("M:{0};;E:{1}",
-                    e.getCause().getMessage(), e.toString());
-            throw new WebApplicationException(errorMessage, Status.BAD_REQUEST);
+        } catch (Exception e) {;
+            throw new WebApplicationException(e.getCause().getMessage(), Status.BAD_REQUEST);
         }
     }
 
