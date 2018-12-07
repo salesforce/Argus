@@ -214,7 +214,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
 			var agg_Str = '';
 			var namespace_Str = (n && n.length > 1) ? ':' + n : '';
-			var defaultDownsampler;
+			var defaultDownsampler = '';
 
 			/* Add default settings for: start, aggregator
 				full:  -1h:scope:metric{tags}:avg:namespace
