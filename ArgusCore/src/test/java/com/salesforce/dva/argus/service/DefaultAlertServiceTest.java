@@ -59,7 +59,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 	@Mock private MonitorService _monitorServiceMock;
 	@Mock private AuditService _auditServiceMock;
 	@Mock private ObjectMapper _mapper;
-	
+
 	private DefaultAlertService alertService;
 	
 	@Before

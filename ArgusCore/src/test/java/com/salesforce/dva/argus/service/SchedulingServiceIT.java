@@ -6,13 +6,16 @@ import static org.junit.Assert.assertEquals;
 import java.util.List;
 import java.util.Properties;
 
+import com.salesforce.dva.argus.IntegrationTest;
 import org.junit.Test;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
+import org.junit.experimental.categories.Category;
 
+@Category(IntegrationTest.class)
 public class SchedulingServiceIT extends AbstractTest {
 
     @Test

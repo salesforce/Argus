@@ -144,6 +144,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			throw new SystemException("Failed to parse the given expression", ex);
 		}
 		_monitorService.modifyCounter(Counter.DATAPOINT_READS, _getDatapointsAcrossMetrics(metrics), null);
+
 		return metrics;
 	}
 

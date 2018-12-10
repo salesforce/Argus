@@ -562,6 +562,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 			if(jobStartTime - alertEnqueueTimestamp > EVALUATIONDELAY) {
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_DELAYED, 1, tags);
+				_logger.warn("EVALUATION_DELAYED: Alert {}:{} enQueueTime {} evaluationTime {}",
+						alert.getId(), alert.getName(), alertEnqueueTimestamp, jobStartTime);
 			} else {
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_STARTED, 1, tags);
 			}
