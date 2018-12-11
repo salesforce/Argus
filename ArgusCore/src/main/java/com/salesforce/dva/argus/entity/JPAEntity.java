@@ -242,7 +242,7 @@ public abstract class JPAEntity implements Serializable, Identifiable {
         }
     }
 
-    /**em.getEntityManagerFactory().getCache().evictAll();
+    /**
      * Finds all entities that have been marked for deletion.
      *
      * @param   <E>    The JPA entity type.
