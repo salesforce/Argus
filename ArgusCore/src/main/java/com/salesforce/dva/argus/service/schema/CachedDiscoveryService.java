@@ -114,7 +114,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 		if(DiscoveryService.isWildcardQuery(query)) {
 			String value = _cacheService.get(_getKey(query));
 			if(value == null) { // Cache Miss
-				_logger.debug(MessageFormat.format("CACHE MISS for Wildcard Query: '{'{0}'}'. Will read from persistent storage.", query));
+				_logger.debug(MessageFormat.format("CACHE MISS for Wildcard Query: {0}. Will read from persistent storage.", query));
 				queries = _discoveryService.getMatchingQueries(query);
 				
 				long timeToGetQueriesMillis = (System.nanoTime() - start) / 1000000;
@@ -125,7 +125,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 				
 				_executorService.submit(new CacheInsertWorker(query, queries));
 			} else { // Cache Hit
-				_logger.debug(MessageFormat.format("CACHE HIT for Wildcard Query: '{'{0}'}'", query));
+				_logger.debug(MessageFormat.format("CACHE HIT for Wildcard Query: {0}", query));
 				_logger.debug("Time to get matching queries from cache in ms: " + (System.nanoTime() - start) / 1000000);
 				try {
 					JavaType type = MAPPER.getTypeFactory().constructCollectionType(List.class, MetricQuery.class);
@@ -143,7 +143,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 				}
 			}
 		} else {
-			_logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
+			_logger.debug(MessageFormat.format("MetricQuery {0} does not have any wildcards", query));
 			queries.add(query);
 		}
 

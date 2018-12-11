@@ -241,7 +241,6 @@ public interface MonitorService extends Service {
         METATAGS_WRITTEN("argus.core", "metatags.written"),
         METATAGS_WRITE_LATENCY("argus.core", "metatags.write.latency"),
 
-
         BLOOMFILTER_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.approximate.element.count"),
         BLOOMFILTER_SCOPE_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.only.approximate.element.count"),
         BLOOMFILTER_SCOPE_AND_METRIC_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.and.metric.only.approximate.element.count"),
