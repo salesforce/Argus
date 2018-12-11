@@ -39,7 +39,6 @@ import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.TSDBEntity;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener.InjectLogger;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.CollectionService;
 import com.salesforce.dva.argus.service.MQService;
@@ -54,6 +53,9 @@ import com.salesforce.dva.argus.service.WardenService.SubSystem;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,7 +63,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.persistence.EntityManager;
 
 import static com.salesforce.dva.argus.service.MQService.MQQueue.ANNOTATION;
 import static com.salesforce.dva.argus.service.MQService.MQQueue.METRIC;
@@ -80,8 +81,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
 
     //~ Instance fields ******************************************************************************************************************************
 
-    @InjectLogger
-    private Logger _logger;
+    private final Logger _logger = LoggerFactory.getLogger(DefaultCollectionService.class);
     @Inject
     Provider<EntityManager> emf;
     private final MQService _mqService;
