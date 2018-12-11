@@ -43,6 +43,7 @@ import com.salesforce.dva.argus.util.QueryContext;
 import com.salesforce.dva.argus.util.QueryContextHolder;
 import com.salesforce.dva.argus.util.TSDBQueryExpression;
 import static com.salesforce.dva.argus.system.SystemAssert.*;
+import com.salesforce.dva.argus.service.metric.ParseException;
 
 public class MetricReader<T> {
 
@@ -79,6 +80,70 @@ public class MetricReader<T> {
             }
         }
         return result;
+    }
+
+
+    public static boolean validateExpression(String expression)
+    {
+        boolean result = true;
+
+        if(expression != null)
+        {
+            try
+            {
+                MetricReader reader = new MetricReader((TSDBService)null, (DiscoveryService)null, (TransformFactory)null);
+                if(!reader.isValidExpression(expression))
+                {
+                    result = false;
+                }
+            }
+            catch (ParseException e)
+            {
+                result = false;
+                String newMessage = simpleParseErrorMessage(e, expression);
+                throw new RuntimeException( newMessage, e);
+            }
+            catch (TokenMgrError e)
+            {
+                result = false;
+                String newMessage = simpleLexicalErrorMessage(e, expression);
+                throw new RuntimeException( newMessage, e);
+            }
+            catch (Exception e)
+            {
+                result = false;
+            }
+        }
+        return result;
+    }
+
+    protected static String simpleParseErrorMessage(ParseException e, String expression)
+    {
+        String msg = null;
+        if (e.currentToken != null)
+        {
+            msg = String.format("Syntax error in at line: %d column: %d in alert expression: %s",
+                                        e.currentToken.next.beginLine, e.currentToken.next.beginColumn, expression);
+        }
+        else
+        {
+            // TODO? - parse existing msg and regex match for  'at line\s+(\d+),\s*column\s+(\d+)'
+            //         would need to be revisted as we upgrade javacc
+            msg = String.format("Syntax error in alert expression: %s", expression );
+        }
+        return msg;
+    }
+
+    protected static String simpleLexicalErrorMessage(TokenMgrError e, String expression)
+    {
+        // Extract the first sentence from the message.
+        // This portion of the message includes the line and column of the lexical error.
+        String tokenErrMsg = e.getMessage();
+        int endOfSentence = tokenErrMsg.indexOf('.');
+        String locationMsg = (endOfSentence < 0)? tokenErrMsg : tokenErrMsg.substring(0, endOfSentence+1);
+
+        String msg = String.format("%s  Alert expression: %s", locationMsg, expression );
+        return msg;
     }
 
     public static boolean isValid(String expression) {

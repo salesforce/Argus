@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.entity;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgumentP;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -69,6 +70,7 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Selection;
 
+import com.salesforce.dva.argus.util.Cron;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.eclipse.persistence.config.HintValues;
 import org.eclipse.persistence.config.QueryHints;
@@ -84,6 +86,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.metric.ParseException;
 
 /**
  * The entity which encapsulates information about a Dashboard.
@@ -992,6 +995,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * @param  cronEntry  The new CRON entry. Cannot be null and must be valid CRON entry syntax.
 	 */
 	public void setCronEntry(String cronEntry) {
+		requireArgument(Cron.isCronEntryValid(cronEntry), "Invalid cron entry: " + cronEntry);
 		this.cronEntry = cronEntry;
 	}
 
@@ -1047,8 +1051,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *
 	 * @param  expression  The alert expression. Cannot be null and must be valid metric expression syntax as defined in the <tt>MetricService</tt>
 	 */
-	public void setExpression(String expression) {
-		requireArgument(MetricReader.isValid(expression), "Invalid metric expression " + expression);
+	public void setExpression(String expression) throws RuntimeException {
+		requireArgumentP(expression, x -> MetricReader.validateExpression(x), "Invalid metric expression " + expression, true);
 		this.expression = expression;
 	}
 

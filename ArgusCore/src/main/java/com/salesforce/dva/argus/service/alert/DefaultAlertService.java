@@ -182,10 +182,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public Alert updateAlert(Alert alert) {
 		requireNotDisposed();
 		requireArgument(alert != null, "Cannot update a null alert");
-		boolean isCronValid = Cron.isCronEntryValid(alert.getCronEntry());
-		if(!isCronValid) {
-			throw new RuntimeException("Input cron entry - " + alert.getCronEntry() + " is invalid");
-		}
+
 		alert.setModifiedDate(new Date());
 
 		EntityManager em = _emProvider.get();

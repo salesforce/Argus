@@ -30,11 +30,12 @@
  */
 	 
 package com.salesforce.dva.argus.system;
+import java.util.function.Predicate;
 
 /**
  * Provides functionality to assert that certain conditions are met.
  *
- * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
+ * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com), Ian Keck (ikeck@salesforce.com)
  */
 public class SystemAssert {
 
@@ -54,7 +55,9 @@ public class SystemAssert {
      * @param  message    The exception message.
      */
     public static void requireArgument(boolean condition, String message) {
-        require(condition, message, IllegalArgumentException.class);
+        if (!condition) {
+            raiseException(message, IllegalArgumentException.class);
+        }
     }
 
     /**
@@ -64,19 +67,92 @@ public class SystemAssert {
      * @param  message    The exception message.
      */
     public static void requireState(boolean condition, String message) {
-        require(condition, message, IllegalStateException.class);
+        if (!condition) {
+            raiseException(message, IllegalStateException.class);
+        }
     }
 
-    private static <T extends RuntimeException> void require(boolean condition, String message, Class<T> type) {
-        if (!condition) {
-            RuntimeException result;
 
-            try {
-                result = type.getConstructor(String.class).newInstance(message);
-            } catch (Exception ex) {
-                throw new SystemException(ex);
+    /**
+     * Throws an exception of the specified type and message.
+     *
+     * @param  message    Message to return
+     * @param  type       Type of RuntimeException to raise.
+     */
+    private static <T extends RuntimeException> void raiseException(String message, Class<T> type) throws RuntimeException
+    {
+        RuntimeException result;
+        try {
+            result = type.getConstructor(String.class).newInstance(message);
+        } catch (Exception ex)  {
+            throw new SystemException(ex);
+        }
+        throw result;
+    }
+
+
+    // NOTE - these functions add a mechanism that allow you to capture error messages in arbitrary exceptions thrown by the test code.
+
+    /**
+     * Throws an IllegalArgumentException if the predicate fails.
+     *
+     * @param  arg        Object to test
+     * @param  t          The predicate to evaluate,
+     * @param  message    The exception message.
+     */
+    public static <P> void requireArgumentP(P arg, Predicate<P> t, String message, boolean captureMsg) {
+        requirePredicate(arg, t, message, IllegalArgumentException.class, captureMsg);
+    }
+
+    public static <P> void requireArgumentP(P arg, Predicate<P> t, String message) {
+        requirePredicate(arg, t, message, IllegalArgumentException.class, true);
+    }
+
+    /**
+     * Throws an IllegalStateException if the predicate fails.
+     *
+     * @param  arg        Object to test
+     * @param  t          The condition to evaluate,
+     * @param  message    The exception message.
+     */
+    public static <P> void requireStateP(P arg, Predicate<P> t, String message, boolean captureMsg) {
+        requirePredicate(arg, t, message, IllegalStateException.class, captureMsg);
+    }
+
+    public static <P> void requireStateP(P arg, Predicate<P> t, String message) {
+        requirePredicate(arg, t, message, IllegalStateException.class, true);
+    }
+
+
+    private static <T extends RuntimeException, P> void requirePredicate(P arg, Predicate<P> t, String message, Class<T> type, boolean captureMessage) {
+
+        boolean ok = true;
+        String msg = message;
+        try
+        {
+            ok = t.test(arg);
+        }
+        catch (RuntimeException ex)
+        {
+            ok = false;
+            if (captureMessage)
+            {
+                Throwable e = ex.getCause();
+                msg = (e != null)? e.getMessage() : ex.getMessage();
             }
-            throw result;
+        }
+        catch (Exception e)
+        {
+            ok = false;
+            if (captureMessage)
+            {
+                msg = e.getMessage();
+            }
+        }
+
+        if (!ok)
+        {
+            raiseException(msg, type);
         }
     }
 }
