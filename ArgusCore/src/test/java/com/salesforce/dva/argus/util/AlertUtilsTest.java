@@ -562,48 +562,48 @@ public class AlertUtilsTest extends AbstractTest {
 	}
 
 
-	@Test
-	public void testAlert_setNotifications()
-	{
-		String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
-		String valid_cron = "* * * * *";
-		String name = "sample";
-
-		Alert a = alertService.updateAlert(new Alert(admin, admin, name, expression, valid_cron));
-
-		// Create and add 2 triggers
-		Trigger trigger1 = new Trigger(a, Trigger.TriggerType.GREATER_THAN_OR_EQ, "warning", 2D, 100);
-		Trigger trigger2 = new Trigger(a, Trigger.TriggerType.GREATER_THAN,       "critical", 50, 100);
-		a.setTriggers(Arrays.asList(new Trigger[] { trigger1, trigger2 }));
-		// NOTE - putting alertService.updatealert() here causes a duplicate key exception
-
-		// Create and add 2 notifications, one for each trigger
-		Notification not1 = new Notification("notification_1x", a, "not1", null, 5000);
-		Notification not2 = new Notification("notification_2x", a, "not2", null, 5000);
-
-		a.setNotifications(Arrays.asList(new Notification[] {not1, not2}));
-		not1.setTriggers(Arrays.asList(new Trigger[] {trigger1, trigger2}));
-		not2.setTriggers(Arrays.asList(new Trigger[] {trigger1, trigger2}));
-
-		a = alertService.updateAlert(a);
-
-
-		// Clean up the Alert
-		for (Trigger trigger : a.getTriggers()) {
-			alertService.deleteTrigger(trigger);
-		}
-		a.setTriggers(null);
-		a = alertService.updateAlert(a);
-
-		for (Notification notification : a.getNotifications()) {
-			notification.setTriggers(null);
-			alertService.deleteNotification(notification);
-		}
-		a.setNotifications(null);
-		a = alertService.updateAlert(a);
-
-		alertService.deleteAlert(a.getName(), userService.findAdminUser());
-	}
+//	@Test
+//	public void testAlert_setNotifications()
+//	{
+//		String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
+//		String valid_cron = "* * * * *";
+//		String name = "sample";
+//
+//		Alert a = alertService.updateAlert(new Alert(admin, admin, name, expression, valid_cron));
+//
+//		// Create and add 2 triggers
+//		Trigger trigger1 = new Trigger(a, Trigger.TriggerType.GREATER_THAN_OR_EQ, "warning", 2D, 100);
+//		Trigger trigger2 = new Trigger(a, Trigger.TriggerType.GREATER_THAN,       "critical", 50, 100);
+//		a.setTriggers(Arrays.asList(new Trigger[] { trigger1, trigger2 }));
+//		// NOTE - putting alertService.updatealert() here causes a duplicate key exception
+//
+//		// Create and add 2 notifications, one for each trigger
+//		Notification not1 = new Notification("notification_1x", a, "not1", null, 5000);
+//		Notification not2 = new Notification("notification_2x", a, "not2", null, 5000);
+//
+//		a.setNotifications(Arrays.asList(new Notification[] {not1, not2}));
+//		not1.setTriggers(Arrays.asList(new Trigger[] {trigger1, trigger2}));
+//		not2.setTriggers(Arrays.asList(new Trigger[] {trigger1, trigger2}));
+//
+//		a = alertService.updateAlert(a);
+//
+//
+//		// Clean up the Alert
+//		for (Trigger trigger : a.getTriggers()) {
+//			alertService.deleteTrigger(trigger);
+//		}
+//		a.setTriggers(null);
+//		a = alertService.updateAlert(a);
+//
+//		for (Notification notification : a.getNotifications()) {
+//			notification.setTriggers(null);
+//			alertService.deleteNotification(notification);
+//		}
+//		a.setNotifications(null);
+//		a = alertService.updateAlert(a);
+//
+//		alertService.deleteAlert(a.getName(), userService.findAdminUser());
+//	}
 
 
 //	 @Test
