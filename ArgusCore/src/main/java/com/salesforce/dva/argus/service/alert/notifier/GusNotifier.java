@@ -246,7 +246,7 @@ public class GusNotifier extends AuditNotifier {
 				gusPost.releaseConnection();
 			}
 		} else {
-			failureMsg = MessageFormat.format("Sending GUS notification is disabled.  Not sending message to groups '{0}'.", to);
+			failureMsg = MessageFormat.format("Sending GUS notification is disabled.  Not sending message to groups {0}.", to);
 			_logger.warn(failureMsg);
 		}
 
