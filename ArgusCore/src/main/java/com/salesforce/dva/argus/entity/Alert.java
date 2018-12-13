@@ -1052,7 +1052,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * @param  expression  The alert expression. Cannot be null and must be valid metric expression syntax as defined in the <tt>MetricService</tt>
 	 */
 	public void setExpression(String expression) throws RuntimeException {
-		requireArgumentP(expression, x -> MetricReader.validateExpression(x), "Invalid metric expression " + expression, true);
+		requireArgumentP(expression, x -> MetricReader.validateExpression(x), "Invalid alert expression: " + expression, true);
 		this.expression = expression;
 	}
 
@@ -1070,9 +1070,18 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *
 	 * @param  enabled  True if the alert is enabled.
 	 */
-	public void setEnabled(boolean enabled) {
+	public void setEnabled(boolean enabled)  throws RuntimeException {
+
+		// Prevent users from enabling invalid alerts.
+		// Note that this requires setEnabled() to be called after we have set valid values on all alerts.
+		if (enabled)
+		{
+			validateAlert();
+		}
 		this.enabled = enabled;
 	}
+
+
 
 	/**
 	 * Indicates if an alert should trigger if no data is available to evaluate.
@@ -1161,6 +1170,18 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 **/
 	public void setShared(boolean shared) {
 		this.shared = shared;
+	}
+
+
+	/**
+	 * Validates all fields of an alert.
+	 * @throws RuntimeException
+	 */
+	private void validateAlert() throws RuntimeException {
+		requireArgumentP(this.expression, x -> MetricReader.validateExpression(x), "Invalid alert expression: " + this.expression, true);
+		requireArgument(Cron.isCronEntryValid(this.cronEntry), "Invalid cron entry: " + this.cronEntry);
+		requireArgument(this.owner != null, "Owner cannot be null.");
+		requireArgument(this.name != null && !this.name.isEmpty(), "Name cannot be null or empty.");
 	}
 
 	@Override
