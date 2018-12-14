@@ -103,9 +103,12 @@ public abstract class AbstractTest {
     }
 
     public static Metric createMetric() {
+        return createMetric(((int) (random.nextDouble() * 500)) + 1);
+    }
+
+    public static Metric createMetric(int datapointCount) {
         int scopeIndex = ((int) (random.nextDouble() * 100));
         int metricIndex = ((int) (random.nextDouble() * 10));
-        int datapointCount = ((int) (random.nextDouble() * 500)) + 1;
         String scope = MessageFormat.format(scopeNameTemplate, scopeIndex);
         String metric = MessageFormat.format(metricNameTemplate, metricIndex);
         Metric result = new Metric(scope, metric);
