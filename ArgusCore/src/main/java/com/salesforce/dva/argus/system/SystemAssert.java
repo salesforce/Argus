@@ -138,7 +138,15 @@ public class SystemAssert {
             if (captureMessage)
             {
                 Throwable e = ex.getCause();
-                msg = (e != null)? e.getMessage() : ex.getMessage();
+                msg = ex.getMessage();
+                if (e != null && (msg == null || msg.isEmpty()))
+                {
+                    msg = e.getMessage();
+                }
+                if (msg == null || msg.isEmpty())
+                {
+                    msg = "unknown error";
+                }
             }
         }
         catch (Exception e)
