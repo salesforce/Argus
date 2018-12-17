@@ -32,7 +32,7 @@ mvn test
 
 ### Running The Integration Tests (Currently Deprecated)
 
-** Currently the integration tests are non-functional but are being retained in case we want to resurrect them.
+**Currently the integration tests are non-functional but are being retained in case we want to resurrect them.
 
 The integration tests for Argus use the `LDAPAuthService` implementation of the `AuthService` interface and the `DefaultTSDBService` implementation of the `TSDBService` interface (which targets OpenTSDB).  Additionally it uses the `RedisCacheService` implementation of the `CacheService` interface to facilitate integration testing of the `BatchService`.  In order to run the integration tests you must update the `argus-build.properties` file to correctly setup the external LDAP you'll be testing against and the OpenTSDB endpoints to use as well as the Redis cluster.  The snippet below shows the specific properties that should be modified in the `argus-build.properties` file.  Of course, after you make these updates, you must re-install the resource filter dependencies as described above and execute the `clean` goal, before running the integration tests.
 
