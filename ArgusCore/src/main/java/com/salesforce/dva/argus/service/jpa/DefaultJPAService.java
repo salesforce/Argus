@@ -40,7 +40,9 @@ import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
@@ -138,8 +140,21 @@ public abstract class DefaultJPAService extends DefaultService {
 		requireArgument(em != null, "The entity manager cannot be null.");
 		requireArgument(id != null && id.compareTo(ZERO) > 0, "ID must be positive and non-zero");
 		requireArgument(type != null, "The entity cannot be null.");
-		em.getEntityManagerFactory().getCache().evictAll();
-		return em.find(type, id);
+
+		Map<String, Object> props = new HashMap<>();
+
+		// https://wiki.eclipse.org/EclipseLink/UserGuide/JPA/Basic_JPA_Development/Caching/Query_Options
+		// Configure how the shared cache is accessed.
+		// Do not use shared cache on retrieval.
+		// javax.persistence.cache.retrieveMode = BYPASS
+		props.put("javax.persistence.cache.retrieveMode", "BYPASS");
+
+		// Configure how the shared cache is modified.
+		// If the object is in the shared cache, refresh its data from the database row data.
+		// javax.persistence.cache.storeMode = REFRESH
+		props.put("javax.persistence.cache.storeMode", "REFRESH");
+
+		return em.find(type, id, props);
 	}
 
 	/**
@@ -157,7 +172,6 @@ public abstract class DefaultJPAService extends DefaultService {
 		requireArgument(type != null, "The entity cannot be null.");
 		requireArgument(limit == -1 || limit > 0, "Limit if not -1, must be greater than 0.");
 
-		em.getEntityManagerFactory().getCache().evictAll();
 		return JPAEntity.findEntitiesMarkedForDeletion(em, type, limit);
 	}
 }

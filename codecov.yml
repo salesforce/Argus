@@ -1,0 +1,6 @@
+ignore:
+  - "ArgusCore/src/main/java/com/salesforce/dva/argus/service/tsdb/PhoenixTSDBEngine.java"
+  - "ArgusCore/src/main/java/com/salesforce/dva/argus/service/tsdb/PhoenixTSDBService.java"
+  - "ArgusCore/src/main/java/com/salesforce/dva/argus/service/tsdb/ShardedTSDBService.java"
+  - "ArgusCore/src/main/java/com/salesforce/dva/argus/service/tsdb/TimeQueryFederation.java"
+  - "ArgusCore/src/main/java/com/salesforce/dva/argus/service/batch/DefaultBatchService.java"

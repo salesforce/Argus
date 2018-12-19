@@ -112,9 +112,9 @@ public final class SystemConfiguration extends Properties {
                 do {
                     String defaultValue = config.getValue(property);
 
-                    out.write(MessageFormat.format("Enter value for ''{0}'' ", name));
+                    out.write(MessageFormat.format("Enter value for {0} ", name));
                     if (defaultValue != null) {
-                        out.write(MessageFormat.format("'(default = '{0}')': ", config.getValue(property)));
+                        out.write(MessageFormat.format("(default = {0}): ", config.getValue(property)));
                     }
                     out.flush();
 
