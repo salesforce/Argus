@@ -178,27 +178,27 @@ public class GOCNotifier extends AuditNotifier {
 
 						// Check for success
 						if (respCode == 201 || respCode == 204) {
-							String infoMsg = MessageFormat.format ("Success - send GOC++ having element '{0}' event '{1}' severity {2}.",
+							String infoMsg = MessageFormat.format ("Success - send GOC++ having element {0} event {1} severity {2}.",
 									elementName, eventName, severity.name());
 							_logger.info(infoMsg);
 							history.appendMessageNUpdateHistory(infoMsg, null, 0);
 							return true;
 						} else if (respCode == 401) {
 							// Indication that the session timedout, Need to refresh and retry
-							failureMsg = MessageFormat.format("Failure - send GOC++ Refocus having element '{0}' event '{1}' severity {2}. " +
-									"Response code '{3}' (session timeout).", elementName, eventName, severity.name(), respCode);
+							failureMsg = MessageFormat.format("Failure - send GOC++ Refocus having element {0} event {1} severity {2}. " +
+									"Response code {3} (session timeout).", elementName, eventName, severity.name(), respCode);
 							_logger.warn(failureMsg);
 							refresh = true;
 
 						} else {
-							failureMsg = MessageFormat.format("Failure - send GOC++ having element '{0}' event '{1}' severity {2}. " +
-											"Response code '{3}' response '{4}'", elementName, eventName, severity.name(), respCode,
+							failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. " +
+											"Response code {3} response {4}", elementName, eventName, severity.name(), respCode,
 									        post.getResponseBodyAsString());
 							_logger.error(failureMsg);
 							break;
 						}
 					} catch (Exception e) {
-						failureMsg = MessageFormat.format("Failure - send GOC++ having element '{0}' event '{1}' severity {2}. Exception '{3}'",
+						failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. Exception {3}",
 								elementName, eventName, severity.name(), e.getMessage());
 						_logger.error("Failure - send GOC++ having element '{}' event '{}' severity {}. Exception '{}'", elementName, eventName,
 								severity.name(), e);
@@ -215,7 +215,7 @@ public class GOCNotifier extends AuditNotifier {
 				throw new SystemException("Failed to send an GOC++ notification.", ex);
 			}
 		} else {
-			failureMsg = MessageFormat.format("Sending GOC++ notification is disabled.  Not sending message for element '{0}' event '{1}' severity {2}.",
+			failureMsg = MessageFormat.format("Sending GOC++ notification is disabled.  Not sending message for element {0} event {1} severity {2}.",
 					elementName, eventName, severity.name());
 			_logger.warn(failureMsg);
 		}
