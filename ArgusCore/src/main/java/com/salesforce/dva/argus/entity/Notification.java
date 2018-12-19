@@ -682,11 +682,12 @@ public class Notification extends JPAEntity implements Serializable {
 	 */
 	public void setSRActionable(boolean isSRActionable, String articleNumber) {
 		this.isSRActionable = isSRActionable;
-		if (isSRActionable == true) {
-			if (articleNumber == null || articleNumber.trim().isEmpty()) {
-				throw new IllegalArgumentException("SR Actionable is set as true, without providing the Article Number.");
-			}
-		}
+		//TODO: If SRActionable is checked, article number should be present. We should report the users regarding badly configured alerts and then uncomment this.
+//		if (isSRActionable == true) {
+//			if (articleNumber == null || articleNumber.trim().isEmpty()) {
+//				throw new IllegalArgumentException("SR Actionable is set as true, without providing the Article Number.");
+//			}
+//		}
 		setArticleNumber(articleNumber);
 	}
 
