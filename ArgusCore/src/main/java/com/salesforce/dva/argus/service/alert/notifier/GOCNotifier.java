@@ -291,12 +291,15 @@ public class GOCNotifier extends AuditNotifier {
 		String eventName = notification.getEventName();
 
 		if (elementName == null) {
-			elementName = TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName());
+			elementName = context.getAlert().getName();
 		}
 
 		if (eventName == null) {
-			eventName = TemplateReplacer.applyTemplateChanges(context, trigger.getName());
+			eventName = trigger.getName();
 		}
+
+		elementName = TemplateReplacer.applyTemplateChanges(context, elementName);
+		eventName = TemplateReplacer.applyTemplateChanges(context, eventName);
 
 		return sendMessage(context.getHistory(), sev, TemplateReplacer.applyTemplateChanges(context, notification.getName()), elementName, eventName, body,
 				context.getNotification().getSeverityLevel(), context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric(), notification.getProductTag(), notification.getArticleNumber());
