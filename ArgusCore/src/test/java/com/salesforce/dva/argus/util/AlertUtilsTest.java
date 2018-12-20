@@ -3,28 +3,41 @@ package com.salesforce.dva.argus.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import com.google.inject.Provider;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.service.CacheService;
+import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
+import com.salesforce.dva.argus.service.metric.DefaultMetricService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+import javafx.util.Pair;
 import org.junit.Test;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
 import org.quartz.TriggerBuilder;
 
 public class AlertUtilsTest extends AbstractTest {
+
+	private static final String CACHED_QUERIES_0 = "[{\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB0\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC1.service1\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB1\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC2.service2\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB5\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC1.service1\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB6\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC2.service2\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB10\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC1.service1\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB11\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC2.service2\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB15\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC1.service1\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB16\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC2.service2\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB20\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC1.service1\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB21\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC2.service2\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB25\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC1.service1\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB26\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC2.service2\"}]";
+	private static final String CACHED_QUERIES_1 = "[{\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB0\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC1.service1\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB1\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC2.service2\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB2\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC3.service3\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB3\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC4.service4\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB4\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC5.service5\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB5\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC1.service1\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB6\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC2.service2\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB7\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC3.service3\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB8\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC4.service4\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB9\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC5.service5\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB10\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC1.service1\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB11\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC2.service2\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB12\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC3.service3\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB13\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC4.service4\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB14\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC5.service5\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB15\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC1.service1\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB16\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC2.service2\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB17\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC3.service3\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB18\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC4.service4\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB19\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC5.service5\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB20\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC1.service1\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB21\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC2.service2\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB22\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC3.service3\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB23\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC4.service4\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB24\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC5.service5\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB25\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC1.service1\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB26\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC2.service2\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB27\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC3.service3\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB28\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC4.service4\"}, {\"aggregator\":\"SUM\",\"metric\":\"winterfell.backupTimestamps-NyB29\",\"tags\":{\"device\":\"myhost-mycompany.com\"},\"endTimestamp\":1485904591853,\"startTimestamp\":1485903991000,\"scope\":\"system.DC5.service5\"} ]";
 
 	@Test
 	public void isScopePresentInWhiteListTest() {
@@ -140,17 +153,36 @@ public class AlertUtilsTest extends AbstractTest {
 
 	@Test
 	public void testDetectDCFromExpression() {
-		MetricService _mService = system.getServiceFactory().getMetricService();
-		int idx = 0;
-		ArrayList<String> expressionList = new ArrayList<>(Arrays.asList(
-				"-2h:system.DC1.service:metric:max",
-				"-1m:system.DC2.service:metric{tagk=tagv}:min",
-				"DIVIDE(-15m:system.DC3.service:metric1:avg, -15m:system.DC4.service:metric2:avg)",
-				"-75m:system.dc5.service:metric:sum"));
-		String [][] actualOutput =  new String[][]{{"DC1"},{"DC2"},{"DC4","DC3"},{"DC5"}};
-		for(String currentExpression: expressionList) {
-			List<String> expectedOutput = _mService.getDCFromExpression(currentExpression);
-			assertEquals(expectedOutput, new ArrayList<>(Arrays.asList(actualOutput[idx++])));
+
+		Map<String, List<String>> testSuite = new HashMap<>();
+
+		testSuite.put("-30d:system.[DC1|DC2].[service1|service2]:metric:avg", Arrays.asList("DC1", "DC2"));
+		testSuite.put("-30d:*DC*:metric:max", Arrays.asList("DC1", "DC2", "DC3", "DC4", "DC5"));
+		testSuite.put("-2h:system.DC1.service:metric:max", Arrays.asList("DC1"));
+		testSuite.put("-1m:system.DC2.service:metric{tagk=tagv}:min", Arrays.asList("DC2"));
+		testSuite.put("DIVIDE(-15m:system.DC3.service:metric1:avg, -15m:system.DC4.service:metric2:avg)", Arrays.asList("DC3", "DC4"));
+		testSuite.put("-75m:system.dc5.service:metric:sum", Arrays.asList("DC5"));
+
+
+		CacheService cacheServiceMock = mock(CacheService.class);
+		when(cacheServiceMock.get("system.[DC1|DC2].[service1|service2]:metric{{}}")).thenReturn(CACHED_QUERIES_0);
+		when(cacheServiceMock.get("*DC*:metric{{}}")).thenReturn(CACHED_QUERIES_1);
+		DiscoveryService discoveryServiceMock = mock(DiscoveryService.class);
+
+		CachedDiscoveryService service = new CachedDiscoveryService(cacheServiceMock, discoveryServiceMock, system.getConfiguration());
+		Provider<MetricReader<MetricQuery>> queryprovider = new Provider<MetricReader<MetricQuery>>() {
+			@Override
+			public MetricReader<MetricQuery> get() {
+				MetricReader<MetricQuery> mReaderMock = new MetricReader<>(system.getServiceFactory().getTSDBService(), service,null);
+				return mReaderMock;
+			}
+		};
+		DefaultMetricService _mServiceMock = new DefaultMetricService(system.getServiceFactory().getMonitorService(),null, queryprovider, system.getConfiguration());
+
+		for(Map.Entry<String, List<String>> currentSuite: testSuite.entrySet()) {
+			List<String> actualOutput = _mServiceMock.getDCFromExpression(currentSuite.getKey());
+			Collections.sort(actualOutput);
+			assertEquals(currentSuite.getValue(), actualOutput);
 		}
 	}
 }
