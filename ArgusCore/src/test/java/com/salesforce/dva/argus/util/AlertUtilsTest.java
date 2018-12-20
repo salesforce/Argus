@@ -160,7 +160,8 @@ public class AlertUtilsTest extends AbstractTest {
 				"-1m:system.DC2.service:metric{tagk=tagv}:min",
 				"DIVIDE(-15m:system.DC3.service:metric1:avg, -15m:system.DC4.service:metric2:avg)",
 				"-75m:system.dc5.service:metric:sum"));
-		String [][] expectedOutput =  new String[][]{{"DC1", "DC2"},
+		String [][] expectedOutput =  new String[][]{
+				{"DC1", "DC2"},
 				{"DC1", "DC2", "DC3", "DC4", "DC5"},
 				{"DC1"},
 				{"DC2"},
