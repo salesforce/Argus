@@ -28,6 +28,7 @@ import com.salesforce.dva.argus.service.metric.DefaultMetricService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+import javafx.util.Pair;
 import org.junit.Test;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
@@ -153,20 +154,15 @@ public class AlertUtilsTest extends AbstractTest {
 	@Test
 	public void testDetectDCFromExpression() {
 
-		ArrayList<String> expressionList = new ArrayList<>(Arrays.asList(
-				"-30d:system.[DC1|DC2].[service1|service2]:metric:avg",
-				"-30d:*DC*:metric:max",
-				"-2h:system.DC1.service:metric:max",
-				"-1m:system.DC2.service:metric{tagk=tagv}:min",
-				"DIVIDE(-15m:system.DC3.service:metric1:avg, -15m:system.DC4.service:metric2:avg)",
-				"-75m:system.dc5.service:metric:sum"));
-		String [][] expectedOutput =  new String[][]{
-				{"DC1", "DC2"},
-				{"DC1", "DC2", "DC3", "DC4", "DC5"},
-				{"DC1"},
-				{"DC2"},
-				{"DC3", "DC4"},
-				{"DC5"}};
+		Map<String, List<String>> testSuite = new HashMap<>();
+
+		testSuite.put("-30d:system.[DC1|DC2].[service1|service2]:metric:avg", Arrays.asList("DC1", "DC2"));
+		testSuite.put("-30d:*DC*:metric:max", Arrays.asList("DC1", "DC2", "DC3", "DC4", "DC5"));
+		testSuite.put("-2h:system.DC1.service:metric:max", Arrays.asList("DC1"));
+		testSuite.put("-1m:system.DC2.service:metric{tagk=tagv}:min", Arrays.asList("DC2"));
+		testSuite.put("DIVIDE(-15m:system.DC3.service:metric1:avg, -15m:system.DC4.service:metric2:avg)", Arrays.asList("DC3", "DC4"));
+		testSuite.put("-75m:system.dc5.service:metric:sum", Arrays.asList("DC5"));
+
 
 		CacheService cacheServiceMock = mock(CacheService.class);
 		when(cacheServiceMock.get("system.[DC1|DC2].[service1|service2]:metric{{}}")).thenReturn(CACHED_QUERIES_0);
@@ -182,12 +178,11 @@ public class AlertUtilsTest extends AbstractTest {
 			}
 		};
 		DefaultMetricService _mServiceMock = new DefaultMetricService(system.getServiceFactory().getMonitorService(),null, queryprovider, system.getConfiguration());
-		int idx = 0;
 
-		for(String currentExpression: expressionList) {
-			List<String> actualOutput = _mServiceMock.getDCFromExpression(currentExpression);
+		for(Map.Entry<String, List<String>> currentSuite: testSuite.entrySet()) {
+			List<String> actualOutput = _mServiceMock.getDCFromExpression(currentSuite.getKey());
 			Collections.sort(actualOutput);
-			assertEquals(new ArrayList<>(Arrays.asList(expectedOutput[idx++])), actualOutput);
+			assertEquals(currentSuite.getValue(), actualOutput);
 		}
 	}
 }
