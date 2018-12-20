@@ -185,15 +185,6 @@ public abstract class JPAEntity implements Serializable, Identifiable {
 
         TypedQuery<E> query = em.createNamedQuery("JPAEntity.findByPrimaryKey", type);
 
-        // https://wiki.eclipse.org/EclipseLink/UserGuide/JPA/Basic_JPA_Development/Caching/Query_Options
-        // Configure how the shared cache is accessed.
-        // Do not use shared cache on retrieval.
-        // javax.persistence.cache.retrieveMode = BYPASS
-        query.setHint("javax.persistence.cache.retrieveMode", "BYPASS");
-
-        // Configure how the shared cache is modified.
-        // If the object is in the shared cache, refresh its data from the database row data.
-        // javax.persistence.cache.storeMode = REFRESH
         query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 
         try {
@@ -222,15 +213,6 @@ public abstract class JPAEntity implements Serializable, Identifiable {
 
         TypedQuery<E> query = em.createNamedQuery("JPAEntity.findByPrimaryKeys", type);
 
-        // https://wiki.eclipse.org/EclipseLink/UserGuide/JPA/Basic_JPA_Development/Caching/Query_Options
-        // Configure how the shared cache is accessed.
-        // Do not use shared cache on retrieval.
-        // javax.persistence.cache.retrieveMode = BYPASS
-        query.setHint("javax.persistence.cache.retrieveMode", "BYPASS");
-
-        // Configure how the shared cache is modified.
-        // If the object is in the shared cache, refresh its data from the database row data.
-        // javax.persistence.cache.storeMode = REFRESH
         query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 
         try {
@@ -258,15 +240,6 @@ public abstract class JPAEntity implements Serializable, Identifiable {
 
         TypedQuery<E> query = em.createNamedQuery("JPAEntity.findByDeleteMarker", type);
 
-        // https://wiki.eclipse.org/EclipseLink/UserGuide/JPA/Basic_JPA_Development/Caching/Query_Options
-        // Configure how the shared cache is accessed.
-        // Do not use shared cache on retrieval.
-        // javax.persistence.cache.retrieveMode = BYPASS
-        query.setHint("javax.persistence.cache.retrieveMode", "BYPASS");
-
-        // Configure how the shared cache is modified.
-        // If the object is in the shared cache, refresh its data from the database row data.
-        // javax.persistence.cache.storeMode = REFRESH
         query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 
         try {
