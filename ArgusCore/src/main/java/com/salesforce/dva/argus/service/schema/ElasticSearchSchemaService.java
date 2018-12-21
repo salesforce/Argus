@@ -328,6 +328,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		_logger.info("{} new scopes were indexed in {} ms.", count, (System.currentTimeMillis() - start));
 
+		/*
                 // Put scopes+metrics
 		start = System.currentTimeMillis();
 		List<List<ScopeAndMetricOnlySchemaRecord>> fracturedScopesAndMetricsList =
@@ -349,6 +350,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		_logger.info("{} new scope and metric names were indexed in {} ms.",
                              count,
                              (System.currentTimeMillis() - start));
+        */
 
                 // Put Metric MetatagsRecord
 		start = System.currentTimeMillis();

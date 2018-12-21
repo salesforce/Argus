@@ -55,6 +55,11 @@ public class NotificationsCache {
 	
 	public NotificationsCache(Provider<EntityManager> em) {
 		refresherThread = new NotificationsCacheRefresherThread(this, em);
+
+		// Run once on main thread to populate the cache
+		refresherThread.runOnce();
+
+		// Now set to run periodically
 		refresherThread.setDaemon(true);
 		refresherThread.start();
 	}

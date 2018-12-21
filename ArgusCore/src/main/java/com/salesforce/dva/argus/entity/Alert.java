@@ -208,6 +208,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	@Metadata
 	private boolean enabled = false;
 
+	@Metadata
 	private boolean missingDataNotificationEnabled;
 
 	@OneToMany(mappedBy = "alert", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -963,6 +964,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			a.modifiedDate = Date.class.cast(tuple.get("modifiedDate"));
 			a.shared = Boolean.class.cast(tuple.get("shared"));
 			a.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
+			a.missingDataNotificationEnabled = Boolean.class.cast(tuple.get("missingDataNotificationEnabled"));
 
 			alerts.add(a);
 		}

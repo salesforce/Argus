@@ -186,6 +186,7 @@ public abstract class JPAEntity implements Serializable, Identifiable {
         TypedQuery<E> query = em.createNamedQuery("JPAEntity.findByPrimaryKey", type);
 
         query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+
         try {
             query.setParameter("id", id);
             query.setParameter("deleted", false);
@@ -213,6 +214,7 @@ public abstract class JPAEntity implements Serializable, Identifiable {
         TypedQuery<E> query = em.createNamedQuery("JPAEntity.findByPrimaryKeys", type);
 
         query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+
         try {
             query.setParameter("ids", ids);
             query.setParameter("deleted", false);
@@ -239,6 +241,7 @@ public abstract class JPAEntity implements Serializable, Identifiable {
         TypedQuery<E> query = em.createNamedQuery("JPAEntity.findByDeleteMarker", type);
 
         query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+
         try {
             query.setParameter("deleted", true);
             if(limit > 0) {

@@ -810,8 +810,10 @@ public class AlertServiceTest extends AbstractTest {
 
 
 		alert1.setShared(true);
+		alert1.setMissingDataNotificationEnabled(true);
 		alertService.updateAlert(alert1);
 		alert2.setShared(true);
+		alert1.setMissingDataNotificationEnabled(false);
 		alertService.updateAlert(alert2);
 		alert3.setShared(false);
 		alertService.updateAlert(alert3);
@@ -824,11 +826,13 @@ public class AlertServiceTest extends AbstractTest {
 		List<Alert> page = alertService.findSharedAlertsPaged(1, 0, null);
 		assertEquals(1, page.size());
 		assertTrue(sharedAlerts.contains(page.get(0).getName()));
+		assertEquals(page.get(0).isMissingDataNotificationEnabled(), true);
 
 		// Second page
 		page = alertService.findSharedAlertsPaged(1, 1, null);
 		assertEquals(1, page.size());
 		assertTrue(sharedAlerts.contains(page.get(0).getName()));
+		assertEquals(page.get(0).isMissingDataNotificationEnabled(), false);
 
 		// Thrid page should be zero
 		page = alertService.findSharedAlertsPaged(1, 2, null);
