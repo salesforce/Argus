@@ -123,6 +123,7 @@
         <jackson.version>2.9.5</jackson.version>
         <httpclient.version>4.5.3</httpclient.version>
         <junit.version>4.12</junit.version>
+        <jacoco-maven-plugin.version>0.7.9</jacoco-maven-plugin.version>
     </properties>
     <build>
         <filters>
@@ -175,7 +176,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.7.7.201606060606</version>
+                <version>${jacoco-maven-plugin.version}</version>
                 <configuration>
                     <excludes>
                         <exclude>**/AnnotationReader*.class</exclude>

@@ -90,7 +90,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 	 * @param  config           The system configuration.  Cannot be null.
 	 */
 	@Inject
-	protected DefaultMetricService(MonitorService monitorService, Provider<MetricReader<Metric>> metricsprovider,
+	public DefaultMetricService(MonitorService monitorService, Provider<MetricReader<Metric>> metricsprovider,
 			Provider<MetricReader<MetricQuery>> queryprovider, SystemConfiguration config) {
 		super(config);
 		requireArgument(monitorService != null, "Monitor service cannot be null.");

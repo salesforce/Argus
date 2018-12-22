@@ -1,19 +1,17 @@
 package com.salesforce.dva.argus.service.tsdb;
 
-import com.salesforce.dva.argus.AbstractTest;
-import com.salesforce.dva.argus.entity.Annotation;
-import com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
-import org.elasticsearch.client.RestClient;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -23,14 +21,19 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.system.SystemException;
 
 public class AbstractTSDBServiceTest extends AbstractTest {
     static final int RUNS = 100;
@@ -181,6 +184,25 @@ public class AbstractTSDBServiceTest extends AbstractTest {
             "        }" +
             "    ]" +
             "}");
+    
+    private String getAnnotationReply = String.join("\n",
+            "[" +
+            "    {" +
+            "        \"metric\": \"TestType1-__-TestScope1.6f94d354\"," +
+            "        \"tags\": {" +
+            "            \"TestTag\": \"TagValue\"," +
+            "            \"meta\": \"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOm51bGx9\"" +
+            "        }," +
+            "        \"aggregateTags\": []," +
+            "        \"tsuids\": [" +
+            "            \"000089A6D1A70000000000010000000000060000000000B00000010F7CB800000000028C00000E2548D1\"" +
+            "        ]," +
+            "        \"type\": \"ANNOTATION\"," +
+            "        \"fields\": {" +
+            "            \"owner\": \"jdoe\"" +
+            "        }" +
+            "    }" +
+            "]");
 
     @Test
     public void testAnnotationWorkflow() throws IOException  {
@@ -220,11 +242,27 @@ public class AbstractTSDBServiceTest extends AbstractTest {
 
         assertTrue(urls.get(3).contains("query"));
         assertTrue(contents.contains(getBody3.replaceAll("\\s+","")));
+
+        List<AnnotationQuery> queries = new ArrayList<>();
+        queries.add(toQuery(annotations.get(0)));
+        
+        spyService = _initializeSpyService(service, getAnnotationReply);
+        spyService.getAnnotations(queries);
+        
+        verify(spyService, times(1)).executeHttpRequest(any(), urlCaptor.capture(), any(), contentCaptor.capture());
     }
 
+    private AnnotationQuery toQuery(Annotation annotation) {
+        String scope = annotation.getScope();
+        String metric = annotation.getMetric();
+        Map<String, String> tags = annotation.getTags();
+        String type = annotation.getType();
+        Long timestamp = annotation.getTimestamp();
 
-    private AbstractTSDBService _initializeSpyService(AbstractTSDBService service,
-                                                             String... replies) {
+        return new AnnotationQuery(scope, metric, tags, type, timestamp, null);
+    }
+
+    private AbstractTSDBService _initializeSpyService(AbstractTSDBService service, String... replies) {
 
         readHttpClient =  mock(CloseableHttpClient.class);
         writeHttpClient =  mock(CloseableHttpClient.class);
@@ -245,7 +283,6 @@ public class AbstractTSDBServiceTest extends AbstractTest {
 
         return spyService;
     }
-
 
     private Annotation _constructAnnotation(char appendChar) {
         Annotation result = new Annotation("TestSource"+ appendChar,
@@ -282,6 +319,32 @@ public class AbstractTSDBServiceTest extends AbstractTest {
 
         assertEquals(wrapperList.get(0).size(), 3);
         assertEquals(wrapperList.get(1).size(), 1);
+    }
+
+    @Test
+    public void testFractureMetrics() {
+        TSDBService service = new AbstractTSDBService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
+        Metric metric = new Metric("testscope", "testMetric");
+        Map<Long, Double> datapoints = new HashMap<>();
+
+        for (int i = 0; i <= 200; i++) {
+            datapoints.put(System.currentTimeMillis() + (i * 60000L), (double)(random.nextInt(50)));
+        }
+        metric.setDatapoints(datapoints);
+        try {
+            Method method = AbstractTSDBService.class.getDeclaredMethod("fractureMetric", Metric.class);
+
+            method.setAccessible(true);
+
+            List<Metric> metricList = (List<Metric>) method.invoke(service, metric);
+
+            assertEquals(3, metricList.size());
+            assertEquals(100, metricList.get(0).getDatapoints().size());
+            assertEquals(100, metricList.get(1).getDatapoints().size());
+            assertEquals(1, metricList.get(2).getDatapoints().size());
+        } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+            throw new SystemException("Failed to construct fracture metric method using reflection");
+        }
     }
 
     @Test

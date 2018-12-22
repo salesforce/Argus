@@ -141,20 +141,8 @@ public abstract class DefaultJPAService extends DefaultService {
 		requireArgument(id != null && id.compareTo(ZERO) > 0, "ID must be positive and non-zero");
 		requireArgument(type != null, "The entity cannot be null.");
 
-		Map<String, Object> props = new HashMap<>();
-
-		// https://wiki.eclipse.org/EclipseLink/UserGuide/JPA/Basic_JPA_Development/Caching/Query_Options
-		// Configure how the shared cache is accessed.
-		// Do not use shared cache on retrieval.
-		// javax.persistence.cache.retrieveMode = BYPASS
-		props.put("javax.persistence.cache.retrieveMode", "BYPASS");
-
-		// Configure how the shared cache is modified.
-		// If the object is in the shared cache, refresh its data from the database row data.
-		// javax.persistence.cache.storeMode = REFRESH
-		props.put("javax.persistence.cache.storeMode", "REFRESH");
-
-		return em.find(type, id, props);
+		em.getEntityManagerFactory().getCache().evictAll();
+		return em.find(type, id);
 	}
 
 	/**
