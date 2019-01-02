@@ -467,23 +467,16 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					while(System.currentTimeMillis() < currCycleEndTime) {
 						try {
 							List<Metric> metrics = _metricService.getMetrics("-5m:argus.alerts:notifications.sent{alertId="+alert.getId().intValue()+"}:zimsum:1m-sum");
-							if(metrics!=null && !metrics.isEmpty()) {
+							if(metrics != null && !metrics.isEmpty()) {
 								_logger.info("AlertEvaluationKPIReporter: Found notifications.sent.alert for dedicated test alert:{}", alert.getId());
-								for(Metric metric : metrics) {
-									if(metric.getDatapoints()!=null && metric.getDatapoints().keySet().size()>0) {
-										List<Long> notificationTimestamps = new ArrayList<Long>(metric.getDatapoints().keySet());
-										Collections.sort(notificationTimestamps);
-										long notificationSentTime = notificationTimestamps.get(0);
-										long alertEvaluationTime = notificationSentTime - metricPublishTime;
-										alertEvaluated = true;
-										publishKPIMetric(fiveMinuteStartTime, new Double(alertEvaluationTime));
-									}
-								}
+
+								long notificationSeenTime = System.currentTimeMillis();
+								long alertEvaluationTime = notificationSeenTime - metricPublishTime;
+								alertEvaluated = true;
+								publishKPIMetric(fiveMinuteStartTime, new Double(alertEvaluationTime));
+								break;
 							}else {
                                  sleep(10*1000);
-							}
-							if(alertEvaluated){
-								break;
 							}
 						}catch(Exception ex) {
 							//NOTE: donot log error for missing expected metrics, as it may take time to be available
