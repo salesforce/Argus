@@ -198,5 +198,13 @@ public interface MetricService extends Service {
      * @return  The list of DCs from the expression.
      */
     List<String> getDCFromExpression(String expression);
+
+    /**
+     * Returns DC from the scope, if present.
+     * @param   scope  	The list of metric expressions to evaluate.  Cannot be null, but may be empty.  All entries must be a valid metric expression.
+     *
+     * @return  The list of DCs from the expression.
+     */
+    String getDCFromScope(String scope);
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

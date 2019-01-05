@@ -38,7 +38,6 @@ import com.salesforce.dva.argus.service.ChartService;
 import com.salesforce.dva.argus.service.DashboardService;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.DashboardDto;
-import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -72,7 +71,7 @@ public class DashboardResources extends AbstractResource {
 
 	//~ Instance fields ******************************************************************************************************************************
 
-	private DashboardService dService = ArgusWebServletListener.getSystem().getServiceFactory().getDashboardService();
+	private DashboardService dService = system.getServiceFactory().getDashboardService();
 	private ChartService _chartService = system.getServiceFactory().getChartService();
 
 	//~ Methods **************************************************************************************************************************************

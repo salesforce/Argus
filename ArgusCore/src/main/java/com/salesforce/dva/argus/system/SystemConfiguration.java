@@ -44,6 +44,7 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Properties;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -222,15 +223,18 @@ public final class SystemConfiguration extends Properties {
         EMAIL_ENABLED("system.property.mail.enabled", "false"),
         GOC_ENABLED("system.property.goc.enabled", "false"),
         GUS_ENABLED("system.property.gus.enabled", "false"),
-        REFOCUS_ENABLED("system.property.refocus.enabled", "false"),
-        
+
         EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
 
-        DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
-        DATA_LAG_QUERY_EXPRESSION("system.property.data.lag.expression", "sampleExpression"),
+        ARGUS_GUS_GROUP_ID("notifier.property.argus.gus.group_id", "groupId"),
+
+        REFOCUS_ENABLED("system.property.refocus.enabled", "false"),
+
         DATA_LAG_THRESHOLD("system.property.data.lag.threshold.millis", "300000"),
-        DATA_LAG_NOTIFICATION_EMAIL_ADDRESS("system.property.data.lag.notification.emailId", "someone@mycompany.com"),
+        DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
         DATA_LAG_WHITE_LISTED_SCOPES("system.property.data.lag.whitelisted.scopes", ""),
+        DATA_LAG_QUERY_EXPRESSION("system.property.data.lag.expression.list","expressionListPerDC"),
+        DATA_LAG_DEFAULT_EXPRESSION("system.property.data.lag.default.expression","defaultExpression"),
 
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),

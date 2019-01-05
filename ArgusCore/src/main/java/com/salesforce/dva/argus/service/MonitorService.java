@@ -148,7 +148,7 @@ public interface MonitorService extends Service {
      *
      * @return isDataLagging boolean flag
      */
-    boolean isDataLagging();
+    boolean isDataLagging(String dataCenter);
 
 	/**
 	 * This is helper function so that we can export metrics to JMX metric exporter everywhere in the
@@ -245,7 +245,9 @@ public interface MonitorService extends Service {
         BLOOMFILTER_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.approximate.element.count"),
         BLOOMFILTER_SCOPE_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.only.approximate.element.count"),
         BLOOMFILTER_SCOPE_AND_METRIC_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.and.metric.only.approximate.element.count"),
-        BLOOMFILTER_METATAGS_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.metatags.approximate.element.count");
+        BLOOMFILTER_METATAGS_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.metatags.approximate.element.count"),
+
+        DATALAG_PER_DC_TIME_LAG("argus.core", "datalag.seconds");
 
         private final String _scope;
         private final String _metric;
