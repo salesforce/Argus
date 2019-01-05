@@ -160,6 +160,7 @@ public abstract class DefaultJPAService extends DefaultService {
 		requireArgument(type != null, "The entity cannot be null.");
 		requireArgument(limit == -1 || limit > 0, "Limit if not -1, must be greater than 0.");
 
+		em.getEntityManagerFactory().getCache().evictAll();
 		return JPAEntity.findEntitiesMarkedForDeletion(em, type, limit);
 	}
 }

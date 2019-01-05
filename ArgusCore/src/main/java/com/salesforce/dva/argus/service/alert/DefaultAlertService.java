@@ -287,6 +287,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		EntityManager em = _emProvider.get();
 
+		em.getEntityManagerFactory().getCache().evictAll();
+
 		Alert result = Alert.findByPrimaryKey(em, id, Alert.class);
 
 		_logger.debug("Query for alert having id {} resulted in : {}", id, result);
@@ -299,6 +301,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		requireArgument(ids != null && !ids.isEmpty(), "IDs list cannot be null or empty.");
 
 		EntityManager em = _emProvider.get();
+
+		em.getEntityManagerFactory().getCache().evictAll();
 
 		List<Alert> result = Alert.findByPrimaryKeys(em, ids, Alert.class);
 

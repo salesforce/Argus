@@ -71,7 +71,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-@RunWith(org.mockito.runners.MockitoJUnitRunner.class)
 public class AlertUtilsTest extends AbstractTest {
 
 	private PrincipalUser admin;

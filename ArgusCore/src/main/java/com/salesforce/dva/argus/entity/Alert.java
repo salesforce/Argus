@@ -1083,8 +1083,6 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		this.enabled = enabled;
 	}
 
-
-
 	/**
 	 * Indicates if an alert should trigger if no data is available to evaluate.
 	 *

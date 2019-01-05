@@ -638,6 +638,7 @@ public class AlertResources extends AbstractResource {
 		}
 		catch (RuntimeException e)
 		{
+			// To debug - why throwing WebApplicationException seems to correlate with test failures
 			throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);
 		}
 	}
