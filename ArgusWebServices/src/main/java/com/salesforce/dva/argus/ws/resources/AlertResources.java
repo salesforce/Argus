@@ -801,9 +801,9 @@ public class AlertResources extends AbstractResource {
 			validateResourceAuthorization(req, oldAlert.getOwner(), owner);
 			for (Notification notification : oldAlert.getNotifications()) {
 				if (notificationId.equals(notification.getId())) {
-
-					if (!NotificationDto.validateSRActionableUpdate(notificationDto))
-						throw new WebApplicationException("Article Number should be present if SR Actionable is set.");
+//TODO: If SRActionable is checked, article number should be present. We should umcooment this when UI change is out.
+//					if (!NotificationDto.validateSRActionableUpdate(notificationDto))
+//						throw new WebApplicationException("Article Number should be present if SR Actionable is set.");
 
 					copyProperties(notification, notificationDto);
 					notification.setSRActionable(notificationDto.getSRActionable(), notificationDto.getArticleNumber());

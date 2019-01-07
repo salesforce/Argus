@@ -145,7 +145,8 @@ public class GOCNotifier extends AuditNotifier {
 				eventName = _truncateIfSizeGreaterThan(eventName, 100);
 
 				builder.withClassName(className).withElementName(elementName).withEventName(eventName).
-						withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message);
+						withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message)
+						.withArticleNumber(articleNumber);
 				if (severity == Severity.OK) {
 					builder.withActive(false).withClearedAt(lastNotified);
 				} else {
@@ -154,7 +155,6 @@ public class GOCNotifier extends AuditNotifier {
 				builder.withLastNotifiedAt(lastNotified);
 				if (srActionable == true) {
 					builder.withUserdefined2(_config.getValue(AuditNotifier.Property.AUDIT_PRODOUTAGE_EMAIL_TEMPLATE.getName(), AuditNotifier.Property.AUDIT_PRODOUTAGE_EMAIL_TEMPLATE.getDefaultValue()));
-					builder.withArticleNumber(articleNumber);
 				}
 				if (productTag != null) {
 					builder.withProductTag(productTag);
