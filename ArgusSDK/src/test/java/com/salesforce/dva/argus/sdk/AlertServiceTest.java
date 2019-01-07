@@ -162,6 +162,19 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
+    public void testCloneAlert() throws IOException, TokenExpiredException {
+        try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
+            AlertService alertService = argusService.getAlertService();
+            Alert alert = alertService.getAlert(BigInteger.ONE);
+
+            Alert result = alertService.cloneAlert(BigInteger.ONE, alert.getOwnerName());
+            Alert expected = _constructClonedAlert();
+
+            assertEquals(expected, result);
+        }
+    }
+
+    @Test
     public void testUpdateNotification() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
@@ -320,6 +333,13 @@ public class AlertServiceTest extends AbstractTest {
         Alert alert = _constructPersistedAlert();
 
         alert.setName("UpdatedAlert");
+        return alert;
+    }
+
+    private Alert _constructClonedAlert() {
+        Alert alert = _constructPersistedAlert();
+
+        alert.setId(BigInteger.ZERO);
         return alert;
     }
 
