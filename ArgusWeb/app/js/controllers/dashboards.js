@@ -35,7 +35,8 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 	};
 	$scope.properties = {
 		title: 'Dashboard',
-		type: 'dashboards'
+		type: 'dashboards',
+		path: 'dashboards'
 	};
 	$scope.tabNames = {
 		userPrivileged: Auth.isPrivileged(),
