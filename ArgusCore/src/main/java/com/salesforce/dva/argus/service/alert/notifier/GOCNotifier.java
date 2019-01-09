@@ -145,7 +145,8 @@ public class GOCNotifier extends AuditNotifier {
 				eventName = _truncateIfSizeGreaterThan(eventName, 100);
 
 				builder.withClassName(className).withElementName(elementName).withEventName(eventName).
-						withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message);
+						withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message)
+						.withArticleNumber(articleNumber);
 				if (severity == Severity.OK) {
 					builder.withActive(false).withClearedAt(lastNotified);
 				} else {
@@ -154,7 +155,6 @@ public class GOCNotifier extends AuditNotifier {
 				builder.withLastNotifiedAt(lastNotified);
 				if (srActionable == true) {
 					builder.withUserdefined2(_config.getValue(AuditNotifier.Property.AUDIT_PRODOUTAGE_EMAIL_TEMPLATE.getName(), AuditNotifier.Property.AUDIT_PRODOUTAGE_EMAIL_TEMPLATE.getDefaultValue()));
-					builder.withArticleNumber(articleNumber);
 				}
 				if (productTag != null) {
 					builder.withProductTag(productTag);
@@ -291,12 +291,15 @@ public class GOCNotifier extends AuditNotifier {
 		String eventName = notification.getEventName();
 
 		if (elementName == null) {
-			elementName = TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName());
+			elementName = context.getAlert().getName();
 		}
 
 		if (eventName == null) {
-			eventName = TemplateReplacer.applyTemplateChanges(context, trigger.getName());
+			eventName = trigger.getName();
 		}
+
+		elementName = TemplateReplacer.applyTemplateChanges(context, elementName);
+		eventName = TemplateReplacer.applyTemplateChanges(context, eventName);
 
 		return sendMessage(context.getHistory(), sev, TemplateReplacer.applyTemplateChanges(context, notification.getName()), elementName, eventName, body,
 				context.getNotification().getSeverityLevel(), context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric(), notification.getProductTag(), notification.getArticleNumber());

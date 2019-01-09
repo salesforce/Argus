@@ -40,7 +40,9 @@ import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
@@ -138,6 +140,7 @@ public abstract class DefaultJPAService extends DefaultService {
 		requireArgument(em != null, "The entity manager cannot be null.");
 		requireArgument(id != null && id.compareTo(ZERO) > 0, "ID must be positive and non-zero");
 		requireArgument(type != null, "The entity cannot be null.");
+
 		em.getEntityManagerFactory().getCache().evictAll();
 		return em.find(type, id);
 	}

@@ -68,54 +68,58 @@ public class NotificationsCacheRefresherThread extends Thread{
 	public void run() {
 		while (!isInterrupted()) {
 			try {
-				_logger.info("Starting notifications cache refresh");
-				EntityManager em = _emProvider.get();
-				
-				// populating notifications cooldown cache
-				Query q = em.createNativeQuery("select * from notification_cooldownexpirationbytriggerandmetric");
-				List<Object[]> objects = q.getResultList();
-				Map<BigInteger/*notificationId*/, Map<String/*metricKey*/, Long/*coolDownExpiration*/>> currNotificationCooldownExpirationMap = new HashMap<BigInteger, Map<String, Long>>();
-
-				for(Object[] object : objects) {
-					BigInteger notificationId = new BigInteger(String.valueOf(Long.class.cast(object[0])));
-					Long cooldownExpiration = Long.class.cast(object[1]);
-					String key = String.class.cast(object[2]);
-					if(currNotificationCooldownExpirationMap.get(notificationId)==null) {
-						currNotificationCooldownExpirationMap.put(notificationId, new HashMap<String, Long>());
-					}
-					currNotificationCooldownExpirationMap.get(notificationId).put(key, cooldownExpiration);
-				}
-				notificationsCache.setNotificationCooldownExpirationMap(currNotificationCooldownExpirationMap);
-
-				// populating the active status cache
-				q = em.createNativeQuery("select * from notification_activestatusbytriggerandmetric");
-				objects = q.getResultList();
-				Map<BigInteger/*notificationId*/, Map<String/*metricKey*/, Boolean/*activeStatus*/>> currNotificationActiveStatusMap = new HashMap<BigInteger, Map<String, Boolean>>();
-
-				for(Object[] object : objects) {
-					BigInteger notificationId = new BigInteger(String.valueOf(Long.class.cast(object[0])));
-					Boolean isActive;
-					try {
-						isActive = Boolean.class.cast(object[1]);
-					} catch (ClassCastException e) {
-						// This is because Embedded Derby stores booleans as 0, 1.
-						isActive = Integer.class.cast(object[1]) == 0 ? Boolean.FALSE : Boolean.TRUE;
-					}
-					String key = String.class.cast(object[2]);
-					if(currNotificationActiveStatusMap.get(notificationId)==null) {
-						currNotificationActiveStatusMap.put(notificationId, new HashMap<String, Boolean>());
-					}
-					currNotificationActiveStatusMap.get(notificationId).put(key, isActive);
-				}
-				notificationsCache.setNotificationActiveStatusMap(currNotificationActiveStatusMap);
-				
-				notificationsCache.setNotificationsCacheRefreshed(true);
-				_logger.info("Notifications cache refresh successful.");
+				runOnce();
 				sleep(REFRESH_INTERVAL_MILLIS);
 			}catch(Exception e) {
 				_logger.error("Exception occured when trying to refresh notifications cache - " + ExceptionUtils.getFullStackTrace(e));
 				notificationsCache.setNotificationsCacheRefreshed(false);
 			}
 		}
+	}
+
+	public void runOnce() {
+		_logger.info("Starting notifications cache refresh");
+		EntityManager em = _emProvider.get();
+
+		// populating notifications cooldown cache
+		Query q = em.createNativeQuery("select * from notification_cooldownexpirationbytriggerandmetric");
+		List<Object[]> objects = q.getResultList();
+		Map<BigInteger/*notificationId*/, Map<String/*metricKey*/, Long/*coolDownExpiration*/>> currNotificationCooldownExpirationMap = new HashMap<BigInteger, Map<String, Long>>();
+
+		for(Object[] object : objects) {
+			BigInteger notificationId = new BigInteger(String.valueOf(Long.class.cast(object[0])));
+			Long cooldownExpiration = Long.class.cast(object[1]);
+			String key = String.class.cast(object[2]);
+			if(currNotificationCooldownExpirationMap.get(notificationId)==null) {
+				currNotificationCooldownExpirationMap.put(notificationId, new HashMap<String, Long>());
+			}
+			currNotificationCooldownExpirationMap.get(notificationId).put(key, cooldownExpiration);
+		}
+		notificationsCache.setNotificationCooldownExpirationMap(currNotificationCooldownExpirationMap);
+
+		// populating the active status cache
+		q = em.createNativeQuery("select * from notification_activestatusbytriggerandmetric");
+		objects = q.getResultList();
+		Map<BigInteger/*notificationId*/, Map<String/*metricKey*/, Boolean/*activeStatus*/>> currNotificationActiveStatusMap = new HashMap<BigInteger, Map<String, Boolean>>();
+
+		for(Object[] object : objects) {
+			BigInteger notificationId = new BigInteger(String.valueOf(Long.class.cast(object[0])));
+			Boolean isActive;
+			try {
+				isActive = Boolean.class.cast(object[1]);
+			} catch (ClassCastException e) {
+				// This is because Embedded Derby stores booleans as 0, 1.
+				isActive = Integer.class.cast(object[1]) == 0 ? Boolean.FALSE : Boolean.TRUE;
+			}
+			String key = String.class.cast(object[2]);
+			if(currNotificationActiveStatusMap.get(notificationId)==null) {
+				currNotificationActiveStatusMap.put(notificationId, new HashMap<String, Boolean>());
+			}
+			currNotificationActiveStatusMap.get(notificationId).put(key, isActive);
+		}
+		notificationsCache.setNotificationActiveStatusMap(currNotificationActiveStatusMap);
+
+		notificationsCache.setNotificationsCacheRefreshed(true);
+		_logger.info("Notifications cache refresh successful.");
 	}
 }

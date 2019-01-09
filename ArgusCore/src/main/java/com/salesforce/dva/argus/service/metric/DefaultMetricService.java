@@ -43,13 +43,13 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
-import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.util.QueryContextHolder;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
+import com.salesforce.dva.argus.util.QueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -90,7 +90,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 	 * @param  config           The system configuration.  Cannot be null.
 	 */
 	@Inject
-	protected DefaultMetricService(MonitorService monitorService, Provider<MetricReader<Metric>> metricsprovider,
+	public DefaultMetricService(MonitorService monitorService, Provider<MetricReader<Metric>> metricsprovider,
 			Provider<MetricReader<MetricQuery>> queryprovider, SystemConfiguration config) {
 		super(config);
 		requireArgument(monitorService != null, "Monitor service cannot be null.");
@@ -237,34 +237,81 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		return dataPointsSize;
 	}
 
-	public List<String> getDCFromExpression(String expression) {
+	private List<String> getMatchedDCAgainstRegex(List<String> scopes, String regex) {
 		Set<String> DC = new HashSet<String>();
 		Matcher m;
+		for(String currentScope: scopes) {
+			m = Pattern.compile(regex).matcher(currentScope);
+			while (m.find()) DC.add(m.group().substring(1, m.group().length() - 1).toUpperCase());
+		}
+		_logger.debug(MessageFormat.format("Got {0} lists of DC from scope {1} using regex {2}", DC, scopes, regex));
+		return new ArrayList<>(DC);
+	}
+
+	private String getMatchedDCAgainstRegex(String scope, String regex) {
+		List<String> scopes = new ArrayList<>();
+		scopes.add(scope);
+		List<String> dcList = getMatchedDCAgainstRegex(scopes, regex);
+		if(dcList.size() > 0) return dcList.get(0);
+		else return null;
+	}
+
+	public List<String> getDCFromExpression(String expression) {
+
+		ArrayList<String> finalDCList = new ArrayList<>();
 		String dcList = _configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DC_LIST).replaceAll(",","|");
 		String defaultDC = _configuration.getValue(SystemConfiguration.Property.DC_DEFAULT);
+
 		ArrayList<String> patterns = new ArrayList<>(Arrays.asList( "\\.(?i)(" + dcList + ")\\.",
 				":argus\\."));
+		List<String> scopes = QueryUtils.getScopesFromExpression(expression);
 
 		if (expression == null || expression.isEmpty()) {
 			_logger.error("Expression either null or empty. Cannot retrive DC from the expression. Returning default value " + defaultDC);
-			DC.add(defaultDC);
+			finalDCList.add(defaultDC);
 		} else {
-			// Get all the expanded queries from MetricService and identify all different DCs.
-			List<MetricQuery> queries = getQueries(expression);
-			for(MetricQuery currentQuery: queries) {
-				m = Pattern.compile(patterns.get(0)).matcher(currentQuery.getScope());
-				while (m.find()) DC.add(m.group().substring(1, m.group().length() - 1).toUpperCase());
+			//Two cases: 1. DC can be extracted from scope (don't call discovery service) 2. DC cannot be identified, call discovery service.
+			List<String> currentDCList = getMatchedDCAgainstRegex(scopes, patterns.get(0));
+			if (currentDCList.size() > 0) {//Case 1
+				finalDCList = (ArrayList<String>) currentDCList;
+			} else { //Case 2
+				// Get all the expanded queries from MetricService and identify all different DCs.
+				List<MetricQuery> queries = getQueries(expression);
+				ArrayList<String> scopeFromExpandedExpressions = new ArrayList<>();
+				for(MetricQuery currentQuery: queries) {
+					scopeFromExpandedExpressions.add(currentQuery.getScope());
+				}
+				finalDCList = (ArrayList<String>) getMatchedDCAgainstRegex(scopeFromExpandedExpressions, patterns.get(0));
+			}
 
-				// If it matches ":argus., then it's argus metrics emitted by PRD."
-				m = Pattern.compile(patterns.get(1)).matcher(currentQuery.getScope());
-				if(m.find()) DC.add(defaultDC);
+			// Default Case.
+			if(getMatchedDCAgainstRegex(scopes, patterns.get(1)).size() > 0) {
+				finalDCList.add(defaultDC);
 			}
 		}
-		if (DC.size() == 0) {
-			_logger.info("Unable to identify DC from expression: " + expression +" . Returning default value PRD " + defaultDC);
-			DC.add(defaultDC);
+		if (finalDCList.size() == 0) {
+			_logger.info(MessageFormat.format("Unable to identify DC from expression: {0}. Returning default value: {1}", expression, defaultDC));
+			finalDCList.add(defaultDC);
 		}
-		return new ArrayList<>(DC);
+		return new ArrayList<>(finalDCList);
+	}
+
+	public String getDCFromScope(String scope) {
+		String dcList = _configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DC_LIST).replaceAll(",", "|");
+		String pattern = "\\.(?i)(" + dcList + ")\\.";
+		String defaultDC = _configuration.getValue(SystemConfiguration.Property.DC_DEFAULT);
+		try {
+			String dc = getMatchedDCAgainstRegex(scope, pattern);
+			if (dc != null) {
+				return dc;
+			} else {
+				_logger.warn(MessageFormat.format("Unable to identify dc from scope: {0}", scope));
+				return null;
+			}
+		} catch (Exception ex) {
+			_logger.error("Unable to retrieve DC from expression scope. Returning default DC. Exception: {}", ex);
+			return defaultDC;
+		}
 	}
 }
 	/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

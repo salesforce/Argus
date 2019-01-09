@@ -38,6 +38,9 @@ import static java.math.BigInteger.ZERO;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.Map.Entry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -359,6 +362,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		Map<BigInteger, Alert> alertsByNotificationId = new HashMap<>();
 		Map<BigInteger, Long> alertEnqueueTimestampsByAlertId = new HashMap<>();
 
+		if (_whiteListedScopeRegexPatterns == null) {
+			String whiteListedScopesProperty = _configuration.getValue(SystemConfiguration.Property.DATA_LAG_WHITE_LISTED_SCOPES);
+			if (!StringUtils.isEmpty(whiteListedScopesProperty)) {
+				_whiteListedScopeRegexPatterns = Stream.of(whiteListedScopesProperty.split(",")).map(elem -> Pattern.compile(elem.toLowerCase())).collect(Collectors.toList());
+			} else {
+				_whiteListedScopeRegexPatterns = new ArrayList<Pattern>();
+			}
+		}
+
 		for(AlertWithTimestamp alertWithTimestamp : alertsWithTimestamp) {
 			String serializedAlert = alertWithTimestamp.getSerializedAlert();
 
@@ -442,32 +454,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			String logMessage = null;
 			History history = null;
 
-			if(Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))){
-				if(_monitorService.isDataLagging()) {
-					if(_whiteListedScopeRegexPatterns==null) {
-						String whiteListedScopesProperty = _configuration.getValue(SystemConfiguration.Property.DATA_LAG_WHITE_LISTED_SCOPES);
-						if(!StringUtils.isEmpty(whiteListedScopesProperty)) {
-							_whiteListedScopeRegexPatterns = Stream.of(whiteListedScopesProperty.split(",")).map (elem -> Pattern.compile(elem.toLowerCase())).collect(Collectors.toList());
-						}else {
-							_whiteListedScopeRegexPatterns = new ArrayList<Pattern>();
-						}
-					}
-
-					if(_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns)) {
-						history = new History(History.addDateToMessage(JobStatus.SKIPPED.getDescription()), HOSTNAME, alert.getId(), JobStatus.SKIPPED);
-						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId().intValue());
-						_logger.info(logMessage);
-						history.appendMessageNUpdateHistory(logMessage, null, 0);
-						history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
-						historyList.add(history);
-						Map<String, String> tags = new HashMap<>();
-						tags.put(USERTAG, alert.getOwner().getUserName());
-						_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
-						continue;
-					}
-				}
-			}
-
 			history = new History(History.addDateToMessage(JobStatus.STARTED.getDescription()), HOSTNAME, alert.getId(), JobStatus.STARTED);
 			Set<Trigger> missingDataTriggers = new HashSet<Trigger>();
 
@@ -480,6 +466,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			try {
 				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
+				if(Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))) {
+					metrics.removeIf(m -> shouldMetricBeRemovedForDataLag(alert, m, historyList));
+
+					if (metrics.size() <= 0) { // Skip alert evaluation if all the expanded alert expression contains dc with data lag.
+						Map<String, String> tags = new HashMap<>();
+						tags.put(USERTAG, alert.getOwner().getUserName());
+						_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
+					}
+				}
 
 				if(areDatapointsEmpty(metrics)) {
 					if (alert.isMissingDataNotificationEnabled()) {
@@ -548,6 +543,25 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		} // end for
 		return historyList;
+	}
+
+	private boolean shouldMetricBeRemovedForDataLag(Alert alert, Metric m, List<History> historyList) {
+		try {
+			String currentDC = _metricService.getDCFromScope(m.getScope());
+			if (_monitorService.isDataLagging(currentDC) && (_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns))) {
+				String logMessage = MessageFormat.format("Skipping evaluation of the alert expression with scope: {0} in alert with id: {1} due metric data was lagging in DC: {2}", m.getScope(), alert.getId().intValue(), currentDC);
+				_logger.info(logMessage);
+				History history = new History(History.addDateToMessage(JobStatus.SKIPPED.getDescription()), HOSTNAME, alert.getId(), JobStatus.SKIPPED);
+				history.appendMessageNUpdateHistory(logMessage, null, 0);
+				history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
+				historyList.add(history);
+				return true;
+			}
+			return false;
+		} catch (Exception ex) {
+			_logger.error("Error while identifying metric be removed from datalag: {}", ex);
+			return false;
+		}
 	}
 
 	private void updateAlertStartEvaluationStats(Map<BigInteger, Long> alertEnqueueTimestampsByAlertId, Alert alert, long jobStartTime) {

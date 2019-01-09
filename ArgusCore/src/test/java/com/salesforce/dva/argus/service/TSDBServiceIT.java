@@ -356,33 +356,6 @@ public class TSDBServiceIT extends AbstractTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testFractureMetrics() {
-        TSDBService service = system.getServiceFactory().getTSDBService();
-        Metric metric = new Metric("testscope", "testMetric");
-        Map<Long, Double> datapoints = new HashMap<>();
-
-        for (int i = 0; i <= 200; i++) {
-            datapoints.put(System.currentTimeMillis() + (i * 60000L), (double)(random.nextInt(50)));
-        }
-        metric.setDatapoints(datapoints);
-        try {
-            Method method = DefaultTSDBService.class.getDeclaredMethod("fractureMetric", Metric.class);
-
-            method.setAccessible(true);
-
-            List<Metric> metricList = (List<Metric>) method.invoke(service, metric);
-
-            assertEquals(3, metricList.size());
-            assertEquals(100, metricList.get(0).getDatapoints().size());
-            assertEquals(100, metricList.get(1).getDatapoints().size());
-            assertEquals(1, metricList.get(2).getDatapoints().size());
-        } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-            throw new SystemException("Failed to construct fracture metric method using reflection");
-        }
-    }
-
     private AnnotationQuery toQuery(Annotation annotation) {
         String scope = annotation.getScope();
         String metric = annotation.getMetric();
@@ -393,14 +366,6 @@ public class TSDBServiceIT extends AbstractTest {
         return new AnnotationQuery(scope, metric, tags, type, timestamp, null);
     }
 
-    @Test
-    public void isTSDBServiceSingleton() {
-        TSDBService service1 = system.getServiceFactory().getTSDBService();
-        TSDBService service2 = system.getServiceFactory().getTSDBService();
-
-        assertTrue(service1 == service2);
-    }
-    
     @Test
     public void testPut_DatapointsContainNullValues() {
     	
