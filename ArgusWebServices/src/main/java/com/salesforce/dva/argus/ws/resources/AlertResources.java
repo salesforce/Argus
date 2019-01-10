@@ -628,11 +628,19 @@ public class AlertResources extends AbstractResource {
 			throw new WebApplicationException("Null alert object cannot be created.", Status.BAD_REQUEST);
 		}
 
-		PrincipalUser owner = validateAndGetOwner(req, alertDto.getOwnerName());
-		Alert alert = new Alert(getRemoteUser(req), owner, alertDto.getName(), alertDto.getExpression(), alertDto.getCronEntry());
-		alert.setShared(alertDto.isShared()); 
-		copyProperties(alert, alertDto);
-		return AlertDto.transformToDto(alertService.updateAlert(alert));
+		try
+		{
+			PrincipalUser owner = validateAndGetOwner(req, alertDto.getOwnerName());
+			Alert alert = new Alert(getRemoteUser(req), owner, alertDto.getName(), alertDto.getExpression(), alertDto.getCronEntry());
+			alert.setShared(alertDto.isShared());
+			copyProperties(alert, alertDto);
+			return AlertDto.transformToDto(alertService.updateAlert(alert));
+		}
+		catch (RuntimeException e)
+		{
+			// To debug - why throwing WebApplicationException seems to correlate with test failures
+			throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);
+		}
 	}
 
 	/**
@@ -667,11 +675,18 @@ public class AlertResources extends AbstractResource {
 		if (oldAlert == null) {
 			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 		}
-		
-		validateResourceAuthorization(req, oldAlert.getOwner(), owner);
-		copyProperties(oldAlert, alertDto);
-		oldAlert.setModifiedBy(getRemoteUser(req));
-		return AlertDto.transformToDto(alertService.updateAlert(oldAlert));
+
+		try
+		{
+			validateResourceAuthorization(req, oldAlert.getOwner(), owner);
+			copyProperties(oldAlert, alertDto);
+			oldAlert.setModifiedBy(getRemoteUser(req));
+			return AlertDto.transformToDto(alertService.updateAlert(oldAlert));
+		}
+		catch (RuntimeException e)
+		{
+			throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);
+		}
 	}
 
 	/**
