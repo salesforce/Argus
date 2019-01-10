@@ -8,20 +8,20 @@ import java.util.TreeMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.AbstractMap.SimpleEntry;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.TSDBService;
-import javafx.util.Pair;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +59,7 @@ public class DataLagMonitor extends Thread{
 
 	private SystemConfiguration _sysConfig;
 
-	private final ExecutorCompletionService<Pair<String, List<Metric>>> _completionService;
+	private final ExecutorCompletionService<SimpleEntry<String, List<Metric>>> _completionService;
 
 	public DataLagMonitor(SystemConfiguration sysConfig, MetricService metricService, TSDBService tsdbService) {
 		super("datalag-monitor");
@@ -124,14 +124,15 @@ public class DataLagMonitor extends Thread{
 							metrics.clear();
 							_logger.error("Metric Service failed to get metric for expression: " + _expressionPerDC.get(dc) + " while being queried by DataLagMonitor, for DC: " + dc);
 						}
-						return new Pair<>(dc, metrics);
+
+						return new SimpleEntry<>(dc, metrics);
 					});
 				}
 
 				for (int idx = 0; idx < _expressionPerDC.size(); ++idx) {
 					try {
-						Future<Pair<String, List<Metric>>> future = _completionService.take();
-						Pair<String, List<Metric>> result = future.get();
+						Future<SimpleEntry<String, List<Metric>>> future = _completionService.take();
+						SimpleEntry<String, List<Metric>> result = future.get();
 						currentDC = result.getKey();
 						List<Metric> metrics = result.getValue();
 						double latestLagTimeInMillis;
