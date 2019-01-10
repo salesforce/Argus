@@ -42,7 +42,6 @@ import org.junit.AfterClass;
 
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
-import javafx.util.Pair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.quartz.CronScheduleBuilder;
