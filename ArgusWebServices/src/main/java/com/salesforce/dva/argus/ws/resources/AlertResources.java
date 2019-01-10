@@ -108,7 +108,7 @@ public class AlertResources extends AbstractResource {
 		if(shared) {
 			result.addAll(populateMetaFieldsOnly ? alertService.findSharedAlerts(true, null, limit) : alertService.findSharedAlerts(false, null, limit));
 		}
-		
+
 		return new ArrayList<>(result);
 	}
 	
@@ -690,6 +690,84 @@ public class AlertResources extends AbstractResource {
 	}
 
 	/**
+	 * Clones existing alert.
+	 *
+	 * @param   req       The HttpServlet request object. Cannot be null.
+	 * @param   alertId   The id of an alert. Cannot be null.
+	 * @param   ownerName  The owner who requested alert creation. Cannot be null.
+	 *
+	 * @return  Updated alert object.
+	 *
+	 * @throws  WebApplicationException  The exception with 404 status will be thrown if the alert does not exist.
+	 */
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/{alertId}/clone")
+	@Description("Clones an alert having the given ID.")
+	public AlertDto cloneAlert(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId, @QueryParam("ownername") String ownerName) {
+
+		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
+			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
+		}
+
+		if (ownerName == null || ownerName.length() <= 0) {
+			throw new WebApplicationException("Null object cannot be updated.", Status.BAD_REQUEST);
+		}
+
+		PrincipalUser owner = validateAndGetOwner(req, ownerName);
+		Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
+
+		if (oldAlert == null) {
+			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
+		}
+
+		validateResourceAuthorization(req, oldAlert.getOwner(), owner);
+		// Create new alert object.
+		Alert clonedAlert = new Alert(getRemoteUser(req), oldAlert.getOwner(), oldAlert.getName() + "-cloned", oldAlert.getExpression(), oldAlert.getCronEntry());
+
+		List<Trigger> clonedTriggers = new ArrayList<>();
+		List<Notification> clonedNotifications = new ArrayList<>();
+		Map <BigInteger, Trigger> triggersCreatedMapById = new HashMap<>();
+
+		/*For each existing notification, create new cloned notification.
+		* For each existing trigger in the current notification, create new cloned trigger and add it to cloned notification.
+		* */
+		for (Notification currentNotification: oldAlert.getNotifications()) {
+			Notification currentNotificationCloned = new Notification(currentNotification.getName(), clonedAlert, currentNotification.getNotifierName(),
+					currentNotification.getSubscriptions(), currentNotification.getCooldownPeriod());
+
+			clonedNotifications.add(currentNotificationCloned);
+
+			copyProperties(currentNotificationCloned, currentNotification);
+			currentNotificationCloned.setSRActionable(currentNotification.getSRActionable(), currentNotification.getArticleNumber());
+			currentNotificationCloned.setAlert(clonedAlert);
+
+			List<Trigger> triggersInCurrentNotification = new ArrayList<>();
+			for (Trigger currentTrigger: currentNotification.getTriggers()) {
+				BigInteger currentTriggerId = currentTrigger.getId();
+				if (!triggersCreatedMapById.containsKey(currentTriggerId)) {
+					Trigger currentTriggerCloned = new Trigger(clonedAlert, currentTrigger.getType(), currentTrigger.getName(), currentTrigger.getThreshold(), currentTrigger.getSecondaryThreshold(), currentTrigger.getInertia());
+					clonedTriggers.add(currentTriggerCloned);
+					copyProperties(currentTriggerCloned, currentTrigger);
+					currentTriggerCloned.setAlert(clonedAlert);
+					triggersCreatedMapById.put(currentTriggerId, currentTriggerCloned);
+				}
+				triggersInCurrentNotification.add(triggersCreatedMapById.get(currentTriggerId));
+			}
+			currentNotificationCloned.setTriggers(triggersInCurrentNotification);
+		}
+
+		clonedAlert.setMissingDataNotificationEnabled(oldAlert.isMissingDataNotificationEnabled());
+		clonedAlert.setShared(oldAlert.isShared());
+		clonedAlert.setEnabled(oldAlert.isEnabled());
+		clonedAlert.setTriggers(clonedTriggers);
+		clonedAlert.setNotifications(clonedNotifications);
+		clonedAlert.setModifiedBy(getRemoteUser(req));
+
+		return AlertDto.transformToDto(alertService.updateAlert(clonedAlert));
+	}
+
+	/**
 	 * Updates the notification.
 	 *
 	 * @param   req              The HttpServlet request object. Cannot be null.
@@ -738,9 +816,9 @@ public class AlertResources extends AbstractResource {
 			validateResourceAuthorization(req, oldAlert.getOwner(), owner);
 			for (Notification notification : oldAlert.getNotifications()) {
 				if (notificationId.equals(notification.getId())) {
-
-					if (!NotificationDto.validateSRActionableUpdate(notificationDto))
-						throw new WebApplicationException("Article Number should be present if SR Actionable is set.");
+//TODO: If SRActionable is checked, article number should be present. We should umcooment this when UI change is out.
+//					if (!NotificationDto.validateSRActionableUpdate(notificationDto))
+//						throw new WebApplicationException("Article Number should be present if SR Actionable is set.");
 
 					copyProperties(notification, notificationDto);
 					notification.setSRActionable(notificationDto.getSRActionable(), notificationDto.getArticleNumber());

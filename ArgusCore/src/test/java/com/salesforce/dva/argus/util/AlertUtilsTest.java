@@ -27,7 +27,6 @@ import com.salesforce.dva.argus.service.AlertService;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.DiscoveryService;
-import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.metric.DefaultMetricService;
@@ -44,7 +43,6 @@ import org.junit.AfterClass;
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import javafx.util.Pair;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.quartz.CronScheduleBuilder;
@@ -214,19 +212,15 @@ public class AlertUtilsTest extends AbstractTest {
 		testSuite.put("-75m:system.dc5.service:metric:sum", Arrays.asList("DC5"));
 
 
+
 		CacheService cacheServiceMock = mock(CacheService.class);
 		when(cacheServiceMock.get("system.[DC1|DC2].[service1|service2]:metric{{}}")).thenReturn(CACHED_QUERIES_0);
 		when(cacheServiceMock.get("*DC*:metric{{}}")).thenReturn(CACHED_QUERIES_1);
 		DiscoveryService discoveryServiceMock = mock(DiscoveryService.class);
 
 		CachedDiscoveryService service = new CachedDiscoveryService(cacheServiceMock, discoveryServiceMock, system.getConfiguration());
-		Provider<MetricReader<MetricQuery>> queryprovider = new Provider<MetricReader<MetricQuery>>() {
-			@Override
-			public MetricReader<MetricQuery> get() {
-				MetricReader<MetricQuery> mReaderMock = new MetricReader<>(system.getServiceFactory().getTSDBService(), service,null);
-				return mReaderMock;
-			}
-		};
+		Provider<MetricReader<MetricQuery>> queryprovider = () -> new MetricReader<>(system.getServiceFactory().getTSDBService(), service,null);
+
 		DefaultMetricService _mServiceMock = new DefaultMetricService(system.getServiceFactory().getMonitorService(),null, queryprovider, system.getConfiguration());
 
 		for(Map.Entry<String, List<String>> currentSuite: testSuite.entrySet()) {

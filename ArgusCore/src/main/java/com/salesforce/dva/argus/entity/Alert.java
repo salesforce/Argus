@@ -980,7 +980,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	private static String _convertSearchTextWildCardForQuery(String searchText) {
 		return "%" + searchText.toLowerCase().replace("*", "%").replace("?","_") + "%";
 	}
-	
+
 	/**
 	 * Returns the CRON entry for the alert.
 	 *

@@ -4,7 +4,7 @@ time_out_mins: 180
 number_of_artifacts_to_keep: 3
 compliance_required: false
 docker_test_images:
-- dva/sfdc_rhel6_jdk8_mvn3.3.3
+- dva/sfdc_centos7_java_build
 unit_tests_command: |-
   #mvn -DskipITs -DskipDockerBuild install
   #mvn jacoco:report
@@ -13,7 +13,7 @@ unit_tests_command: |-
   mvn -DskipITs -DskipDockerBuild install
 pipeline_initial_build_number: 84
 docker_package_images:
-- sfdc_rhel6_jdk8_rpmbuild
+- sfdc_centos7_java_rpmbuild
 package_generation_command: "echo \"Creating users inside container...\"\nFILE=/tmp/project/SPECS/argus-webservices.spec\n\
   ORIG_USER=argus\nCUR_USER=`stat -c \"%U\" ${FILE}`\nCUR_UID=`stat -c \"%u\" ${FILE}`\n\
   CUR_GRP=`stat -c \"%G\" ${FILE}`\nCUR_GID=`stat -c \"%g\" ${FILE}`\necho \"Creating\
