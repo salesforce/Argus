@@ -99,14 +99,17 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 							//       then 1 seconds away from the creation time, we can recognized
 							//       the potentially missed creation.
 							if (lastExecutionTime > 0) {
-								if (a.getCreatedDate().getTime() >= lastExecutionTime || 
-									Math.abs(a.getModifiedDate().getTime() - a.getCreatedDate().getTime()) < 1000) {
-									timeToDiscover = startTime - a.getCreatedDate().getTime();
+								if (a.getCreatedDate().getTime() >= lastExecutionTime && a.getCreatedDate().getTime() < currentExecutionTime) {
+									timeToDiscover = currentExecutionTime - a.getCreatedDate().getTime();
 									sumTimeToDiscoverNew += timeToDiscover;
 									newAlertsCount ++;
+									_logger.info("Found new alert {} which was created at {}, lastExecutionTime {}, currentExecutionTime {}, timeToDiscover {}", 
+											a.getId().toString(), a.getCreatedDate().getTime(), lastExecutionTime, currentExecutionTime, timeToDiscover);
 								}else if (a.getModifiedDate().getTime() >= lastExecutionTime) {
 									sumTimeToDiscover += timeToDiscover;
 									updatedAlertsCount ++;
+									_logger.info("Found updated alert {} which was updated at {}, created at {} lastExecutionTime {}, currentExecutionTime {}, timeToDiscover {}", 
+											a.getId().toString(), a.getModifiedDate().getTime(), a.getCreatedDate().getTime(), lastExecutionTime, currentExecutionTime, timeToDiscover);
 								}
 							}
 							_logger.debug("Processing modified alert - {},{},{},{} after {} milliseconds ", a.getId(),
@@ -128,8 +131,11 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 						}
 					}
 					
-					alertService.updateCounter(Counter.ALERTS_UPDATED_COUNT, (double)modifiedAlerts.size());
-					_logger.info("Number of modified alerts since last refresh - " + modifiedAlerts.size());
+					alertService.updateCounter(Counter.ALERTS_UPDATED_COUNT, (double)updatedAlertsCount);
+					_logger.info("Number of modified alerts since last refresh - " + updatedAlertsCount);
+
+					alertService.updateCounter(Counter.ALERTS_CREATED_COUNT, (double)newAlertsCount);
+					_logger.info("Number of created alerts since last refresh - " + newAlertsCount);
 					
 					if (updatedAlertsCount > 0) {
 						long avgTimeToDiscover = sumTimeToDiscover / updatedAlertsCount;
@@ -145,9 +151,13 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 					}
 				}
 				
+				if (lastExecutionTime > 0) {
+					_logger.info("AlertCache was refreshed after {} millisec", currentExecutionTime - lastExecutionTime);
+				}
+
 				lastExecutionTime = currentExecutionTime;
 				executionTime = System.currentTimeMillis() - startTime;
-				_logger.info("Alerts cache refreshed successfully in {} millis. Number of alerts in cache - {}", executionTime, alertDefinitionsCache.getAlertsMapById().keySet().size());
+				_logger.info("Alerts cache refresh was executed successfully in {} millis. Number of alerts in cache - {}", executionTime, alertDefinitionsCache.getAlertsMapById().keySet().size());
 				if(executionTime < REFRESH_INTERVAL_MILLIS) {
 					sleep(REFRESH_INTERVAL_MILLIS - executionTime);
 				}

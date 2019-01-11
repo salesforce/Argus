@@ -2,10 +2,14 @@ package com.salesforce.dva.argus.util;
 
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,7 +39,7 @@ public class AlertUtils {
 	     return times[1] - times[0];
 	}
 
-	public static Long[] getStartAndEndTimes(String originalExpression, Long relativeTo) {
+    public static Long[] getStartAndEndTimes(String originalExpression, Long relativeTo) {
 		String expression = "@" + originalExpression.replaceAll("[\\s\\t\\r\\n\\f]*", "");
 		String regexMatcherWithStartAndEnd = "(?i)\\-[0-9]+(d|m|h|s):\\-[0-9]+(d|m|h|s)";
 		String regexMatcherWithFILL = "(?i)FILL\\(#\\-[0-9]+(d|h|m|s),#\\-[0-9]+(d|h|m|s)";
@@ -121,5 +125,4 @@ public class AlertUtils {
 
 		return absoluteExpression;
 	}
-
 }

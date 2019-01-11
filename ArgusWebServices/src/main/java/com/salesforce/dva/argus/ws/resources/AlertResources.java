@@ -43,28 +43,14 @@ import com.salesforce.dva.argus.ws.dto.ItemsCountDto;
 import com.salesforce.dva.argus.ws.dto.NotificationDto;
 import com.salesforce.dva.argus.ws.dto.TriggerDto;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import java.math.BigInteger;
+import java.util.*;
 
 /**
  * Web services for Alert.
@@ -122,7 +108,7 @@ public class AlertResources extends AbstractResource {
 		if(shared) {
 			result.addAll(populateMetaFieldsOnly ? alertService.findSharedAlerts(true, null, limit) : alertService.findSharedAlerts(false, null, limit));
 		}
-		
+
 		return new ArrayList<>(result);
 	}
 	
@@ -642,11 +628,19 @@ public class AlertResources extends AbstractResource {
 			throw new WebApplicationException("Null alert object cannot be created.", Status.BAD_REQUEST);
 		}
 
-		PrincipalUser owner = validateAndGetOwner(req, alertDto.getOwnerName());
-		Alert alert = new Alert(getRemoteUser(req), owner, alertDto.getName(), alertDto.getExpression(), alertDto.getCronEntry());
-		alert.setShared(alertDto.isShared()); 
-		copyProperties(alert, alertDto);
-		return AlertDto.transformToDto(alertService.updateAlert(alert));
+		try
+		{
+			PrincipalUser owner = validateAndGetOwner(req, alertDto.getOwnerName());
+			Alert alert = new Alert(getRemoteUser(req), owner, alertDto.getName(), alertDto.getExpression(), alertDto.getCronEntry());
+			alert.setShared(alertDto.isShared());
+			copyProperties(alert, alertDto);
+			return AlertDto.transformToDto(alertService.updateAlert(alert));
+		}
+		catch (RuntimeException e)
+		{
+			// To debug - why throwing WebApplicationException seems to correlate with test failures
+			throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);
+		}
 	}
 
 	/**
@@ -681,11 +675,96 @@ public class AlertResources extends AbstractResource {
 		if (oldAlert == null) {
 			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 		}
-		
+
+		try
+		{
+			validateResourceAuthorization(req, oldAlert.getOwner(), owner);
+			copyProperties(oldAlert, alertDto);
+			oldAlert.setModifiedBy(getRemoteUser(req));
+			return AlertDto.transformToDto(alertService.updateAlert(oldAlert));
+		}
+		catch (RuntimeException e)
+		{
+			throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);
+		}
+	}
+
+	/**
+	 * Clones existing alert.
+	 *
+	 * @param   req       The HttpServlet request object. Cannot be null.
+	 * @param   alertId   The id of an alert. Cannot be null.
+	 * @param   ownerName  The owner who requested alert creation. Cannot be null.
+	 *
+	 * @return  Updated alert object.
+	 *
+	 * @throws  WebApplicationException  The exception with 404 status will be thrown if the alert does not exist.
+	 */
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/{alertId}/clone")
+	@Description("Clones an alert having the given ID.")
+	public AlertDto cloneAlert(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId, @QueryParam("ownername") String ownerName) {
+
+		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
+			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
+		}
+
+		if (ownerName == null || ownerName.length() <= 0) {
+			throw new WebApplicationException("Null object cannot be updated.", Status.BAD_REQUEST);
+		}
+
+		PrincipalUser owner = validateAndGetOwner(req, ownerName);
+		Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
+
+		if (oldAlert == null) {
+			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
+		}
+
 		validateResourceAuthorization(req, oldAlert.getOwner(), owner);
-		copyProperties(oldAlert, alertDto);
-		oldAlert.setModifiedBy(getRemoteUser(req));
-		return AlertDto.transformToDto(alertService.updateAlert(oldAlert));
+		// Create new alert object.
+		Alert clonedAlert = new Alert(getRemoteUser(req), oldAlert.getOwner(), oldAlert.getName() + "-cloned", oldAlert.getExpression(), oldAlert.getCronEntry());
+
+		List<Trigger> clonedTriggers = new ArrayList<>();
+		List<Notification> clonedNotifications = new ArrayList<>();
+		Map <BigInteger, Trigger> triggersCreatedMapById = new HashMap<>();
+
+		/*For each existing notification, create new cloned notification.
+		* For each existing trigger in the current notification, create new cloned trigger and add it to cloned notification.
+		* */
+		for (Notification currentNotification: oldAlert.getNotifications()) {
+			Notification currentNotificationCloned = new Notification(currentNotification.getName(), clonedAlert, currentNotification.getNotifierName(),
+					currentNotification.getSubscriptions(), currentNotification.getCooldownPeriod());
+
+			clonedNotifications.add(currentNotificationCloned);
+
+			copyProperties(currentNotificationCloned, currentNotification);
+			currentNotificationCloned.setSRActionable(currentNotification.getSRActionable(), currentNotification.getArticleNumber());
+			currentNotificationCloned.setAlert(clonedAlert);
+
+			List<Trigger> triggersInCurrentNotification = new ArrayList<>();
+			for (Trigger currentTrigger: currentNotification.getTriggers()) {
+				BigInteger currentTriggerId = currentTrigger.getId();
+				if (!triggersCreatedMapById.containsKey(currentTriggerId)) {
+					Trigger currentTriggerCloned = new Trigger(clonedAlert, currentTrigger.getType(), currentTrigger.getName(), currentTrigger.getThreshold(), currentTrigger.getSecondaryThreshold(), currentTrigger.getInertia());
+					clonedTriggers.add(currentTriggerCloned);
+					copyProperties(currentTriggerCloned, currentTrigger);
+					currentTriggerCloned.setAlert(clonedAlert);
+					triggersCreatedMapById.put(currentTriggerId, currentTriggerCloned);
+				}
+				triggersInCurrentNotification.add(triggersCreatedMapById.get(currentTriggerId));
+			}
+			currentNotificationCloned.setTriggers(triggersInCurrentNotification);
+		}
+
+		clonedAlert.setMissingDataNotificationEnabled(oldAlert.isMissingDataNotificationEnabled());
+		clonedAlert.setShared(oldAlert.isShared());
+		clonedAlert.setEnabled(oldAlert.isEnabled());
+		clonedAlert.setTriggers(clonedTriggers);
+		clonedAlert.setNotifications(clonedNotifications);
+		clonedAlert.setModifiedBy(getRemoteUser(req));
+
+		return AlertDto.transformToDto(alertService.updateAlert(clonedAlert));
 	}
 
 	/**
@@ -718,18 +797,18 @@ public class AlertResources extends AbstractResource {
 				throw new WebApplicationException("Null object cannot be updated.", Status.BAD_REQUEST);
 			}
 
-		        PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
+			PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
 
-		        //Refocus Notification V1 release only for search team (and for Argus team testing)
-		        if (AlertService.SupportedNotifier.REFOCUS.getName().equals(notificationDto.getNotifierName())) {
-			    String ownerUserName = owner.getUserName();
-			    if (!"svc_monocle".equalsIgnoreCase(ownerUserName)  // search team username
+			//Refocus Notification V1 release only for search team (and for Argus team testing)
+			if (AlertService.SupportedNotifier.REFOCUS.getName().equals(notificationDto.getNotifierName())) {
+				String ownerUserName = owner.getUserName();
+				if (!"svc_monocle".equalsIgnoreCase(ownerUserName)  // search team username
 					&& !"svc_perfeng_tools".equalsIgnoreCase(ownerUserName)) { // argus team username
 				throw new WebApplicationException(Status.FORBIDDEN.getReasonPhrase(), Status.FORBIDDEN);
-		  	    }
-		        }
+				}
+			}
 
-		        Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
+			Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
 
 			if (oldAlert == null) {
 				throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
@@ -737,7 +816,13 @@ public class AlertResources extends AbstractResource {
 			validateResourceAuthorization(req, oldAlert.getOwner(), owner);
 			for (Notification notification : oldAlert.getNotifications()) {
 				if (notificationId.equals(notification.getId())) {
+//TODO: If SRActionable is checked, article number should be present. We should umcooment this when UI change is out.
+//					if (!NotificationDto.validateSRActionableUpdate(notificationDto))
+//						throw new WebApplicationException("Article Number should be present if SR Actionable is set.");
+
 					copyProperties(notification, notificationDto);
+					notification.setSRActionable(notificationDto.getSRActionable(), notificationDto.getArticleNumber());
+
 					oldAlert.setModifiedBy(getRemoteUser(req));
 
 					Alert alert = alertService.updateAlert(oldAlert);
@@ -832,9 +917,14 @@ public class AlertResources extends AbstractResource {
 
 				Notification notification = new Notification(notificationDto.getName(), alert, notificationDto.getNotifierName(),
 						notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
-				notification.setSRActionable(notificationDto.getSRActionable());
+				notification.setSRActionable(notificationDto.getSRActionable(), notificationDto.getArticleNumber());
+				notification.setArticleNumber(notificationDto.getArticleNumber());
 				notification.setSeverityLevel(notificationDto.getSeverityLevel());
+
 				notification.setCustomText(notificationDto.getCustomText());
+				notification.setEventName(notificationDto.getEventName());
+				notification.setElementName(notificationDto.getElementName());
+				notification.setProductTag(notificationDto.getProductTag());
 
 				// TODO: 14.12.16 validateAuthorizationRequest notification
 

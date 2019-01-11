@@ -44,6 +44,7 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Properties;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -112,9 +113,9 @@ public final class SystemConfiguration extends Properties {
                 do {
                     String defaultValue = config.getValue(property);
 
-                    out.write(MessageFormat.format("Enter value for ''{0}'' ", name));
+                    out.write(MessageFormat.format("Enter value for {0} ", name));
                     if (defaultValue != null) {
-                        out.write(MessageFormat.format("'(default = '{0}')': ", config.getValue(property)));
+                        out.write(MessageFormat.format("(default = {0}): ", config.getValue(property)));
                     }
                     out.flush();
 
@@ -222,15 +223,18 @@ public final class SystemConfiguration extends Properties {
         EMAIL_ENABLED("system.property.mail.enabled", "false"),
         GOC_ENABLED("system.property.goc.enabled", "false"),
         GUS_ENABLED("system.property.gus.enabled", "false"),
-        REFOCUS_ENABLED("system.property.refocus.enabled", "false"),
-        
+
         EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
 
-        DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
-        DATA_LAG_QUERY_EXPRESSION("system.property.data.lag.expression", "sampleExpression"),
+        ARGUS_GUS_GROUP_ID("notifier.property.argus.gus.group_id", "groupId"),
+
+        REFOCUS_ENABLED("system.property.refocus.enabled", "false"),
+
         DATA_LAG_THRESHOLD("system.property.data.lag.threshold.millis", "300000"),
-        DATA_LAG_NOTIFICATION_EMAIL_ADDRESS("system.property.data.lag.notification.emailId", "someone@mycompany.com"),
+        DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
         DATA_LAG_WHITE_LISTED_SCOPES("system.property.data.lag.whitelisted.scopes", ""),
+        DATA_LAG_QUERY_EXPRESSION("system.property.data.lag.expression.list","expressionListPerDC"),
+        DATA_LAG_DEFAULT_EXPRESSION("system.property.data.lag.default.expression","defaultExpression"),
 
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),
@@ -239,45 +243,45 @@ public final class SystemConfiguration extends Properties {
         DC_LIST("system.property.dc.list", "DC1,DC2,DC3,DC4,DC5"),
 
         CACHE_SERVICE_IMPL_CLASS("service.binding.cache", "com.salesforce.dva.argus.service.cache.NoOperationCacheService"),
-        CACHE_SERVICE_PROPERTY_FILE("service.config.cache","argus.properties"),
+        CACHE_SERVICE_PROPERTY_FILE("service.config.cache","placeholder_redis.properties"),
 
         MQ_SERVICE_IMPL_CLASS("service.binding.mq", "com.salesforce.dva.argus.service.mq.kafka.KafkaMessageService"),
-        MQ_SERVICE_PROPERTY_FILE("service.config.mq","argus.properties"),
+        MQ_SERVICE_PROPERTY_FILE("service.config.mq","placeholder_kafka.properties"),
 
         ALERT_SERVICE_IMPL_CLASS("service.binding.alert", "com.salesforce.dva.argus.service.alert.DefaultAlertService"),
-        ALERT_SERVICE_PROPERTY_FILE("service.config.alert","argus.properties"),
-        NOTIFIER_PROPERTY_FILE("service.config.notifier","notifier.properties"),
+        ALERT_SERVICE_PROPERTY_FILE("service.config.alert","placeholder_alert.properties"),
+        NOTIFIER_PROPERTY_FILE("service.config.notifier","placeholder_notifier.properties"),
 
         SCHEDULING_SERVICE_IMPL_CLASS("service.binding.scheduling", "com.salesforce.dva.argus.service.schedule.DefaultSchedulingService"),
-        SCHEDULING_SERVICE_PROPERTY_FILE("service.config.scheduling","argus.properties"),
+        SCHEDULING_SERVICE_PROPERTY_FILE("service.config.scheduling","placeholder_scheduling.properties"),
 
         MAIL_SERVICE_IMPL_CLASS("service.binding.mail", "com.salesforce.dva.argus.service.mail.DefaultMailService"),
-        MAIL_SERVICE_PROPERTY_FILE("service.config.mail","argus.properties"),
+        MAIL_SERVICE_PROPERTY_FILE("service.config.mail","placeholder_mail.properties"),
 
         CALLBACK_SERVICE_IMPL_CLASS("service.binding.callback", "com.salesforce.dva.argus.service.callback.DefaultCallbackService"),
-        CALLBACK_SERVICE_PROPPERTY_FILE("service.config.callback", "argus.properties"),
+        CALLBACK_SERVICE_PROPPERTY_FILE("service.config.callback", "placeholder_callback.properties"),
 
         AUTH_SERVICE_IMPL_CLASS("service.binding.auth", "com.salesforce.dva.argus.service.auth.LDAPAuthService"),
-        AUTH_SERVICE_PROPERTY_FILE("service.config.auth","argus.properties"),
+        AUTH_SERVICE_PROPERTY_FILE("service.config.auth","placeholder_ldap.properties"),
 
         SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.AsyncHbaseSchemaService"),
-        SCHEMA_SERVICE_PROPERTY_FILE("service.config.schema","argus.properties"),
+        SCHEMA_SERVICE_PROPERTY_FILE("service.config.schema","placeholder_schema.properties"),
 
         HISTORY_SERVICE_IMPL_CLASS("service.binding.history", "com.salesforce.dva.argus.service.history.HBaseHistoryService"),
-        HISTORY_SERVICE_PROPERTY_FILE("service.config.history","argus.properties"),
+        HISTORY_SERVICE_PROPERTY_FILE("service.config.history","placeholder_history.properties"),
 
         AUDIT_SERVICE_IMPL_CLASS("service.binding.audit", "com.salesforce.dva.argus.service.audit.DefaultAuditService"),
-        AUDIT_SERVICE_PROPERTY_FILE("service.config.audit","argus.properties"),
+        AUDIT_SERVICE_PROPERTY_FILE("service.config.audit","placeholder_audit.properties"),
 
-        ASYNCHBASE_PROPERTY_FILE("service.config.asynchbase", "argus.properties"),
+        ASYNCHBASE_PROPERTY_FILE("service.config.asynchbase", "placeholder_asynchbase.properties"),
 
         TSDB_SERVICE_IMPL_CLASS("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
-        TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","argus.properties"),
+        TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","placeholder_cachedtsdb.properties"),
 
         WARDEN_SERVICE_IMPL_CLASS("service.binding.warden", "com.salesforce.dva.argus.service.warden.DefaultWardenService"),
-        WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "argus.properties"),
+        WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "placeholder_warden.properties"),
 
-        OAUTH_SERVICE_PROPERTY_FILE("service.config.oauth","argus.properties");
+        OAUTH_SERVICE_PROPERTY_FILE("service.config.oauth","placeholder_oauth.properties");
 
         private final String _name;
         private final String _defaultValue;

@@ -148,7 +148,7 @@ public interface MonitorService extends Service {
      *
      * @return isDataLagging boolean flag
      */
-    boolean isDataLagging();
+    boolean isDataLagging(String dataCenter);
 
 	/**
 	 * This is helper function so that we can export metrics to JMX metric exporter everywhere in the
@@ -209,6 +209,7 @@ public interface MonitorService extends Service {
         ALERTS_UPDATE_LATENCY("argus.core","alerts.update.latency"),
         ALERTS_NEW_LATENCY("argus.core","alerts.new.latency"),
         ALERTS_UPDATED_COUNT("argus.core","alerts.updated"),
+        ALERTS_CREATED_COUNT("argus.core","alerts.created"),
         ALERTS_SKIPPED("argus.core", "alerts.skipped"),
         NOTIFICATIONS_SENT("argus.core", "notifications.sent"),
         TRIGGERS_VIOLATED("argus.core", "triggers.violated"),
@@ -241,11 +242,12 @@ public interface MonitorService extends Service {
         METATAGS_WRITTEN("argus.core", "metatags.written"),
         METATAGS_WRITE_LATENCY("argus.core", "metatags.write.latency"),
 
-
         BLOOMFILTER_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.approximate.element.count"),
         BLOOMFILTER_SCOPE_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.only.approximate.element.count"),
         BLOOMFILTER_SCOPE_AND_METRIC_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.and.metric.only.approximate.element.count"),
-        BLOOMFILTER_METATAGS_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.metatags.approximate.element.count");
+        BLOOMFILTER_METATAGS_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.metatags.approximate.element.count"),
+
+        DATALAG_PER_DC_TIME_LAG("argus.core", "datalag.seconds");
 
         private final String _scope;
         private final String _metric;

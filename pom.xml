@@ -4,7 +4,7 @@
 
     <groupId>com.salesforce.argus</groupId>
     <artifactId>argus</artifactId>
-    <version>2.24.2</version>
+    <version>3.1.0</version>
     <packaging>pom</packaging>
 
     <name>Argus</name>
@@ -118,11 +118,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
         <dockerImages.base.name>salesforce</dockerImages.base.name>
-        <project.version>2.24.2</project.version>
+        <project.version>3.1.0</project.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.9.5</jackson.version>
         <httpclient.version>4.5.3</httpclient.version>
         <junit.version>4.12</junit.version>
+        <jacoco-maven-plugin.version>0.7.9</jacoco-maven-plugin.version>
     </properties>
     <build>
         <filters>
@@ -175,7 +176,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.7.7.201606060606</version>
+                <version>${jacoco-maven-plugin.version}</version>
                 <configuration>
                     <excludes>
                         <exclude>**/AnnotationReader*.class</exclude>
