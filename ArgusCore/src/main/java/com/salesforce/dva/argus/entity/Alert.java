@@ -1279,8 +1279,6 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			String cronEntry = rootNode.get("cronEntry").asText();
 			alert.setCronEntry(cronEntry);
 
-			boolean enabled = rootNode.get("enabled").asBoolean();
-			alert.setEnabled(enabled);
 
 			boolean missingDataNotificationEnabled = rootNode.get("missingDataNotificationEnabled").asBoolean();
 			alert.setMissingDataNotificationEnabled(missingDataNotificationEnabled);
@@ -1311,6 +1309,10 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 				}
 			}
 			alert.setNotifications(notifications);
+
+			// This needs to be last because alerts won't validate unless they are complete.
+			boolean enabled = rootNode.get("enabled").asBoolean();
+			alert.setEnabled(enabled);
 
 			return alert;
 		}
