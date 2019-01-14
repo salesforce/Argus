@@ -37,10 +37,12 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -134,12 +136,24 @@ public class DefaultTSDBService extends AbstractTSDBService{
         for (Entry<MetricQuery, Future<List<Metric>>> entry : futures.entrySet()) {
             try {
                 List<Metric> m = entry.getValue().get();
+                MetricQuery metricQuery = entry.getKey();
+                Set<String> tagsInQuery = new HashSet<String>();
+                if(metricQuery.getTags()!=null) {
+                	    tagsInQuery = metricQuery.getTags().keySet();
+                }
                 List<Metric> metrics = new ArrayList<>();
 
                 if (m != null) {
                     for (Metric metric : m) {
                         if (metric != null) {
                             metric.setQuery(entry.getKey());
+                            Set<String> tagKeys = metric.getTags().keySet();
+                            for(String tagKey : tagKeys) {
+                            	    // removing tags that the user has not requested
+                            	    if(!tagsInQuery.contains(tagKey)) {
+                            	        metric.removeTag(tagKey);
+                            	    }
+                            }
                             metrics.add(metric);
                         }
                     }

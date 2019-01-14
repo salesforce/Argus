@@ -152,6 +152,10 @@ public abstract class TSDBEntity implements Serializable {
         }
         return Collections.unmodifiableMap(result);
     }
+    
+    public void removeTag(String tagName) {
+    	    _tags.remove(tagName);
+    }
 
     /**
      * Replaces the tags for a metric. Tags cannot use any of the reserved tag names.
