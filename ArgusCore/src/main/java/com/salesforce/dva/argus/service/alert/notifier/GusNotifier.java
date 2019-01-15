@@ -186,9 +186,10 @@ public class GusNotifier extends AuditNotifier {
 		if(!expression.equals("")) {
 			sb.append(MessageFormat.format("URL for evaluated metric expression:  {0}\n", getExpressionUrl(expression)));
 		}	else {
-			sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
+			sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", getExpressionUrl(context.getAlert().getExpression())));
 		}
-		
+		sb.append(MessageFormat.format("Current view of the metric expression:  {0}\n", getExpressionUrl(context.getAlert().getExpression())));
+
 		if(context.getTriggeredMetric()!=null) {
 			if(status == NotificationStatus.TRIGGERED){
 				sb.append(MessageFormat.format("Triggered on Metric: {0}", context.getTriggeredMetric().getIdentifier()));
