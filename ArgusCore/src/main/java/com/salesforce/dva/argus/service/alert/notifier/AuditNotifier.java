@@ -179,6 +179,7 @@ public class AuditNotifier extends DefaultNotifier {
 		if(!expression.equals("")) {
 			sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/>");
 		}
+		sb.append("<p><a href='").append(getExpressionUrl(context.getAlert().getExpression())).append("'>Click here for the current view of the metric data.</a><br/><br/>");
 
 		if(context.getTriggeredMetric()!=null) {
 			if(notificationStatus == NotificationStatus.TRIGGERED){
