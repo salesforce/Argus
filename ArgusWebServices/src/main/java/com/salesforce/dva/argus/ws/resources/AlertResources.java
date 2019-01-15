@@ -759,10 +759,10 @@ public class AlertResources extends AbstractResource {
 
 		clonedAlert.setMissingDataNotificationEnabled(oldAlert.isMissingDataNotificationEnabled());
 		clonedAlert.setShared(oldAlert.isShared());
-		clonedAlert.setEnabled(oldAlert.isEnabled());
 		clonedAlert.setTriggers(clonedTriggers);
 		clonedAlert.setNotifications(clonedNotifications);
 		clonedAlert.setModifiedBy(getRemoteUser(req));
+		clonedAlert.setEnabled(oldAlert.isEnabled()); // This should be last
 
 		return AlertDto.transformToDto(alertService.updateAlert(clonedAlert));
 	}
