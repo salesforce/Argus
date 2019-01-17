@@ -38,6 +38,7 @@ import com.salesforce.dva.argus.system.SystemException;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.AfterClass;
 
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
@@ -312,6 +313,7 @@ public class AlertUtilsTest extends AbstractTest {
         alertService.deleteAlert(a.getName(), userService.findAdminUser());
 	}
 
+	@Ignore
 	@Test
 	public void testAlert_setInvalidCron()
 	{
