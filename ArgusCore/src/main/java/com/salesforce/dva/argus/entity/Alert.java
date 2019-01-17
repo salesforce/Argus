@@ -953,20 +953,24 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		List<Alert> alerts = new ArrayList<>();
 
 		for (Tuple tuple : result) {
+			try {
+				Alert a = new Alert(PrincipalUser.class.cast(tuple.get("createdBy")),
+						PrincipalUser.class.cast(tuple.get("owner")), String.class.cast(tuple.get("name")),
+						String.class.cast(tuple.get("expression")), String.class.cast(tuple.get("cronEntry")));
 
-			Alert a = new Alert(PrincipalUser.class.cast(tuple.get("createdBy")),
-					PrincipalUser.class.cast(tuple.get("owner")), String.class.cast(tuple.get("name")),
-					String.class.cast(tuple.get("expression")), String.class.cast(tuple.get("cronEntry")));
+				a.id = BigInteger.class.cast(tuple.get("id"));
+				a.enabled = Boolean.class.cast(tuple.get("enabled"));
+				a.createdDate = Date.class.cast(tuple.get("createdDate"));
+				a.modifiedDate = Date.class.cast(tuple.get("modifiedDate"));
+				a.shared = Boolean.class.cast(tuple.get("shared"));
+				a.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
+				a.missingDataNotificationEnabled = Boolean.class.cast(tuple.get("missingDataNotificationEnabled"));
 
-			a.id = BigInteger.class.cast(tuple.get("id"));
-			a.enabled = Boolean.class.cast(tuple.get("enabled"));
-			a.createdDate = Date.class.cast(tuple.get("createdDate"));
-			a.modifiedDate = Date.class.cast(tuple.get("modifiedDate"));
-			a.shared = Boolean.class.cast(tuple.get("shared"));
-			a.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
-			a.missingDataNotificationEnabled = Boolean.class.cast(tuple.get("missingDataNotificationEnabled"));
-
-			alerts.add(a);
+				alerts.add(a);
+			} catch (RuntimeException r) {
+				// TODO: Add logging?
+				continue;
+			}
 		}
 		
 		// Trim excessive items more then limit in the end
@@ -997,7 +1001,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * @param  cronEntry  The new CRON entry. Cannot be null and must be valid CRON entry syntax.
 	 */
 	public void setCronEntry(String cronEntry) {
-		requireArgument(Cron.isCronEntryValid(cronEntry), "Invalid cron entry: " + cronEntry);
+		// requireArgument(Cron.isCronEntryValid(cronEntry), "Invalid cron entry: " + cronEntry);
 		this.cronEntry = cronEntry;
 	}
 
@@ -1073,13 +1077,16 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * @param  enabled  True if the alert is enabled.
 	 */
 	public void setEnabled(boolean enabled)  throws RuntimeException {
+		/*
+			// TODO: @Ian move validation to update (to ensure nothing bad gets in) and when scheduling (to ensure we're not scheduling alerts that are already bad)
+			// Prevent users from enabling invalid alerts.
+			// Note that this requires setEnabled() to be called after we have set valid values on all alerts.
+			if (enabled)
+			{
+				validateAlert();
+			}
+		*/
 
-		// Prevent users from enabling invalid alerts.
-		// Note that this requires setEnabled() to be called after we have set valid values on all alerts.
-		if (enabled)
-		{
-			validateAlert();
-		}
 		this.enabled = enabled;
 	}
 
