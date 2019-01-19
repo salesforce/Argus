@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Salesforce.com, Inc.
+ * Copyright (c) 2019, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,19 +31,11 @@
 	 
 package com.salesforce.dva.argus.ws.resources;
 
-import com.salesforce.dva.argus.entity.Annotation;
-import com.salesforce.dva.argus.entity.MetatagsRecord;
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.service.CollectionService;
-import com.salesforce.dva.argus.system.SystemAssert;
-import com.salesforce.dva.argus.ws.annotation.Description;
-import com.salesforce.dva.argus.ws.dto.AnnotationDto;
-import com.salesforce.dva.argus.ws.dto.MetricDto;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -51,6 +43,18 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+
+import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Histogram;
+import com.salesforce.dva.argus.entity.MetatagsRecord;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.service.CollectionService;
+import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.ws.annotation.Description;
+import com.salesforce.dva.argus.ws.dto.AnnotationDto;
+import com.salesforce.dva.argus.ws.dto.HistogramDto;
+import com.salesforce.dva.argus.ws.dto.MetricDto;
 
 /**
  * Provides methods to collect annotation events and metric data.
@@ -157,5 +161,51 @@ public class CollectionResources extends AbstractResource {
         result.put("Error Messages", errorMessages);
         return result;
     }
+    
+    /**
+     * Submits externally collected histogram data.
+     *
+     * @param   req             The HTTP request.
+     * @param   histogramDtos   The histogram DTOs to submit.
+     *
+     * @return  The number of histograms that were submitted, and the number of errors encountered.
+     */
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/histograms")
+    @Description("Submits externally collected histogram data.")
+    public Map<String, Object> submitHistograms(@Context HttpServletRequest req, final List<HistogramDto> histogramDtos) {
+        PrincipalUser remoteUser = getRemoteUser(req);
+
+        SystemAssert.requireArgument(histogramDtos != null, "Cannot submit null histograms list.");
+
+        List<Histogram> legalHistograms = new ArrayList<>();
+        List<HistogramDto> illegalHistograms = new ArrayList<>();
+        List<String> errorMessages = new ArrayList<>();
+
+        for (HistogramDto histogramDto : histogramDtos) {
+            try {
+                Histogram histogram = new Histogram(histogramDto.getScope(), histogramDto.getMetric());
+                histogram.setTags(histogramDto.getTags());
+                histogram.setTimestamp(histogramDto.getTimestamp());
+                histogram.setBuckets(histogramDto.getBuckets());
+                histogram.setOverflow(histogramDto.getOverflow());
+                histogram.setUnderflow(histogramDto.getUnderflow());
+                legalHistograms.add(histogram);
+            } catch (Exception e) {
+                illegalHistograms.add(histogramDto);
+                errorMessages.add(e.getMessage());
+            }
+        }
+        _collectionService.submitHistograms(remoteUser, legalHistograms);
+
+        Map<String, Object> result = new HashMap<>();
+
+        result.put("Success", legalHistograms.size() + " histograms");
+        result.put("Error", illegalHistograms.size() + " histograms");
+        result.put("Error Messages", errorMessages);
+        return result;
+    }    
 }
-/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+/* Copyright (c) 2019, Salesforce.com, Inc.  All rights reserved. */

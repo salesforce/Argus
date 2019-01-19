@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import java.util.List;
@@ -89,6 +90,19 @@ public interface CollectionService extends Service {
      * @return  The number of metric schema records committed.
      */
     int commitMetricSchema(int metricCount, int timeout);
+    
+    /**
+     * Commits histograms from the collection queue into the data store. The actual number of histograms committed will be: Summation<SUB>(from i=1 to
+     * i=k)</SUB> {n<SUB>i</SUB>}, where n<SUB>i</SUB> is the number of histograms contained in message i. The actual number of messages dequeued will be
+     * the maximum number that can be dequeued from the collection queue within the specified timeout period, not to exceed the maximum number
+     * specified.
+     *
+     * @param   messageCount  The maximum number of histogram messages to commit from the queue. Must be a positive non-zero number.
+     * @param   timeout       The timeout in milliseconds. Must be a positive non-zero number.
+     *
+     * @return  The list of histograms committed.
+     */
+    int commitHistograms(int messageCount, int timeout);    
 
     /**
      * Submits a single annotation to the collection queue. User based policy checks are enforced prior to the submission of data. If any policy
@@ -118,5 +132,23 @@ public interface CollectionService extends Service {
      * @return  The number of annotations committed.
      */
     int commitAnnotations(int annotationCount, int timeout);
+    
+    /**
+     * Submits a single histogram to the collection queue. User based policy checks are enforced prior to the submission of data. If any policy condition
+     * is not met, the method shall throw a runtime exception.
+     *
+     * @param  submitter     The user submitting the data. Cannot be null.
+     * @param  histogram     The histogram to submit. Cannot be null.
+     */
+    void submitHistogram(PrincipalUser submitter, Histogram histogram);
+
+    /**
+     * Submits histogram to the collection queue. Each message submitted to the queue contains a chunk of histograms. User based policy checks are enforced
+     * prior to the submission of data. If any policy condition is not met, the method shall throw a runtime exception.
+     *
+     * @param  submitter     The user submitting the data. Cannot be null.
+     * @param  histograms    The histogram to submit. Cannot be null.
+     */
+    void submitHistograms(PrincipalUser submitter, List<Histogram> histograms);    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

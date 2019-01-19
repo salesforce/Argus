@@ -72,7 +72,7 @@ public class Main {
     static {
         HELP_OPTION = Option.createFlag("-h", "Display the usage and available collector types.");
         TYPE_OPTION = Option.createOption("-t",
-            "[ COMMIT_METRICS | COMMIT_ANNOTATIONS | ALERT | COMMIT_SCHEMA ] Specifies the type of client to create. Default is COMMIT_METRICS");
+            "[ COMMIT_METRICS | COMMIT_ANNOTATIONS | ALERT | COMMIT_SCHEMA | COMMIT_HISTOGRAMS] Specifies the type of client to create. Default is COMMIT_METRICS");
         INSTALL_OPTION = Option.createOption("-i", "<path> Specifies a file location to store a configuration created interactively.");
         CONFIG_OPTION = Option.createOption("-f", "<path> Specifies the configuration file to use.");
         TEMPLATES = new Option[] { HELP_OPTION, TYPE_OPTION, INSTALL_OPTION, CONFIG_OPTION };

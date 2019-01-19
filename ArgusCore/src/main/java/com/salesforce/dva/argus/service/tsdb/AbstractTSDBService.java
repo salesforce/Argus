@@ -86,6 +86,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MonitorService;
@@ -311,6 +312,23 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}
 		return sb.toString();
 	}
+	
+
+    /**
+     * We construct OpenTSDB metric name as a combination of Argus histogram's metric, scope as follows:
+     *          
+     *          metric(otsdb) = metric(argus)&lt;DELIMITER&gt;scope(argus)
+     * 
+     * @param metric    The metric
+     * @return OpenTSDB metric name constructed from scope, metric.
+     */
+    public static String constructTSDBMetricName(Histogram histogram) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(histogram.getMetric()).append(DELIMITER).append(histogram.getScope());
+
+        return sb.toString();
+    }
 
 	/**
 	 * Given otsdb metric name, return argus metric.
@@ -395,6 +413,25 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 			retry(fracturedList, _roundRobinIterator, "/api/put", HttpMethod.POST, CHUNK_SIZE);
 		}
 	}
+	
+    @Override
+    public void putHistograms(List<Histogram> histograms) {
+         requireNotDisposed();
+         requireArgument(histograms != null, "Histograms can not be null");
+
+         String endpoint = _roundRobinIterator.next();
+         _logger.debug("Pushing {} histograms to TSDB using endpoint {}.", histograms.size(), endpoint);
+
+         List<Histogram> histogramList = new ArrayList<>();
+         histogramList.addAll(histograms);
+         
+         try {
+             put(histogramList, endpoint + "/api/histogram", HttpMethod.POST, CHUNK_SIZE);
+         } catch(Exception ex) {
+             _logger.warn("Failure while trying to push histograms", ex);
+             retry(histogramList, _roundRobinIterator, "/api/histogram", HttpMethod.POST, CHUNK_SIZE);
+         }
+     }	
 
 	<T> void retry(List<T> objects, Iterator<String> endPointIterator, String urlPath, HttpMethod httpMethod, int chunkSize) {
 		Exception failure = null;
@@ -559,16 +596,16 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	}
 
 	private ObjectMapper getMapper() {
-		ObjectMapper mapper = new ObjectMapper();
-		SimpleModule module = new SimpleModule();
-
-		module.addSerializer(Metric.class, new MetricTransform.Serializer());
-		module.addDeserializer(ResultSet.class, new MetricTransform.MetricListDeserializer());
-		module.addSerializer(AnnotationWrapper.class, new AnnotationTransform.Serializer());
-		module.addDeserializer(AnnotationWrappers.class, new AnnotationTransform.Deserializer());
-		module.addSerializer(MetricQuery.class, new MetricQueryTransform.Serializer());
-		mapper.registerModule(module);
-		return mapper;
+	    ObjectMapper mapper = new ObjectMapper();
+	    SimpleModule module = new SimpleModule();
+	    module.addSerializer(Metric.class, new MetricTransform.Serializer());
+	    module.addDeserializer(ResultSet.class, new MetricTransform.MetricListDeserializer());
+	    module.addSerializer(Histogram.class, new HistogramTransform.Serializer());
+	    module.addSerializer(AnnotationWrapper.class, new AnnotationTransform.Serializer());
+	    module.addDeserializer(AnnotationWrappers.class, new AnnotationTransform.Deserializer());
+	    module.addSerializer(MetricQuery.class, new MetricQueryTransform.Serializer());
+	    mapper.registerModule(module);
+	    return mapper;
 	}
 
 	/* gets objects in chunks.

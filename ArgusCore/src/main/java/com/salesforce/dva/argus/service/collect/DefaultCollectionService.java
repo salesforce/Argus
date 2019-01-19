@@ -28,14 +28,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.collect;
+
+import static com.salesforce.dva.argus.service.MQService.MQQueue.ANNOTATION;
+import static com.salesforce.dva.argus.service.MQService.MQQueue.METRIC;
+import static com.salesforce.dva.argus.service.MQService.MQQueue.HISTOGRAM;
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.persistence.EntityManager;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.TSDBEntity;
@@ -52,21 +71,6 @@ import com.salesforce.dva.argus.service.WardenService.PolicyCounter;
 import com.salesforce.dva.argus.service.WardenService.SubSystem;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.persistence.EntityManager;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import static com.salesforce.dva.argus.service.MQService.MQQueue.ANNOTATION;
-import static com.salesforce.dva.argus.service.MQService.MQQueue.METRIC;
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
  * Default implementation of the CollectionService interface.
@@ -109,8 +113,8 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
      */
     @Inject
     DefaultCollectionService(MQService mqService, TSDBService tsdbService, AuditService auditService, 
-        SystemConfiguration configuration, SchemaService schemaService, WardenService wardenService,
-        MonitorService monitorService, NamespaceService namespaceService) {
+            SystemConfiguration configuration, SchemaService schemaService, WardenService wardenService,
+            MonitorService monitorService, NamespaceService namespaceService) {
         super(auditService, configuration);
         _mqService = mqService;
         _tsdbService = tsdbService;
@@ -149,7 +153,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
             }
             metrics = _getAllowedMetrics(metrics, submitter);
             _logger.info("User metric data is: Metrics size - {}, Datapoints size - {}, Minimum resolution - {}.", metrics.size(),
-                metricData.getDataPointsSize(), metricData.getMinResolutionDataPointsAcrossAllMetrics());
+                    metricData.getDataPointsSize(), metricData.getMinResolutionDataPointsAcrossAllMetrics());
         }
 
         List<ArrayList<Metric>> batches = _batchMetrics(metrics);
@@ -169,7 +173,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
         requireArgument(annotations != null, "The list of annotaions to submit cannot be null.");
         checkSubmitAnnotationPolicyRequirementsMet(submitter, annotations);
         _monitorService.modifyCounter(Counter.ANNOTATION_WRITES, annotations.size(), null);
-        
+
         /* Replace unsupported characters in annotation */
         for (Annotation annotation : annotations) {
             annotation.setScope(TSDBEntity.replaceUnsupportedChars(annotation.getScope()));
@@ -237,6 +241,36 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
         }
         return dequeued.size();
     }
+    
+    @Override
+    public int commitHistograms(int histogramCount, int timeout) {
+        requireNotDisposed();
+        requireArgument(histogramCount > 0, "Histogram count must be greater than zero.");
+        requireArgument(timeout > 0, "The timeout in milliseconds must be greater than zero.");
+
+        List<Histogram> dequeued = _mqService.dequeue(HISTOGRAM.getQueueName(), Histogram.class, timeout, histogramCount);
+
+        if (!dequeued.isEmpty()) {
+            _tsdbService.putHistograms(dequeued);
+            _logger.debug("Committed {} histograms.", dequeued.size());
+        }
+        return dequeued.size();
+    }
+    
+    @Override
+    public void submitHistogram(PrincipalUser submitter, Histogram histogram) {
+        submitHistograms(submitter, Arrays.asList(new Histogram[] { histogram }));
+    }
+
+    @Override
+    public void submitHistograms(PrincipalUser submitter, List<Histogram> histograms) {
+        requireNotDisposed();
+        requireArgument(submitter != null, "Submitting user cannot be null.");
+        requireArgument(histograms != null, "The list of histograms to submit cannot be null.");
+        checkSubmitHistogramPolicyRequirementsMet(submitter, histograms);
+        _monitorService.modifyCounter(Counter.HISTOGRAM_WRITES, histograms.size(), null);
+        _mqService.enqueue(HISTOGRAM.getQueueName(), histograms);
+    }    
 
     @Override
     public void dispose() {
@@ -246,13 +280,19 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
     private void checkSubmitAnnotationPolicyRequirementsMet(PrincipalUser submitter, List<Annotation> annotations) {
         assert (submitter != null) : "Submitter should not be null.";
         assert (annotations != null) : "List of annotations should not be null.";
-        _logger.warn("Policy checks for submitting annotations are not yet implmented.");
+        _logger.warn("Policy checks for submitting annotations are not yet implemented.");
     }
 
     private void checkSubmitMetricPolicyRequirementsMet(PrincipalUser submitter, List<Metric> metrics) {
         assert (submitter != null) : "Submitter should not be null.";
         assert (metrics != null) : "List of metrics should not be null.";
         _wardenService.assertSubSystemUsePermitted(submitter, SubSystem.POSTING);
+    }
+
+    private void checkSubmitHistogramPolicyRequirementsMet(PrincipalUser submitter, List<Histogram> histograms) {
+        assert (submitter != null) : "Submitter should not be null.";
+        assert (histograms != null) : "List of histograms should not be null.";
+        _logger.warn("Policy checks for submitting histograms are not yet implemented.");
     }
 
     /*
@@ -320,7 +360,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
                 batches.add(batch);
                 batch = new ArrayList<Metric>(BATCH_METRICS);
             }
-            
+
             /*
              * We are doing the unsupported character replacement before we write to the queue.
              * This way the same data is seen by any downstream schema or metric consumers, and both will be in sync.
@@ -333,7 +373,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
                 filteredTags.put(TSDBEntity.replaceUnsupportedChars(tagKey), TSDBEntity.replaceUnsupportedChars(metric.getTags().get(tagKey)));
             }
             metric.setTags(filteredTags);
-            
+
             batch.add(metric);
             count++;
         }

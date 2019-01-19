@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MonitorService;
@@ -118,6 +119,11 @@ public class PhoenixTSDBService extends DefaultService implements TSDBService {
 	public void putAnnotations(List<Annotation> annotations) {
 		throw new UnsupportedOperationException("PhoenixTSDBService does not support annotations");
 	}
+	
+    @Override
+    public void putHistograms(List<Histogram> histograms) {
+        throw new UnsupportedOperationException("PhoenixTSDBService does not support histograms");
+    }
 
 	@Override
 	public List<Annotation> getAnnotations(List<AnnotationQuery> queries) {
@@ -163,5 +169,4 @@ public class PhoenixTSDBService extends DefaultService implements TSDBService {
             return _defaultValue;
         }
     }
-
 }
