@@ -89,6 +89,34 @@ public class Annotation extends TSDBEntity implements Serializable {
     //~ Methods **************************************************************************************************************************************
 
     /**
+     * Returns the size of the annotation in bytes.
+     *
+     * @return The size in bytes.
+     */
+    public int getSizeBytes() {
+        int size = getLength(_source);
+        size += getLength(_id);
+        size += getLength(_type);
+        size += getLength(getScope());
+        size += Long.BYTES; // size of timestamp field
+        for (Map.Entry<String, String> e : _fields.entrySet()) {
+            size += e.getKey().length();
+            size += e.getValue().length();
+        }
+        for (Map.Entry<String, String> e : getTags().entrySet()) {
+            size += e.getKey().length();
+            size += e.getValue().length();
+        }
+        size += getLength(getUid());
+        size += getLength(getMetric());
+        return size;
+    }
+
+    private int getLength(String s) {
+        return s != null ? s.length() : 0;
+    }
+
+    /**
      * Returns the source of the annotation.
      *
      * @return  The source of the annotation. Will never be null.
