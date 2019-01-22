@@ -727,11 +727,12 @@ public class Notification extends JPAEntity implements Serializable {
 	 */
 	public String getCustomText() {
 
-		try {
-			return getGOCField(CUSTOM_TEXT_KEY);
-		} catch (Exception e) {
+		//TODO: W-5519494 changes
+//		try {
+//			return getGOCField(CUSTOM_TEXT_KEY);
+//		} catch (Exception e) {
 			return this.customText;
-		}
+//		}
 	}
 
 	/**
@@ -740,7 +741,9 @@ public class Notification extends JPAEntity implements Serializable {
 	 * @param customText customText is optional
 	 */
 	public void setCustomText(String customText) {
-		setGOCField(CUSTOM_TEXT_KEY, customText);
+		this.customText = customText;
+		//TODO: W-5519494 changes
+		//setGOCField(CUSTOM_TEXT_KEY, customText);
 	}
 
 
@@ -804,18 +807,20 @@ public class Notification extends JPAEntity implements Serializable {
 	}
 
 	private void setGOCField(final String fieldName, final String fieldValue) {
-		GOCFields = getJsonObject();
-		GOCFields.addProperty(fieldName, fieldValue);
-		this.customText = GOCFields.toString();
+		//TODO: W-5519494 changes
+//		GOCFields = getJsonObject();
+//		GOCFields.addProperty(fieldName, fieldValue);
+//		this.customText = GOCFields.toString();
 	}
 
 	private String getGOCField(final String fieldName) {
-		GOCFields = getJsonObject();
-		if (GOCFields != null && GOCFields.has(fieldName)) {
-			return GOCFields.get(fieldName).isJsonNull() ? null : GOCFields.get(fieldName).getAsString();
-		} else {
+		//TODO: W-5519494 changes
+//		GOCFields = getJsonObject();
+//		if (GOCFields != null && GOCFields.has(fieldName)) {
+//			return GOCFields.get(fieldName).isJsonNull() ? null : GOCFields.get(fieldName).getAsString();
+//		} else {
 			return null;
-		}
+//		}
 	}
 
 
@@ -851,7 +856,7 @@ public class Notification extends JPAEntity implements Serializable {
 	@Override
 	public String toString() {
 		return "Notification{" + "name=" + name + ", notifierName=" + notifierName + ", subscriptions=" + subscriptions + ", metricsToAnnotate=" +
-				metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" + triggers + ", severity=" + severityLevel + ", srActionable=" + isSRActionable + ", customText;" + customText + '}';
+				metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" + triggers + ", severity=" + severityLevel + ", srActionable=" + isSRActionable + ", customText=" + customText + '}';
 	}
 
 
