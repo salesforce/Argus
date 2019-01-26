@@ -258,7 +258,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 
 	public List<String> getDCFromExpression(String expression) {
 
-		ArrayList<String> finalDCList = new ArrayList<>();
+		Set<String> finalDCList = new HashSet<>();
 		String dcList = _configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DC_LIST).replaceAll(",","|");
 		String defaultDC = _configuration.getValue(SystemConfiguration.Property.DC_DEFAULT);
 
@@ -273,15 +273,13 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			//Two cases: 1. DC can be extracted from scope (don't call discovery service) 2. DC cannot be identified, call discovery service.
 			List<String> currentDCList = getMatchedDCAgainstRegex(scopes, patterns.get(0));
 			if (currentDCList.size() > 0) {//Case 1
-				finalDCList = (ArrayList<String>) currentDCList;
+				finalDCList = new HashSet<>(currentDCList);
 			} else { //Case 2
 				// Get all the expanded queries from MetricService and identify all different DCs.
 				List<MetricQuery> queries = getQueries(expression);
-				ArrayList<String> scopeFromExpandedExpressions = new ArrayList<>();
 				for(MetricQuery currentQuery: queries) {
-					scopeFromExpandedExpressions.add(currentQuery.getScope());
+					finalDCList.add(getDCFromScope(currentQuery.getScope()));
 				}
-				finalDCList = (ArrayList<String>) getMatchedDCAgainstRegex(scopeFromExpandedExpressions, patterns.get(0));
 			}
 
 			// Default Case.
@@ -305,7 +303,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			if (dc != null) {
 				return dc;
 			} else {
-				_logger.warn(MessageFormat.format("Unable to identify dc from scope: {0}", scope));
+				_logger.debug(MessageFormat.format("Unable to identify dc from scope: {0}", scope));
 				return null;
 			}
 		} catch (Exception ex) {

@@ -3,6 +3,7 @@ package com.salesforce.dva.argus.service.collect;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.AuditService;
@@ -102,6 +103,13 @@ public class DefaultCollectionServiceTest extends AbstractTest {
         collectionService.submitAnnotation(user, annotation);
         verify(monitorService).modifyCounter(MonitorService.Counter.ANNOTATION_WRITES, 1, null);
     }
+    
+    @Test
+    public void testSubmitHistogram() {
+        Histogram histogram = createHistogram(3);
+        collectionService.submitHistogram(user, histogram);
+        verify(monitorService).modifyCounter(MonitorService.Counter.HISTOGRAM_WRITES, 1, null);
+    }
 
     @Test
     public void testCommitMetrics() {
@@ -128,5 +136,12 @@ public class DefaultCollectionServiceTest extends AbstractTest {
         List<Annotation> messages = Arrays.asList(createAnnotation(), createAnnotation());
         when(mqService.dequeue(eq(MQService.MQQueue.ANNOTATION.getQueueName()), eq(Annotation.class), anyInt(), anyInt())).thenReturn(messages);
         assertEquals(2, collectionService.commitAnnotations(2, 60000));
+    }
+    
+    @Test
+    public void testCommitHistograms() {
+        List<Histogram> messages = Arrays.asList(createHistogram(4), createHistogram(5));
+        when(mqService.dequeue(eq(MQService.MQQueue.HISTOGRAM.getQueueName()), eq(Histogram.class), anyInt(), anyInt())).thenReturn(messages);
+        assertEquals(2, collectionService.commitHistograms(2, 60000));
     }
 }

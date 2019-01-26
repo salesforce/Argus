@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.DefaultService;
@@ -572,6 +573,11 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
         _defaultTsdbService.putMetrics(metrics);
     }
 
+    @Override
+    public void putHistograms(List<Histogram> histograms) {
+        _defaultTsdbService.putHistograms(histograms);
+    }
+    
     @Override
     public void putAnnotations(List<Annotation> annotations) {
         _defaultTsdbService.putAnnotations(annotations);

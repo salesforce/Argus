@@ -85,6 +85,19 @@ class MetricQueryTransform {
 			if(query.getDownsampler() != null) {
 				jgen.writeStringField("downsample", query.getDownsamplingPeriod() + "ms-" + query.getDownsampler().getDescription());
 			}
+
+			if(query.getPercentile() != null) {
+			    jgen.writeArrayFieldStart("percentiles");
+			    for(String percentile :  query.getPercentile()) {
+			        jgen.writeNumber(Float.parseFloat(percentile));
+			    }               
+			    jgen.writeEndArray();
+			}
+			
+			if(query.getShowHistogramBuckets() != false){
+			    jgen.writeBooleanField("showHistogramBuckets", true);
+			}
+            			
 			jgen.writeEndObject();
 			jgen.writeEndArray();
 			jgen.writeEndObject();

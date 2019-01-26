@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
@@ -60,6 +61,13 @@ public interface TSDBService extends Service {
 	 * @param  metrics  The list of metrics to write. Cannot be null, but may be empty.
 	 */
 	void putMetrics(List<Metric> metrics);
+	
+    /**
+     * Writes histogram data. Any existing data is overwritten.
+     *
+     * @param  histograms  The list of histograms to write. Cannot be null, but may be empty.
+     */
+    void putHistograms(List<Histogram> histograms);	
 
 	/**
 	 * Reads metric data.

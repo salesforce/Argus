@@ -42,6 +42,7 @@ enum ClientType {
 
     COMMIT_METRICS,
     COMMIT_ANNOTATIONS,
+    COMMIT_HISTOGRAMS,
     ALERT,
     /* Alpha feature, not currently supported. */
     COMMIT_SCHEMA,

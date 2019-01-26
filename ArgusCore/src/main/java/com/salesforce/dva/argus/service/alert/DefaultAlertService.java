@@ -463,10 +463,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			try {
 				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
+				int initialMetricSize = metrics.size();
 				if(Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))) {
 					metrics.removeIf(m -> shouldMetricBeRemovedForDataLag(alert, m, historyList));
 
-					if (metrics.size() <= 0) { // Skip alert evaluation if all the expanded alert expression contains dc with data lag.
+					if ((metrics.size() <= 0 && initialMetricSize > 0) || // Skip alert evaluation if all the expanded alert expression contains dc with data lag and initial size was non-zero.
+						(initialMetricSize == 0 && _monitorService.isDataLagging(null))) { // or, if the initial size is 0 and data lag is present in atleast one dc.
 						Map<String, String> tags = new HashMap<>();
 						tags.put(USERTAG, alert.getOwner().getUserName());
 						_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);

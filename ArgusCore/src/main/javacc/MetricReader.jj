@@ -847,6 +847,9 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
   	Aggregator downsampler = null;
   	Long downsamplingPeriod = null;
   	String downsampleTokenStr = null;
+  	String[] percentile = null;
+  	String optionalText = null;
+  	boolean showHistogramBuckets = false;
   	TSDBQueryExpression expression = new TSDBQueryExpression();
 }
 { 	
@@ -856,21 +859,34 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
   	(<LEFT_CURLY> tags = getTags() <RIGHT_CURLY>)?
   	<COLON>aggregator = getAggregator()
   	(LOOKAHEAD(2) <COLON>downsampleTokenStr = getDownsampleToken())?
-  	(<COLON>namespace = getString())?
+  	(<COLON>optionalText = getNamespace())?
 	{
-	    	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
+	    downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
 	    downsamplingPeriod = downsampleTokenStr != null ? getDownsamplingPeriod(downsampleTokenStr): null;
 	    endTimestamp = endTimestamp == null ? relativeTo : endTimestamp;
         
-	    expression.setNamespace(namespace);
+        // Parse out namespace and optional tsdb parameters
+        if(optionalText !=null && !optionalText.isEmpty()){
+            String[] parts = optionalText.split(":");
+        
+            for(int i=0; i< parts.length;i++){
+                if(parts[i].toLowerCase().startsWith("histogram-percentiles")){
+        	    percentile = getPercentile(parts[i].toLowerCase());
+                } else if(parts[i].toLowerCase().startsWith("histogram-buckets")){
+                    showHistogramBuckets = true;
+                } else{
+        	    namespace = parts[i];
+                }
+            }
+        }
+        expression.setNamespace(namespace);
         expression.setScope(scope);
         expression.setMetric(metric);
         expression.setAggregator(aggregator);
         expression.setTags(tags);
         expression.setStartTimestamp(startTimestamp);
         expression.setEndTimestamp(endTimestamp);
-        expression.setEndTimestamp(endTimestamp);
-        	expression.setDownsampler(downsampler);
+        expression.setDownsampler(downsampler);
         expression.setDownsamplingPeriod(downsamplingPeriod);
         currentQueryContext.getChildExpressions().add(expression);
 	  	if(MetricQuery.class.equals(clazz)) {
@@ -880,6 +896,12 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
 	        query.setAggregator(aggregator);
 	        query.setDownsampler(downsampler);
 	        query.setDownsamplingPeriod(downsamplingPeriod);
+	        if(percentile != null) {
+	            query.setPercentile(percentile);
+	        }
+            if(showHistogramBuckets != false) {
+                query.setShowHistogramBuckets(showHistogramBuckets);
+            }
 	        List<MetricQuery> queries = discoveryService.getMatchingQueries(query);
 	        return (List<T>) queries;
 	  	} else if(Metric.class.equals(clazz)) {
@@ -891,6 +913,13 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
 		        query.setAggregator(aggregator);
 		        query.setDownsampler(downsampler);
 		        query.setDownsamplingPeriod(downsamplingPeriod);
+	            if(percentile != null) {
+	            	query.setPercentile(percentile);
+	            }		        
+                if(showHistogramBuckets != false) {
+                    query.setShowHistogramBuckets(showHistogramBuckets);
+                }
+		        
 		        setQueryTimeWindow(query);
 		        List<MetricQuery> queries = discoveryService.getMatchingQueries(query);
 		        
@@ -941,9 +970,9 @@ private String getString() :
  	t = <METRIC>
   	{ return t.image; }
   	|
- 	t = <NAMESPACE>
+  	t = <NAMESPACE>
   	{ return t.image; }
- 	|
+  	|
   	t = <AGGREGATOR>
   	{ return t.image; }
  	|
@@ -1019,4 +1048,15 @@ private Long getDownsamplingPeriod(String token) :
   	  	TimeUnit unit = TimeUnit.fromString(timeUnit);
   	  	return time * unit.getValue();
   	}
+}
+
+private String[] getPercentile(String token) :
+{}
+{
+  	{ 
+
+  		String percentileStr = token.substring("histogram-percentiles[".length(), token.length() -1);
+  		String[] percentiles = percentileStr.split("\\|");
+  		return percentiles;
+  	 }
 }

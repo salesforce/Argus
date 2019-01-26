@@ -59,6 +59,8 @@ public class MetricQuery extends AnnotationQuery {
 	private Aggregator _downsampler;
 	private Long _downsamplingPeriod;
 	private MetricQueryContext _metricQueryContext;
+	private String[] _percentile;
+	private boolean _showHistogramBuckets;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -120,6 +122,24 @@ public class MetricQuery extends AnnotationQuery {
 		_namespace = namespace;
 	}
 
+    /**
+     * Sets the query percentile. (Used to only retrieve histogram data) 
+     *
+     * @param  percentile  The percentile for histogram data.
+     */
+    public void setPercentile(String[] percentile) {
+    _percentile = percentile;
+    }
+    
+    /**
+     * Sets the showHistogramBuckets (Used to only retrieve histogram data)
+     *
+     * @param  showHistogramBuckets 
+     */
+    public void setShowHistogramBuckets(boolean showHistogramBuckets) {
+        _showHistogramBuckets = showHistogramBuckets;
+    }	
+    
 	/**
 	 * Returns the method used to aggregate query results.
 	 *
@@ -146,6 +166,25 @@ public class MetricQuery extends AnnotationQuery {
 	public Aggregator getDownsampler() {
 		return _downsampler;
 	}
+	
+    /**
+     * Returns the query percentile.
+     *
+     * @return  query percentile.
+     */
+    public String[] getPercentile() {
+        return _percentile;
+    }
+    
+    /**
+     * Returns if the histogram buckets should be shown or not
+     *
+     * @return  Should histogram buckets  be shown or not
+     */
+    public boolean getShowHistogramBuckets() {
+        return _showHistogramBuckets;
+    }   
+
 
 	/**
 	 * Sets the method used to downsample the query results.
@@ -271,24 +310,32 @@ public class MetricQuery extends AnnotationQuery {
 	 */
 	@Override
 	public String toString() {
-		String pattern = "start={0,number,#}&end={1,number,#}&m={2}{3}&ms=true&show_tsuids=true";
-		long start = Math.max(0, getStartTimestamp() - 1);
-		long end = Math.max(start, getEndTimestamp() + 1);
-		StringBuilder sb = new StringBuilder();
+	    String pattern = "start={0,number,#}&end={1,number,#}&m={2}{3}&ms=true&show_tsuids=true";
+	    long start = Math.max(0, getStartTimestamp() - 1);
+	    long end = Math.max(start, getEndTimestamp() + 1);
+	    StringBuilder sb = new StringBuilder();
 
-		sb.append(getAggregator() == null ? "avg" : getAggregator().getDescription()).append(":");
-		if (getDownsampler() != null) {
-			sb.append(getDownsamplingPeriod()).append("ms").append("-").append(getDownsampler().getDescription()).append(":");
-		}
-		sb.append(getTSDBMetricName());
+	    sb.append(getAggregator() == null ? "avg" : getAggregator().getDescription()).append(":");
+	    if (getDownsampler() != null) {
+	        sb.append(getDownsamplingPeriod()).append("ms").append("-").append(getDownsampler().getDescription()).append(":");
+	    }
 
-		Map<String, String> tags = new HashMap<>(getTags());
+	    if (getPercentile() != null) {
+	        sb.append(getPercentile()).append(":");
+	    }
 
-		try {
-			return MessageFormat.format(pattern, start, end, sb.toString(), toTagParameterArray(tags));
-		} catch (UnsupportedEncodingException ex) {
-			throw new SystemException(ex);
-		}
+	    if (getShowHistogramBuckets() != false) {
+	        sb.append("show-histogram-buckets").append(":");
+	    }	      
+	    sb.append(getTSDBMetricName());
+
+	    Map<String, String> tags = new HashMap<>(getTags());
+
+	    try {
+	        return MessageFormat.format(pattern, start, end, sb.toString(), toTagParameterArray(tags));
+	    } catch (UnsupportedEncodingException ex) {
+	        throw new SystemException(ex);
+	    }
 	}
 
 	//~ Enums ****************************************************************************************************************************************

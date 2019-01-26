@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus;
 
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Histogram;
+import com.salesforce.dva.argus.entity.HistogramBucket;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.system.SystemMain;
@@ -160,6 +162,29 @@ public abstract class AbstractTest {
         return result;
     }
 
+    public static Histogram createHistogram(int numHistogramBuckets) {
+        int scopeIndex = ((int) (random.nextDouble() * 100));
+        int metricIndex = ((int) (random.nextDouble() * 10));
+        String scope = MessageFormat.format(scopeNameTemplate, scopeIndex);
+        String metric = MessageFormat.format(metricNameTemplate, metricIndex);
+        long timestamp = System.currentTimeMillis();
+        Histogram result = new Histogram(scope, metric);
+        
+        Map<HistogramBucket, Long> buckets = new HashMap<>();
+        float lowerBound = 0;
+        float upperBound = 50;
+        for (int i = 0; i < numHistogramBuckets; i++) {
+            HistogramBucket histogramBucket= new  HistogramBucket(lowerBound, upperBound);
+            buckets.put(histogramBucket, random.nextLong());
+            lowerBound = upperBound;
+            upperBound = upperBound + 100;
+        }
+        result.setBuckets(buckets);
+        result.setTimestamp(timestamp);;
+        result.setTags(tags);
+        return result;
+    }
+    
     private void setupEmbeddedKafka() {
         Properties properties = new Properties();
 

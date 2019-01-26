@@ -18,7 +18,7 @@
         <file>${argus.logdir:-.}/${log.file.name:-argus}.log</file>
         <append>true</append>
         <encoder>
-            <pattern>[ %boldMagenta(%cn) | %replace(%X{USER}){'^$','*NULLUSER*'} | %replace(%X{TXID}){'^$','*NULLTXID*'} | %d{yyyy-MM-dd HH:mm:ss.SSS} | %thread | %highlight(%level) ] %msg%n%ex</pattern>
+            <pattern>[ %cn | %replace(%X{USER}){'^$','*NULLUSER*'} | %replace(%X{TXID}){'^$','*NULLTXID*'} | %d{yyyy-MM-dd HH:mm:ss.SSS} | %thread | %level ] %msg%n%ex</pattern>
         </encoder>
     </appender>
 
