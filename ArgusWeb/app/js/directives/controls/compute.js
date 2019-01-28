@@ -32,7 +32,7 @@ angular.module('argus.directives.controls.compute', [])
 			element.hide();
 
 			scope.$on(dashboardCtrl.getControlChangeEventName(), function(evt, control) {
-				refreshControl(scope, element.text(), control, dashboardCtrl)
+				refreshControl(scope, element.text(), control, dashboardCtrl);
 			});
 
 			refreshControl(scope, element.text(), {}, dashboardCtrl);

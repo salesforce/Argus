@@ -484,7 +484,6 @@ a.definition-tip, a.definition-tip:hover, a.definition-tip:visited {
   position: fixed;
   top: 55px; left: 0; right: 0; bottom: 0;
   height: auto;
-  z-index: ;
 }
 
 .search-options input[type=text] {
@@ -492,4 +491,33 @@ a.definition-tip, a.definition-tip:hover, a.definition-tip:visited {
     color: #555;
     border-radius: 3px;
     border: 1px solid #ccc;
+}
+
+.glyphicon.spinning {
+    animation: spin 1s infinite linear;
+    -webkit-animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+    from {
+        transform: scale(1) rotate(0deg);
+    }
+    to {
+        transform: scale(1) rotate(360deg);
+    }
+}
+@-webkit-keyframes spin {
+    from {
+        -webkit-transform: rotate(0deg);
+    }
+    to {
+        -webkit-transform: rotate(360deg);
+    }
+}
+
+.fixed-dashboard-info {
+    top: 35%;
+    min-width: 250px;
+    padding-right: 40px;
+    position: fixed;
 }
