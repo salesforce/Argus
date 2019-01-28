@@ -191,7 +191,6 @@ public interface MonitorService extends Service {
         DAEMON_THREADS("argus.jvm", "thread.daemon"),
         METRIC_WRITES("argus.core", "metric.writes"),
         ANNOTATION_WRITES("argus.core", "annotation.writes"),
-        ANNOTATION_DROPS_MAXSIZEEXCEEDED("argus.core", "annotation.drops.maxSizeExceeded"),
         HISTOGRAM_WRITES("argus.core", "histogram.writes"),
         METRIC_READS("argus.core", "metric.reads"),
         ANNOTATION_READS("argus.core", "annotation.reads"),
