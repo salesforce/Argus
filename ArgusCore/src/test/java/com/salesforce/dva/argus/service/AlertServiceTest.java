@@ -387,7 +387,7 @@ public class AlertServiceTest extends AbstractTest {
 
 		assertEquals(cnt, expectedAlerts.size());
 	}
-        @Ignore("ToDo: Ignoring test since its failing intermittently, Sundhanchu/Miguel to fix it")
+
 	@Test
 	public void testCountAlertsByOwnerWithSearchText() {
 		UserService userService = system.getServiceFactory().getUserService();
@@ -404,11 +404,11 @@ public class AlertServiceTest extends AbstractTest {
 
 		for (int i = 0; i < alertsCount; i++) {
 			if (i % 2 == 0) {
-				Alert evenAlert = alertService.updateAlert(new Alert(user, user, "even_alert_" + i, EXPRESSION, "* * * * *"));
+				Alert evenAlert = alertService.updateAlert(new Alert(user, user, "another_even_alert_" + i, EXPRESSION, "* * * * *"));
 				expectedEvenAlerts.add(evenAlert);
 				expectedAlerts.add(evenAlert);
 			} else {
-				Alert oddAlert = alertService.updateAlert(new Alert(user, user, "odd_alert_" + i, EXPRESSION, "* * * * *"));
+				Alert oddAlert = alertService.updateAlert(new Alert(user, user, "another_odd_alert_" + i, EXPRESSION, "* * * * *"));
 				expectedOddAlerts.add(oddAlert);
 				expectedAlerts.add(oddAlert);
 			}
@@ -435,7 +435,7 @@ public class AlertServiceTest extends AbstractTest {
 		cnt = alertService.countAlerts(context);
 		assertEquals(cnt, expectedOddAlerts.size());
 
-		// Count alerts have "odd" in its name
+		// Count alerts have "odd" in its name  case insensitive
 		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("OdD").build();
 		cnt = alertService.countAlerts(context);
 		assertEquals(cnt, expectedOddAlerts.size());
@@ -450,7 +450,8 @@ public class AlertServiceTest extends AbstractTest {
 		cnt = alertService.countAlerts(context);
 		assertEquals(cnt, expectedEvenAlerts.size());
 
-		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("*dD").build();
+		// Test with wildcard expressions.
+		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("o*D").build();
 		cnt = alertService.countAlerts(context);
 		assertEquals(cnt, expectedOddAlerts.size());
 
@@ -1273,6 +1274,11 @@ public class AlertServiceTest extends AbstractTest {
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", alert, "notifier-name", new ArrayList<String>(), 5000L);
+		notification.setArticleNumber("an");
+		notification.setSRActionable(true);
+		notification.setProductTag("pT");
+		notification.setElementName("elN");
+		notification.setEventName("evN");
 		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN, "trigger-name", 0.95, 60000);
 
 		alert.setNotifications(Arrays.asList(notification));

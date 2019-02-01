@@ -1,26 +1,19 @@
 package com.salesforce.dva.argus.util;
 
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgumentP;
-import static java.math.BigInteger.ZERO;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import com.google.inject.Singleton;
-import com.google.inject.persist.Transactional;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.*;
 import com.salesforce.dva.argus.service.AlertService;
@@ -31,42 +24,16 @@ import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.metric.DefaultMetricService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
-import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
-import com.salesforce.dva.argus.service.AuditService;
-import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.system.SystemException;
-
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.AfterClass;
 
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
 import org.quartz.TriggerBuilder;
 
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
-import com.google.inject.Provider;
-import com.google.inject.Inject;
-import javax.persistence.Persistence;
-import javax.persistence.EntityManager;
-
-
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.*;
-import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 public class AlertUtilsTest extends AbstractTest {

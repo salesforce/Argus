@@ -739,7 +739,6 @@ public class AlertResources extends AbstractResource {
 			clonedNotifications.add(currentNotificationCloned);
 
 			copyProperties(currentNotificationCloned, currentNotification);
-			currentNotificationCloned.setSRActionable(currentNotification.getSRActionable(), currentNotification.getArticleNumber());
 			currentNotificationCloned.setAlert(clonedAlert);
 
 			List<Trigger> triggersInCurrentNotification = new ArrayList<>();
@@ -821,7 +820,6 @@ public class AlertResources extends AbstractResource {
 //						throw new WebApplicationException("Article Number should be present if SR Actionable is set.");
 
 					copyProperties(notification, notificationDto);
-					notification.setSRActionable(notificationDto.getSRActionable(), notificationDto.getArticleNumber());
 
 					oldAlert.setModifiedBy(getRemoteUser(req));
 
@@ -917,14 +915,14 @@ public class AlertResources extends AbstractResource {
 
 				Notification notification = new Notification(notificationDto.getName(), alert, notificationDto.getNotifierName(),
 						notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
-				notification.setSRActionable(notificationDto.getSRActionable(), notificationDto.getArticleNumber());
-				notification.setArticleNumber(notificationDto.getArticleNumber());
+				notification.setSRActionable(notificationDto.getSRActionable());
 				notification.setSeverityLevel(notificationDto.getSeverityLevel());
 
 				notification.setCustomText(notificationDto.getCustomText());
 				notification.setEventName(notificationDto.getEventName());
 				notification.setElementName(notificationDto.getElementName());
 				notification.setProductTag(notificationDto.getProductTag());
+				notification.setArticleNumber(notificationDto.getArticleNumber());
 
 				// TODO: 14.12.16 validateAuthorizationRequest notification
 
