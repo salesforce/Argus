@@ -1274,6 +1274,11 @@ public class AlertServiceTest extends AbstractTest {
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", alert, "notifier-name", new ArrayList<String>(), 5000L);
+		notification.setArticleNumber("an");
+		notification.setSRActionable(true);
+		notification.setProductTag("pT");
+		notification.setElementName("elN");
+		notification.setEventName("evN");
 		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN, "trigger-name", 0.95, 60000);
 
 		alert.setNotifications(Arrays.asList(notification));

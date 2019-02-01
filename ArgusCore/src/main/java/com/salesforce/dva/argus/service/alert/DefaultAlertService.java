@@ -971,7 +971,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			AlertWithTimestamp obj;
 			try {
 				String serializedAlert = _mapper.writeValueAsString(alert);
-
+				
 				_logger.debug(MessageFormat.format("serializedAlert {0}", serializedAlert));
 
 				obj = new AlertWithTimestamp(serializedAlert, System.currentTimeMillis());

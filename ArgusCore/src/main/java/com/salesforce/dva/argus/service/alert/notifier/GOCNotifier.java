@@ -290,11 +290,11 @@ public class GOCNotifier extends AuditNotifier {
 		String elementName = notification.getElementName();
 		String eventName = notification.getEventName();
 
-		if (elementName == null) {
+		if (elementName == null || elementName.isEmpty()) {
 			elementName = context.getAlert().getName();
 		}
 
-		if (eventName == null) {
+		if (eventName == null || eventName.isEmpty()) {
 			eventName = trigger.getName();
 		}
 

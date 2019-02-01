@@ -46,22 +46,7 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.EntityManager;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.Lob;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.NoResultException;
-import javax.persistence.Query;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-import javax.persistence.Transient;
+import javax.persistence.*;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -73,6 +58,7 @@ import com.google.gson.JsonParser;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.salesforce.dva.argus.service.AlertService;
+import org.apache.log4j.Logger;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -110,10 +96,7 @@ public class Notification extends JPAEntity implements Serializable {
 			jgen.writeNumberField("severityLevel", notification.getSeverityLevel());
 
 			String customText = notification.getCustomText();
-			String articleNumber = notification.getArticleNumber();
-			String eventName = notification.getEventName();
-			String elementName = notification.getElementName();
-			String productTag = notification.getProductTag();
+			String notificationCustomData = notification.getNotificationCustomData();
 
 			jgen.writeArrayFieldStart("subscriptions");
 			for (String subscription : notification.getSubscriptions()) {
@@ -137,20 +120,8 @@ public class Notification extends JPAEntity implements Serializable {
 				jgen.writeStringField("customText", customText);
 			}
 
-			if (articleNumber != null) {
-				jgen.writeStringField("articleNumber", articleNumber);
-			}
-
-			if (eventName != null) {
-				jgen.writeStringField("eventName", eventName);
-			}
-
-			if (elementName != null) {
-				jgen.writeStringField("elementName", elementName);
-			}
-
-			if (productTag != null) {
-				jgen.writeStringField("productTag", productTag);
+			if(notificationCustomData != null) {
+				jgen.writeStringField("notificationCustomData", notificationCustomData);
 			}
 
 			// Getting these values requires a lot of queries to rdbms at runtime, and so these are excluded for now
@@ -194,12 +165,7 @@ public class Notification extends JPAEntity implements Serializable {
 			notification.setCooldownPeriod(cooldownPeriod);
 
 			boolean srActionable = rootNode.get("srActionable").asBoolean();
-
-			if (rootNode.get("articleNumber") != null) {
-				notification.setSRActionable(srActionable, rootNode.get("articleNumber").asText());
-			} else {
-				notification.setSRActionable(srActionable, null);
-			}
+			notification.setSRActionable(srActionable);
 
 
 			int severity = rootNode.get("severityLevel").asInt();
@@ -209,16 +175,8 @@ public class Notification extends JPAEntity implements Serializable {
 				notification.setCustomText(rootNode.get("customText").asText());
 			}
 
-			if (rootNode.get("eventName") != null) {
-				notification.setEventName(rootNode.get("eventName").asText());
-			}
-
-			if (rootNode.get("elementName") != null) {
-				notification.setElementName(rootNode.get("elementName").asText());
-			}
-
-			if (rootNode.get("productTag") != null) {
-				notification.setElementName(rootNode.get("productTag").asText());
+			if (rootNode.get("notificationCustomData") != null) {
+				notification.setNotificationCustomData(rootNode.get("notificationCustomData").asText());
 			}
 
 			List<String> subscriptions = new ArrayList<>();
@@ -313,14 +271,13 @@ public class Notification extends JPAEntity implements Serializable {
 	@Lob
 	private String customText;
 
-	private static String CUSTOM_TEXT_KEY = "__customText__";
+	@Lob
+	private String notificationCustomData;
+
 	private static String EVENT_NAME_KEY = "__eventName__";
 	private static String ELEMENT_NAME_KEY = "__elementName__";
 	private static String PRODUCT_TAG_KEY = "__productTag__";
 	private static String ARTICLE_NUMBER_KEY = "__articleNumber__";
-
-	@Transient
-	private JsonObject GOCFields;
 
 
 	@ElementCollection
@@ -329,6 +286,8 @@ public class Notification extends JPAEntity implements Serializable {
 	@ElementCollection
 	private Map<String, Boolean> activeStatusByTriggerAndMetric = new HashMap<>();
 
+	@Transient
+	private final Logger _logger = Logger.getLogger(Notification.class);
 	//~ Constructors *********************************************************************************************************************************
 
 	/**
@@ -680,15 +639,9 @@ public class Notification extends JPAEntity implements Serializable {
 	 *
 	 * @param isSRActionable True if  SR should monitor the notification
 	 */
-	public void setSRActionable(boolean isSRActionable, String articleNumber) {
+	public void setSRActionable(boolean isSRActionable) {
+		//TODO: If SRActionable is checked, article number should be present. We should report the users regarding badly configured alerts and add check.
 		this.isSRActionable = isSRActionable;
-		//TODO: If SRActionable is checked, article number should be present. We should report the users regarding badly configured alerts and then uncomment this.
-//		if (isSRActionable == true) {
-//			if (articleNumber == null || articleNumber.trim().isEmpty()) {
-//				throw new IllegalArgumentException("SR Actionable is set as true, without providing the Article Number.");
-//			}
-//		}
-		setArticleNumber(articleNumber);
 	}
 
 	/**
@@ -726,13 +679,7 @@ public class Notification extends JPAEntity implements Serializable {
 	 * @return the customText is optional
 	 */
 	public String getCustomText() {
-
-		//TODO: W-5519494 changes
-//		try {
-//			return getGOCField(CUSTOM_TEXT_KEY);
-//		} catch (Exception e) {
 			return this.customText;
-//		}
 	}
 
 	/**
@@ -742,8 +689,6 @@ public class Notification extends JPAEntity implements Serializable {
 	 */
 	public void setCustomText(String customText) {
 		this.customText = customText;
-		//TODO: W-5519494 changes
-		//setGOCField(CUSTOM_TEXT_KEY, customText);
 	}
 
 
@@ -786,43 +731,42 @@ public class Notification extends JPAEntity implements Serializable {
 		setGOCField(PRODUCT_TAG_KEY, productTag);
 	}
 
+	private String getNotificationCustomData() {
+		return notificationCustomData;
+	}
+
+	private void setNotificationCustomData(String notificationCustomData) {
+		this.notificationCustomData = notificationCustomData;
+	}
+
 	private JsonObject getJsonObject() {
-		if (GOCFields == null) {
-			GOCFields = new JsonObject();
-			if (this.customText != null) {
-				try {
-					GOCFields = new JsonParser().parse(this.customText).getAsJsonObject();
-				} catch (Exception e) {
-					GOCFields.addProperty(CUSTOM_TEXT_KEY, this.customText);
-				} finally {
-					if (!GOCFields.has(CUSTOM_TEXT_KEY)) {
-						GOCFields = new JsonObject();
-						GOCFields.addProperty(CUSTOM_TEXT_KEY, this.customText);
-					}
-					this.customText = GOCFields.toString();
-				}
-			}
+		JsonObject GOCFields = new JsonObject();
+		try {
+			GOCFields = new JsonParser().parse(this.notificationCustomData).getAsJsonObject();
+		} catch (Exception ex) {
+			_logger.error("Unable to parse notification object. Creating a new object. Exception: {}", ex);
+			GOCFields.addProperty(ARTICLE_NUMBER_KEY, "");
+			GOCFields.addProperty(EVENT_NAME_KEY, "");
+			GOCFields.addProperty(ELEMENT_NAME_KEY, "");
+			GOCFields.addProperty(PRODUCT_TAG_KEY, "");
 		}
 		return GOCFields;
 	}
 
 	private void setGOCField(final String fieldName, final String fieldValue) {
-		//TODO: W-5519494 changes
-//		GOCFields = getJsonObject();
-//		GOCFields.addProperty(fieldName, fieldValue);
-//		this.customText = GOCFields.toString();
+		JsonObject GOCFields = getJsonObject();
+		GOCFields.addProperty(fieldName, fieldValue);
+		this.notificationCustomData = GOCFields.toString();
 	}
 
 	private String getGOCField(final String fieldName) {
-		//TODO: W-5519494 changes
-//		GOCFields = getJsonObject();
-//		if (GOCFields != null && GOCFields.has(fieldName)) {
-//			return GOCFields.get(fieldName).isJsonNull() ? null : GOCFields.get(fieldName).getAsString();
-//		} else {
+		JsonObject GOCFields = getJsonObject();
+		if (GOCFields != null && GOCFields.has(fieldName)) {
+			return GOCFields.get(fieldName).isJsonNull() ? null : GOCFields.get(fieldName).getAsString();
+		} else {
 			return null;
-//		}
+		}
 	}
-
 
 	@Override
 	public int hashCode() {
@@ -856,7 +800,8 @@ public class Notification extends JPAEntity implements Serializable {
 	@Override
 	public String toString() {
 		return "Notification{" + "name=" + name + ", notifierName=" + notifierName + ", subscriptions=" + subscriptions + ", metricsToAnnotate=" +
-				metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" + triggers + ", severity=" + severityLevel + ", srActionable=" + isSRActionable + ", customText=" + customText + '}';
+				metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" + triggers + ", severity=" + severityLevel + ", srActionable=" + isSRActionable + ", customText=" + customText +
+				", eventName=" + getEventName() + ", elementName=" + getElementName() + ", productTag=" + getProductTag() + ", articleNumber=" + getArticleNumber() + '}';
 	}
 
 
