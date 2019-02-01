@@ -458,7 +458,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 
 			try {
-				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
+				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
+				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp).getMetricsList();
 				int initialMetricSize = metrics.size();
 
 				/* It works only for alerts with regex based expressions

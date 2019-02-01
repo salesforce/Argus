@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.ws.resources;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 import com.salesforce.dva.argus.service.schema.WildcardExpansionLimitExceededException;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.ws.annotation.Description;
@@ -169,22 +170,20 @@ public class MetricResources extends AbstractResource {
 		final MetricService metricService = system.getServiceFactory().getMetricService();
 		List<Metric> metrics = new ArrayList<Metric>();
 
-		for (String expression : expressions) {
 			try {
-				List<Metric> metricsForThisExpression = metricService.getMetrics(expression);
-				req.setAttribute("expandedTimeSeriesRange", metricService.getExpandedTimeSeriesRange());
-				req.setAttribute("timeWindow", metricService.getQueryTimeWindow());
-				metrics.addAll(metricsForThisExpression);
+				MetricQueryResult queryResult = metricService.getMetrics(expressions);
+				metrics = queryResult.getMetricsList();
+				req.setAttribute("expandedTimeSeriesRange", queryResult.getExpandedTimeSeriesRange());
+				req.setAttribute("timeWindow", queryResult.getQueryTimeWindow());
+				req.setAttribute("numTimeSeries", metrics.size());
+				req.setAttribute("numDiscoveryResults", queryResult.getNumDiscoveryResults());
+				req.setAttribute("numDiscoveryQueries", queryResult.getNumDiscoveryQueries());
 			} catch(IllegalArgumentException | WildcardExpansionLimitExceededException e) {
 				metricService.dispose();
 				throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);
 			}
-		}
 
 		metricService.dispose();
-		req.setAttribute("numTimeSeries", metrics.size());
-		req.setAttribute("numDiscoveryResults", metricService.getNumDiscoveryResults());
-		req.setAttribute("numDiscoveryQueries", metricService.getNumDiscoveryQueries());
 		return metrics;
 	}
 
