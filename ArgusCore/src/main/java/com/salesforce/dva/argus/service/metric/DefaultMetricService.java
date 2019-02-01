@@ -127,7 +127,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		SystemAssert.requireArgument(MetricReader.isValid(expressions), "Illegal metric expression found: " + expressions);
 
 		MetricReader<Metric> reader = _metricReaderProviderForMetrics.get();
-		List<Metric> metrics = new ArrayList<>(expressions.size());
+		List<Metric> metrics = new ArrayList<>();
 
 		try {
 			numDiscoveryResults = 0;

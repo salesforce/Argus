@@ -38,8 +38,6 @@ import static java.math.BigInteger.ZERO;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
 import java.util.Map.Entry;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,7 +48,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -58,6 +55,7 @@ import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 
+import com.salesforce.dva.argus.entity.*;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -69,13 +67,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.persist.Transactional;
-import com.salesforce.dva.argus.entity.Alert;
-import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.History.JobStatus;
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.entity.Notification;
-import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.AuditService;
@@ -440,16 +432,21 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		Set<Alert> alerts = new HashSet<>(alertsByNotificationId.values());
 
+		Map<String, String> tagHost = new HashMap<>();
+		Map<String, String> tagUser = new HashMap<>();
+		tagHost.put("host", HOSTNAME);
+		long jobStartTime, jobEndTime;
+		Long alertEnqueueTimestamp;
+
+		String logMessage;
+		History history;
+
 		for (Alert alert : alerts) {
 
-			long jobStartTime = System.currentTimeMillis();
-			long jobEndTime = 0;
-			Long alertEnqueueTimestamp = 0L;
+			jobStartTime = System.currentTimeMillis();
+			alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 
 			updateAlertStartEvaluationStats(alertEnqueueTimestampsByAlertId, alert, jobStartTime);
-
-			String logMessage = null;
-			History history = null;
 
 			history = new History(History.addDateToMessage(JobStatus.STARTED.getDescription()), HOSTNAME, alert.getId(), JobStatus.STARTED);
 			Set<Trigger> missingDataTriggers = new HashSet<Trigger>();
@@ -461,61 +458,71 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 
 			try {
-				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
 				int initialMetricSize = metrics.size();
-				if(Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))) {
-					metrics.removeIf(m -> shouldMetricBeRemovedForDataLag(alert, m, historyList));
 
-					if ((metrics.size() <= 0 && initialMetricSize > 0) || // Skip alert evaluation if all the expanded alert expression contains dc with data lag and initial size was non-zero.
-						(initialMetricSize == 0 && _monitorService.isDataLagging(null))) { // or, if the initial size is 0 and data lag is present in atleast one dc.
-						Map<String, String> tags = new HashMap<>();
-						tags.put(USERTAG, alert.getOwner().getUserName());
-						_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
-					}
-				}
+				/* It works only for alerts with regex based expressions
+				TODO: Fix for expressions that do not go through discovery service ( i.e, non regex based expressions )
+				*/
+				if (initialMetricSize == 0 && ((System.currentTimeMillis() - alert.getModifiedDate().getTime()) / (24 * 60 * 60 * 1000)) > MetricSchemaRecord.DEFAULT_RETENTION_DISCOVERY_DAYS && // if Last Modified time was > DEFAULT_RETENTION_DISCOVERY_DAYS
+						(_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns))) { // not disable whitelisted argus alerts.
+					_logger.info("Orphan Alert detected. Disabling it and notifying user. Alert Id: {}", alert.getId());
+					alert.setEnabled(false);
+					_sendOrphanAlertNotification(alert);
+				} else {
+					if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))) {
+						metrics.removeIf(m -> shouldMetricBeRemovedForDataLag(alert, m, historyList));
 
-				if(areDatapointsEmpty(metrics)) {
-					if (alert.isMissingDataNotificationEnabled()) {
-						_sendNotificationForMissingData(alert);
-						logMessage = MessageFormat.format("Metric data does not exist for alert expression: {0}. Sent notification for missing data.",
-								alert.getExpression());
-						_logger.debug(logMessage);
-						history.appendMessageNUpdateHistory(logMessage, null, 0);
-					} else {
-						logMessage = MessageFormat.format("Metric data does not exist for alert expression: {0}. Missing data notification was not enabled.",
-								alert.getExpression());
-						_logger.debug(logMessage);
-						history.appendMessageNUpdateHistory(logMessage, null, 0);
-					}
-
-					if(missingDataTriggers.size()>0) {
-						for(Notification notification : alert.getNotifications()) {
-							if (!notification.getTriggers().isEmpty()) {
-								_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
-							}
+						if ((metrics.size() <= 0 && initialMetricSize > 0) || // Skip alert evaluation if all the expanded alert expression contains dc with data lag and initial size was non-zero.
+								(initialMetricSize == 0 && _monitorService.isDataLagging(null))) { // or, if the initial size is 0 and data lag is present in atleast one dc.
+							Map<String, String> tags = new HashMap<>();
+							tags.put(USERTAG, alert.getOwner().getUserName());
+							_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
 						}
 					}
-				} else {
-					//Only evaluate those triggers which are associated with any notification. 
-					Set<Trigger> triggersToEvaluate = new HashSet<>();
-					for(Notification notification : alert.getNotifications()) {
-						triggersToEvaluate.addAll(notification.getTriggers());
-					}
 
-					Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = _evaluateTriggers(triggersToEvaluate, 
-							metrics, alert.getExpression(), alertEnqueueTimestamp);
-
-					for(Notification notification : alert.getNotifications()) {
-						if (notification.getTriggers().isEmpty()) {
-							logMessage = MessageFormat.format("The notification {0} has no triggers.", notification.getName());
-							_logger.info(logMessage);
+					if (areDatapointsEmpty(metrics)) {
+						if (alert.isMissingDataNotificationEnabled()) {
+							_sendNotificationForMissingData(alert);
+							logMessage = MessageFormat.format("Metric data does not exist for alert expression: {0}. Sent notification for missing data.",
+									alert.getExpression());
+							_logger.debug(logMessage);
 							history.appendMessageNUpdateHistory(logMessage, null, 0);
 						} else {
-							_processNotification(alert, history, metrics, triggerFiredTimesAndMetricsByTrigger, notification, alertEnqueueTimestamp);
-							if(missingDataTriggers.size()>0) {
-								// processing to possibly to clear missing data notification
-								_processMissingDataNotification(alert, history, missingDataTriggers, notification, false, alertEnqueueTimestamp);
+							logMessage = MessageFormat.format("Metric data does not exist for alert expression: {0}. Missing data notification was not enabled.",
+									alert.getExpression());
+							_logger.debug(logMessage);
+							history.appendMessageNUpdateHistory(logMessage, null, 0);
+						}
+
+						if (missingDataTriggers.size() > 0) {
+							for (Notification notification : alert.getNotifications()) {
+								if (!notification.getTriggers().isEmpty()) {
+									_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+								}
+							}
+						}
+					} else {
+						//Only evaluate those triggers which are associated with any notification.
+						Set<Trigger> triggersToEvaluate = new HashSet<>();
+						for (Notification notification : alert.getNotifications()) {
+							triggersToEvaluate.addAll(notification.getTriggers());
+						}
+
+						Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = _evaluateTriggers(triggersToEvaluate,
+								metrics, alert.getExpression(), alertEnqueueTimestamp);
+
+						for (Notification notification : alert.getNotifications()) {
+							if (notification.getTriggers().isEmpty()) {
+								logMessage = MessageFormat.format("The notification {0} has no triggers.", notification.getName());
+								_logger.info(logMessage);
+								history.appendMessageNUpdateHistory(logMessage, null, 0);
+							} else {
+								_processNotification(alert, history, metrics, triggerFiredTimesAndMetricsByTrigger, notification, alertEnqueueTimestamp);
+								if (missingDataTriggers.size() > 0) {
+									// processing to possibly to clear missing data notification
+									_processMissingDataNotification(alert, history, missingDataTriggers, notification, false, alertEnqueueTimestamp);
+								}
 							}
 						}
 					}
@@ -524,14 +531,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				jobEndTime = System.currentTimeMillis();
 				long evalLatency = jobEndTime - jobStartTime;
 				history.appendMessageNUpdateHistory("Alert was evaluated successfully.", JobStatus.SUCCESS, evalLatency);
-				Map<String, String> tags = new HashMap<>();
-				tags.put("host", HOSTNAME);
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0/*success*/, tags);
-				tags = new HashMap<>();
-				tags.put(USERTAG, alert.getOwner().getUserName());
-				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);
 
-				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0/*success*/, tagHost);
+
+				tagUser = new HashMap<>();
+				tagUser.put(USERTAG, alert.getOwner().getUserName());
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tagUser);
+
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tagUser);
+
 			} catch (MissingDataException mde) {
 				handleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, mde, true);
 			} catch (Exception ex) {
@@ -927,6 +935,23 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			to.clear();
 			to.add(alert.getOwner().getEmail());
 			_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
+		}
+	}
+
+	private void _sendOrphanAlertNotification(Alert alert) {
+		if(alert != null) {
+			String subject = MessageFormat.format("Argus alert {0} is mark disabled", alert.getId().intValue());
+			StringBuilder message = new StringBuilder();
+			message.append("<p>This is an alert disabling notification</p>");
+			message.append(MessageFormat.format("Alert Id: {0}", alert.getId().intValue()));
+			message.append(MessageFormat.format("<br> Alert name: {0}" , alert.getName()));
+			message.append(MessageFormat.format("<br> No data found for the following metric expression: {0} for last {1} days.", alert.getExpression(), MetricSchemaRecord.DEFAULT_RETENTION_DISCOVERY_DAYS));
+			message.append("<br> If you wish to re enable it, please modify the alert expression and then enable the alert.");
+			if (alert.getOwner() != null && alert.getOwner().getEmail() != null && !alert.getOwner().getEmail().isEmpty()) {
+				Set<String> to = new HashSet<>();
+				to.add(alert.getOwner().getEmail());
+				_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.NORMAL);
+			}
 		}
 	}
 
