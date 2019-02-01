@@ -97,7 +97,12 @@ public class CounterMetricJMXExporter implements GaugeExporter {
 					mbeanServer.registerMBean(gauge, new ObjectName(objectName));
 				} catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException
 						| MalformedObjectNameException e) {
-					_logger.error("exportGauge()({}): failed to register internal counter {} to JMX {}", this.hashCode(), objectName, e);
+					if (e.getClass() == InstanceAlreadyExistsException.class) {
+						_logger.debug("exportGauge()({}): failed to register internal counter {} to JMX {}", this.hashCode(), objectName, e);
+					} else {
+						_logger.error("exportGauge()({}): failed to register internal counter {} to JMX {}", this.hashCode(), objectName, e);
+
+					}
 				}
 			} else {
 				_exportedMetrics.get(objectName).setValue(value);
