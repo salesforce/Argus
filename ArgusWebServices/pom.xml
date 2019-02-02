@@ -3,7 +3,7 @@
     <parent>
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
-        <version>3.4.0</version>
+        <version>3.4.1</version>
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-webservices</artifactId>
