@@ -479,6 +479,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 							Map<String, String> tags = new HashMap<>();
 							tags.put(USERTAG, alert.getOwner().getUserName());
 							_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
+							continue;
 						}
 					}
 
