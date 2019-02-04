@@ -39,6 +39,7 @@ import com.salesforce.dva.argus.service.schema.WildcardExpansionLimitExceededExc
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.MetricDto;
+import com.salesforce.dva.argus.ws.filter.PerfFilter;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -173,11 +174,13 @@ public class MetricResources extends AbstractResource {
 			try {
 				MetricQueryResult queryResult = metricService.getMetrics(expressions);
 				metrics = queryResult.getMetricsList();
-				req.setAttribute("expandedTimeSeriesRange", queryResult.getExpandedTimeSeriesRange());
-				req.setAttribute("timeWindow", queryResult.getQueryTimeWindow());
-				req.setAttribute("numTimeSeries", metrics.size());
-				req.setAttribute("numDiscoveryResults", queryResult.getNumDiscoveryResults());
-				req.setAttribute("numDiscoveryQueries", queryResult.getNumDiscoveryQueries());
+				req.setAttribute(PerfFilter.TAGS_EXPANDED_TIME_SERIES_RANGE_KEY, queryResult.getExpandedTimeSeriesRange());
+				req.setAttribute(PerfFilter.TAGS_TIME_WINDOW_KEY, queryResult.getQueryTimeWindow());
+				req.setAttribute(PerfFilter.TAGS_START_TIME_WINDOW_KEY, queryResult.getQueryStartTimeWindow());
+				req.setAttribute(PerfFilter.DATA_READ_NUM_TIME_SERIES, metrics.size());
+				req.setAttribute(PerfFilter.DATA_READ_NUM_DISCOVERY_RESULTS, queryResult.getNumDiscoveryResults());
+				req.setAttribute(PerfFilter.DATA_READ_NUM_DISCOVERY_QUERIES, queryResult.getNumDiscoveryQueries());
+
 			} catch(IllegalArgumentException | WildcardExpansionLimitExceededException e) {
 				metricService.dispose();
 				throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);

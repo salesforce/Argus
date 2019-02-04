@@ -8,6 +8,7 @@ import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.TSDBService.QueryStartTimeWindow;
 import com.salesforce.dva.argus.service.TSDBService.QueryTimeSeriesExpansion;
 import com.salesforce.dva.argus.service.TSDBService.QueryTimeWindow;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
@@ -60,6 +61,7 @@ public class MetricQueryProcessor {
 		}
 		queryResult.setExpandedTimeSeriesRange(QueryTimeSeriesExpansion.getExpandedTimeSeriesRange(queryResult.getNumTSDBResults()));
 		queryResult.setQueryTimeWindow(QueryTimeWindow.getWindow(queryResult.getQueryTimeRangeInMillis()));
+		queryResult.setQueryStartTimeWindow(QueryStartTimeWindow.getWindow(relativeTo - queryResult.getQueryStartTimeMillis()));
 		return queryResult;
 	}
 
@@ -70,6 +72,9 @@ public class MetricQueryProcessor {
 		parentResult.setNumDiscoveryResults(parentResult.getNumDiscoveryResults() + childResult.getNumDiscoveryResults());
 		if(childResult.getQueryTimeRangeInMillis() > parentResult.getQueryTimeRangeInMillis()) {
 			parentResult.setQueryTimeRangeInMillis(childResult.getQueryTimeRangeInMillis());
+		}
+		if(childResult.getQueryStartTimeMillis() < parentResult.getQueryStartTimeMillis()) {
+			parentResult.setQueryStartTimeMillis(childResult.getQueryStartTimeMillis());
 		}
 	}
 
