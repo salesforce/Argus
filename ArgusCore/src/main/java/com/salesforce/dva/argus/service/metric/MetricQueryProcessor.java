@@ -95,6 +95,9 @@ public class MetricQueryProcessor {
 		query.setAggregator(aggregator);
 		query.setDownsampler(downsampler);
 		query.setDownsamplingPeriod(downsamplingPeriod);
+		query.setPercentile(expression.getPercentile());	        
+		query.setShowHistogramBuckets(expression.isShowHistogramBuckets());
+
 		List<MetricQuery> queries = _discoveryService.getMatchingQueries(query);
 
 		List<Metric> metrics = new ArrayList<Metric>();
@@ -105,8 +108,8 @@ public class MetricQueryProcessor {
 		queryResult.setMetricsList(metrics);
 		queryResult.setQueryTimeRangeInMillis(endTimestamp-startTimestamp);
 		if(queries.size() !=1 || queries.get(0) != query) {
-		    queryResult.setNumDiscoveryResults(queries.size());
-		    queryResult.setNumDiscoveryQueries(1);
+			queryResult.setNumDiscoveryResults(queries.size());
+			queryResult.setNumDiscoveryQueries(1);
 		}
 		queryResult.setNumTSDBResults(metrics.size());
 		return queryResult;
