@@ -343,7 +343,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
             }
         }
         
-        if(minDiff<PolicyCounter.MINIMUM_RESOLUTION_MS.getDefaultValue()) {
+        if(minDiff!=null && minDiff<PolicyCounter.MINIMUM_RESOLUTION_MS.getDefaultValue()) {
         	    _logger.error("Minimum resolution policy has been violated for the metric " + minResolutionMetric.toString());
         }
         return new MetricData(dataPointsSize, minDiff);
