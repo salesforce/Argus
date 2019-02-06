@@ -80,10 +80,12 @@ import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.NotifierFactory;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
+import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.Cron;
+import com.salesforce.dva.argus.util.MonitoringUtils;
 
 /**
  * Default implementation of the alert service.
@@ -458,7 +460,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 
 			try {
-				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
+				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
+				MetricQueryResult queryResult = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
+				MonitoringUtils.updateAlertMetricQueryPerfCounters(_monitorService, queryResult, alert.getOwner().getUserName());
+				List<Metric> metrics = queryResult.getMetricsList();
 				int initialMetricSize = metrics.size();
 
 				/* It works only for alerts with regex based expressions

@@ -319,6 +319,8 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
                 metricCategoryMap.put(metricCategory, new ArrayList<Long>(metric.getDatapoints().keySet()));
             }
         }
+        
+        Metric minResolutionMetric = null;
         for (Entry<Metric, List<Long>> entry : metricCategoryMap.entrySet()) {
             Long minDiffInMetricCategory = null;
             List<Long> dataPointsTimeStampList = entry.getValue();
@@ -331,9 +333,18 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
                 }
                 if (minDiff == null) {
                     minDiff = minDiffInMetricCategory;
+                    minResolutionMetric = entry.getKey();
+                }else {
+                	   if(minDiff>minDiffInMetricCategory) {
+                		   minResolutionMetric = entry.getKey();
+                		   minDiff = minDiffInMetricCategory;
+                	   }
                 }
-                minDiff = Math.min(minDiffInMetricCategory, minDiff);
             }
+        }
+        
+        if(minDiff!=null && minDiff<PolicyCounter.MINIMUM_RESOLUTION_MS.getDefaultValue()) {
+        	    _logger.error("Minimum resolution policy has been violated for the metric " + minResolutionMetric.toString());
         }
         return new MetricData(dataPointsSize, minDiff);
     }

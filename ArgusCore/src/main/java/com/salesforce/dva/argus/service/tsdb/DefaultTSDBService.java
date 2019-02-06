@@ -58,6 +58,7 @@ import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
@@ -147,12 +148,14 @@ public class DefaultTSDBService extends AbstractTSDBService{
                     for (Metric metric : m) {
                         if (metric != null) {
                             metric.setQuery(entry.getKey());
-                            Set<String> tagKeys = metric.getTags().keySet();
-                            for(String tagKey : tagKeys) {
-                            	    // removing tags that the user has not requested
-                            	    if(!tagsInQuery.contains(tagKey)) {
-                            	        metric.removeTag(tagKey);
-                            	    }
+                            if(metric.getQuery().getAggregator() != Aggregator.NONE){
+                                Set<String> tagKeys = metric.getTags().keySet();
+                                for(String tagKey : tagKeys) {
+                                    // removing tags that the user has not requested
+                                    if(!tagsInQuery.contains(tagKey)) {
+                                        metric.removeTag(tagKey);
+                                    }
+                                }
                             }
                             metrics.add(metric);
                         }

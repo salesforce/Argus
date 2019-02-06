@@ -119,7 +119,7 @@ public class DataLagMonitor extends Thread{
 					_completionService.submit(() -> {
 						List<Metric> metrics = new ArrayList<>();
 						try {
-							metrics = _metricService.getMetrics(_expressionPerDC.get(dc), currTime);
+							metrics = _metricService.getMetrics(_expressionPerDC.get(dc), currTime).getMetricsList();
 						} catch (Exception e) {
 							metrics.clear();
 							_logger.error("Metric Service failed to get metric for expression: " + _expressionPerDC.get(dc) + " while being queried by DataLagMonitor, for DC: " + dc);

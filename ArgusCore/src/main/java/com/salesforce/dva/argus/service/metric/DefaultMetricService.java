@@ -38,6 +38,8 @@ import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
+import com.salesforce.dva.argus.service.TSDBService.QueryTimeSeriesExpansion;
+import com.salesforce.dva.argus.service.TSDBService.QueryTimeWindow;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
@@ -74,10 +76,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 	private final Provider<MetricReader<Metric>> _metricReaderProviderForMetrics;
 	private final Provider<MetricReader<MetricQuery>> _metricReaderProviderForQueries;
 	private final SystemConfiguration _configuration;
-	private String expandedTimeSeriesRange;
-	private String queryTimeWindow;
-	private Integer numDiscoveryResults = 0;
-	private Integer numDiscoveryQueries = 0;
+	private MetricQueryProcessor _queryProcessor;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -85,12 +84,13 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 	 * Creates a new DefaultMetricService object.
 	 *
 	 * @param  monitorService   The monitor service instance to use. Cannot be null.
+	 * @param  queryProcessor   The metric query processor used to evaluate queries
 	 * @param  metricsprovider  The metric reader provider used to perform metric operations.  Cannot be null.
 	 * @param  queryprovider    The metric reader provider used to construct metric queries without fetching data. Cannot be null.
 	 * @param  config           The system configuration.  Cannot be null.
 	 */
 	@Inject
-	public DefaultMetricService(MonitorService monitorService, Provider<MetricReader<Metric>> metricsprovider,
+	public DefaultMetricService(MonitorService monitorService, MetricQueryProcessor queryProcessor, Provider<MetricReader<Metric>> metricsprovider,
 			Provider<MetricReader<MetricQuery>> queryprovider, SystemConfiguration config) {
 		super(config);
 		requireArgument(monitorService != null, "Monitor service cannot be null.");
@@ -98,54 +98,50 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		_metricReaderProviderForMetrics = metricsprovider;
 		_metricReaderProviderForQueries = queryprovider;
 		_configuration = config;
-
+		_queryProcessor = queryProcessor;
 	}
 
 	//~ Methods **************************************************************************************************************************************
 
 	@Override
-	public List<Metric> getMetrics(String expression) {
+	public MetricQueryResult getMetrics(String expression) {
 		requireNotDisposed();
 		return getMetrics(expression, System.currentTimeMillis());
 	}
 
 	@Override
-	public List<Metric> getMetrics(String expression, long relativeTo) {
+	public MetricQueryResult getMetrics(String expression, long relativeTo) {
 		requireNotDisposed();
 		return getMetrics(Arrays.asList(new String[] { expression }), relativeTo);
 	}
 
 	@Override
-	public List<Metric> getMetrics(List<String> expressions) {
+	public MetricQueryResult getMetrics(List<String> expressions) {
 		requireNotDisposed();
 		return getMetrics(expressions, System.currentTimeMillis());
 	}
 
 	@Override
-	public List<Metric> getMetrics(List<String> expressions, long relativeTo) {
+	public MetricQueryResult getMetrics(List<String> expressions, long relativeTo) {
 		requireNotDisposed();
 		SystemAssert.requireArgument(MetricReader.isValid(expressions), "Illegal metric expression found: " + expressions);
 
 		MetricReader<Metric> reader = _metricReaderProviderForMetrics.get();
-		List<Metric> metrics = new ArrayList<>();
-
+		MetricQueryResult queryResult = new MetricQueryResult();
 		try {
-			numDiscoveryResults = 0;
-			numDiscoveryQueries = 0;
 			for (String expression : expressions) {
 				_logger.debug("Reading metric for expression {}", expression);
-				metrics.addAll(reader.parse(expression, relativeTo, Metric.class, new QueryContextHolder(), false));
-				expandedTimeSeriesRange = reader.getExpandedTimeSeriesRange();
-				queryTimeWindow = reader.getQueryTimeWindow();
-				numDiscoveryResults += reader.getNumDiscoveryResults();
-				numDiscoveryQueries += reader.getNumDiscoveryQueries();
+				QueryContextHolder currCtxHolder = new QueryContextHolder();
+				reader.parse(expression, relativeTo, Metric.class, currCtxHolder, true);
+				_queryProcessor.mergeQueryResults(queryResult, _queryProcessor.evaluateQuery(currCtxHolder.getCurrentQueryContext(), relativeTo));
 			}
 		} catch (ParseException ex) {
 			throw new SystemException("Failed to parse the given expression", ex);
 		}
-		_monitorService.modifyCounter(Counter.DATAPOINT_READS, _getDatapointsAcrossMetrics(metrics), null);
-
-		return metrics;
+		_monitorService.modifyCounter(Counter.DATAPOINT_READS, _getDatapointsAcrossMetrics(queryResult.getMetricsList()), null);
+		queryResult.setExpandedTimeSeriesRange(QueryTimeSeriesExpansion.getExpandedTimeSeriesRange(queryResult.getNumTSDBResults()));
+		queryResult.setQueryTimeWindow(QueryTimeWindow.getWindow(queryResult.getQueryTimeRangeInMillis()));
+		return queryResult;
 	}
 
 	@Override
@@ -188,38 +184,6 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			throw new SystemException("Failed to parse the given expression", ex);
 		}
 		return queries;
-	}
-
-	@Override
-	public String getExpandedTimeSeriesRange()
-	{
-		{
-			return expandedTimeSeriesRange;
-		}
-	}
-	
-	@Override
-	public String getQueryTimeWindow()
-	{
-		{
-			return queryTimeWindow;
-		}
-	}
-	
-	@Override
-	public Integer getNumDiscoveryResults()
-	{
-		{
-			return numDiscoveryResults;
-		}
-	}
-	
-	@Override
-	public Integer getNumDiscoveryQueries()
-	{
-		{
-			return numDiscoveryQueries;
-		}
 	}
 	
 	@Override

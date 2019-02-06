@@ -529,7 +529,7 @@ public class DefaultWardenService extends DefaultJPAService implements WardenSer
                 try {
                     _logger.info("Disabling warden alert:{}", alert.getName());
 
-                    List<Metric> metrics = _metricService.getMetrics(alert.getExpression());
+                    List<Metric> metrics = _metricService.getMetrics(alert.getExpression()).getMetricsList();
                     Metric metric = metrics.isEmpty() ? null : metrics.get(0);
 
                     if (metric == null || metric.getDatapoints().isEmpty()) {

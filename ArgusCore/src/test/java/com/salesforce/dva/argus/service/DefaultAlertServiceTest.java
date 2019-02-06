@@ -20,6 +20,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.Persistence;
 
 import com.salesforce.dva.argus.service.alert.notifier.RefocusNotifier;
+import com.salesforce.dva.argus.service.metric.MetricQueryResult;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -747,7 +749,9 @@ public class DefaultAlertServiceTest extends AbstractTest {
 			fail("Failed to deserialize Alert");
 		}
 
-		when(_metricServiceMock.getMetrics(anyString(), anyLong())).thenReturn(metrics);
+		MetricQueryResult queryResult = new MetricQueryResult();
+		queryResult.setMetricsList(metrics);
+		when(_metricServiceMock.getMetrics(anyString(), anyLong())).thenReturn(queryResult);
 		
 		doAnswer(new Answer<Notification>() {
 

@@ -31,7 +31,7 @@
 	 
 package com.salesforce.dva.argus.service;
 
-import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 
 import java.util.List;
@@ -51,10 +51,9 @@ public interface MetricService extends Service {
      *
      * @param   expressions  	A list of query expressions
      *
-     * @return  A list of time series Metrics for the given expressions. A transformed Metric if specified so by the expression. The method will never
-     *          return null. Returns an empty list if all expressions return nothing.
+     * @return  MetricQueryResult object which contains details of the returned metrics for the expression as well as other details computed during query execution 
      */
-    List<Metric> getMetrics(List<String> expressions);
+	MetricQueryResult getMetrics(List<String> expressions);
 
     /**
      * Evaluates the given expressions and returns a list of time series Metrics.
@@ -65,10 +64,9 @@ public interface MetricService extends Service {
      * 							For e.g. If the expression is -1h:argus.jvm:mem.heap.used:avg, 1 hour should be subtracted from
      * 							relativeTo
      *
-     * @return  A list of time series Metrics for the given expressions. A transformed Metric if specified so by the expression. The method will never
-     *          return null. Returns an empty list if all expressions return nothing.
+     * @return  MetricQueryResult object which contains details of the returned metrics for the expression as well as other details computed during query execution 
      */
-    List<Metric> getMetrics(List<String> expressions, long relativeTo);
+	MetricQueryResult getMetrics(List<String> expressions, long relativeTo);
 
     /**
      * Evaluates the given expression to construct MetricQuery object and returns the time series for the corresponding expression. The query
@@ -81,10 +79,9 @@ public interface MetricService extends Service {
      *                      	identity(1414799283000:00D300000062.na1:app_record.count{recordType=A, source=splunk}:avg:15m-avg) E.g.
      *                      	identity(-15h:-10h:00D300000062.na1:app_record.count{recordType=A, source=splunk}:avg)
      *
-     * @return  A time series for the given expression. A transformed time series if specified so by the expression. Null if no such time series
-     *          found.
+     * @return  MetricQueryResult object which contains details of the returned metrics for the expression as well as other details computed during query execution 
      */
-    List<Metric> getMetrics(String expression);
+	MetricQueryResult getMetrics(String expression);
 
     /**
      * Evaluates the given expression and returns a list of time series Metrics.
@@ -95,10 +92,9 @@ public interface MetricService extends Service {
      * 							For e.g. If the expression is -1h:argus.jvm:mem.heap.used:avg, 1 hour should be subtracted from
      * 							relativeTo
      *
-     * @return  A list of time series Metrics for the given expressions. A transformed Metric if specified so by the expression. The method will never
-     *          return null. Returns an empty list if all expressions return nothing.
+     * @return  MetricQueryResult object which contains details of the returned metrics for the expression as well as other details computed during query execution 
      */
-    List<Metric> getMetrics(String expression, long relativeTo);
+	MetricQueryResult getMetrics(String expression, long relativeTo);
 
     /**
      * Batch and enqueue the given expressions and return the batch ID.
@@ -159,38 +155,6 @@ public interface MetricService extends Service {
      */
     List<MetricQuery> getQueries(List<String> expression, long relativeTo);
     
-    /**
-     * Returns the range of time series that current query has expanded to.
-     *
-     *
-     * @return  The range of time series that current query has expanded to.
-     */    
-    String getExpandedTimeSeriesRange();
-    
-    /**
-     * Returns the query time window of current query
-     *
-     *
-     * @return  The query time window corresponding to current query.
-     */    
-    String getQueryTimeWindow();
-    
-    /**
-     * Returns the number of discovery results that current query has expanded to.
-     *
-     *
-     * @return  The number of discovery results that current query has expanded to.
-     */    
-    Integer getNumDiscoveryResults();
-    
-    /**
-     * Returns the number of discovery  queries that has been made to the discovery service.
-     *
-     *
-     * @return  The number of discovery  queries that has been made to the discovery service.
-     */    
-    Integer getNumDiscoveryQueries();
-
     /**
      * Returns List of DCs from the expression.
      * @param   expression  	The list of metric expressions to evaluate.  Cannot be null, but may be empty.  All entries must be a valid metric expression.

@@ -72,11 +72,11 @@ public class MetricServiceIT extends AbstractTest {
             tsdbService.putMetrics(Arrays.asList(new Metric[] { m }));
             Thread.sleep(5 * 1000);
 
-            List<Metric> metrics = metricService.getMetrics("-10000s" + MessageFormat.format(":{0}:{1}:avg", m.getScope(), m.getMetric()), currentTime);
+            List<Metric> metrics = metricService.getMetrics("-10000s" + MessageFormat.format(":{0}:{1}:avg", m.getScope(), m.getMetric()), currentTime).getMetricsList();
             assertTrue(metrics.size() == 0 || metrics.get(0).getDatapoints().size() == 0);
             
             metrics = metricService.getMetrics("-10000s" + MessageFormat.format(":{0}:{1}:avg", m.getScope(), m.getMetric()),
-                (currentTime - 10000000));
+                (currentTime - 10000000)).getMetricsList();
             assertTrue(_datapointsBetween(metrics.get(0).getDatapoints(), currentTime - 20000000, System.currentTimeMillis() - 10000000));
         } finally {
             metricService.dispose();

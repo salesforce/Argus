@@ -188,7 +188,7 @@ public class AlertUtilsTest extends AbstractTest {
 		CachedDiscoveryService service = new CachedDiscoveryService(cacheServiceMock, discoveryServiceMock, system.getConfiguration());
 		Provider<MetricReader<MetricQuery>> queryprovider = () -> new MetricReader<>(system.getServiceFactory().getTSDBService(), service,null);
 
-		DefaultMetricService _mServiceMock = new DefaultMetricService(system.getServiceFactory().getMonitorService(),null, queryprovider, system.getConfiguration());
+		DefaultMetricService _mServiceMock = new DefaultMetricService(system.getServiceFactory().getMonitorService(),null, null,queryprovider, system.getConfiguration());
 
 		for(Map.Entry<String, List<String>> currentSuite: testSuite.entrySet()) {
 			List<String> actualOutput = _mServiceMock.getDCFromExpression(currentSuite.getKey());
