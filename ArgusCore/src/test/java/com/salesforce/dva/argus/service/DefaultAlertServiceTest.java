@@ -740,6 +740,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 			when(_mqServiceMock.dequeue(eq(MQQueue.ALERT.getQueueName()), eq(AlertWithTimestamp.class), anyInt(), anyInt())).
 			thenReturn(Arrays.asList(alertWithTimestamp));
 		} catch (JsonProcessingException e) {
+			e.printStackTrace();
 			fail("Failed to serialize Alert");
 		}
 		

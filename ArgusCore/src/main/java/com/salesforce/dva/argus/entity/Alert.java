@@ -1241,6 +1241,9 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			jgen.writeBooleanField("enabled", alert.isEnabled());
 			jgen.writeBooleanField("missingDataNotificationEnabled", alert.isMissingDataNotificationEnabled());
 			jgen.writeObjectField("owner", alert.getOwner());
+			if(alert.getModifiedDate() != null) {
+				jgen.writeObjectField("modifiedDate", alert.getModifiedDate().toString());
+			}
 
 			jgen.writeArrayFieldStart("triggers");
 			for(Trigger trigger : alert.getTriggers()) {
@@ -1285,6 +1288,11 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 
 			String cronEntry = rootNode.get("cronEntry").asText();
 			alert.setCronEntry(cronEntry);
+
+			if(rootNode.get("modifiedDate") != null) {
+				Date modifiedDate = new Date(rootNode.get("modifiedDate").asText());
+				alert.setModifiedDate(modifiedDate);
+			}
 
 
 			boolean missingDataNotificationEnabled = rootNode.get("missingDataNotificationEnabled").asBoolean();
