@@ -352,6 +352,12 @@ public class MetricQuery extends AnnotationQuery {
 		SUM("sum"),
 		AVG("avg"),
 		DEV("dev"),
+		
+		// these 3 aggregators is IMIN, IMAX and ISUM are also used for providing the default opentsdb interpolated aggregations
+		IMIN("min"),
+		IMAX("max"),
+		ISUM("sum"),
+		
 		ZIMSUM("zimsum"),
 		COUNT("count"),
 		MIMMIN("mimmin"),

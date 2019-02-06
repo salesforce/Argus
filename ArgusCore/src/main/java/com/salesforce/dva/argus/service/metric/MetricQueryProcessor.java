@@ -85,18 +85,22 @@ public class MetricQueryProcessor {
 		String namespace = expression.getNamespace();
 		String scope = expression.getScope();
 		String metric = expression.getMetric();
-		Map<String, String> tags = expression.getTags();
 		Aggregator aggregator = expression.getAggregator();
+		Map<String, String> tags = expression.getTags();
 		Aggregator downsampler = expression.getDownsampler();
 		Long downsamplingPeriod = expression.getDownsamplingPeriod();
 
 		MetricQuery query = new MetricQuery(scope, metric, tags, startTimestamp, endTimestamp);
 		query.setNamespace(namespace);
-		query.setAggregator(aggregator);
 		query.setDownsampler(downsampler);
 		query.setDownsamplingPeriod(downsamplingPeriod);
-		query.setPercentile(expression.getPercentile());	        
+		query.setPercentile(expression.getPercentile());
 		query.setShowHistogramBuckets(expression.isShowHistogramBuckets());
+		if(!query.getShowHistogramBuckets() && query.getPercentile()==null) {
+			query.setAggregator(getSubstituteAggregator(aggregator));
+		}else {
+			query.setAggregator(aggregator);
+		}
 
 		List<MetricQuery> queries = _discoveryService.getMatchingQueries(query);
 
@@ -113,6 +117,28 @@ public class MetricQueryProcessor {
 		}
 		queryResult.setNumTSDBResults(metrics.size());
 		return queryResult;
+	}
+
+	/*
+	 * We replace the aggregator to provide a non-interpolated default behavior for MIN, MAX and SUM
+	 */
+	private Aggregator getSubstituteAggregator(Aggregator aggregator) {
+		switch (aggregator) {
+		case MIN:
+			return Aggregator.MIMMIN;
+		case MAX: 
+			return Aggregator.MIMMAX;
+		case SUM:
+			return Aggregator.ZIMSUM;
+		case IMIN:
+			return Aggregator.MIN;
+		case IMAX:
+			return Aggregator.MAX;
+		case ISUM:
+			return Aggregator.SUM;
+		default:
+			return aggregator;
+		}
 	}
 
 	private List<Metric> evaluateTransform(Function function, List<Metric> result, List<String> constants, long relativeTo, boolean constantsOnly, QueryContext currentQueryContext)  {
