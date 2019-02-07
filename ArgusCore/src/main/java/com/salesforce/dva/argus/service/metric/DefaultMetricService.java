@@ -38,6 +38,7 @@ import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
+import com.salesforce.dva.argus.service.TSDBService.QueryStartTimeWindow;
 import com.salesforce.dva.argus.service.TSDBService.QueryTimeSeriesExpansion;
 import com.salesforce.dva.argus.service.TSDBService.QueryTimeWindow;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
@@ -140,6 +141,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		}
 		_monitorService.modifyCounter(Counter.DATAPOINT_READS, _getDatapointsAcrossMetrics(queryResult.getMetricsList()), null);
 		queryResult.setExpandedTimeSeriesRange(QueryTimeSeriesExpansion.getExpandedTimeSeriesRange(queryResult.getNumTSDBResults()));
+		queryResult.setQueryStartTimeWindow(QueryStartTimeWindow.getWindow(relativeTo - queryResult.getQueryStartTimeMillis()));
 		queryResult.setQueryTimeWindow(QueryTimeWindow.getWindow(queryResult.getQueryTimeRangeInMillis()));
 		return queryResult;
 	}

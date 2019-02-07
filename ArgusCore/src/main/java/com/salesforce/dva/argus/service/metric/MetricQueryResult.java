@@ -13,13 +13,13 @@ public class MetricQueryResult {
 	private List<Metric> metrics = new ArrayList<Metric>();
 	
 	// Returns the number of time series that current query has expanded to.
-	private String expandedTimeSeriesRange;
+	private String expandedTimeSeriesRange = "unknown";
 	
 	// Returns the time window of current query based on total query time range
-	private String queryTimeWindow;
+	private String queryTimeWindow =  "unknown";
 	
 	// Returns the time window of the current query based on the start time of the query
-	private String queryStartTimeWindow;
+	private String queryStartTimeWindow = "unknown";
 	
 	private Integer numDiscoveryResults = 0;
 	
