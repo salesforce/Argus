@@ -1,4 +1,4 @@
-package com.salesforce.dva.argus.service;
+package com.salesforce.dva.argus.service.alert;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -19,9 +19,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.persistence.EntityManager;
 import javax.persistence.Persistence;
 
+import com.salesforce.dva.argus.service.*;
 import com.salesforce.dva.argus.service.alert.notifier.RefocusNotifier;
 import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,7 +44,6 @@ import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.MQService.MQQueue;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
 import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
 
@@ -63,6 +64,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 	@Mock private ObjectMapper _mapper;
 
 	private DefaultAlertService alertService;
+	private EntityManager em;
 	
 	@Before
 	public void setup() {
@@ -77,6 +79,14 @@ public class DefaultAlertServiceTest extends AbstractTest {
 			fail("Failed to set mocked ObjectMapper using reflection.");
 		}
 	}
+
+	@After
+	public void teardown() {
+		// forcing the gc to clean up. Otherwise the EM created gets injected by guice in ut's that run afterwards. So weird
+		em = null;
+		System.gc();
+	}
+
 	
 	@Test
 	public void testExecuteScheduledAlerts_ForOneTimeSeries() {
@@ -723,7 +733,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 	private DefaultAlertService _initializeSpyAlertServiceWithStubs(final AtomicInteger notificationCount, final AtomicInteger clearCount,
 			List<Metric> metrics, Alert alert, Notification notification) {
 		DefaultAlertService spyAlertService = spy(alertService);
-		EntityManager em = Persistence.createEntityManagerFactory("argus-pu").createEntityManager();
+		em = Persistence.createEntityManagerFactory("argus-pu").createEntityManager();
 		when(_emProviderMock.get()).thenReturn(em);
 
 		Long enqueueTime = System.currentTimeMillis();
