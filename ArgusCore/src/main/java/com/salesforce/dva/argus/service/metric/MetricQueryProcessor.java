@@ -111,6 +111,7 @@ public class MetricQueryProcessor {
 		}
 		queryResult.setMetricsList(metrics);
 		queryResult.setQueryTimeRangeInMillis(endTimestamp-startTimestamp);
+		queryResult.setQueryStartTimeMillis(startTimestamp);
 		if(queries.size() !=1 || queries.get(0) != query) {
 			queryResult.setNumDiscoveryResults(queries.size());
 			queryResult.setNumDiscoveryQueries(1);
