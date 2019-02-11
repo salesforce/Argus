@@ -31,10 +31,10 @@
 
 package com.salesforce.dva.argus.service;
 
-import java.util.Map;
-
 import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.Metric;
+
+import java.util.Map;
 
 /**
  * Provides methods to update and record system counters to be used in monitoring and alerting. All counters are reset after their values have been
@@ -243,10 +243,8 @@ public interface MonitorService extends Service {
         METATAGS_WRITTEN("argus.core", "metatags.written"),
         METATAGS_WRITE_LATENCY("argus.core", "metatags.write.latency"),
 
-        BLOOMFILTER_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.approximate.element.count"),
-        BLOOMFILTER_SCOPE_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.only.approximate.element.count"),
-        BLOOMFILTER_SCOPE_AND_METRIC_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.and.metric.only.approximate.element.count"),
-        BLOOMFILTER_METATAGS_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.metatags.approximate.element.count"),
+        BLOOM_CREATED_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.created.approximate.element.count"),
+        BLOOM_MODIFIED_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.modified.approximate.element.count"),
 
         DATALAG_PER_DC_TIME_LAG("argus.core", "datalag.seconds");
 

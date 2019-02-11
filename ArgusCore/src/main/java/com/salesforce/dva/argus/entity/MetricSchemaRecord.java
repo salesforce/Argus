@@ -44,7 +44,7 @@ import java.text.MessageFormat;
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
-public class MetricSchemaRecord {
+public class MetricSchemaRecord extends AbstractSchemaRecord {
     public static final String RETENTION_DISCOVERY = "_retention_discovery_";
     public static final String EXPIRATION_TS = "ets";   //expiration timestamp
 
@@ -366,5 +366,9 @@ public class MetricSchemaRecord {
         }
     }
 
+    @Override
+    public String toBloomFilterKey() {
+        return constructKey(scope, metric, tagKey, tagValue, namespace, retentionDiscovery == null ? null  :retentionDiscovery.toString());
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
