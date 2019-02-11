@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.mq.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.salesforce.dva.argus.service.mq.kafka.KafkaMessageService.Property;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
@@ -85,6 +86,14 @@ public class Producer {
         _producer = _createProducer();
         _executorService = _createExecutorService();
         _mapper = new ObjectMapper();
+    }
+
+    @VisibleForTesting
+    protected Producer(SystemConfiguration config, KafkaProducer<String, String> producer, ExecutorService executorService, ObjectMapper mapper) {
+        _configuration = config;
+        _producer = producer;
+        _executorService = executorService;
+        _mapper = mapper;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -144,7 +153,7 @@ public class Producer {
                 value = String.class.cast(object);
             } else {
                 try {
-                    value = _mapper.writeValueAsString(object);
+                    value = serialize(object);
                 } catch (JsonProcessingException e) {
                     _logger.warn("Exception while serializing the object to a string. Skipping this object.", e);
                     continue;
@@ -181,6 +190,11 @@ public class Producer {
             _logger.warn("Shutdown of executor service was interrupted.");
             Thread.currentThread().interrupt();
         }
+    }
+
+    @VisibleForTesting
+    protected <T extends Serializable> String serialize(T obj) throws JsonProcessingException {
+        return _mapper.writeValueAsString(obj);
     }
 
     //~ Inner Classes ********************************************************************************************************************************

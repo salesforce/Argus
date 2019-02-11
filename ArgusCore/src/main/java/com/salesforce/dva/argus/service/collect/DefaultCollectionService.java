@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -81,11 +82,12 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
 
     //~ Static fields/initializers *******************************************************************************************************************
 
+    protected static final int MAX_ANNOTATION_SIZE_BYTES = 2000;
     private static final int BATCH_METRICS = 50;
+    private static final Logger _logger = LoggerFactory.getLogger(DefaultCollectionService.class);
 
     //~ Instance fields ******************************************************************************************************************************
 
-    private final Logger _logger = LoggerFactory.getLogger(DefaultCollectionService.class);
     @Inject
     Provider<EntityManager> emf;
     private final MQService _mqService;
@@ -103,9 +105,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
      * @param  mqService         The MQ service implementation with which to queue and dequeue submitted metrics and annotations
      * @param  tsdbService       The TSDB service implementation with which to write metrics and annotations into storage.
      * @param  auditService      The audit service instance to use. Cannot be null.
-     * @param  mailService       The mail service instance to use. Cannot be null.
      * @param  configuration     The system configuration instance to use. Cannot be null.
-     * @param  historyService    The job history service instance to use. Cannot be null.
      * @param  schemaService     The schema service instance to use. Cannot be null.
      * @param  wardenService     The warden service instance to use. Cannot be null.
      * @param  monitorService    The monitor service instance to use. Cannot be null.
@@ -170,21 +170,36 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
     public void submitAnnotations(PrincipalUser submitter, List<Annotation> annotations) {
         requireNotDisposed();
         requireArgument(submitter != null, "Submitting user cannot be null.");
-        requireArgument(annotations != null, "The list of annotaions to submit cannot be null.");
+        requireArgument(annotations != null, "The list of annotations to submit cannot be null.");
         checkSubmitAnnotationPolicyRequirementsMet(submitter, annotations);
-        _monitorService.modifyCounter(Counter.ANNOTATION_WRITES, annotations.size(), null);
 
+        List<Annotation> putAnnotationList = new LinkedList<>();
         /* Replace unsupported characters in annotation */
         for (Annotation annotation : annotations) {
-            annotation.setScope(TSDBEntity.replaceUnsupportedChars(annotation.getScope()));
-            annotation.setMetric(TSDBEntity.replaceUnsupportedChars(annotation.getMetric()));
-            Map<String, String> filteredTags = new HashMap<>();
-            for(String tagKey : annotation.getTags().keySet()) {
-                filteredTags.put(TSDBEntity.replaceUnsupportedChars(tagKey), TSDBEntity.replaceUnsupportedChars(annotation.getTags().get(tagKey)));
+            if (annotation.computeSizeBytes() > MAX_ANNOTATION_SIZE_BYTES) {
+                _logger.debug("Annotation size of {} bytes exceeded max size {} allowed for annotation {}.",
+                        annotation.computeSizeBytes(),
+                        MAX_ANNOTATION_SIZE_BYTES,
+                        annotation);
+                Map<String, String> tags = new HashMap<>();
+                tags.put("source", annotation.getSource());
+                _monitorService.modifyCounter(Counter.ANNOTATION_DROPS_MAXSIZEEXCEEDED, 1, tags);
+            } else {
+                annotation.setScope(TSDBEntity.replaceUnsupportedChars(annotation.getScope()));
+                annotation.setMetric(TSDBEntity.replaceUnsupportedChars(annotation.getMetric()));
+                Map<String, String> filteredTags = new HashMap<>();
+                for (String tagKey : annotation.getTags().keySet()) {
+                    filteredTags.put(TSDBEntity.replaceUnsupportedChars(tagKey), TSDBEntity.replaceUnsupportedChars(annotation.getTags().get(tagKey)));
+                }
+                annotation.setTags(filteredTags);
+
+                putAnnotationList.add(annotation);
             }
-            annotation.setTags(filteredTags);
         }
-        _mqService.enqueue(ANNOTATION.getQueueName(), annotations);
+        _monitorService.modifyCounter(Counter.ANNOTATION_WRITES, putAnnotationList.size(), null);
+        if (!putAnnotationList.isEmpty()) {
+            _mqService.enqueue(ANNOTATION.getQueueName(), putAnnotationList);
+        }
     }
 
     @Override

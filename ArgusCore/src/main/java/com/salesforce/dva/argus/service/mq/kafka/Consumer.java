@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.mq.kafka;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.salesforce.dva.argus.service.mq.kafka.KafkaMessageService.Property;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import kafka.consumer.ConsumerConfig;
@@ -88,6 +89,13 @@ public class Consumer {
         this._mapper = new ObjectMapper();
         MAX_BUFFER_SIZE = Integer.parseInt(_configuration.getValue(Property.KAFKA_CONSUMER_MESSAGES_TO_BUFFER.getName(),
                 Property.KAFKA_CONSUMER_MESSAGES_TO_BUFFER.getDefaultValue()));
+    }
+
+    @VisibleForTesting
+    protected Consumer(SystemConfiguration configuration, ObjectMapper mapper, int maxBufferSize) {
+        _configuration = configuration;
+        _mapper = mapper;
+        MAX_BUFFER_SIZE = maxBufferSize;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -179,7 +187,7 @@ public class Consumer {
                     if (String.class.isAssignableFrom(type)) {
                         result.add(type.cast(message));
                     } else {
-                        result.add(_mapper.readValue(message, type));
+                        result.add(deserialize(message, type));
                     }
                     if (result.size() % 1000 == 0) {
                         _logger.debug("Dequeued {} messages from local buffer.", result.size());
@@ -267,6 +275,11 @@ public class Consumer {
             _logger.debug("{} messages for topic {} enqueued on Kafka queue", unflushedMessages.size(), topicName);
         }
         producer.shutdown();
+    }
+
+    @VisibleForTesting
+    protected <T extends Serializable> T deserialize(String message, Class<T> type) throws IOException {
+        return _mapper.readValue(message, type);
     }
 
     //~ Inner Classes ********************************************************************************************************************************
