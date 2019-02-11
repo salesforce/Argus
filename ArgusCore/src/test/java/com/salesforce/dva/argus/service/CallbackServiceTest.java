@@ -4,6 +4,8 @@ import java.math.BigInteger;
 import java.util.Collections;
 import java.util.stream.IntStream;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
@@ -15,6 +17,7 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationCo
 import com.salesforce.dva.argus.service.alert.notifier.CallbackNotifier;
 import org.junit.Test;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -27,6 +30,10 @@ public class CallbackServiceTest extends AbstractTest {
 
 	@Test
 	public void testCallbackNotifier() {
+		WireMockServer mockServer = new WireMockServer(9600);
+		mockServer.start();
+		WireMock.configureFor("localhost", mockServer.port());
+		stubFor(post(anyUrl()).willReturn(aResponse().withStatus(200)));
 
 		final UserService userService = system.getServiceFactory().getUserService();
 		Alert alert = new Alert(userService.findAdminUser(),
@@ -66,5 +73,6 @@ public class CallbackServiceTest extends AbstractTest {
 		assertThat("Unexpected number of triggered alerts.",
 				notifier.getAllNotifications(alert).size(),
 				is(notificationCounter));
+		mockServer.shutdownServer();
 	}
 }
