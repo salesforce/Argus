@@ -362,6 +362,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		}
 
+		_monitorService.modifyCounter(Counter.ALERTS_EVALUATED_RAWTOTAL, alertsWithTimestamp.size(), new HashMap<>());
 		for(AlertWithTimestamp alertWithTimestamp : alertsWithTimestamp) {
 			String serializedAlert = alertWithTimestamp.getSerializedAlert();
 
@@ -443,6 +444,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		String logMessage;
 		History history;
 
+		_monitorService.modifyCounter(Counter.ALERTS_EVALUATED_TOTAL, alerts.size(), new HashMap<>());
 		for (Alert alert : alerts) {
 
 			jobStartTime = System.currentTimeMillis();
@@ -1025,6 +1027,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
 
+		_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED_TOTAL, alerts.size(), new HashMap<>());
 		// Write alerts scheduled for evaluation as time series to TSDB
 		for (Alert alert : alerts) {
 			Map<Long, Double> datapoints = new HashMap<>();
