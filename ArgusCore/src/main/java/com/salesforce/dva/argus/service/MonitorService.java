@@ -200,10 +200,11 @@ public interface MonitorService extends Service {
         USER_TRIGGERS("argus.core", "triggers.user"),
         JOBS_SCHEDULED("argus.core", "jobs.scheduled"),
         JOBS_MAX("argus.core", "jobs.max"),
+        ALERTS_KPI("argus.core", "alerts.kpi"),
         ALERTS_ENABLED("argus.core", "alerts.enabled"),
-        ALERTS_SCHEDULED("argus.core", "alerts.scheduled"),
+        ALERTS_SCHEDULED("argus.core", "alerts.scheduled", MetricType.COUNTER),
         ALERTS_SCHEDULING_QUEUE_SIZE("argus.core", "alerts.scheduleQueue.size"),
-        ALERTS_EVALUATED("argus.core", "alerts.evaluated"),
+        ALERTS_EVALUATED("argus.core", "alerts.evaluated", MetricType.COUNTER),
         ALERTS_EVALUATION_STARTED("argus.alerts", "evaluation.started"),
         ALERTS_EVALUATION_DELAYED("argus.alerts", "evaluation.delayed"),
         ALERTS_FAILED("argus.core", "alerts.failed"),
@@ -219,9 +220,9 @@ public interface MonitorService extends Service {
         ALERT_EVALUATION_KPI("argus.core", "alert.evaluation.kpi"),
         DATAPOINT_READS("argus.core", "datapoint.reads"),
         DATAPOINT_WRITES("argus.core", "datapoint.writes"),
-        UNIQUE_USERS("argus.core", "users.unique"),
-        DAILY_USERS("argus.core", "users.daily"),
-        MONTHLY_USERS("argus.core", "users.monthly"),
+        UNIQUE_USERS("argus.core", "users.unique", MetricType.COUNTER),
+        DAILY_USERS("argus.core", "users.daily", MetricType.COUNTER),
+        MONTHLY_USERS("argus.core", "users.monthly", MetricType.COUNTER),
         COMMIT_CLIENT_DATAPOINT_WRITES("argus.core", "commit.client.datapoint.writes"),
         COMMIT_CLIENT_METRIC_WRITES("argus.core", "commit.client.metric.writes"),
         SCHEMACOMMIT_CLIENT_METRIC_WRITES("argus.core", "schemacommit.client.metric.writes"),
@@ -251,6 +252,34 @@ public interface MonitorService extends Service {
 
         private final String _scope;
         private final String _metric;
+        private final MetricType _type;
+        private final String _jmxMetricNameSuffix;
+
+        /**
+         * Creates a new Counter object.
+         *
+         * @param  scope   The counter scope name.
+         * @param  metric  The corresponding metric name.
+         * @param  type    The corresponding metric type.
+         * @param  jmxMetricNameSuffix This will be appended to the JMX metric name used by Prometheus.
+         */
+        Counter(String scope, String metric, MetricType type, String jmxMetricNameSuffix) {
+            _scope = scope;
+            _metric = metric;
+            _type = type;
+            _jmxMetricNameSuffix = jmxMetricNameSuffix;
+        }
+
+        /**
+         * Creates a new Counter object.
+         *
+         * @param  scope   The counter scope name.
+         * @param  metric  The corresponding metric name.
+         * @param  type    The corresponding metric type.
+         */
+        Counter(String scope, String metric, MetricType type) {
+            this(scope, metric, type, MetricType.COUNTER == type ? ".count" : "");
+        }
 
         /**
          * Creates a new Counter object.
@@ -259,8 +288,7 @@ public interface MonitorService extends Service {
          * @param  metric  The corresponding metric name.
          */
         Counter(String scope, String metric) {
-            _scope = scope;
-            _metric = metric;
+            this(scope, metric, MetricType.GAUGE, "");
         }
 
         /**
@@ -295,6 +323,23 @@ public interface MonitorService extends Service {
          */
         public String getMetric() {
             return _metric;
+        }
+
+        /**
+         * Retrieves the metric type for the counter.
+         *
+         * @return  The metric type for the counter. Will not be null.
+         */
+        public MetricType getMetricType() {
+            return _type;
+        }
+
+        public String getJMXMetricNameSuffix() {return _jmxMetricNameSuffix; }
+
+        public static enum MetricType {
+            COUNTER,
+            GAUGE,
+            TIMER
         }
     }
 }
