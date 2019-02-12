@@ -44,7 +44,6 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
 	private static final long POLL_INTERVAL_MS = 10 * 60 * 1000L;
 	private static final int DAY_IN_SECONDS = 24 * 60 * 60;
-	private static final int HOUR_IN_SECONDS = 60 * 60;
 
 
 	/* Have three separate bloom filters one for metrics schema, one only for scope names schema and one only for scope name and metric name schema.
@@ -65,6 +64,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	private final Logger _logger = LoggerFactory.getLogger(getClass());
 	private final Thread _bloomFilterMonitorThread;
+	private final SystemConfiguration config;
 	protected final boolean _syncPut;
 	private int bloomFilterFlushHourToStartAt;
 	private ScheduledExecutorService scheduledExecutorService;
@@ -75,8 +75,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	protected AbstractSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config);
+		this.config = config;
 		_monitorService = monitorService;
-
 
 		bloomFileWritingEnabled = Boolean.parseBoolean(config.getValue(Property.BLOOM_FILE_WRITING_ENABLED.getName(),
 				Property.BLOOM_FILE_WRITING_ENABLED.getDefaultValue()));
@@ -231,11 +231,13 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	@Override
 	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
 
-	protected int getNumHoursUntilTargetHour(int targetHour){
+	protected int getNumSecondsUntilTargetHour(int targetHour){
 		_logger.info("Initialized bloom filter flushing out, at {} hour of day", targetHour);
 		Calendar calendar = Calendar.getInstance();
 		int hour = calendar.get(Calendar.HOUR_OF_DAY);
-		return hour < targetHour ? (targetHour - hour) : (targetHour + 24 - hour);
+		int secondsPastHour = calendar.get(Calendar.MINUTE) * 60;
+		int hoursUntil = hour < targetHour ? (targetHour - hour) : (targetHour + 24 - hour);
+		return hoursUntil * 60 * 60 - secondsPastHour;
 	}
 
 	/*
@@ -244,7 +246,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private int getBloomFilterFlushHourToStartAt() {
 		int bloomFilterFlushHourToStartAt = 0;
 		try {
-			bloomFilterFlushHourToStartAt = Math.abs(InetAddress.getLocalHost().getHostName().hashCode() % 24);
+			bloomFilterFlushHourToStartAt = Math.abs((InetAddress.getLocalHost().getHostName() + config.getValue(config.ARGUS_INSTANCE_ID, "")).hashCode() % 24);
 		} catch (UnknownHostException e) {
 			_logger.warn("BloomFilter UnknownHostException", e);
 		}
@@ -273,9 +275,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
         }
 
         File createdBloomFile = new File(this.createdBloomFileName);
-        if (!createdBloomFile.getParentFile().exists()) {
-            createdBloomFile.getParentFile().mkdir();
-        }
+        createdBloomFile.mkdirs();
         try (OutputStream out = new FileOutputStream(createdBloomFile)) {
             createdBloom.writeTo(out);
             _logger.info("Succesfully wrote created-metrics bloomfilter to file {}", this.createdBloomFileName);
@@ -295,7 +295,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	private void createScheduledExecutorService(int targetHourToStartAt){
 		scheduledExecutorService = Executors.newScheduledThreadPool(1);
-		int initialDelayInSeconds = getNumHoursUntilTargetHour(targetHourToStartAt) * HOUR_IN_SECONDS;
+		int initialDelayInSeconds = getNumSecondsUntilTargetHour(targetHourToStartAt);
 		BloomFilterFlushThread bloomFilterFlushThread = new BloomFilterFlushThread();
 		scheduledExecutorService.scheduleAtFixedRate(bloomFilterFlushThread, initialDelayInSeconds, DAY_IN_SECONDS, TimeUnit.SECONDS);
 	}

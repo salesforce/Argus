@@ -250,6 +250,8 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 
 		// Will wait 24 hours before next flush if at same hour boundary
 		int hour = calendar.get(Calendar.HOUR_OF_DAY);
-		assertTrue(service.getNumHoursUntilTargetHour(hour) == 24);
+		int secondsUntil = service.getNumSecondsUntilTargetHour(hour);
+		System.out.println(secondsUntil);
+		assertTrue(secondsUntil >= 23 * 60 * 60 && secondsUntil <= 24 * 60 * 60);
 	}
 }
