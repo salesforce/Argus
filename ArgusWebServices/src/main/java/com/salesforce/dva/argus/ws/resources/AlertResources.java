@@ -694,7 +694,7 @@ public class AlertResources extends AbstractResource {
 	 *
 	 * @param   req       The HttpServlet request object. Cannot be null.
 	 * @param   alertId   The id of an alert. Cannot be null.
-	 * @param   ownerName  The owner who requested alert creation. Cannot be null.
+	 * @param   newAlertName  The name of the cloned alert. Cannot be null or empty.
 	 *
 	 * @return  Updated alert object.
 	 *
@@ -702,68 +702,74 @@ public class AlertResources extends AbstractResource {
 	 */
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	@Path("/{alertId}/clone")
+	@Path("{alertId}/clone")
 	@Description("Clones an alert having the given ID.")
-	public AlertDto cloneAlert(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId, @QueryParam("ownername") String ownerName) {
-
-		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
-			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
-		}
-
-		if (ownerName == null || ownerName.length() <= 0) {
-			throw new WebApplicationException("Null object cannot be updated.", Status.BAD_REQUEST);
-		}
-
-		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
-
-		if (oldAlert == null) {
-			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
-		}
-
-		validateResourceAuthorization(req, oldAlert.getOwner(), owner);
-		// Create new alert object.
-		Alert clonedAlert = new Alert(getRemoteUser(req), oldAlert.getOwner(), oldAlert.getName() + "-cloned", oldAlert.getExpression(), oldAlert.getCronEntry());
-
-		List<Trigger> clonedTriggers = new ArrayList<>();
-		List<Notification> clonedNotifications = new ArrayList<>();
-		Map <BigInteger, Trigger> triggersCreatedMapById = new HashMap<>();
-
-		/*For each existing notification, create new cloned notification.
-		* For each existing trigger in the current notification, create new cloned trigger and add it to cloned notification.
-		* */
-		for (Notification currentNotification: oldAlert.getNotifications()) {
-			Notification currentNotificationCloned = new Notification(currentNotification.getName(), clonedAlert, currentNotification.getNotifierName(),
-					currentNotification.getSubscriptions(), currentNotification.getCooldownPeriod());
-
-			clonedNotifications.add(currentNotificationCloned);
-
-			copyProperties(currentNotificationCloned, currentNotification);
-			currentNotificationCloned.setAlert(clonedAlert);
-
-			List<Trigger> triggersInCurrentNotification = new ArrayList<>();
-			for (Trigger currentTrigger: currentNotification.getTriggers()) {
-				BigInteger currentTriggerId = currentTrigger.getId();
-				if (!triggersCreatedMapById.containsKey(currentTriggerId)) {
-					Trigger currentTriggerCloned = new Trigger(clonedAlert, currentTrigger.getType(), currentTrigger.getName(), currentTrigger.getThreshold(), currentTrigger.getSecondaryThreshold(), currentTrigger.getInertia());
-					clonedTriggers.add(currentTriggerCloned);
-					copyProperties(currentTriggerCloned, currentTrigger);
-					currentTriggerCloned.setAlert(clonedAlert);
-					triggersCreatedMapById.put(currentTriggerId, currentTriggerCloned);
-				}
-				triggersInCurrentNotification.add(triggersCreatedMapById.get(currentTriggerId));
+	public AlertDto cloneAlert(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId, @QueryParam("alertname") String newAlertName) {
+		try {
+			if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
+				throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 			}
-			currentNotificationCloned.setTriggers(triggersInCurrentNotification);
+
+			if (newAlertName == null || newAlertName.equals("")) {
+				throw new WebApplicationException("Alert name cannot be null or empty and must be unique non-empty string.", Status.BAD_REQUEST);
+			}
+
+			Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
+
+			if (oldAlert == null) {
+				throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
+			}
+
+			if (!oldAlert.isShared()) { // If the alert is not shared, it can only be created by the requesting owner.
+				PrincipalUser owner = validateAndGetOwner(req, oldAlert.getOwner().getUserName());
+				validateResourceAuthorization(req, oldAlert.getOwner(), owner);
+			}
+
+			// Create new alert object.
+			Alert clonedAlert = new Alert(getRemoteUser(req), oldAlert.getOwner(), newAlertName, oldAlert.getExpression(), oldAlert.getCronEntry());
+
+			List<Trigger> clonedTriggers = new ArrayList<>();
+			List<Notification> clonedNotifications = new ArrayList<>();
+			Map<BigInteger, Trigger> triggersCreatedMapById = new HashMap<>();
+
+			/*For each existing notification, create new cloned notification.
+			 * For each existing trigger in the current notification, create new cloned trigger and add it to cloned notification.
+			 * */
+			for (Notification currentNotification : oldAlert.getNotifications()) {
+				Notification currentNotificationCloned = new Notification(currentNotification.getName(), clonedAlert, currentNotification.getNotifierName(),
+						currentNotification.getSubscriptions(), currentNotification.getCooldownPeriod());
+
+				clonedNotifications.add(currentNotificationCloned);
+
+				copyProperties(currentNotificationCloned, currentNotification);
+				currentNotificationCloned.setAlert(clonedAlert);
+
+				List<Trigger> triggersInCurrentNotification = new ArrayList<>();
+				for (Trigger currentTrigger : currentNotification.getTriggers()) {
+					BigInteger currentTriggerId = currentTrigger.getId();
+					if (!triggersCreatedMapById.containsKey(currentTriggerId)) {
+						Trigger currentTriggerCloned = new Trigger(clonedAlert, currentTrigger.getType(), currentTrigger.getName(), currentTrigger.getThreshold(), currentTrigger.getSecondaryThreshold(), currentTrigger.getInertia());
+						clonedTriggers.add(currentTriggerCloned);
+						copyProperties(currentTriggerCloned, currentTrigger);
+						currentTriggerCloned.setAlert(clonedAlert);
+						triggersCreatedMapById.put(currentTriggerId, currentTriggerCloned);
+					}
+					triggersInCurrentNotification.add(triggersCreatedMapById.get(currentTriggerId));
+				}
+				currentNotificationCloned.setTriggers(triggersInCurrentNotification);
+			}
+
+			clonedAlert.setMissingDataNotificationEnabled(oldAlert.isMissingDataNotificationEnabled());
+			clonedAlert.setShared(oldAlert.isShared());
+			clonedAlert.setTriggers(clonedTriggers);
+			clonedAlert.setNotifications(clonedNotifications);
+			clonedAlert.setModifiedBy(getRemoteUser(req));
+			clonedAlert.setEnabled(oldAlert.isEnabled()); // This should be last
+
+			return AlertDto.transformToDto(alertService.updateAlert(clonedAlert));
+		} catch (Exception ex) {
+			throw new WebApplicationException(ex.getCause(), Status.BAD_REQUEST);
 		}
-
-		clonedAlert.setMissingDataNotificationEnabled(oldAlert.isMissingDataNotificationEnabled());
-		clonedAlert.setShared(oldAlert.isShared());
-		clonedAlert.setTriggers(clonedTriggers);
-		clonedAlert.setNotifications(clonedNotifications);
-		clonedAlert.setModifiedBy(getRemoteUser(req));
-		clonedAlert.setEnabled(oldAlert.isEnabled()); // This should be last
-
-		return AlertDto.transformToDto(alertService.updateAlert(clonedAlert));
 	}
 
 	/**
