@@ -900,7 +900,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	
 	private void publishAlertTrackingMetric(String scope, String metric, double value, Map<String, String> tags) {
 		Map<Long, Double> datapoints = new HashMap<>();
-		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), value);
+		datapoints.put(System.currentTimeMillis(), value);
 		Metric trackingMetric = new Metric(scope, metric);
 		trackingMetric.addDatapoints(datapoints);
 		if(tags!=null) {
