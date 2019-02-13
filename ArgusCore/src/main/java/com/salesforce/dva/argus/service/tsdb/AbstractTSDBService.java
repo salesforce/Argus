@@ -174,7 +174,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 			requireArgument((readEndPoint != null) && (!readEndPoint.isEmpty()), "Illegal read endpoint URL.");
 		}
 
-		_readBackupEndPoints = Arrays.asList(config.getValue(Property.TSD_ENDPOINT_BACKUP_READ.getName(), Property.TSD_ENDPOINT_BACKUP_READ.getDefaultValue()).split(","));
+		_readBackupEndPoints = new ArrayList<>(Arrays.asList(config.getValue(Property.TSD_ENDPOINT_BACKUP_READ.getName(), Property.TSD_ENDPOINT_BACKUP_READ.getDefaultValue()).split(",")));
 
 		if(_readBackupEndPoints.size() < _readEndPoints.size()){
 			for(int i=0; i< _readEndPoints.size() - _readBackupEndPoints.size();i++)
@@ -202,7 +202,9 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 			int index = 0;
 			for (String readEndpoint : _readEndPoints) {
 				_readPortMap.put(readEndpoint, getClient(connCount / 2, connTimeout, socketTimeout, tsdbConnectionReuseCount ,readEndpoint));
-				_readBackupEndPointsMap.put(readEndpoint, _readBackupEndPoints.get(index));
+				if (index < _readBackupEndPoints.size()) {
+					_readBackupEndPointsMap.put(readEndpoint, _readBackupEndPoints.get(index));
+				}
 				index ++;
 			}
 			for (String readBackupEndpoint : _readBackupEndPoints) {
@@ -885,7 +887,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		TSD_CONNECTION_COUNT("service.property.tsdb.connection.count", "2"),
 		TSD_RETRY_COUNT("service.property.tsdb.retry.count", "3"),
 		/** The TSDB backup read endpoint. */
-		TSD_ENDPOINT_BACKUP_READ("service.property.tsdb.endpoint.backup.read", "http://localhost:4466,http://localhost:4467"),	
+		TSD_ENDPOINT_BACKUP_READ("service.property.tsdb.endpoint.backup.read", "http://localhost:4466,http://localhost:4467"),
 		TSDB_READ_CONNECTION_REUSE_COUNT("service.property.tsdb.read.connection.reuse.count", "2000");
 
 		private final String _name;
