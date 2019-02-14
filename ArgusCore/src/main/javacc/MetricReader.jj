@@ -900,7 +900,8 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
         }else{
             currentQueryContext.setExpression(expression);
         }
-	  	if(MetricQuery.class.equals(clazz)) {
+	  	
+        if(MetricQuery.class.equals(clazz)) {
 	  	  
 	        MetricQuery query = new MetricQuery(scope, metric, tags, startTimestamp, endTimestamp);
 	        query.setNamespace(namespace);
