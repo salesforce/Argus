@@ -335,7 +335,7 @@ public class RateTransformTest {
 		TSDBQueryExpression expr = new TSDBQueryExpression();
 		expr.setStartTimestamp(startTimestamp);
 		expr.setEndTimestamp(endTimestamp); 
-		result.setChildExpressions(Arrays.asList(expr)); 
+		result.setExpression(expr);
 		return result;
 	}
 }

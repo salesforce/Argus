@@ -45,16 +45,14 @@ public class MetricQueryProcessor {
 			}
 		}
 
-		if(context.getChildExpressions()!=null && context.getChildExpressions().size()!=0) {
-			for(TSDBQueryExpression queryExp : context.getChildExpressions()) {
-				mergeQueryResults(queryResult, evaluateTSDBQuery(queryExp));
-			}
+		if(context.getExpression()!=null) {
+		    mergeQueryResults(queryResult, evaluateTSDBQuery(context.getExpression()));
 		}
 
 		if(context.getTransform()!=null) {
 			boolean constantsOnly = false;
 			// fill transform needs to know whether its generating a constant line or its filling gaps in some computed metrics
-			if(TransformFactory.Function.FILL.equals(context.getTransform()) && (context.getChildExpressions()==null || context.getChildExpressions().size()==0) && (context.getChildContexts()==null || context.getChildContexts().size()==0)) {
+			if((TransformFactory.Function.FILL.equals(context.getTransform()) && (context.getChildContexts()==null || context.getChildContexts().size()==0) && context.getExpression()==null)) {
 				constantsOnly = true;
 			}
 			queryResult.setMetricsList(evaluateTransform(context.getTransform(), queryResult.getMetricsList(), context.getConstants(), relativeTo, constantsOnly, context));

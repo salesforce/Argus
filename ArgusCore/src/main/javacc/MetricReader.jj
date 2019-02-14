@@ -890,8 +890,16 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
         expression.setDownsamplingPeriod(downsamplingPeriod);
         expression.setPercentile(percentile);
         expression.setShowHistogramBuckets(showHistogramBuckets);
-
-        currentQueryContext.getChildExpressions().add(expression);
+        
+        // if current context is a transform, we add the current expression as a child context to it
+        if(currentQueryContext.getTransform()!=null){
+            QueryContext currExpContext = new QueryContext();
+            currExpContext.setExpression(expression);
+            currExpContext.setParentContext(currentQueryContext);
+            currentQueryContext.getChildContexts().add(currExpContext);
+        }else{
+            currentQueryContext.setExpression(expression);
+        }
 	  	if(MetricQuery.class.equals(clazz)) {
 	  	  
 	        MetricQuery query = new MetricQuery(scope, metric, tags, startTimestamp, endTimestamp);
