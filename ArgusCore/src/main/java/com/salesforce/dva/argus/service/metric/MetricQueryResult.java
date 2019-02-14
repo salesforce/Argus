@@ -16,7 +16,7 @@ public class MetricQueryResult {
 	private String expandedTimeSeriesRange = "unknown";
 	
 	// Returns the time window of current query based on total query time range
-	private String queryTimeWindow = "unknwown";
+	private String queryTimeWindow =  "unknown";
 	
 	// Returns the time window of the current query based on the start time of the query
 	private String queryStartTimeWindow = "unknown";

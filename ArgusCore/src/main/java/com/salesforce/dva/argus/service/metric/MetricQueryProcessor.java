@@ -23,7 +23,7 @@ import com.salesforce.dva.argus.util.TSDBQueryExpression;
  * This class has methods which are used to evaluate the metric query expression once it is parsed
  */
 public class MetricQueryProcessor {
-
+  
 	private DiscoveryService _discoveryService;
 
 	private TSDBService _tsdbService;
