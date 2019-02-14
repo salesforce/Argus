@@ -4,7 +4,7 @@
     <parent>
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
-        <version>3.6.0</version>
+        <version>3.7.0</version>
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-sdk</artifactId>
