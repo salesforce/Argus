@@ -445,7 +445,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 						notification.setTriggers(alert.getTriggers());
 					}
 					alert = _alertService.updateAlert(alert);
-					Metric trackerMetric = new Metric("argus.core", "alerts.kpi");
+					Metric trackerMetric = new Metric(MonitorService.Counter.ALERTS_KPI.getScope(), MonitorService.Counter.ALERTS_KPI.getMetric());
 					trackerMetric.setTag("host",SystemConfiguration.getHostname());
 					Map<Long, Double> datapoints = new HashMap<>();
 					datapoints.put(fiveMinuteStartTime, 1.0);

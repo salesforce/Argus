@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.dva.argus.service;
+package com.salesforce.dva.argus.service.alert;
 
 import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
 import static org.junit.Assert.*;
@@ -45,9 +45,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.salesforce.dva.argus.service.AlertService;
+import com.salesforce.dva.argus.service.MQService;
+import com.salesforce.dva.argus.service.ManagementService;
+import com.salesforce.dva.argus.service.UserService;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.Ignore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -58,7 +61,6 @@ import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
-import com.salesforce.dva.argus.service.alert.AlertsCountContext;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
 
 public class AlertServiceTest extends AbstractTest {

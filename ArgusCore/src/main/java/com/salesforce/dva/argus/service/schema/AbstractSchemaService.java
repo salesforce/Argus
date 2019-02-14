@@ -1,9 +1,30 @@
 package com.salesforce.dva.argus.service.schema;
 
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnels;
+import com.salesforce.dva.argus.entity.AbstractSchemaRecord;
+import com.salesforce.dva.argus.entity.KeywordQuery;
+import com.salesforce.dva.argus.entity.MetatagsRecord;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.MetricSchemaRecord;
+import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
+import com.salesforce.dva.argus.service.DefaultService;
+import com.salesforce.dva.argus.service.MonitorService;
+import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.system.SystemConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
@@ -11,37 +32,9 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
-import java.util.HashMap;
-import java.util.Map;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.File;
-
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.hash.BloomFilter;
-import com.google.common.hash.Funnels;
-
-import com.salesforce.dva.argus.entity.KeywordQuery;
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.entity.MetricSchemaRecord;
-import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
-import com.salesforce.dva.argus.entity.MetatagsRecord;
-import com.salesforce.dva.argus.service.DefaultService;
-import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.service.SchemaService;
-import com.salesforce.dva.argus.system.SystemAssert;
-import com.salesforce.dva.argus.system.SystemConfiguration;
 
 /**
  * Implementation of the abstract schema service class
@@ -51,7 +44,6 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
 	private static final long POLL_INTERVAL_MS = 10 * 60 * 1000L;
 	private static final int DAY_IN_SECONDS = 24 * 60 * 60;
-	private static final int HOUR_IN_SECONDS = 60 * 60;
 
 
 	/* Have three separate bloom filters one for metrics schema, one only for scope names schema and one only for scope name and metric name schema.
@@ -59,77 +51,52 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	 * Hence we can avoid the extra call to populate scopenames index on ES in subsequent Kafka reads.
 	 * The same logic applies to scope name and metric name schema.
 	 */
-	protected static BloomFilter<CharSequence> bloomFilter;
-	protected static BloomFilter<CharSequence> bloomFilterScopeOnly;
-	protected static BloomFilter<CharSequence> bloomFilterScopeAndMetricOnly;
-	protected static BloomFilter<CharSequence> bloomFilterMetatags;
+	protected static BloomFilter<CharSequence> createdBloom;
+	protected static BloomFilter<CharSequence> modifiedBloom;
 
 	protected final MonitorService _monitorService;
-        private int randomBloomAppend;
-	private int bloomFilterExpectedNumberInsertions;
-	private double bloomFilterErrorRate;
-	private int bloomFilterScopeOnlyExpectedNumberInsertions;
-	private double bloomFilterScopeOnlyErrorRate;
-	private int bloomFilterScopeAndMetricOnlyExpectedNumberInsertions;
-	private double bloomFilterScopeAndMetricOnlyErrorRate;
-	private int bloomFilterMetatagsExpectedNumberInsertions;
-	private double bloomFilterMetatagsErrorRate;
+
+
+	private int createdBloomExpectedNumberInsertions;
+	private double createdBloomErrorRate;
+	private int modifiedBloomExpectedNumberInsertions;
+	private double modifiedBloomErrorRate;
+
 	private final Logger _logger = LoggerFactory.getLogger(getClass());
 	private final Thread _bloomFilterMonitorThread;
+	private final SystemConfiguration config;
 	protected final boolean _syncPut;
 	private int bloomFilterFlushHourToStartAt;
 	private ScheduledExecutorService scheduledExecutorService;
-        private String bfTagsStateFilename;
+	private String createdBloomFileName;
+	private String modifiedBloomFileName;
 	protected final boolean bloomFileWritingEnabled;
 
 
 	protected AbstractSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config);
-
+		this.config = config;
 		_monitorService = monitorService;
 
-                try {
-                    randomBloomAppend = Math.abs(InetAddress.getLocalHost().getHostName().hashCode());
-                } catch (IOException io) {
-                    _logger.error("failed to create randomBloomAppend", io);
-                    randomBloomAppend = 12345;
-                }
 		bloomFileWritingEnabled = Boolean.parseBoolean(config.getValue(Property.BLOOM_FILE_WRITING_ENABLED.getName(),
-                                                                               Property.BLOOM_FILE_WRITING_ENABLED.getDefaultValue()));
+				Property.BLOOM_FILE_WRITING_ENABLED.getDefaultValue()));
 
-                String bfStateBaseDir = config.getValue(Property.BF_STATE_BASE_DIR.getName(),
-                                                        Property.BF_STATE_BASE_DIR.getDefaultValue());
-                bfTagsStateFilename = bfStateBaseDir + "/bloomfilter_tags.state." +
-                    config.getValue(SystemConfiguration.ARGUS_INSTANCE_ID, "noid");
-
-		bloomFilterExpectedNumberInsertions = Integer.parseInt(config.getValue(Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getName(),
-				Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
-		bloomFilterErrorRate = Double.parseDouble(config.getValue(Property.BLOOMFILTER_ERROR_RATE.getName(),
-				Property.BLOOMFILTER_ERROR_RATE.getDefaultValue()));
-
-		bloomFilterScopeOnlyExpectedNumberInsertions = Integer.parseInt(config.getValue(Property.BLOOMFILTER_SCOPE_ONLY_EXPECTED_NUMBER_INSERTIONS.getName(),
-				Property.BLOOMFILTER_SCOPE_ONLY_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
-		bloomFilterScopeOnlyErrorRate = Double.parseDouble(config.getValue(Property.BLOOMFILTER_SCOPE_ONLY_ERROR_RATE.getName(),
-				Property.BLOOMFILTER_SCOPE_ONLY_ERROR_RATE.getDefaultValue()));
-
-		bloomFilterScopeAndMetricOnlyExpectedNumberInsertions = Integer.parseInt(config.getValue(Property.BLOOMFILTER_SCOPE_AND_METRIC_ONLY_EXPECTED_NUMBER_INSERTIONS.getName(),
-				Property.BLOOMFILTER_SCOPE_AND_METRIC_ONLY_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
-		bloomFilterScopeAndMetricOnlyErrorRate = Double.parseDouble(config.getValue(Property.BLOOMFILTER_SCOPE_AND_METRIC_ONLY_ERROR_RATE.getName(),
-				Property.BLOOMFILTER_SCOPE_AND_METRIC_ONLY_ERROR_RATE.getDefaultValue()));
-
-		bloomFilterMetatagsExpectedNumberInsertions =
-                    Integer.parseInt(config.getValue(Property.BLOOMFILTER_METATAGS_EXPECTED_NUMBER_INSERTIONS.getName(),
-                                                     Property.BLOOMFILTER_METATAGS_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
-		bloomFilterMetatagsErrorRate =
-                    Double.parseDouble(config.getValue(Property.BLOOMFILTER_METATAGS_ERROR_RATE.getName(),
-                                                       Property.BLOOMFILTER_METATAGS_ERROR_RATE.getDefaultValue()));
-                createOrReadBloomFilter();
-
-		bloomFilterScopeOnly = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterScopeOnlyExpectedNumberInsertions , bloomFilterScopeOnlyErrorRate);
-		bloomFilterScopeAndMetricOnly = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
-				bloomFilterScopeAndMetricOnlyExpectedNumberInsertions , bloomFilterScopeAndMetricOnlyErrorRate);
-		bloomFilterMetatags = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
-				bloomFilterMetatagsExpectedNumberInsertions , bloomFilterMetatagsErrorRate);
+		String bfStateBaseDir = config.getValue(Property.BF_STATE_BASE_DIR.getName(),
+				Property.BF_STATE_BASE_DIR.getDefaultValue());
+		createdBloomFileName = bfStateBaseDir + "/created_bloom.state." +
+				config.getValue(SystemConfiguration.ARGUS_INSTANCE_ID, "noid");
+		modifiedBloomFileName = bfStateBaseDir + "/modified_bloom.state." +
+				config.getValue(SystemConfiguration.ARGUS_INSTANCE_ID, "noid");
+		createdBloomExpectedNumberInsertions = Integer.parseInt(config.getValue(Property.CREATED_BLOOM_EXPECTED_NUMBER_INSERTIONS.getName(),
+				Property.CREATED_BLOOM_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
+		createdBloomErrorRate = Double.parseDouble(config.getValue(Property.CREATED_BLOOM_ERROR_RATE.getName(),
+				Property.CREATED_BLOOM_ERROR_RATE.getDefaultValue()));
+		modifiedBloomExpectedNumberInsertions = Integer.parseInt(config.getValue(Property.MODIFIED_BLOOM_EXPECTED_NUMBER_INSERTIONS.getName(),
+				Property.MODIFIED_BLOOM_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
+		modifiedBloomErrorRate = Double.parseDouble(config.getValue(Property.MODIFIED_BLOOM_ERROR_RATE.getName(),
+				Property.MODIFIED_BLOOM_ERROR_RATE.getDefaultValue()));
+		createdBloom = createOrReadBloomFilter(createdBloomFileName, createdBloomExpectedNumberInsertions, createdBloomErrorRate);
+		modifiedBloom = createOrReadBloomFilter(modifiedBloomFileName, modifiedBloomExpectedNumberInsertions, modifiedBloomErrorRate);
 
 		_syncPut = Boolean.parseBoolean(
 				config.getValue(Property.SYNC_PUT.getName(), Property.SYNC_PUT.getDefaultValue()));
@@ -153,83 +120,81 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		requireNotDisposed();
 		SystemAssert.requireArgument(metrics != null, "Metric list cannot be null.");
 
-		// Create a list of metricsToPut that do not exist on the BLOOMFILTER and then call implementation
-		// specific put with only those subset of metricsToPut.
-		List<Metric> metricsToPut = new ArrayList<>(metrics.size());
-		Set<String> scopesToPut = new HashSet<>(metrics.size());
-
-		Set<Pair<String, String>> scopesAndMetricsNamesToPut = new HashSet<>(metrics.size());
-                Map<String, MetatagsRecord> metatagsToPut = new HashMap<>();
+		Set<Metric> metricsToCreate = new HashSet<>(metrics.size());
+		Set<Metric> metricsToUpdate = new HashSet<>(metrics.size());
+		Set<String> scopesToCreate = new HashSet<>();
+		Set<String> scopesToUpdate = new HashSet<>();
+		Set<MetatagsRecord> metatagsToCreate = new HashSet<>();
+		Set<MetatagsRecord> metatagsToUpdate = new HashSet<>();
 
 		for(Metric metric : metrics) {
-			// check metric schema bloom filter
+			// Enqueue the entire metric for creating/updating accordingly
 			if(metric.getTags().isEmpty()) {
-				// if metric does not have tags
-				String key = constructKey(metric, null, null);
-				boolean found = bloomFilter.mightContain(key);
-				if(!found) {
-					metricsToPut.add(metric);
+				String key = AbstractSchemaRecord.constructKey(metric, null, null);
+				if(!createdBloom.mightContain(key)) {
+					metricsToCreate.add(metric);
+				} else if (!modifiedBloom.mightContain(key)) {
+					metricsToUpdate.add(metric);
 				}
 			} else {
-				// if metric has tags
-				boolean newTags = false;
 				for(Entry<String, String> tagEntry : metric.getTags().entrySet()) {
-					String key = constructKey(metric, tagEntry.getKey(), tagEntry.getValue());
-					boolean found = bloomFilter.mightContain(key);
-					if(!found) {
-						newTags = true;
+					String key = AbstractSchemaRecord.constructKey(metric, tagEntry.getKey(), tagEntry.getValue());
+					if (!createdBloom.mightContain(key)) {
+						metricsToCreate.add(metric);
+						break;
+					} else if (!modifiedBloom.mightContain(key)) {
+						metricsToUpdate.add(metric);
+						break;
 					}
 				}
+			}
 
-				if(newTags) {
-					metricsToPut.add(metric);
+			// Enqueue only-the-scope for creating/updating accordingly
+			String scopeName = metric.getScope();
+			String key = AbstractSchemaRecord.constructKey(scopeName);
+			if (!createdBloom.mightContain(key)) {
+				scopesToCreate.add(scopeName);
+			} else if (!modifiedBloom.mightContain(key)) {
+				scopesToUpdate.add(scopeName);
+			}
+
+			// Enqueue the metatags for creating/updating accordingly
+			MetatagsRecord mtags = metric.getMetatagsRecord();
+			if(mtags != null) {
+				key = mtags.getKey();
+				if(key != null) {
+					if (!createdBloom.mightContain(key)) {
+						metatagsToCreate.add(mtags);
+					} else if (!modifiedBloom.mightContain(key)) {
+						metatagsToUpdate.add(mtags);
+					}
 				}
 			}
-
-			String scopeName = metric.getScope();
-			String metricName = metric.getMetric();
-
-			// Check scope only bloom filter
-			String key = constructScopeOnlyKey(scopeName);
-			boolean found = bloomFilterScopeOnly.mightContain(key);
-			if(!found) {
-				scopesToPut.add(scopeName);
-			}
-
-			// Check scope and metric only bloom filter
-			key = constructScopeAndMetricOnlyKey(scopeName, metricName);
-			found = bloomFilterScopeAndMetricOnly.mightContain(key);
-			if(!found) {
-				scopesAndMetricsNamesToPut.add(Pair.of(scopeName, metricName));
-			}
-
-                        // Check if metatags are present and populate accordingly
-                        MetatagsRecord mtags = metric.getMetatagsRecord();
-                        if(mtags != null) {
-                            key = mtags.getKey();
-                            if(key != null) {
-                                found = bloomFilterMetatags.mightContain(key);
-                                if(!found) {
-                                    metatagsToPut.put(key, mtags);
-                                }
-                            }
-                        }
 		}
 
-		implementationSpecificPut(metricsToPut, scopesToPut, scopesAndMetricsNamesToPut, metatagsToPut);
+		implementationSpecificPut(
+				metricsToCreate,
+				metricsToUpdate,
+				scopesToCreate,
+				scopesToUpdate,
+				metatagsToCreate,
+				metatagsToUpdate);
 	}
 
-	/*
-	 * Calls the implementation specific write for indexing the records
-	 *
-	 * @param  metrics    The metrics metadata that will be written to a separate index.
-	 * @param  scopeNames The scope names that will be written to a separate index.
-	 * @param  scopesAndMetricNames The scope and metric names that will be written to a separate index.
+	/**
+	 * @param metricsToCreate	Metrics not seen by this instance before
+	 * @param metricsToUpdate	Metrics that need a modified-timestamp update
+	 * @param scopesToCreate		Scopes not seen by this instance before
+	 * @param scopesToUpdate		Scopes that need a modified-timestamp update
+	 * @param metatagsToCreate	Metatags not seen by this instance before
+	 * @param metatagsToUpdate	Metatags that need a modified-timestamp update
 	 */
-	protected abstract void implementationSpecificPut(List<Metric> metrics,
-                                                          Set<String> scopeNames,
-                                                          Set<Pair<String, String>> scopesAndMetricNames,
-                                                          Map<String, MetatagsRecord> metatagsToPut);
+	protected abstract void implementationSpecificPut(Set<Metric> metricsToCreate,
+													  Set<Metric> metricsToUpdate,
+													  Set<String> scopesToCreate,
+													  Set<String> scopesToUpdate,
+													  Set<MetatagsRecord> metatagsToCreate,
+													  Set<MetatagsRecord> metatagsToUpdate);
 
 	@Override
 	public void dispose() {
@@ -266,62 +231,13 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	@Override
 	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
 
-	protected String constructKey(Metric metric, String tagk, String tagv) {
-		return constructKey(metric.getScope(),
-				metric.getMetric(),
-				tagk,
-				tagv,
-				metric.getNamespace(),
-				metric.getMetatagsRecord()==null?null:metric.getMetatagsRecord().getMetatagValue(MetricSchemaRecord.RETENTION_DISCOVERY));
-	}
-
-	protected String constructKey(String scope, String metric, String tagk, String tagv, String namespace, String retention) {
-
-		StringBuilder sb = new StringBuilder(scope);
-
-		if(!StringUtils.isEmpty(metric)) {
-			sb.append('\0').append(metric);
-		}
-
-		if(!StringUtils.isEmpty(namespace)) {
-			sb.append('\0').append(namespace);
-		}
-
-		if(!StringUtils.isEmpty(tagk)) {
-			sb.append('\0').append(tagk);
-		}
-
-		if(!StringUtils.isEmpty(tagv)) {
-			sb.append('\0').append(tagv);
-		}
-
-		//there is use case where users simply want to update the retention without touching rest of a metric
-		if(!StringUtils.isEmpty(retention)) {
-			sb.append('\0').append(retention);
-		}
-
-		// Add randomness for each instance of bloom filter running on different
-		// schema clients to reduce probability of false positives that metric schemas are not written to ES
-		sb.append('\0').append(randomBloomAppend);
-
-		return sb.toString();
-	}
-
-	protected String constructScopeOnlyKey(String scope) {
-
-		return constructKey(scope, null, null, null, null, null);
-	}
-
-	protected String constructScopeAndMetricOnlyKey(String scope, String metric) {
-
-		return constructKey(scope, metric, null, null, null, null);
-	}
-
-	protected int getNumHoursUntilTargetHour(int targetHour){
+	protected int getNumSecondsUntilTargetHour(int targetHour){
 		_logger.info("Initialized bloom filter flushing out, at {} hour of day", targetHour);
 		Calendar calendar = Calendar.getInstance();
 		int hour = calendar.get(Calendar.HOUR_OF_DAY);
-		return hour < targetHour ? (targetHour - hour) : (targetHour + 24 - hour);
+		int secondsPastHour = calendar.get(Calendar.MINUTE) * 60;
+		int hoursUntil = hour < targetHour ? (targetHour - hour) : (targetHour + 24 - hour);
+		return hoursUntil * 60 * 60 - secondsPastHour;
 	}
 
 	/*
@@ -330,7 +246,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private int getBloomFilterFlushHourToStartAt() {
 		int bloomFilterFlushHourToStartAt = 0;
 		try {
-			bloomFilterFlushHourToStartAt = Math.abs(InetAddress.getLocalHost().getHostName().hashCode() % 24);
+			bloomFilterFlushHourToStartAt = Math.abs((InetAddress.getLocalHost().getHostName() + config.getValue(config.ARGUS_INSTANCE_ID, "")).hashCode() % 24);
 		} catch (UnknownHostException e) {
 			_logger.warn("BloomFilter UnknownHostException", e);
 		}
@@ -338,49 +254,48 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		return bloomFilterFlushHourToStartAt;
 	}
 
-    private void createOrReadBloomFilter() {
-        File bfFile = new File(this.bfTagsStateFilename);
-        if (bloomFileWritingEnabled && bfFile.exists() ) {
-            _logger.info("State file for bloom tags exists, using it to pre-populate bloom");
-            try (InputStream inputStream = new FileInputStream(bfFile)) {
-                this.bloomFilter = BloomFilter.readFrom(inputStream,
-                                                        Funnels.stringFunnel(Charset.defaultCharset()));
-            } catch (IOException io) {
-                _logger.error("tags bloomfilter read error, not using prev state", io);
-                this.bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
-                                                      bloomFilterExpectedNumberInsertions ,
-                                                      bloomFilterErrorRate);
-            }
-            return;
-        }
-
-        _logger.info("State file for bloom tags NOT present or bloomFileWritingEnabled is false, starting fresh bloom");
-        this.bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
-                                              bloomFilterExpectedNumberInsertions ,
-                                              bloomFilterErrorRate);
+    private BloomFilter<CharSequence> createOrReadBloomFilter(String filename, int expectedNumberInsertions, double errorRate) {
+		File bfFile = new File(filename);
+		if (bloomFileWritingEnabled && bfFile.exists()) {
+			_logger.info("Bloomfilter state file {} exists, using it to pre-populate bloom", filename);
+			try (InputStream inputStream = new FileInputStream(bfFile)) {
+				return BloomFilter.readFrom(inputStream, Funnels.stringFunnel(Charset.defaultCharset()));
+			} catch (IOException io) {
+				_logger.error("Bloomfilter state file {} read error, not using prev state: {}", filename, io);
+				return BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), expectedNumberInsertions, errorRate);
+			}
+		}
+		_logger.info("Bloomfilter state file {} NOT present or bloomFileWritingEnabled is false, starting fresh bloom", filename);
+		return BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), expectedNumberInsertions, errorRate);
     }
 
-    private void writeTagsBloomFilterToFile() {
+    private void writeBloomsToFile() {
         if (!bloomFileWritingEnabled) {
             return;
         }
 
-        File bfTagsFile = new File(this.bfTagsStateFilename);
-        if (!bfTagsFile.getParentFile().exists()) {
-            bfTagsFile.getParentFile().mkdir();
-        }
-        try (OutputStream out = new FileOutputStream(bfTagsFile)) {
-            bloomFilter.writeTo(out);
-            _logger.info("Succesfully wrote tags bloomfilter to file {}", this.bfTagsStateFilename);
+        File createdBloomFile = new File(this.createdBloomFileName);
+        createdBloomFile.mkdirs();
+        try (OutputStream out = new FileOutputStream(createdBloomFile)) {
+            createdBloom.writeTo(out);
+            _logger.info("Succesfully wrote created-metrics bloomfilter to file {}", this.createdBloomFileName);
         } catch (IOException io) {
-            _logger.error("Failed to write tags bf to file", io);
+            _logger.error("Failed to write to createdBloom file", io);
         }
+
+		File modifiedBloomFile = new File(this.modifiedBloomFileName);
+		try (OutputStream out = new FileOutputStream(modifiedBloomFile)) {
+			modifiedBloom.writeTo(out);
+			_logger.info("Succesfully wrote modified-metrics bloomfilter to file {}", this.modifiedBloomFileName);
+		} catch (IOException io) {
+			_logger.error("Failed to write to modifiedBloom file", io);
+		}
     }
 
 
 	private void createScheduledExecutorService(int targetHourToStartAt){
 		scheduledExecutorService = Executors.newScheduledThreadPool(1);
-		int initialDelayInSeconds = getNumHoursUntilTargetHour(targetHourToStartAt) * HOUR_IN_SECONDS;
+		int initialDelayInSeconds = getNumSecondsUntilTargetHour(targetHourToStartAt);
 		BloomFilterFlushThread bloomFilterFlushThread = new BloomFilterFlushThread();
 		scheduledExecutorService.scheduleAtFixedRate(bloomFilterFlushThread, initialDelayInSeconds, DAY_IN_SECONDS, TimeUnit.SECONDS);
 	}
@@ -403,46 +318,27 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	 */
 	public enum Property {
 		SYNC_PUT("service.property.schema.sync.put", "false"),
-	        BLOOM_FILE_WRITING_ENABLED("service.property.schema.bloom.file.writing.enabled", "false"),
-                BF_STATE_BASE_DIR("service.property.schema.bf.state.base.dir", "bloomstate"),
-		BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.expected.number.insertions", "40"),
-		BLOOMFILTER_ERROR_RATE("service.property.schema.bloomfilter.error.rate", "0.00001"),
+
+		BLOOM_FILE_WRITING_ENABLED("service.property.schema.bloom.file.writing.enabled", "false"),
+		BF_STATE_BASE_DIR("service.property.schema.bf.state.base.dir", "bloomstate"),
 
 		/*
-		* Estimated Filter Size using bloomFilter 1 million entries
-		* https://hur.st/bloomfilter/?n=1000000&p=1.0E-5&m=&k= 2.86MiB
-		* Storing in a Set 100K entries with avg length of 15 chars would be 100K * 15 * 2 B = 30B * 100K = 3 MB
-		* If # of entries is 1 million, then it would be 30 MB resulting in savings in space.
-		*/
-
-		BLOOMFILTER_SCOPE_ONLY_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.scope.only.expected.number.insertions", "40"),
-		BLOOMFILTER_SCOPE_ONLY_ERROR_RATE("service.property.schema.bloomfilter.scope.only.error.rate", "0.00001"),
-
-		/*
-		 * Estimated Filter Size using bloomFilter 500 million entries
-		 * https://hur.st/bloomfilter/?n=10000000&p=1.0E-5&m=&k= 1.39GiB
-		 * Storing in a Set 100M entries with avg length of 30 chars would be 100M * 30 * 2 B = 60B * 100M = 6 GB
-		 * If # of entries is 500 million, then it would be 30 GB resulting in savings in space.
-		*/
-
-		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.scope.and.metric.only.expected.number.insertions", "40"),
-		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_ERROR_RATE("service.property.schema.bloomfilter.scope.and.metric.only.error.rate", "0.00001"),
-
-		/*
-		* Estimated Filter Size using bloomFilter 1 million entries
-		* https://hur.st/bloomfilter/?n=1000000&p=1.0E-5&m=&k= 2.86MiB
-		* Storing in a Set 100K entries with avg length of 15 chars would be 100K * 15 * 2 B = 30B * 100K = 3 MB
-		* If # of entries is 1 million, then it would be 30 MB resulting in savings in space.
-		*/
-
-		BLOOMFILTER_METATAGS_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.metatags.expected.number.insertions", "1000000"),
-		BLOOMFILTER_METATAGS_ERROR_RATE("service.property.schema.bloomfilter.metatags.error.rate", "0.00001");
+		 * (Comment from old bloom filter pattern)
+		 * Estimated Filter Size using bloomFilter 1 million entries
+		 * https://hur.st/bloomfilter/?n=1000000&p=1.0E-5&m=&k= 2.86MiB
+		 * Storing in a Set 100K entries with avg length of 15 chars would be 100K * 15 * 2 B = 30B * 100K = 3 MB
+		 * If # of entries is 1 million, then it would be 30 MB resulting in savings in space.
+		 */
+		CREATED_BLOOM_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.created.expected.number.insertions", "40"),
+		CREATED_BLOOM_ERROR_RATE("service.property.schema.bloomfilter.created.error.rate", "0.00001"),
+		MODIFIED_BLOOM_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.modified.expected.number.insertions", "40"),
+		MODIFIED_BLOOM_ERROR_RATE("service.property.schema.bloomfilter.modified.error.rate", "0.00001");
 
 
 		private final String _name;
 		private final String _defaultValue;
 
-		private Property(String name, String defaultValue) {
+		Property(String name, String defaultValue) {
 			_name = name;
 			_defaultValue = defaultValue;
 		}
@@ -477,7 +373,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private class BloomFilterMonitorThread implements Runnable {
 		@Override
 		public void run() {
-			_logger.info("Initialized randomBloomAppend for bloom filter key = {}", randomBloomAppend);
+			_logger.info("Initialized randomBloomAppend for bloom filter key = {}", AbstractSchemaRecord.getBloomAppend());
 			while (!Thread.currentThread().isInterrupted()) {
 				_sleepForPollPeriod();
 				if (!Thread.currentThread().isInterrupted()) {
@@ -491,15 +387,11 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		}
 
 		private void _checkBloomFilterUsage() {
-			_monitorService.modifyCounter(MonitorService.Counter.BLOOMFILTER_APPROXIMATE_ELEMENT_COUNT, bloomFilter.approximateElementCount(), null);
-			_monitorService.modifyCounter(MonitorService.Counter.BLOOMFILTER_SCOPE_ONLY_APPROXIMATE_ELEMENT_COUNT, bloomFilterScopeOnly.approximateElementCount(), null);
-			_monitorService.modifyCounter(MonitorService.Counter.BLOOMFILTER_SCOPE_AND_METRIC_ONLY_APPROXIMATE_ELEMENT_COUNT, bloomFilterScopeAndMetricOnly.approximateElementCount(), null);
-			_monitorService.modifyCounter(MonitorService.Counter.BLOOMFILTER_METATAGS_APPROXIMATE_ELEMENT_COUNT, bloomFilterMetatags.approximateElementCount(), null);
+			_monitorService.modifyCounter(MonitorService.Counter.BLOOM_CREATED_APPROXIMATE_ELEMENT_COUNT, createdBloom.approximateElementCount(), null);
+			_monitorService.modifyCounter(MonitorService.Counter.BLOOM_MODIFIED_APPROXIMATE_ELEMENT_COUNT, modifiedBloom.approximateElementCount(), null);
 
-			_logger.info("Metrics Bloom expected error rate = {}", bloomFilter.expectedFpp());
-			_logger.info("Scope only Bloom expected error rate = {}", bloomFilterScopeOnly.expectedFpp());
-			_logger.info("Scope and metric only Bloom expected error rate = {}", bloomFilterScopeAndMetricOnly.expectedFpp());
-			_logger.info("Metic Metatags Bloom expected error rate = {}", bloomFilterMetatags.expectedFpp());
+			_logger.info("Bloom for created-timestamp expected error rate = {}", createdBloom.expectedFpp());
+			_logger.info("Bloom for modified-timestamp expected error rate = {}", modifiedBloom.expectedFpp());
 		}
 
 		private void _sleepForPollPeriod() {
@@ -513,10 +405,13 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		}
 	}
 
+	/**
+	 *	Writes the createdBloom and modifiedBloom to disk. Clears the modifiedBloom.
+	 */
 	private class BloomFilterFlushThread implements Runnable {
 		@Override
 		public void run() {
-			try{
+			try {
 				_flushBloomFilter();
 			} catch (Exception ex) {
 				_logger.warn("Exception occurred while flushing bloom filter.", ex);
@@ -525,15 +420,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 		private void _flushBloomFilter() {
 			_logger.info("Flushing out bloom filter entries");
-                        // Write the main tags bloom filter to file first before flushing
-                        writeTagsBloomFilterToFile();
-
-			bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
-			bloomFilterScopeOnly = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterScopeOnlyExpectedNumberInsertions , bloomFilterScopeOnlyErrorRate);
-			bloomFilterScopeAndMetricOnly = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
-					bloomFilterScopeAndMetricOnlyExpectedNumberInsertions , bloomFilterScopeAndMetricOnlyErrorRate);
-			bloomFilterMetatags = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
-                                                                       bloomFilterMetatagsExpectedNumberInsertions , bloomFilterMetatagsErrorRate);
+			writeBloomsToFile();
+			modifiedBloom = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), modifiedBloomExpectedNumberInsertions, modifiedBloomErrorRate);
 			/* Don't need explicit synchronization to prevent slowness majority of the time*/
 		}
 	}

@@ -39,7 +39,6 @@ import com.salesforce.dva.argus.entity.CronJob;
 import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord.Service;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.DefaultService;
@@ -52,6 +51,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import it.sauronsoftware.cron4j.Scheduler;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,8 +78,7 @@ public class DefaultSchedulingService extends DefaultService implements Scheduli
 
     //~ Instance fields ******************************************************************************************************************************
 
-    @SLF4JTypeListener.InjectLogger
-    private Logger _logger;
+    private Logger _logger = LoggerFactory.getLogger(DefaultSchedulingService.class);;
     private final AlertService _alertService;
     private final GlobalInterlockService _globalInterlockService;
     private final UserService _userService;
@@ -100,7 +99,7 @@ public class DefaultSchedulingService extends DefaultService implements Scheduli
      * @param config 
      */
     @Inject
-    DefaultSchedulingService(AlertService alertService, GlobalInterlockService globalInterlockService, UserService userService,
+    public DefaultSchedulingService(AlertService alertService, GlobalInterlockService globalInterlockService, UserService userService,
         ServiceManagementService serviceManagementRecordService, AuditService auditService, SystemConfiguration config) {
     	super(config);
         requireArgument(alertService != null, "Alert service cannot be null.");

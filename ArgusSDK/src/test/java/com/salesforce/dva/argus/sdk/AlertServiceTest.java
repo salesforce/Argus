@@ -167,7 +167,7 @@ public class AlertServiceTest extends AbstractTest {
             AlertService alertService = argusService.getAlertService();
             Alert alert = alertService.getAlert(BigInteger.ONE);
 
-            Alert result = alertService.cloneAlert(BigInteger.ONE, alert.getOwnerName());
+            Alert result = alertService.cloneAlert(BigInteger.ONE, "TestAlertClone");
             Alert expected = _constructClonedAlert();
 
             assertEquals(expected, result);
@@ -340,6 +340,7 @@ public class AlertServiceTest extends AbstractTest {
         Alert alert = _constructPersistedAlert();
 
         alert.setId(BigInteger.ZERO);
+        alert.setName("TestAlertClone");
         return alert;
     }
 

@@ -34,10 +34,10 @@ package com.salesforce.dva.argus.service.schema;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.KeywordQuery;
+import com.salesforce.dva.argus.entity.MetatagsRecord;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
-import com.salesforce.dva.argus.entity.MetatagsRecord;
 import com.salesforce.dva.argus.service.AsyncHBaseClientFactory;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchemaService;
@@ -47,8 +47,6 @@ import com.salesforce.dva.argus.system.SystemException;
 import com.stumbleupon.async.Callback;
 import com.stumbleupon.async.Deferred;
 import com.stumbleupon.async.TimeoutException;
-
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.hbase.async.CompareFilter.CompareOp;
 import org.hbase.async.FilterList;
@@ -70,12 +68,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.HashMap;
-import java.util.Map;
 
 
 /**
@@ -195,14 +191,11 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    protected void implementationSpecificPut(List<Metric> metrics,
-                                             Set<String> scopeNames,
-                                             Set<Pair<String, String>> scopesAndMetricNames,
-                                             Map<String, MetatagsRecord> metatagsToPut) {
+    protected void implementationSpecificPut(Set<Metric> metricsToCreate, Set<Metric> metricsToUpdate, Set<String> scopesToCreate, Set<String> scopesToUpdate, Set<MetatagsRecord> metatagsToCreate, Set<MetatagsRecord> metatagsToUpdate) {
         requireNotDisposed();
-        SystemAssert.requireArgument(metrics != null, "Metric list cannot be null.");
+        SystemAssert.requireArgument(metricsToCreate != null, "Metric list cannot be null.");
 
-        for (Metric metric : metrics) {
+        for (Metric metric : metricsToCreate) {
             if (metric.getTags().isEmpty()) {
                 _putWithoutTag(metric);
             }

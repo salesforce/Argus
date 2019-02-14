@@ -26,7 +26,7 @@ package_generation_command: "echo \"Creating users inside container...\"\nFILE=/
   \ ${CUR_USER} != ${ORIG_USER} ]]; then\n    uniq_uid=$((1 + $(cat /etc/passwd |\
   \ grep -v nobody | cut -f 3 -d: | sort -n | tail -n 1)))\n    usermod -l ${ORIG_USER}\
   \ ${CUR_USER}\nfi\nmake package"
-package_repository: mandm
+package_repository: argus
 integration_tests_command: echo docker override
 docker_image_name: argus2
 publish_jar: true

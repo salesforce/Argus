@@ -1,21 +1,19 @@
 package com.salesforce.dva.argus.service.schema;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.entity.Metric;
+import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Test;
-import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import com.salesforce.dva.argus.AbstractTest;
-import com.salesforce.dva.argus.entity.Metric;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -28,9 +26,10 @@ import com.salesforce.dva.argus.entity.Metric;
  */
 public class AbstractSchemaServiceTest extends AbstractTest {
 
-	private int scopesCount = 0;
-	private int scopeAndMetricsCount = 0;
-	private int metricsCount = 0;
+	private int scopesCreatedCount = 0;
+	private int metricsCreatedCount = 0;
+	private int scopesModifiedCount = 0;
+	private int metricsModifiedCount = 0;
 
 	@Test
 	public void testPutEverythingCached() {
@@ -45,29 +44,23 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 		spyService.put(metrics);
 
 		Set<String> scopeNames = new HashSet<>();
-		Set<Pair<String, String>> scopeAndMetricNames = new HashSet<>();
 
 		for(Metric m : metrics)
 		{
 			scopeNames.add(m.getScope());
-			scopeAndMetricNames.add(Pair.of(m.getScope(), m.getMetric()));
 		}
 
-		assertEquals(metricsCount, metrics.size());
-		assertEquals(scopeAndMetricsCount, scopeAndMetricNames.size());
-		assertEquals(scopesCount, scopeNames.size());
-
-		// add to bloom filter cache
-		spyService._addToBloomFilter(spyService._fracture(metrics).get(0));
-		spyService._addToBloomFilterScopeAndMetricOnly(spyService._fractureScopeAndMetrics(scopeAndMetricNames).get(0));
-		spyService._addToBloomFilterScopeOnly(spyService._fractureScopes(scopeNames).get(0));
+		assertEquals(metricsCreatedCount, metrics.size());
+		assertEquals(scopesCreatedCount, scopeNames.size());
+		assertEquals(metricsModifiedCount, 0);
+		assertEquals(scopesModifiedCount, 0);
 
 		spyService.put(metrics);
-		// count should be same since we are re-reading cached value
-
-		assertEquals(metricsCount, metrics.size());
-		assertEquals(scopeAndMetricsCount, scopeAndMetricNames.size());
-		assertEquals(scopesCount, scopeNames.size());
+		initCounters();
+		assertEquals(metricsCreatedCount, 0);
+		assertEquals(scopesCreatedCount, 0);
+		assertEquals(metricsModifiedCount, 0);
+		assertEquals(scopesModifiedCount, 0);
 	}
 
 	@Test
@@ -80,22 +73,14 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 		spyService.put(metrics);
 
 		Set<String> scopeNames = new HashSet<>();
-		Set<Pair<String, String>> scopeAndMetricNames = new HashSet<>();
 
 		for(Metric m : metrics)
 		{
 			scopeNames.add(m.getScope());
-			scopeAndMetricNames.add(Pair.of(m.getScope(), m.getMetric()));
 		}
 
-		assertEquals(metricsCount, metrics.size());
-		assertEquals(scopeAndMetricsCount, scopeAndMetricNames.size());
-		assertEquals(scopesCount, scopeNames.size());
-
-		// add to bloom filter cache
-		spyService._addToBloomFilter(spyService._fracture(metrics).get(0));
-		spyService._addToBloomFilterScopeAndMetricOnly(spyService._fractureScopeAndMetrics(scopeAndMetricNames).get(0));
-		spyService._addToBloomFilterScopeOnly(spyService._fractureScopes(scopeNames).get(0));
+		assertEquals(metricsCreatedCount, metrics.size());
+		assertEquals(scopesCreatedCount, scopeNames.size());
 
 		List<Metric> newMetrics = createRandomMetrics(null, null, 10);
 
@@ -106,17 +91,66 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 		spyService.put(newMetrics);
 
 		scopeNames.clear();
-		scopeAndMetricNames.clear();
 
 		for(Metric m : newMetrics)
 		{
 			scopeNames.add(m.getScope());
-			scopeAndMetricNames.add(Pair.of(m.getScope(), m.getMetric()));
 		}
 
-		assertEquals(metricsCount, newMetrics.size());
-		assertEquals(scopeAndMetricsCount, scopeAndMetricNames.size());
-		assertEquals(scopesCount, scopeNames.size());
+		assertEquals(metricsCreatedCount, newMetrics.size());
+		assertEquals(scopesCreatedCount, scopeNames.size());
+		assertEquals(metricsModifiedCount, 0);
+		assertEquals(scopesModifiedCount, 0);
+	}
+
+	@Test
+	public void testPutSameMetricWithDifferentTags() {
+		List<Metric> metrics = createRandomMetrics("test-scope", "test-metric", 1);
+		Metric metric = metrics.get(0);
+
+		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
+		ElasticSearchSchemaService spyService = _initializeSpyService(service);
+		Set<String> scopeNames = new HashSet<>();
+		scopeNames.add(metric.getScope());
+		spyService.put(metrics);
+		// Both metadata and scope are new
+		assertEquals(metricsCreatedCount, 1);
+		assertEquals(scopesCreatedCount, 1);
+		assertEquals(metricsModifiedCount, 0);
+		assertEquals(scopesModifiedCount, 0);
+
+		Map.Entry<String,String> originalTagEntry = metric.getTags().entrySet().iterator().next();
+		String originalTagKey = originalTagEntry.getKey();
+		String originalTagValue = originalTagEntry.getValue();
+		String randomTagKey = createRandomName();
+		String randomTagValue = createRandomName();
+
+		// New tagvalue for same scope:metric should update metric
+		initCounters();
+		metrics.get(0).setTag(originalTagKey, randomTagValue);
+		spyService.put(metrics);
+		assertEquals(metricsCreatedCount, 1);
+		assertEquals(scopesCreatedCount, 0);
+		assertEquals(metricsModifiedCount, 0);
+		assertEquals(scopesModifiedCount, 0);
+
+		// New tagkey should update metric
+		initCounters();
+		metrics.get(0).setTag(randomTagKey, originalTagValue);
+		spyService.put(metrics);
+		assertEquals(metricsCreatedCount, 1);
+		assertEquals(scopesCreatedCount, 0);
+		assertEquals(metricsModifiedCount, 0);
+		assertEquals(scopesModifiedCount, 0);
+
+		// Same scope:metric:{seentag1=seenvalue1,seentag2=seenvalue2} doesn't need update and shouldn't
+		initCounters();
+		metrics.get(0).setTag(randomTagKey, originalTagValue);
+		spyService.put(metrics);
+		assertEquals(metricsCreatedCount, 0);
+		assertEquals(scopesCreatedCount, 0);
+		assertEquals(metricsModifiedCount, 0);
+		assertEquals(scopesModifiedCount, 0);
 	}
 
 	@Test
@@ -128,56 +162,84 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
 		ElasticSearchSchemaService spyService = _initializeSpyService(service);
 
+		// Make implementationSpecificPut specifically NOT add to the bloomfilters on a put
+		Mockito.doAnswer((Answer<Void>) invocation -> {
+			@SuppressWarnings("unchecked")
+			Set<Metric> metricsToCreate = Set.class.cast(invocation.getArguments()[0]);
+			Set<Metric> metricsToUpdate = Set.class.cast(invocation.getArguments()[1]);
+
+			Set<String> scopeNamesToCreate = Set.class.cast(invocation.getArguments()[2]);
+			Set<String> scopeNamesToUpdate = Set.class.cast(invocation.getArguments()[3]);
+
+			metricsCreatedCount += metricsToCreate.size();
+			metricsModifiedCount += metricsToUpdate.size();
+			scopesCreatedCount += scopeNamesToCreate.size();
+			scopesModifiedCount += scopeNamesToUpdate.size();
+
+			return null;
+		}).when(spyService).implementationSpecificPut(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+
 		spyService.put(metrics);
 
 		Set<String> scopeNames = new HashSet<>();
-		Set<Pair<String, String>> scopeAndMetricNames = new HashSet<>();
 
 		for(Metric m : metrics)
 		{
 			scopeNames.add(m.getScope());
-			scopeAndMetricNames.add(Pair.of(m.getScope(), m.getMetric()));
 		}
 
-		assertEquals(metricsCount, metrics.size());
-		assertEquals(scopeAndMetricsCount, scopeAndMetricNames.size());
-		assertEquals(scopesCount, scopeNames.size());
+		assertEquals(metricsCreatedCount, metrics.size());
+		assertEquals(scopesCreatedCount, scopeNames.size());
 
 		spyService.put(metrics);
 
-		assertEquals(metricsCount, 2 * metrics.size());
-		assertEquals(scopeAndMetricsCount, 2 * scopeAndMetricNames.size());
-		assertEquals(scopesCount, 2 * scopeNames.size());
+		assertEquals(metricsCreatedCount, 2 * metrics.size());
+		assertEquals(scopesCreatedCount, 2 * scopeNames.size());
 	}
 
 	private ElasticSearchSchemaService _initializeSpyService(ElasticSearchSchemaService service) {
 		ElasticSearchSchemaService spyService = Mockito.spy(service);
 		initCounters();
 
-		Mockito.doAnswer(new Answer<Void>() {
-			@Override
-			public Void answer(InvocationOnMock invocation) throws Throwable {
-				@SuppressWarnings("unchecked")
-				List<Metric> metrics = List.class.cast(invocation.getArguments()[0]);
+		Mockito.doAnswer((Answer<Void>) invocation -> {
+			@SuppressWarnings("unchecked")
+			Set<Metric> metricsToCreate = Set.class.cast(invocation.getArguments()[0]);
+			Set<Metric> metricsToUpdate = Set.class.cast(invocation.getArguments()[1]);
 
-				Set<String> scopeNames = Set.class.cast(invocation.getArguments()[1]);
+			Set<String> scopeNamesToCreate = Set.class.cast(invocation.getArguments()[2]);
+			Set<String> scopeNamesToUpdate = Set.class.cast(invocation.getArguments()[3]);
 
-				Set<Pair<String, String>> scopeAndMetricNames = Set.class.cast(invocation.getArguments()[2]);
+			metricsCreatedCount += metricsToCreate.size();
+			metricsModifiedCount += metricsToUpdate.size();
+			scopesCreatedCount += scopeNamesToCreate.size();
+			scopesModifiedCount += scopeNamesToUpdate.size();
 
-				scopesCount += scopeNames.size();
-				scopeAndMetricsCount += scopeAndMetricNames.size();
-				metricsCount += metrics.size();
-
-				return null;
+			// Simulate a successful put, which will add to the corresponding bloomsfilters
+			if (metricsToCreate.size() > 0) {
+				service._addToCreatedBloom(spyService._fracture(metricsToCreate).get(0));
+				service._addToModifiedBloom(spyService._fracture(metricsToCreate).get(0));
 			}
-		}).when(spyService).implementationSpecificPut(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+			if (scopeNamesToCreate.size() > 0) {
+				service._addToCreatedBloom(spyService._fractureScopes(scopeNamesToCreate).get(0));
+				service._addToModifiedBloom(spyService._fractureScopes(scopeNamesToCreate).get(0));
+			}
+			if (metricsToUpdate.size() > 0) {
+				service._addToModifiedBloom(spyService._fracture(metricsToUpdate).get(0));
+			}
+			if (scopeNamesToUpdate.size() > 0) {
+				service._addToModifiedBloom(spyService._fractureScopes(scopeNamesToUpdate).get(0));
+			}
+
+			return null;
+		}).when(spyService).implementationSpecificPut(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
 		return spyService;
 	}
 
 	private void initCounters() {
-		scopesCount = 0;
-		scopeAndMetricsCount = 0;
-		metricsCount = 0;
+		scopesCreatedCount = 0;
+		metricsCreatedCount = 0;
+		scopesModifiedCount = 0;
+		metricsModifiedCount = 0;
 	}
 
 	@Test
@@ -188,6 +250,8 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 
 		// Will wait 24 hours before next flush if at same hour boundary
 		int hour = calendar.get(Calendar.HOUR_OF_DAY);
-		assertTrue(service.getNumHoursUntilTargetHour(hour) == 24);
+		int secondsUntil = service.getNumSecondsUntilTargetHour(hour);
+		System.out.println(secondsUntil);
+		assertTrue(secondsUntil >= 23 * 60 * 60 && secondsUntil <= 24 * 60 * 60);
 	}
 }

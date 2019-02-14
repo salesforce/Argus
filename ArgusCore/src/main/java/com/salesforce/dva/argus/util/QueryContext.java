@@ -8,9 +8,9 @@ import com.salesforce.dva.argus.service.metric.transform.TransformFactory.Functi
 /*
  * This class encapsulates the parsed query expression tree. 
  * 
- * Each node in the tree corresponds to a transform function specified in the expression.
- *  
- * Moreover each node has references to its constants, child transforms, parent transform and the associated tsdb query expressions
+ * Each node in the tree corresponds to a transform function or TSDB query expression, but not both. 
+ * 
+ * For example if a particular QueryContext is a transform node, then the fields corresponding to expression will be null and vice-versa
  * 
  */
 public class QueryContext {
@@ -22,10 +22,10 @@ public class QueryContext {
     private QueryContext parentContext = null;
     
     private List<QueryContext> childContexts = new ArrayList<QueryContext>();
-    
-    private List<TSDBQueryExpression> childExpressions = new ArrayList<TSDBQueryExpression>();
 
- 	public Function getTransform() {
+    private TSDBQueryExpression expression = null;
+
+    public Function getTransform() {
 		return transform;
 	}
 
@@ -57,14 +57,6 @@ public class QueryContext {
 		this.childContexts = childContexts;
 	}
 
-	public List<TSDBQueryExpression> getChildExpressions() {
-		return childExpressions;
-	}
-
-	public void setChildExpressions(List<TSDBQueryExpression> childExpressions) {
-		this.childExpressions = childExpressions;
-	}
-
 	public List<QueryContext> getChildQueryContexts() {
 		return childContexts;
 	}
@@ -72,4 +64,12 @@ public class QueryContext {
 	public void setChildQueryContexts(List<QueryContext> childQueryContexts) {
 		this.childContexts = childQueryContexts;
 	}
+    
+    public TSDBQueryExpression getExpression() {
+        return expression;
+    }
+
+    public void setExpression(TSDBQueryExpression expression) {
+        this.expression = expression;
+    }
 }

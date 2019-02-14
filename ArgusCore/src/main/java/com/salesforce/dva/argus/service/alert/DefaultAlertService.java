@@ -362,6 +362,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		}
 
+		_monitorService.modifyCounter(Counter.ALERTS_EVALUATED_RAWTOTAL, alertsWithTimestamp.size(), new HashMap<>());
 		for(AlertWithTimestamp alertWithTimestamp : alertsWithTimestamp) {
 			String serializedAlert = alertWithTimestamp.getSerializedAlert();
 
@@ -443,6 +444,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		String logMessage;
 		History history;
 
+		_monitorService.modifyCounter(Counter.ALERTS_EVALUATED_TOTAL, alerts.size(), new HashMap<>());
 		for (Alert alert : alerts) {
 
 			jobStartTime = System.currentTimeMillis();
@@ -469,7 +471,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				/* It works only for alerts with regex based expressions
 				TODO: Fix for expressions that do not go through discovery service ( i.e, non regex based expressions )
 				*/
-				if (initialMetricSize == 0 && ((System.currentTimeMillis() - alert.getModifiedDate().getTime()) / (24 * 60 * 60 * 1000)) > MetricSchemaRecord.DEFAULT_RETENTION_DISCOVERY_DAYS && // if Last Modified time was > DEFAULT_RETENTION_DISCOVERY_DAYS
+				if (initialMetricSize == 0 && alert.getModifiedDate() != null && ((System.currentTimeMillis() - alert.getModifiedDate().getTime()) / (24 * 60 * 60 * 1000)) > MetricSchemaRecord.DEFAULT_RETENTION_DISCOVERY_DAYS && // if Last Modified time was > DEFAULT_RETENTION_DISCOVERY_DAYS
 						(_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns))) { // not disable whitelisted argus alerts.
 					_logger.info("Orphan Alert detected. Disabling it and notifying user. Alert Id: {}", alert.getId());
 					alert.setEnabled(false);
@@ -609,12 +611,17 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	private void handleAlertEvaluationException(Alert alert, long jobStartTime, Long alertEnqueueTimestamp, History history,
-			Set<Trigger> missingDataTriggers, Exception ex, Boolean isDataMissing) {
+		Set<Trigger> missingDataTriggers, Exception ex, Boolean isDataMissing) {
 		long jobEndTime;
 		String logMessage;
 		jobEndTime = System.currentTimeMillis();
-		logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to missing data exception. Full stack trace of exception - {1}",
-				alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
+		if(isDataMissing) {
+			logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to missing data exception. Full stack trace of exception - {1}",
+					alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
+		} else {
+			logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Full stack trace of exception - {1}",
+					alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
+		}
 		_logger.warn(logMessage);
 
 		try {
@@ -893,7 +900,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	
 	private void publishAlertTrackingMetric(String scope, String metric, double value, Map<String, String> tags) {
 		Map<Long, Double> datapoints = new HashMap<>();
-		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), value);
+		datapoints.put(System.currentTimeMillis(), value);
 		Metric trackingMetric = new Metric(scope, metric);
 		trackingMetric.addDatapoints(datapoints);
 		if(tags!=null) {
@@ -1020,6 +1027,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
 
+		_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED_TOTAL, alerts.size(), new HashMap<>());
 		// Write alerts scheduled for evaluation as time series to TSDB
 		for (Alert alert : alerts) {
 			Map<Long, Double> datapoints = new HashMap<>();

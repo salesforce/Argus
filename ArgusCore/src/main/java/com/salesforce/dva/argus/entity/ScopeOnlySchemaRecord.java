@@ -40,7 +40,7 @@ import java.text.MessageFormat;
  *
  * @author  Dilip Devaraj (ddevaraj@salesforce.com)
  */
-public class ScopeOnlySchemaRecord {
+public class ScopeOnlySchemaRecord extends AbstractSchemaRecord {
 
 	//~ Instance fields ******************************************************************************************************************************
 
@@ -109,6 +109,11 @@ public class ScopeOnlySchemaRecord {
 	@Override
 	public String toString() {
 		return MessageFormat.format("ScopeOnlySchemaRecord = (Scope = {0}", scope);
+	}
+
+	@Override
+	public String toBloomFilterKey() {
+		return constructKey(scope, null, null, null, null, null);
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

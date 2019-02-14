@@ -1,15 +1,5 @@
 package com.salesforce.dva.argus.service.schema;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.codec.digest.DigestUtils;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -23,18 +13,28 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
-
 import net.openhft.hashing.LongHashFunction;
+import org.apache.commons.codec.digest.DigestUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.salesforce.dva.argus.entity.MetricSchemaRecord.DEFAULT_RETENTION_DISCOVERY_DAYS;
 import static com.salesforce.dva.argus.entity.MetricSchemaRecord.EXPIRATION_TS;
+import static com.salesforce.dva.argus.entity.MetricSchemaRecord.RETENTION_DISCOVERY;
 
 public class MetricSchemaRecordList {
 	private final static long ONE_DAY_IN_MILLIS = 24L * 3600L * 1000L;
 	private Map<String, MetricSchemaRecord> _idToSchemaRecordMap = new HashMap<>();
 	private String _scrollID;
 	
-	public MetricSchemaRecordList(List<MetricSchemaRecord> records, HashAlgorithm algorithm) {
+	public MetricSchemaRecordList(Set<MetricSchemaRecord> records, HashAlgorithm algorithm) {
 		for(MetricSchemaRecord record : records) {
 			String id = null;
 			if(HashAlgorithm.MD5.equals(algorithm)) {
@@ -56,6 +56,10 @@ public class MetricSchemaRecordList {
 
 	public List<MetricSchemaRecord> getRecords() {
 		return new ArrayList<>(_idToSchemaRecordMap.values());
+	}
+
+	public Set<String> getIdSet() {
+		return _idToSchemaRecordMap.keySet();
 	}
 	
 	public String getScrollID() {
@@ -87,11 +91,11 @@ public class MetricSchemaRecordList {
 	}
 	
 	
-	static class Serializer extends JsonSerializer<MetricSchemaRecordList> {
+	static class CreateSerializer extends JsonSerializer<MetricSchemaRecordList> {
 
 		@Override
 		public void serialize(MetricSchemaRecordList list, JsonGenerator jgen, SerializerProvider provider)
-				throws IOException, JsonProcessingException {
+				throws IOException{
 			
 			ObjectMapper mapper = new ObjectMapper();
 			mapper.setSerializationInclusion(Include.NON_NULL);
@@ -113,6 +117,36 @@ public class MetricSchemaRecordList {
 			}
 		}
     }
+
+	static class UpdateSerializer extends JsonSerializer<MetricSchemaRecordList> {
+
+		@Override
+		public void serialize(MetricSchemaRecordList list, JsonGenerator jgen, SerializerProvider provider)
+				throws IOException {
+
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.setSerializationInclusion(Include.NON_NULL);
+			final long now = System.currentTimeMillis();
+
+			for(Map.Entry<String, MetricSchemaRecord> entry : list._idToSchemaRecordMap.entrySet()) {
+				jgen.writeRaw("{\"update\":{\"_id\":\"" + entry.getKey() + "\"}}");
+				jgen.writeRaw(System.lineSeparator());
+
+				StringBuilder updateSB = new StringBuilder();
+				updateSB.append("\"mts\":" + now);
+				Integer retention = entry.getValue().getRetentionDiscovery();
+				if (retention != null) {
+					updateSB.append(",\"").append(RETENTION_DISCOVERY).append("\":").append(retention);
+					updateSB.append(",\"").append(EXPIRATION_TS).append("\":").append(now + ONE_DAY_IN_MILLIS * retention);
+				} else {
+					updateSB.append(",\"").append(EXPIRATION_TS).append("\":").append(now + ONE_DAY_IN_MILLIS * DEFAULT_RETENTION_DISCOVERY_DAYS);
+
+				}
+				jgen.writeRaw("{\"doc\":{" + updateSB + "}}");
+				jgen.writeRaw(System.lineSeparator());
+			}
+		}
+	}
 	
 	
 	static class Deserializer extends JsonDeserializer<MetricSchemaRecordList> {

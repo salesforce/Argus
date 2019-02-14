@@ -91,6 +91,8 @@ public final class ServiceFactory {
     Provider<BatchService> _batchServiceProvider;
     @Inject
     Provider<ChartService> _chartServiceProvider;
+    @Inject
+    Provider<ServiceManagementService> _serviceManagementServiceProvider;
 
 
     //~ Methods **************************************************************************************************************************************
@@ -311,5 +313,13 @@ public final class ServiceFactory {
         return _chartServiceProvider.get();
     }
 
+    /**
+     * Returns an instance of the service management service.
+     *
+     * @return  An instance of the service management service.
+     */
+    public synchronized ServiceManagementService getServiceManagementService() {
+        return _serviceManagementServiceProvider.get();
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

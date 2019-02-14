@@ -31,45 +31,88 @@
      
 package com.salesforce.dva.argus.service;
 
+import com.google.inject.Provider;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
 import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
 
+import com.salesforce.dva.argus.service.schedule.DefaultSchedulingService;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
 
+import javax.persistence.EntityManager;
+import javax.persistence.Persistence;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.when;
 
+@RunWith(org.mockito.runners.MockitoJUnitRunner.class)
 public class SchedulingServiceTest extends AbstractTest {
+    @Mock Provider<EntityManager> _emProviderMock;
+    @Mock TSDBService _tsdbServiceMock;
+    @Mock private MetricService _metricServiceMock;
+    @Mock private MailService _mailServiceMock;
+    @Mock private HistoryService _historyServiceMock;
+    @Mock private MonitorService _monitorServiceMock;
+    @Mock private AuditService _auditServiceMock;
+
+    private EntityManager em;
+
+    @Before
+    public void setup() {
+        // set up EM
+        em = Persistence.createEntityManagerFactory("argus-pu").createEntityManager();
+        when(_emProviderMock.get()).thenReturn(em);
+        em.getTransaction().begin();
+    }
+
+    @After
+    public void teardown() {
+        // rolling back transactions and forcing the gc to clean up. Otherwise the EM created above gets injected by guice in ut's that run afterwards. So weird
+        em.getTransaction().rollback();
+        em.close();
+        em = null;
+        System.gc();
+    }
 
     @Test
     public void testAlertSchedulingWithGlobalInterlock() throws InterruptedException {
-        SchedulingService schedulingService = system.getServiceFactory().getSchedulingService();
-        AlertService alertService = system.getServiceFactory().getAlertService();
-        MQService mqService = system.getServiceFactory().getMQService();
-        UserService userService = system.getServiceFactory().getUserService();
+        ServiceFactory serviceFactory = system.getServiceFactory();
+        MQService mqService = serviceFactory.getMQService();
+        UserService userService = serviceFactory.getUserService();
+
+        // Alert service with mocked tsdb service
+        DefaultAlertService alertService = new DefaultAlertService(system.getConfiguration(), mqService, _metricServiceMock, _auditServiceMock,
+                _tsdbServiceMock, _mailServiceMock, _historyServiceMock, _monitorServiceMock, system.getNotifierFactory(),
+                _emProviderMock);
+
+        DefaultSchedulingService schedulingService = new DefaultSchedulingService(alertService, serviceFactory.getGlobalInterlockService(),
+                userService, serviceFactory.getServiceManagementService(), serviceFactory.getAuditService(), system.getConfiguration());
 
         schedulingService.enableScheduling();
 
         long schedulingIterations = 1;
         int noOfAlerts = random.nextInt(10) + 1;
         PrincipalUser user = userService.findAdminUser();
-        Alert alert;
 
         for (int i = 0; i < noOfAlerts; i++) {
             String expression = "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, " +
                 "-1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
 
-            alert = new Alert(user, user, createRandomName(), expression, "* * * * *");
+            Alert alert = alertService.updateAlert(new Alert(user, user, createRandomName(), expression, "* * * * *"));
             alert.setEnabled(true);
             
             Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 0, 0);

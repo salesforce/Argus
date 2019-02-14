@@ -287,15 +287,15 @@ public class AlertService extends EndpointService {
      * Clones an existing alert.
      *
      * @param   alertId  The alert ID.
-     * @param   ownerName    The owner of the original alert.
+     * @param   newAlertName    The name of the cloned alert.
      *
      * @return  The cloned alert.
      *
      * @throws  IOException  If the server cannot be reached.
      * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public Alert cloneAlert(BigInteger alertId, String ownerName) throws IOException, TokenExpiredException {
-        String requestUrl = RESOURCE + "/" + alertId.toString() + "/clone?ownername=" + ownerName;
+    public Alert cloneAlert(BigInteger alertId, String newAlertName) throws IOException, TokenExpiredException {
+        String requestUrl = RESOURCE + "/" + alertId.toString() + "/clone?alertname=" + newAlertName;
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
         assertValidResponse(response, requestUrl);
