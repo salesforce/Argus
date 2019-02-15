@@ -233,30 +233,55 @@ public class AlertUtilsTest extends AbstractTest {
         	assertEquals(expression, returned_expression);
 
             a.setExpression(invalid_expression);
-            assertTrue(false);
+			a = alertService.updateAlert(a);
+			assertTrue(false);
 		}
 		catch (RuntimeException e)
 		{
            assertNotNull(a);
            String returned_expression = a.getExpression();
-           assertEquals(expression, returned_expression);
-           assertNotEquals( expression, invalid_expression);
+           assertEquals(invalid_expression, returned_expression); // NOTE, it's not in the database!
 		}
 
         alertService.deleteAlert(a.getName(), userService.findAdminUser());
 
-        a = null;
 
         try
         {
-            a = new Alert(admin, admin, "sample", invalid_expression, "* * * * *");
+			a = null;
+			a = new Alert(admin, admin, "sample", invalid_expression, "* * * * *");
+            assertTrue(true);
+            a.validateAlert();
             assertTrue(false);
+
         }
         catch (RuntimeException e)
         {
-           assertNull(a); // TODO - verify this
+            assertNotNull(a);
+			assertEquals(a.getExpression(), invalid_expression);
         }
 
+		try
+		{
+			a = null;
+			a = new Alert(admin, admin, "sample", "", "* * * * *");
+			assertTrue(false);
+		}
+		catch (RuntimeException e)
+		{
+			assertNull(a);
+		}
+
+		try
+		{
+			a = null;
+			a = new Alert(admin, admin, "sample", null, "* * * * *");
+			assertTrue(false);
+		}
+		catch (RuntimeException e)
+		{
+			assertNull(a);
+		}
 	}
 
 
@@ -293,28 +318,53 @@ public class AlertUtilsTest extends AbstractTest {
         {
             a = alertService.updateAlert(new Alert(admin, admin, "sample", expression, valid_cron));
             a.setCronEntry(invalid_cron);
+            a = alertService.updateAlert(a);
             assertTrue(false);
         }
         catch (RuntimeException e)
         {
             assertNotNull(a);
             String returned_cron = a.getCronEntry();
-            assertEquals(valid_cron, returned_cron);
-            assertNotEquals(invalid_cron, returned_cron);
+            assertEquals(invalid_cron, returned_cron);
         }
 
         alertService.deleteAlert(a.getName(), userService.findAdminUser());
-        a = null;
 
         try
         {
-            a = new Alert(admin, admin, "sample", expression, invalid_cron);
+			a = null;
+			a = new Alert(admin, admin, "sample", expression, invalid_cron);
+            assertTrue(true);
+            a.validateAlert();
             assertTrue(false);
         }
         catch (RuntimeException e)
         {
-            assertNull(a); // TODO - verify this
+            assertNotNull(a);
+            assertEquals(a.getCronEntry(), invalid_cron);
         }
+
+		try
+		{
+			a = null;
+			a = new Alert(admin, admin, "sample", expression, "");
+			assertTrue(false);
+		}
+		catch (RuntimeException e)
+		{
+			assertNull(a);
+		}
+
+		try
+		{
+			a = null;
+			a = new Alert(admin, admin, "sample", expression, null);
+			assertTrue(false);
+		}
+		catch (RuntimeException e)
+		{
+			assertNull(a);
+		}
 	}
 
 
