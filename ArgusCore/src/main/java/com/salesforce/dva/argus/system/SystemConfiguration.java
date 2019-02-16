@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.system;
 
 import com.google.inject.Singleton;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -44,13 +45,12 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Properties;
-
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
  * Immutable system configuration information.
@@ -180,6 +180,11 @@ public final class SystemConfiguration extends Properties {
      */
     public String getValue(String key, String defaultValue) {
         return getProperty(key, defaultValue);
+    }
+
+    public String refreshAndGetValue(Property propertyFile, String key, String defaultValue) {
+        SystemInitializer.readFile(this, getValue(propertyFile));
+        return getValue(key, defaultValue);
     }
 
     /**
