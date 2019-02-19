@@ -84,7 +84,6 @@ import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
-import com.salesforce.dva.argus.util.Cron;
 import com.salesforce.dva.argus.util.MonitoringUtils;
 
 /**
@@ -474,7 +473,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				if (initialMetricSize == 0 && alert.getModifiedDate() != null && ((System.currentTimeMillis() - alert.getModifiedDate().getTime()) / (24 * 60 * 60 * 1000)) > MetricSchemaRecord.DEFAULT_RETENTION_DISCOVERY_DAYS && // if Last Modified time was > DEFAULT_RETENTION_DISCOVERY_DAYS
 						(_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns))) { // not disable whitelisted argus alerts.
 					_logger.info("Orphan Alert detected. Disabling it and notifying user. Alert Id: {}", alert.getId());
-					alert.setEnabled(false);
+					Alert dbAlert = findAlertByPrimaryKey(alert.getId());
+					dbAlert.setEnabled(false);
 					_sendOrphanAlertNotification(alert);
 				} else {
 					if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))) {
