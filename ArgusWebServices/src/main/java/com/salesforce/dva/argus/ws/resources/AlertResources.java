@@ -726,7 +726,8 @@ public class AlertResources extends AbstractResource {
 			}
 
 			// Create new alert object.
-			Alert clonedAlert = new Alert(getRemoteUser(req), oldAlert.getOwner(), newAlertName, oldAlert.getExpression(), oldAlert.getCronEntry());
+			PrincipalUser requestedUser = getRemoteUser(req);
+			Alert clonedAlert = new Alert(requestedUser, requestedUser, newAlertName, oldAlert.getExpression(), oldAlert.getCronEntry());
 
 			List<Trigger> clonedTriggers = new ArrayList<>();
 			List<Notification> clonedNotifications = new ArrayList<>();
