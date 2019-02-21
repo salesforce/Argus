@@ -1309,10 +1309,10 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			String cronEntry = rootNode.get("cronEntry").asText();
 			alert.setCronEntry(cronEntry);
 
-			if(rootNode.get("modifiedDate") != null) {
-				Date modifiedDate = new Date(rootNode.get("modifiedDate").asText());
-				alert.setModifiedDate(modifiedDate);
-			}
+//			if(rootNode.get("modifiedDate") != null) {
+//				Date modifiedDate = new Date(rootNode.get("modifiedDate").asText());
+//				alert.setModifiedDate(modifiedDate);
+//			}
 
 			boolean missingDataNotificationEnabled = rootNode.get("missingDataNotificationEnabled").asBoolean();
 			alert.setMissingDataNotificationEnabled(missingDataNotificationEnabled);
