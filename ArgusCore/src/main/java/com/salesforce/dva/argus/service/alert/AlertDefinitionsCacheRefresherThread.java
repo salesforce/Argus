@@ -73,11 +73,16 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 				if(!alertDefinitionsCache.isAlertsCacheInitialized()) {
 					List<Alert> enabledAlerts = alertService.findAlertsByStatus(true);
 					lastExecutionTime = System.currentTimeMillis();
-					Map<BigInteger, Alert> enabledAlertsMap = enabledAlerts.stream().collect(Collectors.toMap(alert -> alert.getId(), alert -> alert));
+					Map<BigInteger, Alert> enabledValidAlertsMap = enabledAlerts.stream().
+																		filter(this::checkIsValidAlert).
+																		collect(Collectors.toMap(alert -> alert.getId(), alert -> alert));
 					for(Alert a : enabledAlerts) {
-						addEntrytoCronMap(a);
+						if (enabledValidAlertsMap.containsKey(a.getId()))
+						{
+							addEntrytoCronMap(a);
+						}
 					}
-					alertDefinitionsCache.setAlertsMapById(enabledAlertsMap);
+					alertDefinitionsCache.setAlertsMapById(enabledValidAlertsMap);
 					alertDefinitionsCache.setAlertsCacheInitialized(true);
 				}else {
 					List<Alert> modifiedAlerts = alertService.findAlertsModifiedAfterDate(new Date(startTime - Math.max(executionTime + REFRESH_INTERVAL_MILLIS, LOOKBACK_PERIOD_FOR_REFRESH_MILLIS)));
@@ -114,17 +119,26 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 							}
 							_logger.debug("Processing modified alert - {},{},{},{} after {} milliseconds ", a.getId(),
 									a.getName(), a.getCronEntry(), a.getExpression(), timeToDiscover);
-							if(alertDefinitionsCache.getAlertsMapById().containsKey(a.getId())) {
-								if(a.isDeleted() || !a.isEnabled()) {
+
+							boolean isValid = checkIsValidAlert(a);
+
+							if(alertDefinitionsCache.getAlertsMapById().containsKey(a.getId()))
+							{
+								if(a.isDeleted() || !a.isEnabled() || !isValid)
+								{
 									alertDefinitionsCache.getAlertsMapById().remove(a.getId());  
 									removeEntryFromCronMap(a.getId());
-								}else {
-									alertDefinitionsCache.getAlertsMapById().put(a.getId(), a);    
+								}
+								else {
 									// removing the previous cron mapping and adding fresh just in case the mapping changed
 									removeEntryFromCronMap(a.getId());
+
+									alertDefinitionsCache.getAlertsMapById().put(a.getId(), a);
 									addEntrytoCronMap(a);
 								}
-							}else if(a.isEnabled() && !a.isDeleted()) {
+							}
+							else if(a.isEnabled() && !a.isDeleted() && isValid)
+							{
 								alertDefinitionsCache.getAlertsMapById().put(a.getId(), a);
 								addEntrytoCronMap(a);
 							}
@@ -180,5 +194,15 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 				alertDefinitionsCache.getAlertsMapByCronEntry().get(cronEntry).remove(alertId);
 			}
 		}
+	}
+
+	private boolean checkIsValidAlert(Alert a) {
+		if (!a.isValid()) {
+			String msg = a.validationMessage();
+			_logger.debug("AlertDefinitionsCache: Excluding INVALID ALERT {},{},{},{} : {}",
+					a.getId(), a.getName(), a.getCronEntry(), a.getExpression(), msg);
+			return false;
+		}
+		return true;
 	}
 }

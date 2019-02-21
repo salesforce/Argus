@@ -70,8 +70,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private ScheduledExecutorService scheduledExecutorService;
 	private String createdBloomFileName;
 	private String modifiedBloomFileName;
-	protected final boolean bloomFileWritingEnabled;
-
+	protected boolean bloomFileWritingEnabled;
 
 	protected AbstractSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config);
@@ -270,12 +269,19 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
     }
 
     private void writeBloomsToFile() {
+		bloomFileWritingEnabled = Boolean.valueOf(config.refreshAndGetValue(
+				SystemConfiguration.Property.SCHEMA_SERVICE_PROPERTY_FILE,
+				Property.BLOOM_FILE_WRITING_ENABLED.getName(), Property.BLOOM_FILE_WRITING_ENABLED.getDefaultValue()));
+		_logger.info("Refreshed {} property and got {}.", Property.BLOOM_FILE_WRITING_ENABLED.getName(), bloomFileWritingEnabled);
         if (!bloomFileWritingEnabled) {
+        	_logger.info("Skipping bloom file write stage");
             return;
         }
 
         File createdBloomFile = new File(this.createdBloomFileName);
-        createdBloomFile.mkdirs();
+		if (!createdBloomFile.getParentFile().exists()) {
+			createdBloomFile.getParentFile().mkdirs();
+		}
         try (OutputStream out = new FileOutputStream(createdBloomFile)) {
             createdBloom.writeTo(out);
             _logger.info("Succesfully wrote created-metrics bloomfilter to file {}", this.createdBloomFileName);
@@ -284,6 +290,9 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
         }
 
 		File modifiedBloomFile = new File(this.modifiedBloomFileName);
+		if (!modifiedBloomFile.getParentFile().exists()) {
+			modifiedBloomFile.getParentFile().mkdirs();
+		}
 		try (OutputStream out = new FileOutputStream(modifiedBloomFile)) {
 			modifiedBloom.writeTo(out);
 			_logger.info("Succesfully wrote modified-metrics bloomfilter to file {}", this.modifiedBloomFileName);

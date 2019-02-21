@@ -135,7 +135,7 @@ final class SystemInitializer extends AbstractModule {
         return props;
     }
 
-    private static void readFile(Properties props, String filePath) {
+    static void readFile(Properties props, String filePath) {
         if ((filePath != null) && !filePath.isEmpty()) {
             InputStream is = null;
             Properties result = new Properties();

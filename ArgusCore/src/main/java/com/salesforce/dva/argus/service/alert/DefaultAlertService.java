@@ -175,9 +175,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 	@Override
 	@Transactional
-	public Alert updateAlert(Alert alert) {
+	public Alert updateAlert(Alert alert) throws RuntimeException {
 		requireNotDisposed();
 		requireArgument(alert != null, "Cannot update a null alert");
+
+		alert.validateAlert(); // prevent any invalid alerts from being committed to the database.
 
 		alert.setModifiedDate(new Date());
 

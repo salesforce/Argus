@@ -81,6 +81,7 @@ public class MonitorServiceTest extends AbstractTest {
         Field field = DefaultMonitorService.class.getDeclaredField("TIME_BETWEEN_RECORDINGS");
 
         final int TIME_BETWEEN_RECORDINGS_MS = 2000;
+        final int RESET_TIME_AFTER_TEST_MS = 3000; // enough time for reset to have occurred.
         field.setAccessible(true);
         field.setLong(null, TIME_BETWEEN_RECORDINGS_MS);
         _monitorService.startRecordingCounters();
@@ -126,7 +127,7 @@ public class MonitorServiceTest extends AbstractTest {
         assertEquals(0, jmxValue, DOUBLE_COMPARISON_MAX_DELTA);
 
         // wait for MonitorThread to run
-        Thread.sleep(TIME_BETWEEN_RECORDINGS_MS);
+        Thread.sleep(RESET_TIME_AFTER_TEST_MS);
 
         // gauge value should have reset
         customCounter = _monitorService.getCustomCounter(metricName, Collections.<String, String>emptyMap());
@@ -145,6 +146,7 @@ public class MonitorServiceTest extends AbstractTest {
         Field field = DefaultMonitorService.class.getDeclaredField("TIME_BETWEEN_RECORDINGS");
 
         final int TIME_BETWEEN_RECORDINGS_MS = 2000;
+        final int RESET_TIME_AFTER_TEST_MS = 3000; // enough time for reset to have occurred.
         field.setAccessible(true);
         field.setLong(null, TIME_BETWEEN_RECORDINGS_MS);
         _monitorService.startRecordingCounters();
@@ -190,7 +192,7 @@ public class MonitorServiceTest extends AbstractTest {
         assertEquals(expectedCounterValue, jmxValue, DOUBLE_COMPARISON_MAX_DELTA);
 
         // wait for MonitorThread to run, which clears gauge metrics
-        Thread.sleep(TIME_BETWEEN_RECORDINGS_MS);
+        Thread.sleep(RESET_TIME_AFTER_TEST_MS);
 
         // counter value should NOT have reset
         customCounter = _monitorService.getCounter(counter, Collections.<String, String>emptyMap());
