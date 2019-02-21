@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -1262,7 +1263,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			jgen.writeBooleanField("missingDataNotificationEnabled", alert.isMissingDataNotificationEnabled());
 			jgen.writeObjectField("owner", alert.getOwner());
 			if(alert.getModifiedDate() != null) {
-				jgen.writeObjectField("modifiedDate", alert.getModifiedDate().toString());
+				jgen.writeObjectField("modifiedDate", alert.getModifiedDate().getTime());
 			}
 
 			jgen.writeArrayFieldStart("triggers");
@@ -1304,14 +1305,14 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			alert.setName(name);
 
 			String expression = rootNode.get("expression").asText();
+      
 			alert.setExpression(expression);
 
 			String cronEntry = rootNode.get("cronEntry").asText();
 			alert.setCronEntry(cronEntry);
 
 //			if(rootNode.get("modifiedDate") != null) {
-//				Date modifiedDate = new Date(rootNode.get("modifiedDate").asText());
-//				alert.setModifiedDate(modifiedDate);
+//				alert.setModifiedDate(Date.from(Instant.ofEpochMilli(rootNode.get("modifiedDate").asLong())));
 //			}
 
 			boolean missingDataNotificationEnabled = rootNode.get("missingDataNotificationEnabled").asBoolean();

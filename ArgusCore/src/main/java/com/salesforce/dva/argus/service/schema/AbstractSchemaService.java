@@ -72,7 +72,6 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private String modifiedBloomFileName;
 	protected boolean bloomFileWritingEnabled;
 
-
 	protected AbstractSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config);
 		this.config = config;
