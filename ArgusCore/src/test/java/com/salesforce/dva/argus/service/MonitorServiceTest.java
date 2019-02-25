@@ -33,22 +33,21 @@ package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.service.monitor.DataLagMonitor;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.powermock.reflect.Whitebox;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-import javax.validation.groups.Default;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -67,6 +66,9 @@ public class MonitorServiceTest extends AbstractTest {
 
     @Mock
     private TSDBService tsdbMock;
+
+    @Mock
+    private MetricService metricServiceMock;
 
     @Test
     public void testServiceIsSingleton() {
@@ -136,6 +138,33 @@ public class MonitorServiceTest extends AbstractTest {
         // jmx gauge value should now reflect iterations * workerCount
         jmxValue = (Double)mbeanServer.getAttribute(jmxName, "Value");
         assertEquals(expectedCounterValue, jmxValue, DOUBLE_COMPARISON_MAX_DELTA);
+    }
+
+    @Test
+    public void testDatalagIncrement() throws Exception {
+        DataLagMonitor dataLagMonitor = new DataLagMonitor(system.getConfiguration(), metricServiceMock, tsdbMock);
+        Field testField = dataLagMonitor.getClass().getDeclaredField("_lagPerDC");  // Checks superclasses.
+        testField.setAccessible(true);
+        Map<String, Double> _lagPerDCTest = new TreeMap<>();
+        Map<String, Double> expectedOutput = new TreeMap<>();
+        Double minute = 1.0 * 60 * 1000;
+        _lagPerDCTest.put("DC1", 0.0);
+        expectedOutput.put("DC1", minute);
+        _lagPerDCTest.put("DC2", 1.0 * 60 * 60 * 1000);
+        expectedOutput.put("DC2", 1.0 * 60 * 60 * 1000 + minute);
+        _lagPerDCTest.put("DC3", 2.0 * 60 * 60 * 1000);
+        expectedOutput.put("DC3", 2.0 * 60 * 60 * 1000 + minute);
+        _lagPerDCTest.put("DC4", 4.0 * 60 * 60 * 1000);
+        expectedOutput.put("DC4", 4.0 * 60 * 60 * 1000);
+        _lagPerDCTest.put("DC5", 7.0 * 60 * 60 * 1000);
+        expectedOutput.put("DC5", 4.0 * 60 * 60 * 1000);
+        testField.set(dataLagMonitor, _lagPerDCTest);
+
+        for(String dc: _lagPerDCTest.keySet()) {
+            Double lagTime = Whitebox.invokeMethod(dataLagMonitor, "getLagTimeInMillis", dc, System.currentTimeMillis(), null);
+            assertEquals(expectedOutput.get(dc), lagTime, 0.01);
+        }
+
     }
 
     @Test(timeout = 5000L)
