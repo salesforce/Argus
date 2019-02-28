@@ -52,6 +52,10 @@ import static java.net.URLEncoder.encode;
  */
 public class AnnotationQuery {
 
+    public static final String NOT_QUERY_PREFIX = "not_literal_or(";
+
+    public static final String NOT_QUERY_SUFFIX = ")";
+
     //~ Instance fields ******************************************************************************************************************************
 
     protected String _scope;

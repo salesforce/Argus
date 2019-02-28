@@ -234,6 +234,7 @@ TOKEN : { < #TSDB_ALLOWED_TEXT : ( <DIGIT> | <LETTER> | <HYPHEN> | <PERIOD> | <U
 TOKEN : { < #TAGK : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < #TAGV : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < #TAG : <TAGK>"="<TAGV> > }
+TOKEN : { < #TAG_NOT : <TAGK>"!="<TAGV> > }
 TOKEN : { < #DIGIT : ["0"-"9"] > }
 TOKEN : { < #LETTER :  ["a"-"z","A"-"Z"] > }
 TOKEN : { < #HYPHEN : "-" > }
@@ -325,7 +326,7 @@ TOKEN : { < DOWNSAMPLER : (<DIGIT>)+<TIME_UNIT><HYPHEN><AGGREGATOR> > }
 TOKEN : { < NAMESPACE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < SCOPE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < METRIC : <TSDB_ALLOWED_TEXT> > }
-TOKEN : { < TAGS : <TAG>(<COMMA><TAG>)* > }
+TOKEN : { < TAGS : (<TAG> | <TAG_NOT>)(<COMMA>(<TAG> | <TAG_NOT>))* > }
 TOKEN : { < CONSTANT : <POUND>(<ANYTHING>)+<POUND> > }
 
 boolean isValidExpression(String expression) :
@@ -1012,9 +1013,17 @@ private Map<String, String> getTags() :
   	  	String tagsStr = t.image;
   	  	String[] tags = tagsStr.split(",");
   	  	for(String tag : tags) {
-			String[] tagKVPair = tag.split("=");
-			String tagK = tagKVPair[0];
-			String tagV = tagKVPair[1];
+  	  	    String tagK = "";
+			String tagV = "";
+			String[] tagKVPair = tag.split("!=");
+			if(tagKVPair!=null && tagKVPair.length==2){
+			    tagK = tagKVPair[0];
+			    tagV = MetricQuery.NOT_QUERY_PREFIX + tagKVPair[1] + MetricQuery.NOT_QUERY_SUFFIX;
+			}else{
+			    tagKVPair = tag.split("=");
+			    tagK = tagKVPair[0];
+			    tagV = tagKVPair[1];
+			}
 			tagsMap.put(tagK, tagV);
   	 	}
   	 	return tagsMap;
