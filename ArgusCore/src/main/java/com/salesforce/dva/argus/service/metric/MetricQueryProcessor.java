@@ -1,13 +1,16 @@
 package com.salesforce.dva.argus.service.metric;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.DiscoveryService;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.TSDBService.QueryStartTimeWindow;
 import com.salesforce.dva.argus.service.TSDBService.QueryTimeSeriesExpansion;
 import com.salesforce.dva.argus.service.TSDBService.QueryTimeWindow;
@@ -16,6 +19,7 @@ import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory.Function;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
+import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.QueryContext;
 import com.salesforce.dva.argus.util.TSDBQueryExpression;
 
@@ -27,13 +31,23 @@ public class MetricQueryProcessor {
     private DiscoveryService _discoveryService;
 
     private TSDBService _tsdbService;
+    
+    private MonitorService _monitorService;
 
     private TransformFactory _factory;
+    
+    private static final String HOSTNAME;
+    
+    static {
+        HOSTNAME = SystemConfiguration.getHostname();
+    }
+
 
     @Inject
-    public MetricQueryProcessor(TSDBService tsdbService, DiscoveryService discoveryService, TransformFactory factory) {
+    public MetricQueryProcessor(TSDBService tsdbService, DiscoveryService discoveryService, MonitorService monitorService, TransformFactory factory) {
         _tsdbService = tsdbService;
         _discoveryService = discoveryService;
+        _monitorService=monitorService;
         _factory = factory;
     }
 
@@ -147,6 +161,10 @@ public class MetricQueryProcessor {
         }
 
         Transform transform = _factory.getTransform(function.getName());
+        Map<String, String> tags = new HashMap<>();
+        tags.put("host", HOSTNAME);
+        tags.put("transform", function.getName());
+        _monitorService.modifyCounter(Counter.TRANSFORMS_EVALUATED, 1, tags);
         return ((constants == null || constants.isEmpty()) ? transform.transform(currentQueryContext, result) : transform.transform(currentQueryContext, result, constants));
     }
 }

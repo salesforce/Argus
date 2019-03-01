@@ -39,21 +39,21 @@ public class DataLagMonitor extends Thread{
 
 	private String _hostName;
 
-	private String _defaultExpression;
-
 	private long _dataLagThreshold;
 
 	private Map<String, Boolean> _isDataLaggingbyDCMap = new TreeMap<>();
 
 	private Map<String, String> _expressionPerDC = new TreeMap<>();
 
+	private Map<String, Double> _lagPerDC = new TreeMap<>();
+
 	private MetricService _metricService;
 
 	private TSDBService _tsdbService;
 
-	private static final Long SLEEP_INTERVAL_MILLIS = 60*1000L;
+	private static Long SLEEP_INTERVAL_MILLIS = 60*1000L;
 
-	private static final double MAX_LAG_TIME_MILLIS = 4*60*60*1000;
+	private static final Double MAX_LAG_TIME_MILLIS = 4.0*60*60*1000;
 
 	private final Logger _logger = LoggerFactory.getLogger(DataLagMonitor.class);
 
@@ -73,7 +73,7 @@ public class DataLagMonitor extends Thread{
 	}
 
 	private void init() {
-		_defaultExpression = _sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_DEFAULT_EXPRESSION);
+		String _defaultExpression = _sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_DEFAULT_EXPRESSION);
 		_dataLagThreshold = Long.valueOf(_sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_THRESHOLD));
 		try {
 			JsonObject _dataLagQueryExpressions = new JsonParser().parse(_sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_QUERY_EXPRESSION)).getAsJsonObject();
@@ -82,9 +82,13 @@ public class DataLagMonitor extends Thread{
 				String currentExpression = entry.getKey();
 				JsonArray dcList = entry.getValue().getAsJsonArray();
 				for (JsonElement value : dcList) {
-					String currentDC = value.getAsString();
-					_expressionPerDC.put(currentDC, currentExpression.replace("#DC#", currentDC));
-					_isDataLaggingbyDCMap.put(currentDC, false);
+					try {
+						String currentDC = value.getAsString();
+						_expressionPerDC.put(currentDC, currentExpression.replace("#DC#", currentDC));
+						_isDataLaggingbyDCMap.put(currentDC, false);
+					} catch (Exception ex) {
+						_logger.error("Exception occured while parsing the datalag expression for DC: " + value + ", using default expression. Exception: {}", ex);
+					}
 				}
 			}
 		} catch (Exception ex) {
@@ -96,6 +100,7 @@ public class DataLagMonitor extends Thread{
 				_expressionPerDC.put(dc, _defaultExpression);
 				_isDataLaggingbyDCMap.put(dc, false);
 			}
+			_lagPerDC.put(dc, 0.0);
 		}
 	}
 
@@ -135,24 +140,10 @@ public class DataLagMonitor extends Thread{
 						SimpleEntry<String, List<Metric>> result = future.get();
 						currentDC = result.getKey();
 						List<Metric> metrics = result.getValue();
-						double latestLagTimeInMillis;
-
-						if (metrics == null || metrics.isEmpty()) {
-							_logger.info("Data lag detected as metric list is empty for DC: " + currentDC);
-							latestLagTimeInMillis = MAX_LAG_TIME_MILLIS;
-						} else {
-							//Assuming only one time series in result
-							Metric currMetric = metrics.get(0);
-							if (currMetric.getDatapoints() == null || currMetric.getDatapoints().size() == 0) {
-								_logger.info("Data lag detected as data point list is empty for DC: " + currentDC);
-								latestLagTimeInMillis = MAX_LAG_TIME_MILLIS;
-							} else {
-								long lastDataPointTime = Collections.max(currMetric.getDatapoints().keySet());
-								latestLagTimeInMillis = (currTime - lastDataPointTime);
-							}
-						}
-						_isDataLaggingbyDCMap.put(currentDC, latestLagTimeInMillis > _dataLagThreshold);
-						pushLagTimeMetric(currentDC, currTime, latestLagTimeInMillis / 1000.0);
+						double lagTimeInMillis = getLagTimeInMillis(currentDC, currTime, metrics);
+						_lagPerDC.put(currentDC, lagTimeInMillis);
+						_isDataLaggingbyDCMap.put(currentDC, lagTimeInMillis > _dataLagThreshold);
+						pushLagTimeMetric(currentDC, currTime, lagTimeInMillis / 1000.0);
 					} catch (Exception ex) {
 						_logger.error(MessageFormat.format("Exception thrown while evaluating lag time for dc: {0} with message: {1}", currentDC, ex));
 					}
@@ -162,6 +153,26 @@ public class DataLagMonitor extends Thread{
 				_logger.error("Exception thrown in data lag monitor thread - " + ExceptionUtils.getFullStackTrace(e));
 			}
 		}
+	}
+
+	private double getLagTimeInMillis(String currentDC, Long currTime, List<Metric> metrics) {
+		double lagTimeInMillis;
+		if (metrics == null || metrics.isEmpty()) {
+			_logger.info("Data lag detected as metric list is empty for DC: " + currentDC);
+			lagTimeInMillis = Math.min(MAX_LAG_TIME_MILLIS, _lagPerDC.get(currentDC) + SLEEP_INTERVAL_MILLIS);
+		} else {
+			//Assuming only one time series in result
+			Metric currMetric = metrics.get(0);
+			if (currMetric.getDatapoints() == null || currMetric.getDatapoints().size() == 0) {
+				_logger.info("Data lag detected as data point list is empty for DC: " + currentDC);
+				lagTimeInMillis = Math.min(MAX_LAG_TIME_MILLIS, _lagPerDC.get(currentDC) + SLEEP_INTERVAL_MILLIS);
+			} else {
+				long lastDataPointTime = Collections.max(currMetric.getDatapoints().keySet());
+				lagTimeInMillis = (currTime - lastDataPointTime);
+			}
+		}
+
+		return lagTimeInMillis;
 	}
 
 	private void pushLagTimeMetric(String currentDC, Long currTime, double lagTime) {

@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory.Function;
+import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 
 public class QueryUtilsTest extends AbstractTest {
 
@@ -257,7 +258,7 @@ public class QueryUtilsTest extends AbstractTest {
     }
     
     @Test
-    public void getScopesFromExpression() {
+    public void testGetScopesFromExpression() {
         List<String> scopes = QueryUtils.getScopesFromExpression("SUM(DOWNSAMPLE(UNION(-1h:argus.core:alerts.scheduled:zimsum:1m-sum,-1h:argus.core:alerts.evaluated:zimsum:1m-sum),#1m-avg#),#union#)");
         assertEquals(scopes.size(),1);
         assertEquals(scopes.get(0),"argus.core");
@@ -270,6 +271,26 @@ public class QueryUtilsTest extends AbstractTest {
         assertTrue(scopes.contains(new String("argus.core1"))); 
         assertTrue(scopes.contains(new String("argus.core2")));     
         assertTrue(scopes.contains(new String("argus.core3")));  
+    }
+    
+    @Test
+    public void testNotEqualsQuery() {
+        long relativeTo = System.currentTimeMillis();
+        QueryContext context = QueryUtils.getQueryContext("-1h:argus.core:alerts.evaluated{host!=shared1-argusalert1-3-prd.eng.sfdc.net}:zimsum:1m-sum", relativeTo);
+        assertNull(context.getTransform());
+        assertNull(context.getConstants());
+        assertEquals(context.getChildContexts().size(),0);
+        assertNotNull(context.getExpression());
+        TSDBQueryExpression expression = context.getExpression();
+        assertEquals(expression.getScope(), "argus.core");
+        assertEquals(expression.getMetric(), "alerts.evaluated");
+        assertEquals(expression.getAggregator().toString(), "ZIMSUM");
+        assertEquals(expression.getDownsampler().toString(), "SUM");
+        assertEquals(expression.getTags().keySet().size(),1);
+        assertEquals(expression.getTags().get("host"),AnnotationQuery.NOT_QUERY_PREFIX+"shared1-argusalert1-3-prd.eng.sfdc.net"+AnnotationQuery.NOT_QUERY_SUFFIX);
+        assertEquals(expression.getDownsamplingPeriod(), new Long(60000));
+        assertEquals(expression.getStartTimestamp(),new Long(((relativeTo - 3600*1000)/1000)*1000));
+        assertEquals(expression.getEndTimestamp(),new Long(relativeTo));
     }
 
 }

@@ -910,7 +910,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			trackingMetric.setTags(tags);
 		}
 
-		this.exportMetric(trackingMetric, value);
+		// this.exportMetric(trackingMetric, value);
 		try {
 			_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackingMetric}));
 		} catch (Exception ex) {
@@ -1025,7 +1025,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			alertsWithTimestamp.add(obj);
 		}
 
-		_mqService.enqueue(ALERT.getQueueName(), alertsWithTimestamp);
+		try {
+			_mqService.enqueue(ALERT.getQueueName(), alertsWithTimestamp);
+		} catch (Exception ex) {
+			_logger.error("Error occurred while enqueueing alerts to mq service. Reason {}", ex.getMessage());
+		}
 
 
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();

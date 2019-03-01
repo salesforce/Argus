@@ -1,10 +1,10 @@
 #
-# Argus web services 
+# Argus web services
 #
 BuildArch:     noarch
 Name:          argusws
 Version:       4.70
-Release:       1 
+Release:       1
 License:       BSD-3-Clause
 Group:         Applications/System
 Summary:       Argus web services
@@ -24,14 +24,25 @@ mkdir -p %{_stagerootdir}
 
 %install
 pwd
-mkdir -p %{_stagerootdir}/%{_targetdir}
-cp %{_topdir}/ArgusWebServices/target/argus-webservices-*.war %{_stagerootdir}/%{_targetdir}
+mkdir -p %{_stagerootdir}/%{_tmpdir}
+cp %{_topdir}/ArgusWebServices/target/argus-webservices-*.war %{_stagerootdir}/%{_tmpdir}
 
 %files
 %defattr(755, sfdc, sfdc,755)
-%{_targetdir}/../../../..
+%{_tmpdir}
 
 %pre
 
 %post
+if [ ! -d "%{_targetbasedir}" ]
+then
+  mkdir -p %{_targetbasedir}
+  chown -R sfdc:sfdc %{_targetbasedir}
+fi
+if [ -d "%{_targetdir}" ]
+then
+  rm -rf %{_targetdir}
+fi
+cp -r %{_tmpdir} %{_targetdir}
+chown -R sfdc:sfdc %{_targetdir}
 echo "Installation complete."

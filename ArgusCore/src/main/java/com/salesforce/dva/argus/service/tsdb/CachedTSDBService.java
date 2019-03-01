@@ -513,7 +513,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
                     _logger.info("Time spent in mapping tags in tsdb metrics to tags in cache: {}", afterTime - beforeTime);
                 } // end if
             } catch (RuntimeException | IOException ex) {
-                _logger.error("Error occurred Reason:", ex.toString());
+                _logger.error("Error occurred Reason: {}", ex.toString());
                 uncached.add(new MetricQueryTimestamp(query, originalStartTimestamp, originalEndTimestamp, query.getStartTimestamp(),
                         query.getEndTimestamp()));
             } // end try-catch
@@ -704,7 +704,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
             try {
                 _insertIntoCache();
             } catch (Exception ex) {
-                _logger.error("Error occurred Reason:", ex.toString());
+                _logger.error("Error occurred Reason: {}", ex.toString());
             }
         }
 
@@ -728,7 +728,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
                     }
                 }
             } catch (Exception e) {
-                _logger.error("Error occurred Reason:", e.toString());
+                _logger.error("Error occurred Reason: {}", e.toString());
             }
         }
     }
