@@ -217,6 +217,7 @@ public interface MonitorService extends Service {
         ALERTS_UPDATED_COUNT("argus.core","alerts.updated"),
         ALERTS_CREATED_COUNT("argus.core","alerts.created"),
         ALERTS_SKIPPED("argus.core", "alerts.skipped"),
+        TRANSFORMS_EVALUATED("argus.core", "transforms.evaluated"),
         NOTIFICATIONS_SENT("argus.core", "notifications.sent"),
         TRIGGERS_VIOLATED("argus.core", "triggers.violated"),
         ALERTS_MAX("argus.core", "alerts.max"),

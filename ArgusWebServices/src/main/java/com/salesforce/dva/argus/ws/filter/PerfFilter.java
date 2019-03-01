@@ -156,19 +156,19 @@ public class PerfFilter implements Filter {
 					}
 					tags.put(TAGS_EXPANDED_TIME_SERIES_RANGE_KEY, expandedTimeSeriesRange);
 					
-					Integer numTimeSeries = (Integer) req.getAttribute("numTimeSeries");
+					Integer numTimeSeries = (Integer) req.getAttribute(DATA_READ_NUM_TIME_SERIES);
 					if(numTimeSeries != null){
 						monitorService.modifyCustomCounter(DATA_READ_NUM_TIME_SERIES, numTimeSeries, tags);
 					}
 					
-					Integer numDiscoveryResults = (Integer) req.getAttribute("numDiscoveryResults");
+					Integer numDiscoveryResults = (Integer) req.getAttribute(DATA_READ_NUM_DISCOVERY_RESULTS);
 
                                         /* Discovery service should not audit when no expansion performed, or number of expanded series equals 0*/
 					if(numDiscoveryResults != null && numDiscoveryResults !=0 ){
 						monitorService.modifyCustomCounter(DATA_READ_NUM_DISCOVERY_RESULTS, numDiscoveryResults, tags);
 					}
 					
-					Integer numDiscoveryQueries = (Integer) req.getAttribute("numDiscoveryQueries");
+					Integer numDiscoveryQueries = (Integer) req.getAttribute(DATA_READ_NUM_DISCOVERY_QUERIES);
 
 					if(numDiscoveryQueries != null && numDiscoveryQueries !=0 ){
 						monitorService.modifyCustomCounter(DATA_READ_NUM_DISCOVERY_QUERIES, numDiscoveryQueries, tags);
