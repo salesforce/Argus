@@ -516,8 +516,9 @@ a.definition-tip, a.definition-tip:hover, a.definition-tip:visited {
 }
 
 .fixed-dashboard-info {
+    left: 3%;
     top: 35%;
     min-width: 250px;
-    padding-right: 40px;
+    padding-right: 3%;
     position: fixed;
 }
