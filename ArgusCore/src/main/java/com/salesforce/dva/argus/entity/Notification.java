@@ -58,7 +58,8 @@ import com.google.gson.JsonParser;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.salesforce.dva.argus.service.AlertService;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -287,7 +288,7 @@ public class Notification extends JPAEntity implements Serializable {
 	private Map<String, Boolean> activeStatusByTriggerAndMetric = new HashMap<>();
 
 	@Transient
-	private final Logger _logger = Logger.getLogger(Notification.class);
+	private final Logger _logger = LoggerFactory.getLogger(Notification.class);
 	//~ Constructors *********************************************************************************************************************************
 
 	/**
