@@ -444,7 +444,7 @@ public class MetricQuery extends AnnotationQuery {
 	 *
 	 * @author  Dilip Devaraj(ddevaraj@salesforce.com)
 	 */	
-	class MetricQueryContext {
+	protected class MetricQueryContext {
 		private String _readEndPoint;
 		
 		/**
