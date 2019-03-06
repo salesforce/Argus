@@ -240,7 +240,8 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.AUDIT_SERVICE_IMPL_CLASS, AuditService.class);
         bindConcreteClass(Property.CALLBACK_SERVICE_IMPL_CLASS, CallbackService.class);
         bindConcreteClass(Property.WARDEN_SERVICE_IMPL_CLASS, WardenService.class);
-
+        bindConcreteClass(Property.DISCOVERY_SERVICE_IMPL_CLASS, DiscoveryService.class);
+        
         // Named annotation binding
         bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
         bindConcreteClassWithNamedAnnotation(DefaultDiscoveryService.class, DiscoveryService.class);
@@ -260,7 +261,6 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultManagementService.class, ManagementService.class);
         bindConcreteClass(DefaultServiceManagementService.class, ServiceManagementService.class);
         bindConcreteClass(DefaultNamespaceService.class, NamespaceService.class);
-        bindConcreteClass(CachedDiscoveryService.class, DiscoveryService.class);
         bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
         bindConcreteClass(DefaultChartService.class, ChartService.class);
     }

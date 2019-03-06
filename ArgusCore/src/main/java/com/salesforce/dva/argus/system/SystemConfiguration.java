@@ -286,7 +286,9 @@ public final class SystemConfiguration extends Properties {
         WARDEN_SERVICE_IMPL_CLASS("service.binding.warden", "com.salesforce.dva.argus.service.warden.DefaultWardenService"),
         WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "placeholder_warden.properties"),
 
-        OAUTH_SERVICE_PROPERTY_FILE("service.config.oauth","placeholder_oauth.properties");
+        OAUTH_SERVICE_PROPERTY_FILE("service.config.oauth","placeholder_oauth.properties"),
+        
+        DISCOVERY_SERVICE_IMPL_CLASS("service.binding.discovery", "com.salesforce.dva.argus.service.schema.CachedDiscoveryService");
 
         private final String _name;
         private final String _defaultValue;
