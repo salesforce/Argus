@@ -37,7 +37,9 @@ import com.google.inject.Singleton;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MQService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -54,9 +56,9 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireState;
 public class KafkaMessageService extends DefaultService implements MQService {
 
     //~ Instance fields ******************************************************************************************************************************
-
     private Producer _producer = null;
     private Consumer _consumer = null;
+    private final SystemConfiguration _config;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -70,11 +72,20 @@ public class KafkaMessageService extends DefaultService implements MQService {
     	super(config);
         requireArgument(config != null, "System configuration cannot be null.");
         if (!Boolean.parseBoolean(config.getValue(Property.KAFKA_DISABLE_PRODUCER.getName(), Property.KAFKA_DISABLE_PRODUCER.getDefaultValue()))) {
-            _producer = new Producer(config);
+            try {
+                _producer = (Producer) Class.forName(config.getValue(SystemConfiguration.Property.MQ_SERVICE_PRODUCER_IMPL_CLASS)).getConstructor(SystemConfiguration.class).newInstance(config);
+            } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException ex) {
+                _producer = new DefaultProducer(config);
+            }
         }
         if (!Boolean.parseBoolean(config.getValue(Property.KAFKA_DISABLE_CONSUMER.getName(), Property.KAFKA_DISABLE_CONSUMER.getDefaultValue()))) {
-            _consumer = new Consumer(config);
+            try {
+                _consumer = (Consumer) Class.forName(config.getValue(SystemConfiguration.Property.MQ_SERVICE_CONSUMER_IMPL_CLASS)).getConstructor(SystemConfiguration.class).newInstance(config);
+            } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException ex) {
+                _consumer = new DefaultConsumer(config);
+            }
         }
+        _config = config;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -85,6 +96,21 @@ public class KafkaMessageService extends DefaultService implements MQService {
 
     private void requireConsumerEnabled() {
         requireState(_consumer != null, "Cannot perform this action when Consumer is disabled");
+    }
+
+    /*
+     * Transform an MQService MQQueue name to the configured topic name if redefined in .properties file
+     */
+    private String toKafkaTopic(String topic) {
+        if (topic.equals(MQQueue.ALERT.getQueueName())) {
+            return _config.getValue(Property.KAFKA_ALERTS_TOPIC.getName(), Property.KAFKA_ALERTS_TOPIC.getDefaultValue());
+        } else if (topic.equals(MQQueue.ANNOTATION.getQueueName())) {
+            return _config.getValue(Property.KAFKA_ANNOTATIONS_TOPIC.getName(), Property.KAFKA_ANNOTATIONS_TOPIC.getDefaultValue());
+        } else if (topic.equals(MQQueue.METRIC.getQueueName())) {
+            return _config.getValue(Property.KAFKA_METRICS_TOPIC.getName(), Property.KAFKA_METRICS_TOPIC.getDefaultValue());
+        } else {
+            return topic;
+        }
     }
 
     @Override
@@ -105,7 +131,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
         requireProducerEnabled();
         requireArgument(topic != null && !topic.trim().isEmpty(), "Topic name cannot be null or empty.");
         requireArgument(objects != null, "The list of objects to enqueue cannot be null.");
-        _producer.enqueue(topic, objects);
+        _producer.enqueue(toKafkaTopic(topic), objects);
     }
 
     @Override
@@ -140,7 +166,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
         requireArgument(type != null, "Result object runtime type cannot be null.");
         requireArgument(timeout > 0, "Timeout in milliseconds must be greater than zero.");
         requireArgument(limit > 0, "Limit must be non-negative.");
-        _consumer.initializeTopic(topic);
+        topic = toKafkaTopic(topic);
         return _consumer.dequeueFromBuffer(topic, type, timeout, limit);
     }
 
@@ -152,7 +178,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
         requireArgument(type != null, "Result object runtime type cannot be null.");
         requireArgument(timeout > 0, "Timeout in milliseconds must be greater than zero.");
         requireArgument(limit > 0, "Limit must be non-negative.");
-        _consumer.initializeTopic(topic);
+        topic = toKafkaTopic(topic);
         return _consumer.dequeueFromBuffer(topic, type, timeout, limit);
     }
 
@@ -190,8 +216,6 @@ public class KafkaMessageService extends DefaultService implements MQService {
         KAFKA_BROKERS("service.property.mq.kafka.brokers", "localhost:9093"),
         /** Specifies the number of producer connections. Default is 10. */
         KAFKA_PRODUCER_CONNECTIONS("service.property.mq.kafka.producer.connections", "10"),
-        /** Indicates whether the producer should block when the buffer is full. Default is false. */
-        KAFKA_PRODUCER_BLOCK_ON_BUFFER_FULL("service.property.mq.kafka.producer.block.on.buffer.full", "false"),
         /** Specifies the allocated producer buffer memory in bytes. Default is 134217728. */
         KAFKA_PRODUCER_BUFFER_MEMORY("service.property.mq.kafka.producer.buffer.memory", "134217728"),
         /** Specifies the batch size.  Default is 102400. */
@@ -202,12 +226,24 @@ public class KafkaMessageService extends DefaultService implements MQService {
         KAFKA_CONSUMER_MESSAGES_TO_BUFFER("service.property.mq.kafka.consumer.messages.to.buffer", "1"),
         /** Specifies the default consumer group ID. */
         KAFKA_CONSUMER_GROUPID("service.property.mq.kafka.consumer.groupid", "argus-consumer-unit"),
-        /** Specifies the default consumer group ID. */
-        KAFKA_CONSUMER_OFFSET_RESET("service.property.mq.kafka.consumer.auto.offset.reset", "smallest"),
-        /** Specifies the Kafka ZooKeeper connection endpoint. */
-        ZOOKEEPER_CONNECT("service.property.mq.zookeeper.connect", "localhost:2185"),
-        /** Specifies the Kafka Zookeeper connection timeout in milliseconds.  Default is 10000. */
-        ZOOKEEPER_CONNECTION_TIMEOUT_MS("service.property.mq.zookeeper.connection.timeout.ms", "10000"),
+        /** Where to start a new group.id from */
+        KAFKA_CONSUMER_OFFSET_RESET("service.property.mq.kafka.consumer.auto.offset.reset", "earliest"),
+        /** Customize Kafka topic names to produce to / consume from */
+        KAFKA_ALERTS_TOPIC("service.property.mq.kafka.alerts.topic", "argusAlertQueue"),
+        KAFKA_ANNOTATIONS_TOPIC("service.property.mq.kafka.annotations.topic", "argusAnnotationQueue"),
+        KAFKA_METRICS_TOPIC("service.property.mq.kafka.metrics.topic", "argusMetricQueue"),
+        /** Kafka Client SSL properties */
+        KAFKA_SECURITY_PROTOCOL("service.property.mq.kafka.security.protocol", "PLAINTEXT"),
+        KAFKA_SSL_PROVIDER("service.property.mq.kafka.ssl.provider", ""),
+        KAFKA_SSL_KEYSTORE_TYPE("service.property.mq.kafka.ssl.keystore.type", ""),
+        KAFKA_SSL_KEYSTORE_LOCATION("service.property.mq.kafka.ssl.keystore.location", ""),
+        KAFKA_SSL_KEYSTORE_PASSWORD("service.property.mq.kafka.ssl.keystore.password", ""),
+        KAFKA_SSL_KEY_PASSWORD("service.property.mq.kafka.ssl.key.password", ""),
+        KAFKA_SSL_TRUSTSTORE_TYPE("service.property.mq.kafka.ssl.truststore.type", ""),
+        KAFKA_SSL_TRUSTSTORE_LOCATION("service.property.mq.kafka.ssl.truststore.location", ""),
+        KAFKA_SSL_TRUSTSTORE_PASSWORD("service.property.mq.kafka.ssl.truststore.password", ""),
+
+
         /** Whether to disable KafkaProducer instances from being created */
         KAFKA_DISABLE_PRODUCER("service.property.mq.kafka.producer.disable", "false"),
         /** Whether to disable KafkaConsumer instances from being created */

@@ -31,8 +31,22 @@
 
 package com.salesforce.dva.argus.service.alert;
 
-import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
-import static org.junit.Assert.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.service.AlertService;
+import com.salesforce.dva.argus.service.MQService;
+import com.salesforce.dva.argus.service.ManagementService;
+import com.salesforce.dva.argus.service.UserService;
+import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -45,23 +59,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.salesforce.dva.argus.service.AlertService;
-import com.salesforce.dva.argus.service.MQService;
-import com.salesforce.dva.argus.service.ManagementService;
-import com.salesforce.dva.argus.service.UserService;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.salesforce.dva.argus.AbstractTest;
-import com.salesforce.dva.argus.entity.Alert;
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.entity.Notification;
-import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.entity.Trigger;
-import com.salesforce.dva.argus.entity.Trigger.TriggerType;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
+import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class AlertServiceTest extends AbstractTest {
 
@@ -731,7 +735,7 @@ public class AlertServiceTest extends AbstractTest {
 		}
 		alertService.enqueueAlerts(actualAlertList);
 
-		List<AlertWithTimestamp> expectedList = mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, 1000, 10);
+		List<AlertWithTimestamp> expectedList = mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, 10000, 10);
 
 		assertEquals(actualAlertList.size(), expectedList.size());
 	}

@@ -38,13 +38,14 @@ import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.NotifierFactory;
 import com.salesforce.dva.argus.service.Service;
 import com.salesforce.dva.argus.service.ServiceFactory;
-import static com.salesforce.dva.argus.system.SystemAssert.requireState;
 
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.Properties;
+
+import static com.salesforce.dva.argus.system.SystemAssert.requireState;
 
 /**
  * Loads the system configuration from disk and provides start up and shut down methods. Calling the shut down method before the start up method has

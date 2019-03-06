@@ -251,6 +251,8 @@ public final class SystemConfiguration extends Properties {
         CACHE_SERVICE_PROPERTY_FILE("service.config.cache","placeholder_redis.properties"),
 
         MQ_SERVICE_IMPL_CLASS("service.binding.mq", "com.salesforce.dva.argus.service.mq.kafka.KafkaMessageService"),
+        MQ_SERVICE_PRODUCER_IMPL_CLASS("service.binding.mq.producer", "com.salesforce.dva.argus.service.mq.kafka.DefaultProducer"),
+        MQ_SERVICE_CONSUMER_IMPL_CLASS("service.binding.mq.consumer", "com.salesforce.dva.argus.service.mq.kafka.DefaultConsumer"),
         MQ_SERVICE_PROPERTY_FILE("service.config.mq","placeholder_kafka.properties"),
 
         ALERT_SERVICE_IMPL_CLASS("service.binding.alert", "com.salesforce.dva.argus.service.alert.DefaultAlertService"),

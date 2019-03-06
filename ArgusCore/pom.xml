@@ -141,6 +141,15 @@
             </plugin>
         </plugins>
     </reporting>
+    <!-- BEGINSFDC specific repositories -->
+    <repositories>
+        <repository>
+            <id>nexus</id>
+            <url>https://nexus.soma.salesforce.com/nexus/content/groups/public</url>
+        </repository>
+    </repositories>
+    <!-- ENDSFDC specific repositories -->
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -268,34 +277,33 @@
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.10</artifactId>
-            <version>0.8.2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
-           <version>0.8.2.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>2.10.5</version>
-        </dependency>
-        <dependency>
-            <groupId>com.101tec</groupId>
-            <artifactId>zkclient</artifactId>
-            <version>0.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.zookeeper</groupId>
-            <artifactId>zookeeper</artifactId>
+            <artifactId>kafka_2.12</artifactId>
+            <version>2.1.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-log4j12</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
             </exclusions>
-            <version>3.4.10</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+           <version>2.1.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>net.sf.jopt-simple</groupId>
@@ -461,6 +469,23 @@
           <artifactId>freemarker</artifactId>
           <version>2.3.28</version>
         </dependency>
+        <!-- BEGINSFDC specific dependencies -->
+        <dependency>
+            <groupId>com.salesforce.servicelibs</groupId>
+            <artifactId>dynamic-keystore-impl</artifactId>
+            <version>2.0.39</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sfdc-bouncycastle</groupId>
+                    <artifactId>bc-fips</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sfdc-bouncycastle</groupId>
+                    <artifactId>bctls-fips</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- ENDSFDC specific dependencies -->
     </dependencies>
     <dependencyManagement>
         <dependencies>
