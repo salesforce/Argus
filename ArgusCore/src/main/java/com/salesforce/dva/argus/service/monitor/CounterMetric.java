@@ -15,7 +15,11 @@ public class CounterMetric extends GaugeMetric implements MetricMXBean {
     protected volatile Double previousResetAdderValue;
 
     public CounterMetric(Metric metric, MonitorService.Counter counter) {
-        super(metric, _createJMXObjectNameForMetric(metric, counter));
+        this(metric, counter.getJMXMetricNameSuffix());
+    }
+
+    public CounterMetric(Metric metric, String jmxMetricNameSuffix) {
+        super(metric, _createJMXObjectNameForMetric(metric, jmxMetricNameSuffix));
         previousResetAdderValue = 0.0;
     }
 
