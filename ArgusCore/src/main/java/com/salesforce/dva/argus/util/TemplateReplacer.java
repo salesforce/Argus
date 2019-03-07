@@ -1,5 +1,6 @@
 package com.salesforce.dva.argus.util;
 
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import freemarker.core.InvalidReferenceException;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -63,7 +65,7 @@ public class TemplateReplacer {
     public static String applyTemplateChanges(DefaultAlertService.NotificationContext context, String templateString) {
 
         init();
-        String originalString = templateString, generatedString = templateString;
+        String originalString = templateString, generatedString = templateString, errorMessage;
         // Prepare Data.
         Map root = new HashMap();
         root.put("alert", context.getAlert());
@@ -74,7 +76,9 @@ public class TemplateReplacer {
         root.put("metric", triggeredMetric.getMetric());
         Map<String, String> lowerCaseTagMap = getLowerCaseTagMap(triggeredMetric.getTags());
         root.put("tag", lowerCaseTagMap);
-        root.put("triggerTimestamp", new Date(context.getTriggerFiredTime()));
+        String defaultFormat = "MMM d, yyyy h:mm:ss a";
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(defaultFormat);
+        root.put("triggerTimestamp", simpleDateFormat.format(new Date(context.getTriggerFiredTime())));
         root.put("triggerValue", context.getTriggerEventValue());
 
         int numOfIterations = 0;
@@ -87,9 +91,17 @@ public class TemplateReplacer {
                 StringWriter stringWriter = new StringWriter();
                 configuredTemplate.process(root, stringWriter);
                 generatedString = stringWriter.toString();
+            } catch (InvalidReferenceException ire) {
+                errorMessage = MessageFormat.format("Error occurred during applying template change to the following variable: {0}\nDetailed Message: {1}",ire.getBlamedExpressionString(), ire.getMessage());
+                _logger.error(errorMessage);
+                generatedString = originalString;
+                context.getHistory().appendMessageNUpdateHistory(errorMessage, History.JobStatus.ERROR, 0);
+                break;
             } catch (Exception e) {
-                _logger.error(MessageFormat.format("Exception occurred while applying template change on {0}, with error message {1}.", templateString, e.getMessage()));
-                generatedString = MessageFormat.format("ERROR occurred during applying template change to the following variable: {0}\n\n Detailed Message: {1}",((InvalidReferenceException) e).getBlamedExpressionString(), e.getMessage());
+                generatedString = originalString;
+                errorMessage = MessageFormat.format("Error occurred during applying template change - {0}", e);
+                _logger.error(errorMessage);
+                context.getHistory().appendMessageNUpdateHistory(errorMessage, History.JobStatus.ERROR, 0);
                 break;
             }
         } while(!generatedString.equals(templateString) && ++numOfIterations < MAX_ITERATIONS); // If we unwrap alert.name, it may also be templatize, we should replace that as well.

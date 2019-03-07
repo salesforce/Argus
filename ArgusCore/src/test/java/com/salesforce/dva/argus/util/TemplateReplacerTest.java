@@ -9,6 +9,7 @@ import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
+import org.junit.ComparisonFailure;
 import org.junit.Test;
 
 import java.math.BigInteger;
@@ -150,7 +151,7 @@ public class TemplateReplacerTest extends AbstractTest {
         assertEquals(expectedOutput, TemplateReplacer.applyTemplateChanges(context, customTemplate));
     }
 
-    @Test
+    @Test(expected = ComparisonFailure.class)
     public void testCornerCases() {
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "${alert.name}", expression, "* * * * *");
@@ -175,6 +176,12 @@ public class TemplateReplacerTest extends AbstractTest {
 
         String expectedOutput = customTemplate;
         assertEquals(expectedOutput, TemplateReplacer.applyTemplateChanges(context, customTemplate));
+
+        customTemplate = "Failed template evaluation: ${triggerTimeStamp}";
+        assertEquals(customTemplate, TemplateReplacer.applyTemplateChanges(context, customTemplate));
+
+        customTemplate = "Success template evaluation: ${triggerTimestamp}";
+        assertEquals("Success template evaluation: Dec 11, 2014 9:40:00 AM", TemplateReplacer.applyTemplateChanges(context, customTemplate));
     }
 
 }
