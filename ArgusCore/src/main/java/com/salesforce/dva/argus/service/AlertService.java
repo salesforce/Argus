@@ -147,10 +147,12 @@ public interface AlertService extends Service {
 	 * @param limit The number of items to fetch.
 	 * @param offset The starting point of current page.
 	 * @param searchText The text to filter on the search results if not null or empty.
+	 * @param sortField The field of the alert that is used for sorting.
+	 * @param sortOrder The order for sorting.
 	 *
 	 * @return The list of alerts.
 	 */
-	List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText);
+	List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText, String sortField, String sortOrder);
 	
 	/**
 	 * Returns a list of alerts that have been marked for deletion.
@@ -289,10 +291,12 @@ public interface AlertService extends Service {
 	 * @param limit The number of items to fetch.
 	 * @param offset The starting point of current page.
 	 * @param searchText The text to filter on the search results if not null or empty.
-	 *
+	 * @param sortField The field of the alert that is used for sorting.
+	 * @param sortOrder The order for sorting.
+	 * 
 	 * @return The list of shared alerts.
 	 */
-	List<Alert> findSharedAlertsPaged(Integer limit, Integer offset, String searchText);
+	List<Alert> findSharedAlertsPaged(Integer limit, Integer offset, String searchText, String sortField, String sortOrder);
 
 	/**
 	 * Returns the list of supported notifiers.
@@ -324,10 +328,12 @@ public interface AlertService extends Service {
 	 * @param limit The number of items to fetch.
 	 * @param offset The starting point of current page.
 	 * @param searchText The text to filter on the search results if not null or empty.
-	 *
+	 * @param sortField The field of the alert that is used for sorting.
+	 * @param sortOrder The order for sorting.
+	 * 
 	 * @return The list of private alerts if privileged user.
 	 */
-	List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText);
+	List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText, String sortField, String sortOrder);
 	
 	/**
 	 * Count alerts with the given AlertsCountContext.

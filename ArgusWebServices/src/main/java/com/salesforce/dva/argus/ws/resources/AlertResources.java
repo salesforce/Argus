@@ -155,12 +155,28 @@ public class AlertResources extends AbstractResource {
 										@QueryParam("ownername") String ownerName,
 										@QueryParam("pagesize")  Integer pageSize,
 										@QueryParam("pagenumber") Integer pageNumber,
-										@QueryParam("searchtext") String searchText) {
+										@QueryParam("searchtext") String searchText,
+										@QueryParam("sortfield") String sortField,
+										@QueryParam("sortorder") String sortOrder) {
 		
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
 		List<Alert> result = new ArrayList<>(); 
-		result = alertService.findAlertsByOwnerPaged(owner, pageSize, (pageNumber - 1) * pageSize, searchText);
-		return AlertDto.transformToDto(result);
+		try {
+			Map<String, Object> queryParams = new HashMap<>();
+			queryParams.put("pageSize", pageSize);
+			queryParams.put("pageNumber", pageNumber);
+			queryParams.put("sortField", sortField);
+			queryParams.put("sortOrder", sortOrder);
+			validateAlertQueryParams(queryParams);
+			Integer offset = null;
+			if(pageNumber != null && pageSize != null){
+				offset = (pageNumber - 1) * pageSize;
+			}
+			result = alertService.findAlertsByOwnerPaged(owner, pageSize, offset, searchText, sortField, sortOrder);
+			return AlertDto.transformToDto(result);
+		} catch (IllegalArgumentException ex) {
+			throw new WebApplicationException(ex.getMessage(), Status.BAD_REQUEST);
+		}
 	}
 	
 	@GET
@@ -184,11 +200,27 @@ public class AlertResources extends AbstractResource {
 	public List<AlertDto> getSharedAlertsMeta(@Context HttpServletRequest req,
 										@QueryParam("pagesize")  Integer pageSize,
 										@QueryParam("pagenumber") Integer pageNumber,
-										@QueryParam("searchtext") String searchText) {
+										@QueryParam("searchtext") String searchText,
+										@QueryParam("sortfield") String sortField,
+										@QueryParam("sortorder") String sortOrder) {
 		
 		List<Alert> result = new ArrayList<>(); 
-		result = alertService.findSharedAlertsPaged(pageSize, (pageNumber - 1) * pageSize, searchText);
-		return AlertDto.transformToDto(result);
+		try {
+			Map<String, Object> queryParams = new HashMap<>();
+			queryParams.put("pageSize", pageSize);
+			queryParams.put("pageNumber", pageNumber);
+			queryParams.put("sortField", sortField);
+			queryParams.put("sortOrder", sortOrder);
+			validateAlertQueryParams(queryParams);
+			Integer offset = null;
+			if(pageNumber != null && pageSize != null){
+				offset = (pageNumber - 1) * pageSize;
+			}
+			result = alertService.findSharedAlertsPaged(pageSize, offset, searchText, sortField, sortOrder);
+			return AlertDto.transformToDto(result);
+		} catch (IllegalArgumentException ex) {
+			throw new WebApplicationException(ex.getMessage(), Status.BAD_REQUEST);
+		}
 	}
 	
 	@GET
@@ -211,16 +243,31 @@ public class AlertResources extends AbstractResource {
 										@QueryParam("ownername") String ownerName,
 										@QueryParam("pagesize")  Integer pageSize,
 										@QueryParam("pagenumber") Integer pageNumber,
-										@QueryParam("searchtext") String searchText) {
+										@QueryParam("searchtext") String searchText,
+										@QueryParam("sortfield") String sortField,
+										@QueryParam("sortorder") String sortOrder) {
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
 		if (owner == null || !owner.isPrivileged()) {
 			return new ArrayList<>(0);
 		}
 		
-		List<Alert> result = new ArrayList<>(); 
-		result = alertService.findPrivateAlertsForPrivilegedUserPaged(owner, pageSize, (pageNumber - 1) * pageSize,
-				searchText);
-		return AlertDto.transformToDto(result);
+		List<Alert> result = new ArrayList<>();
+		try {
+			Map<String, Object> queryParams = new HashMap<>();
+			queryParams.put("pageSize", pageSize);
+			queryParams.put("pageNumber", pageNumber);
+			queryParams.put("sortField", sortField);
+			queryParams.put("sortOrder", sortOrder);
+			validateAlertQueryParams(queryParams);
+			Integer offset = null;
+			if(pageNumber != null && pageSize != null){
+				offset = (pageNumber - 1) * pageSize;
+			}
+			result = alertService.findPrivateAlertsForPrivilegedUserPaged(owner, pageSize, offset, searchText, sortField, sortOrder);
+			return AlertDto.transformToDto(result);
+		} catch (IllegalArgumentException ex) {
+			throw new WebApplicationException(ex.getMessage(), Status.BAD_REQUEST);
+		}
 	}
 	
 	@GET
@@ -1388,6 +1435,54 @@ public class AlertResources extends AbstractResource {
 			}
 		}
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
+	}
+
+	/**
+	 * Validate alert query parameters, throws exception if any parameter is invalid.
+	 * 
+	 * @param		queryParams		The alert query parameters map.
+	 * @throws	IllegalArgumentException Throws exception if parameter is invalid.  
+	 * 
+	 */
+	public void validateAlertQueryParams(Map<String, Object> queryParams){
+		if (queryParams == null) {
+			throw new IllegalArgumentException("No parameter is provided.");
+		}
+
+		Integer pageSize, pageNumber;
+		String sortField, sortOrder;
+
+		try {
+			pageSize = (Integer) queryParams.get("pageSize");
+			pageNumber = (Integer) queryParams.get("pageNumber");
+			sortField = (String) queryParams.get("sortField");
+			sortOrder = (String) queryParams.get("sortOrder");
+		} catch (ClassCastException ex) {
+			throw new IllegalArgumentException("Invalid type for parameters.");
+		}
+
+		if( (pageSize != null && pageNumber == null) || (pageSize == null && pageNumber != null) ){
+			throw new IllegalArgumentException("pagenumber and pagesize must be provided at the same time");
+		}
+
+		if (pageSize != null && pageSize < 1) {
+			throw new IllegalArgumentException("pagesize cannot be smaller than 1");
+		}
+		if (pageNumber != null && pageNumber < 1) {
+			throw new IllegalArgumentException("pagenumber cannot be smaller than 1") ;
+		}
+		
+		if( (sortField != null && sortOrder == null) || (sortField == null && sortOrder != null) ){
+			throw new IllegalArgumentException("sortfield and sortorder must be provided at the same time");
+		}
+		
+		// If sortField/sortOrder is invalid, fromName method will throw IllegalArgumentException
+		if (sortField != null) {
+			Alert.SortFieldType.fromName(sortField);
+		}
+		if (sortOrder != null) {
+			Alert.SortOrderType.fromName(sortOrder);
+		}
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

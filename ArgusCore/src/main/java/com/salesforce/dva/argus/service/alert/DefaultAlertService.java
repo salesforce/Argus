@@ -271,11 +271,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	@Override
-	public List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText) {
+	public List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText, String sortField, String sortOrder) {
 		requireNotDisposed();
 		requireArgument(owner != null, "Owner cannot be null.");
 
-		return Alert.findByOwnerMetaPaged(_emProvider.get(), owner, limit, offset, searchText);
+		return Alert.findByOwnerMetaPaged(_emProvider.get(), owner, limit, offset, searchText, sortField, sortOrder);
 	}
 
 	@Override
@@ -1128,13 +1128,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	@Override
-	public List<Alert> findSharedAlertsPaged(Integer limit, Integer offset, String searchText) {
+	public List<Alert> findSharedAlertsPaged(Integer limit, Integer offset, String searchText, String sortField, String sortOrder) {
 		requireNotDisposed();
-		return Alert.findSharedAlertsMetaPaged(_emProvider.get(), limit, offset, searchText);
+		return Alert.findSharedAlertsMetaPaged(_emProvider.get(), limit, offset, searchText, sortField, sortOrder);
 	}
 
 	@Override
-	public List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText) {
+	public List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText,
+		String sortField, String sortOrder) {
 		requireNotDisposed();
 
 		// Invalid user nor non-privileged user shall not view other's non-shared alerts, thus immediately return empty list
@@ -1142,7 +1143,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			return new ArrayList<>(0);
 		}
 
-		return Alert.findPrivateAlertsForPrivilegedUserMetaPaged(_emProvider.get(), owner, limit, offset, searchText);
+		return Alert.findPrivateAlertsForPrivilegedUserMetaPaged(_emProvider.get(), owner, limit, offset, searchText, sortField, sortOrder);
 	}
 
 	@Override

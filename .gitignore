@@ -43,6 +43,9 @@ local.properties
 *.ipr
 *.iws
 
+#vscode
+.vscode/
+
 Makefile
 property
 

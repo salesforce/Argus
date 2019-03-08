@@ -46,6 +46,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
@@ -88,6 +90,9 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.service.metric.ParseException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The entity which encapsulates information about a Dashboard.
@@ -226,6 +231,9 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	@Metadata
 	private boolean shared;
 
+	//~ Static Instance fields ***********************************************************************************************************************
+	private static final Logger LOGGER = LoggerFactory.getLogger(Alert.class);
+	
 	// Default values for page limit and page offset
 	private static int DEFAULT_PAGE_LIMIT = 10;
 	private static int DEFAULT_PAGE_OFFSET = 0;
@@ -391,7 +399,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(OWNER_KEY, owner);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, null, null, whereParams, null);
+			return getAlertsMetaPaged(em, null, null, whereParams, null, null, null);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -410,11 +418,15 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *            The starting offset of the result.
 	 * @param searchText
 	 * 			  The text to filter the search results.
-	 *
+	 * @param sortField 
+	 * 				The field of the alert that is used for sorting.
+	 * @param sortOrder 
+	 * 				The order for sorting.
+	 * 
 	 * @return The list of alerts for the owner.
 	 */
 	public static List<Alert> findByOwnerMetaPaged(EntityManager em, PrincipalUser owner, Integer limit,
-			Integer offset, String searchText) {
+			Integer offset, String searchText, String sortField, String sortOrder) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		requireArgument(owner != null, "Owner cannot be null");
 		
@@ -435,7 +447,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(OWNER_KEY, owner);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText);
+			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText, sortField, sortOrder);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -476,7 +488,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(DELETED_KEY, false);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, null, null, whereParams, null);
+			return getAlertsMetaPaged(em, null, null, whereParams, null, null, null);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -724,7 +736,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			}
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, limit, null, whereParams, null);
+			return getAlertsMetaPaged(em, limit, null, whereParams, null, null, null);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -741,10 +753,15 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *            The starting offset of the result.
 	 * @param searchText
 	 * 			  The text to filter the search results.
+	 *  @param sortField 
+	 * 				The field of the alert that is used for sorting.
+	 * @param sortOrder 
+	 * 				The order for sorting.
 	 * 
 	 * @return The list of shared alerts with given limit and offset.
 	 */
-	public static List<Alert> findSharedAlertsMetaPaged(EntityManager em, Integer limit, Integer offset, String searchText) {
+	public static List<Alert> findSharedAlertsMetaPaged(EntityManager em, Integer limit, Integer offset, String searchText,
+		String sortField, String sortOrder) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		
 		if (searchText != null) {
@@ -765,7 +782,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(SHARED_KEY, true);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText);
+			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText, sortField, sortOrder);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -780,10 +797,15 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * @param 	offset The starting offset of the result.
 	 * @param searchText
 	 * 			  The text to filter the search results.
-	 *
+	 * @param sortField 
+	 * 				The field of the alert that is used for sorting.
+	 * @param sortOrder
+	 * 				The order for sorting.
+	 * 
 	 * @return The list of private alerts' meta with given limit and offset.
 	 */
-	public static List<Alert> findPrivateAlertsForPrivilegedUserMetaPaged(EntityManager em, PrincipalUser owner, Integer limit, Integer offset, String searchText) {
+	public static List<Alert> findPrivateAlertsForPrivilegedUserMetaPaged(EntityManager em, PrincipalUser owner, Integer limit, Integer offset, String searchText,
+		String sortField, String sortOrder) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		
 		if (searchText != null) {
@@ -809,7 +831,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(SHARED_KEY, false);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText);
+			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText, sortField, sortOrder);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -889,7 +911,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * limit and offset.
 	 */
 	private static List<Alert> getAlertsMetaPaged(EntityManager em, Integer limit, Integer offset,
-			Map<String, Object> whereParams, String searchText) {
+			Map<String, Object> whereParams, String searchText, String sortField, String sortOrder) {
 		CriteriaBuilder cb = em.getCriteriaBuilder();
 		CriteriaQuery<Tuple> cq = cb.createTupleQuery();
 		Root<Alert> e = cq.from(Alert.class);
@@ -933,9 +955,32 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			cq.where(predicates.toArray(new Predicate[predicates.size()]));
 		}
 
-		// Sort result by alert id
-		cq.orderBy(cb.asc(e.get("id")));
+		// By default, do not sort
+		// Sort based or sortField and sortOrder if both are not null
+		if (sortField != null && sortOrder != null){
+			Expression<String> sortColumn;
+	
+			switch(SortFieldType.fromName(sortField)) {
+				case OWNER_NAME :
+					sortColumn = e.join("owner").get("userName");
+					break;
+				default :
+					sortColumn = e.get(sortField);
+					break;
+			}
 
+			switch(SortOrderType.fromName(sortOrder)){
+				case ASC :
+					cq.orderBy(cb.asc(sortColumn));
+					break;
+				case DESC :
+					cq.orderBy(cb.desc(sortColumn));
+					break;
+				default :
+					break;
+			}
+		}
+		
 		TypedQuery<Tuple> query = em.createQuery(cq);
 		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
@@ -1410,8 +1455,91 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 
 			return user;
 		}
-
 	}
+
+		//~ Enums **************************************************************************************************************************************
+		public enum SortFieldType {
+
+			OWNER_NAME("ownerName"),
+			NAME("name"),
+			MODIFIED_DATE("modifiedDate"),
+			CREATED_DATE("createdDate");
+	
+			private String name_;
+			private SortFieldType(String name){
+				name_ = name;
+			}
+	
+			/**
+			 * Returns a given sort field type corresponding to the given name.
+			 * 
+			 * @param name  The sort field type name
+			 * 
+			 * @return			The sort field type
+			 */
+			public static SortFieldType fromName(String name) {
+				for (SortFieldType t: SortFieldType.values()) {
+					if (t.getName().equalsIgnoreCase(name)) {
+						return t;
+					}
+				}
+				String errorMessage = "SortFieldType " + name
+					+ " does not exist or is not supported. Allowed values are: "
+					+ Arrays.asList(SortFieldType.values()).stream().map(t -> t.getName()).collect(Collectors.toList());
+				
+				LOGGER.error(errorMessage + "\n");
+				throw new IllegalArgumentException(errorMessage);
+			}
+			
+			/**
+			 * Return sort field type name.
+			 * 
+			 * @return	The sort field type name\
+			 * 
+			 */
+			public String getName(){
+				return name_;
+			}
+		}
+		
+		
+		
+		public enum SortOrderType {
+	
+			ASC,
+			DESC;
+	
+			/**
+			 * Returns a given sort order type corresponding to the given name.
+			 * 
+			 * @param name 	The sort order type name
+			 * 
+			 * @return      The sort order type
+			 */
+			public static SortOrderType fromName(String name) {
+				for (SortOrderType t : SortOrderType.values()) {
+					if (t.getName().equalsIgnoreCase(name)) {
+						return t;
+					}
+				}
+				String errorMessage = "SortOrderType " + name
+					+ " does not exist or is not supported. Allowed values are: "
+					+ Arrays.asList(SortOrderType.values());
+	
+				LOGGER.error(errorMessage + "\n");
+				throw new IllegalArgumentException(errorMessage);
+			}
+	
+			/**
+			 * Return Sort order type name.
+			 * 
+			 * @return	The sort order type name
+			 * 
+			 */
+			public String getName(){
+				return this.toString();
+			}
+		}
 
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
