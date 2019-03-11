@@ -1,8 +1,6 @@
 package com.salesforce.dva.argus.service.mq.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
@@ -29,15 +27,15 @@ public class ProducerConsumerSerializationTest {
     private ObjectMapper mapper;
     private int maxBufferSize = 1000;
 
-    private Producer producer;
-    private Consumer consumer;
+    private DefaultProducer producer;
+    private DefaultConsumer consumer;
 
     @Before
     public void setUp() {
         config = new SystemConfiguration(new Properties());
         mapper = new ObjectMapper();
-        producer = new Producer(config, kafkaProducer, executorService, mapper);
-        consumer = new Consumer(config, mapper, maxBufferSize);
+        producer = new DefaultProducer(config, kafkaProducer, executorService, mapper);
+        consumer = new DefaultConsumer(config, mapper, maxBufferSize);
     }
 
     @Test

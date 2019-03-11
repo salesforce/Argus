@@ -39,24 +39,24 @@ import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
 import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
-
 import com.salesforce.dva.argus.service.schedule.DefaultSchedulingService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Persistence;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
-import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
-import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(org.mockito.runners.MockitoJUnitRunner.class)
@@ -95,9 +95,12 @@ public class SchedulingServiceTest extends AbstractTest {
         UserService userService = serviceFactory.getUserService();
 
         // Alert service with mocked tsdb service
-        DefaultAlertService alertService = new DefaultAlertService(system.getConfiguration(), mqService, _metricServiceMock, _auditServiceMock,
+        DefaultAlertService alertServiceOriginal = new DefaultAlertService(system.getConfiguration(), mqService, _metricServiceMock, _auditServiceMock,
                 _tsdbServiceMock, _mailServiceMock, _historyServiceMock, _monitorServiceMock, system.getNotifierFactory(),
                 _emProviderMock);
+
+        DefaultAlertService alertService = Mockito.spy(alertServiceOriginal);
+        doNothing().when(alertService).enqueueAlerts(any());
 
         DefaultSchedulingService schedulingService = new DefaultSchedulingService(alertService, serviceFactory.getGlobalInterlockService(),
                 userService, serviceFactory.getServiceManagementService(), serviceFactory.getAuditService(), system.getConfiguration());
@@ -105,7 +108,7 @@ public class SchedulingServiceTest extends AbstractTest {
         schedulingService.enableScheduling();
 
         long schedulingIterations = 1;
-        int noOfAlerts = random.nextInt(10) + 1;
+        int noOfAlerts = random.nextInt(2) + 9;
         PrincipalUser user = userService.findAdminUser();
 
         for (int i = 0; i < noOfAlerts; i++) {
@@ -124,13 +127,11 @@ public class SchedulingServiceTest extends AbstractTest {
             alertService.updateAlert(alert);
         }
         schedulingService.startAlertScheduling();
+        // It takes a while for the scheduler to call enqueue
         Thread.sleep((1000L * 60L * schedulingIterations));
         schedulingService.stopAlertScheduling();
 
-        List<AlertWithTimestamp> list = mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, 1000 * noOfAlerts,
-            (int) (noOfAlerts * schedulingIterations));
-
-        assertEquals(schedulingIterations * noOfAlerts, list.size());
+        verify(alertService, times(noOfAlerts)).enqueueAlerts(any());
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

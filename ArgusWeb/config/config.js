@@ -21,7 +21,7 @@
 
 angular.module("argus.urlConfig", [])
 .constant('CONFIG', {
-    version: '3.8',
+    version: '3.9',
     wsUrl: '@@wsUrl',
     wsBetaUrl: '@@wsBetaUrl',
     emailUrl: '@@emailUrl',

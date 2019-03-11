@@ -1,7 +1,10 @@
 package com.salesforce.dva.argus.service.schema;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import com.salesforce.dva.argus.entity.AbstractSchemaRecord;
 import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.MetatagsRecord;
@@ -29,6 +32,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
@@ -64,13 +68,15 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	private final Logger _logger = LoggerFactory.getLogger(getClass());
 	private final Thread _bloomFilterMonitorThread;
+	private final Map<String, String> bloomFilterMonitorTags;
 	private final SystemConfiguration config;
 	protected final boolean _syncPut;
 	private int bloomFilterFlushHourToStartAt;
 	private ScheduledExecutorService scheduledExecutorService;
 	private String createdBloomFileName;
 	private String modifiedBloomFileName;
-	protected boolean bloomFileWritingEnabled;
+	protected final boolean bloomFileWritingEnabled;
+	boolean modifiedBloomClearingEnabled;
 
 	protected AbstractSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config);
@@ -79,6 +85,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 		bloomFileWritingEnabled = Boolean.parseBoolean(config.getValue(Property.BLOOM_FILE_WRITING_ENABLED.getName(),
 				Property.BLOOM_FILE_WRITING_ENABLED.getDefaultValue()));
+		modifiedBloomClearingEnabled = Boolean.parseBoolean(config.getValue(Property.MODIFIED_BLOOM_CLEARING_ENABLED.getName(),
+				Property.MODIFIED_BLOOM_CLEARING_ENABLED.getDefaultValue()));
 
 		String bfStateBaseDir = config.getValue(Property.BF_STATE_BASE_DIR.getName(),
 				Property.BF_STATE_BASE_DIR.getDefaultValue());
@@ -86,6 +94,9 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				config.getValue(SystemConfiguration.ARGUS_INSTANCE_ID, "noid");
 		modifiedBloomFileName = bfStateBaseDir + "/modified_bloom.state." +
 				config.getValue(SystemConfiguration.ARGUS_INSTANCE_ID, "noid");
+		bloomFilterMonitorTags = new ImmutableMap.Builder<String, String>()
+				.put("instanceId", config.getValue(SystemConfiguration.ARGUS_INSTANCE_ID, "noid"))
+				.build();
 		createdBloomExpectedNumberInsertions = Integer.parseInt(config.getValue(Property.CREATED_BLOOM_EXPECTED_NUMBER_INSERTIONS.getName(),
 				Property.CREATED_BLOOM_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
 		createdBloomErrorRate = Double.parseDouble(config.getValue(Property.CREATED_BLOOM_ERROR_RATE.getName(),
@@ -245,7 +256,9 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private int getBloomFilterFlushHourToStartAt() {
 		int bloomFilterFlushHourToStartAt = 0;
 		try {
-			bloomFilterFlushHourToStartAt = Math.abs((InetAddress.getLocalHost().getHostName() + config.getValue(config.ARGUS_INSTANCE_ID, "")).hashCode() % 24);
+			String toHash = InetAddress.getLocalHost().getHostName() + config.getValue(config.ARGUS_INSTANCE_ID, "noid");
+			HashFunction hf = Hashing.murmur3_128();
+			bloomFilterFlushHourToStartAt = Math.abs(hf.newHasher().putString(toHash, Charset.defaultCharset()).hash().asInt() % 24);
 		} catch (UnknownHostException e) {
 			_logger.warn("BloomFilter UnknownHostException", e);
 		}
@@ -269,12 +282,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
     }
 
     private void writeBloomsToFile() {
-		bloomFileWritingEnabled = Boolean.valueOf(config.refreshAndGetValue(
-				SystemConfiguration.Property.SCHEMA_SERVICE_PROPERTY_FILE,
-				Property.BLOOM_FILE_WRITING_ENABLED.getName(), Property.BLOOM_FILE_WRITING_ENABLED.getDefaultValue()));
-		_logger.info("Refreshed {} property and got {}.", Property.BLOOM_FILE_WRITING_ENABLED.getName(), bloomFileWritingEnabled);
         if (!bloomFileWritingEnabled) {
-        	_logger.info("Skipping bloom file write stage");
             return;
         }
 
@@ -284,7 +292,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		}
         try (OutputStream out = new FileOutputStream(createdBloomFile)) {
             createdBloom.writeTo(out);
-            _logger.info("Succesfully wrote created-metrics bloomfilter to file {}", this.createdBloomFileName);
+            _logger.info("Successfully wrote created-metrics bloomfilter to file {}", this.createdBloomFileName);
         } catch (IOException io) {
             _logger.error("Failed to write to createdBloom file", io);
         }
@@ -341,7 +349,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		CREATED_BLOOM_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.created.expected.number.insertions", "40"),
 		CREATED_BLOOM_ERROR_RATE("service.property.schema.bloomfilter.created.error.rate", "0.00001"),
 		MODIFIED_BLOOM_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.modified.expected.number.insertions", "40"),
-		MODIFIED_BLOOM_ERROR_RATE("service.property.schema.bloomfilter.modified.error.rate", "0.00001");
+		MODIFIED_BLOOM_ERROR_RATE("service.property.schema.bloomfilter.modified.error.rate", "0.00001"),
+		MODIFIED_BLOOM_CLEARING_ENABLED("service.property.schema.bloomfilter.modified.clearing.enabled", "true");
 
 
 		private final String _name;
@@ -396,8 +405,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		}
 
 		private void _checkBloomFilterUsage() {
-			_monitorService.modifyCounter(MonitorService.Counter.BLOOM_CREATED_APPROXIMATE_ELEMENT_COUNT, createdBloom.approximateElementCount(), null);
-			_monitorService.modifyCounter(MonitorService.Counter.BLOOM_MODIFIED_APPROXIMATE_ELEMENT_COUNT, modifiedBloom.approximateElementCount(), null);
+			_monitorService.modifyCounter(MonitorService.Counter.BLOOM_CREATED_APPROXIMATE_ELEMENT_COUNT, createdBloom.approximateElementCount(), bloomFilterMonitorTags);
+			_monitorService.modifyCounter(MonitorService.Counter.BLOOM_MODIFIED_APPROXIMATE_ELEMENT_COUNT, modifiedBloom.approximateElementCount(), bloomFilterMonitorTags);
 
 			_logger.info("Bloom for created-timestamp expected error rate = {}", createdBloom.expectedFpp());
 			_logger.info("Bloom for modified-timestamp expected error rate = {}", modifiedBloom.expectedFpp());
@@ -430,7 +439,13 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		private void _flushBloomFilter() {
 			_logger.info("Flushing out bloom filter entries");
 			writeBloomsToFile();
-			modifiedBloom = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), modifiedBloomExpectedNumberInsertions, modifiedBloomErrorRate);
+			modifiedBloomClearingEnabled = Boolean.valueOf(config.refreshAndGetValue(
+					SystemConfiguration.Property.SCHEMA_SERVICE_PROPERTY_FILE,
+					Property.MODIFIED_BLOOM_CLEARING_ENABLED.getName(), Property.MODIFIED_BLOOM_CLEARING_ENABLED.getDefaultValue()));
+			_logger.info("Refreshed {} property and got {}.", Property.MODIFIED_BLOOM_CLEARING_ENABLED.getName(), modifiedBloomClearingEnabled);
+			if (modifiedBloomClearingEnabled) {
+				modifiedBloom = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), modifiedBloomExpectedNumberInsertions, modifiedBloomErrorRate);
+			}
 			/* Don't need explicit synchronization to prevent slowness majority of the time*/
 		}
 	}

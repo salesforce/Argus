@@ -31,8 +31,22 @@
 
 package com.salesforce.dva.argus.service.alert;
 
-import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
-import static org.junit.Assert.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.service.AlertService;
+import com.salesforce.dva.argus.service.MQService;
+import com.salesforce.dva.argus.service.ManagementService;
+import com.salesforce.dva.argus.service.UserService;
+import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -45,23 +59,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.salesforce.dva.argus.service.AlertService;
-import com.salesforce.dva.argus.service.MQService;
-import com.salesforce.dva.argus.service.ManagementService;
-import com.salesforce.dva.argus.service.UserService;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.salesforce.dva.argus.AbstractTest;
-import com.salesforce.dva.argus.entity.Alert;
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.entity.Notification;
-import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.entity.Trigger;
-import com.salesforce.dva.argus.entity.Trigger.TriggerType;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
+import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class AlertServiceTest extends AbstractTest {
 
@@ -241,22 +245,22 @@ public class AlertServiceTest extends AbstractTest {
 		List<Alert> actualAlerts = new ArrayList<>();
 
 		// Fetch first page
-		List<Alert> page = alertService.findAlertsByOwnerPaged(user, limit, 0, null);
+		List<Alert> page = alertService.findAlertsByOwnerPaged(user, limit, 0, null, null, null);
 		assertEquals(page.size(), limit);
 		actualAlerts.addAll(page);
 
 		// Fetch second page
-		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), null);
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), null, null, null);
 		assertEquals(page.size(), limit);
 		actualAlerts.addAll(page);
 
 		// Fetch remaining alerts (less than a page)
-		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), null);
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), null, null, null);
 		assertEquals(page.size(), expectedAlerts.size() - actualAlerts.size());
 		actualAlerts.addAll(page);
 
 		// Try to fetch again should be empty result
-		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), null);
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), null, null, null);
 		assertEquals(0, page.size());
 
 		Set<Alert> actualSet = new HashSet<>();
@@ -300,26 +304,26 @@ public class AlertServiceTest extends AbstractTest {
 		List<Alert> actualAlerts = new ArrayList<>();
 
 		// Fetch first page
-		List<Alert> page = alertService.findAlertsByOwnerPaged(user, limit, 0, userName);
+		List<Alert> page = alertService.findAlertsByOwnerPaged(user, limit, 0, userName, null, null);
 		assertEquals(page.size(), limit);
 		actualAlerts.addAll(page);
 
 		// Fetch with invalid owner's name should be empty
-		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "invalid_owner");
+		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "invalid_owner", null, null);
 		assertEquals(page.size(), 0);
 
 		// Fetch second page
-		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), userName);
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), userName, null, null);
 		assertEquals(page.size(), limit);
 		actualAlerts.addAll(page);
 
 		// Fetch remaining alerts (less than a page)
-		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), userName);
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), userName, null, null);
 		assertEquals(page.size(), expectedAlerts.size() - actualAlerts.size());
 		actualAlerts.addAll(page);
 
 		// Try to fetch again should be empty result
-		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), userName);
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), userName, null, null);
 		assertEquals(0, page.size());
 
 		Set<Alert> actualSet = new HashSet<>();
@@ -336,25 +340,25 @@ public class AlertServiceTest extends AbstractTest {
 		List<Alert> actualEvenAlerts = new ArrayList<>();
 
 		// Fetch with invalid alert name should be empty
-		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "invalid_alert_name");
+		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "invalid_alert_name", null, null);
 		assertEquals(page.size(), 0);
 
 		// Fetch first page of even number alerts
-		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "e*eN");
+		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "e*eN", null, null);
 		assertEquals(page.size(), limit);
 		actualEvenAlerts.addAll(page);
 
 		// Fetch first page of even number alerts case insensitive
-		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "EvEn");
+		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "EvEn", null, null);
 		assertEquals(page.size(), limit);
 
 		// Fetch second page of even number alerts (less than a page)
-		page = alertService.findAlertsByOwnerPaged(user, limit, actualEvenAlerts.size(), "even");
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualEvenAlerts.size(), "even", null, null);
 		assertEquals(page.size(), expectedEvenAlerts.size() - actualEvenAlerts.size());
 		actualEvenAlerts.addAll(page);
 
 		// Try to fetch again should be empty result
-		page = alertService.findAlertsByOwnerPaged(user, limit, actualEvenAlerts.size(), "even");
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualEvenAlerts.size(), "even", null, null);
 		assertEquals(0, page.size());
 
 		Set<Alert> actualEvenSet = new HashSet<>();
@@ -364,9 +368,88 @@ public class AlertServiceTest extends AbstractTest {
 			assertTrue(actualEvenSet.contains(alert));
 		}
 
-		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "O*d");
+		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "O*d", null, null);
         assertEquals(limit, page.size());
 	}
+
+	@Test
+	public void testFindAlertsByOwnerPagedWithSorting() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+		
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+		Alert alert2 = alertService.updateAlert(new Alert(user1, user1, "alert2", EXPRESSION, "* * * * *"));
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+		Alert alert3 = alertService.updateAlert(new Alert(user1, user1, "alert3", EXPRESSION, "* * * * *"));
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+		
+		//Change modified date
+		alert1.setShared(true);
+		alertService.updateAlert(alert1);
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+
+		//sort by alert name ascending
+		List<Alert> page = alertService.findAlertsByOwnerPaged(user1, 10, 0, null, "name", "ASC");
+		assertEquals(alert1.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert3.getName(), page.get(2).getName());
+
+		//sort by alert name descending
+		page = alertService.findAlertsByOwnerPaged(user1, 10, 0, null, "name", "DESC");
+		assertEquals(alert3.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert1.getName(), page.get(2).getName());
+
+		//sort by create date ascending
+		page = alertService.findAlertsByOwnerPaged(user1, 10, 0, null, "createdDate", "ASC");
+		assertEquals(alert1.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert3.getName(), page.get(2).getName());
+
+		//sort by create date descending
+		page = alertService.findAlertsByOwnerPaged(user1, 10, 0, null, "createdDate", "DESC");
+		assertEquals(alert3.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert1.getName(), page.get(2).getName());
+
+		//sort by modified date ascending
+		page = alertService.findAlertsByOwnerPaged(user1, 10, 0, null, "modifiedDate", "ASC");
+		assertEquals(alert2.getName(), page.get(0).getName());
+		assertEquals(alert3.getName(), page.get(1).getName());
+		assertEquals(alert1.getName(), page.get(2).getName());
+		
+		//sort by modified date descending
+		page = alertService.findAlertsByOwnerPaged(user1, 10, 0, null, "modifiedDate", "DESC");
+		assertEquals(alert1.getName(), page.get(0).getName());
+		assertEquals(alert3.getName(), page.get(1).getName());
+		assertEquals(alert2.getName(), page.get(2).getName());
+		
+		//invalid column
+		try {
+			page = alertService.findAlertsByOwnerPaged(user1, 10, 0, null, "invalidColumn", "DESC");
+		} catch (IllegalArgumentException ex){
+			assertNotNull(ex);
+		}
+		try {
+			page = alertService.findAlertsByOwnerPaged(user1, 10, 0, null, "", "DESC");
+		} catch (IllegalArgumentException ex){
+			assertNotNull(ex);
+		}
+	}	
 
 	@Test
 	public void testCountAlertsByOwner() {
@@ -731,7 +814,7 @@ public class AlertServiceTest extends AbstractTest {
 		}
 		alertService.enqueueAlerts(actualAlertList);
 
-		List<AlertWithTimestamp> expectedList = mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, 1000, 10);
+		List<AlertWithTimestamp> expectedList = mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, 10000, 10);
 
 		assertEquals(actualAlertList.size(), expectedList.size());
 	}
@@ -826,19 +909,19 @@ public class AlertServiceTest extends AbstractTest {
 		sharedAlerts.add("alert2");
 
 		// First page
-		List<Alert> page = alertService.findSharedAlertsPaged(1, 0, null);
+		List<Alert> page = alertService.findSharedAlertsPaged(1, 0, null, null, null);
 		assertEquals(1, page.size());
 		assertTrue(sharedAlerts.contains(page.get(0).getName()));
 		assertEquals(page.get(0).isMissingDataNotificationEnabled(), true);
 
 		// Second page
-		page = alertService.findSharedAlertsPaged(1, 1, null);
+		page = alertService.findSharedAlertsPaged(1, 1, null, null, null);
 		assertEquals(1, page.size());
 		assertTrue(sharedAlerts.contains(page.get(0).getName()));
 		assertEquals(page.get(0).isMissingDataNotificationEnabled(), false);
 
 		// Thrid page should be zero
-		page = alertService.findSharedAlertsPaged(1, 2, null);
+		page = alertService.findSharedAlertsPaged(1, 2, null, null, null);
 		assertEquals(0, page.size());
 	}
 
@@ -866,34 +949,144 @@ public class AlertServiceTest extends AbstractTest {
 		sharedAlerts.add("alert2");
 
 		// Search by owner name
-		List<Alert> page = alertService.findSharedAlertsPaged(10, 0, "test1");
+		List<Alert> page = alertService.findSharedAlertsPaged(10, 0, "test1", null, null);
 		assertEquals(1, page.size());
 		assertTrue("test1".equals(page.get(0).getOwner().getUserName()));
 
 		// Search by owner name case insensitive
-		page = alertService.findSharedAlertsPaged(10, 0, "TeSt1");
+		page = alertService.findSharedAlertsPaged(10, 0, "TeSt1", null, null);
 		assertEquals(1, page.size());
 		assertTrue("test1".equals(page.get(0).getOwner().getUserName()));
 
 		// Search by alert name
-		page = alertService.findSharedAlertsPaged(10, 0, "alert2");
+		page = alertService.findSharedAlertsPaged(10, 0, "alert2", null, null);
 		assertEquals(1, page.size());
 		assertTrue("alert2".equals(page.get(0).getName()));
 
 		// Search by alert name case insensitive
-		page = alertService.findSharedAlertsPaged(10, 0, "aLeRt2");
+		page = alertService.findSharedAlertsPaged(10, 0, "aLeRt2", null, null);
 		assertEquals(1, page.size());
 		assertTrue("alert2".equals(page.get(0).getName()));
 
 		// Search private alert
-		page = alertService.findSharedAlertsPaged(1, 2, "alert3");
+		page = alertService.findSharedAlertsPaged(1, 2, "alert3", null, null);
 		assertEquals(0, page.size());
 
 		// Invalid search text
-		page = alertService.findSharedAlertsPaged(1, 2, "invalid_search_text");
+		page = alertService.findSharedAlertsPaged(1, 2, "invalid_search_text", null, null);
 		assertEquals(0, page.size());
 	}
 
+	@Test
+	public void testFindSharedAlertsMetaPagedWithSorting() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+		PrincipalUser user3 = userService.updateUser(new PrincipalUser(admin, "test3", "test3@salesforce.com"));
+		
+
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert2", EXPRESSION, "* * * * *"));
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+		Alert alert3 = alertService.updateAlert(new Alert(user3, user3, "alert3", EXPRESSION, "* * * * *"));
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+
+		//Change modified date
+		alert2.setShared(true);
+		alertService.updateAlert(alert2);
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+
+		alert3.setShared(true);
+		alertService.updateAlert(alert3);
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+
+		alert1.setShared(true);
+		alertService.updateAlert(alert1);
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+
+
+		//sort by owner name ascending
+		List<Alert> page = alertService.findSharedAlertsPaged(10, 0, null, "ownerName", "ASC");
+		assertEquals(3, page.size());
+		assertEquals(alert1.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert3.getName(), page.get(2).getName());
+
+		//sort by owner name descending
+		page = alertService.findSharedAlertsPaged(10, 0, null, "ownerName", "DESC");
+		assertEquals(3, page.size());
+		assertEquals(alert3.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert1.getName(), page.get(2).getName());
+
+		//sort by alert name ascending
+		page = alertService.findSharedAlertsPaged(10, 0, null, "name", "ASC");
+		assertEquals(alert1.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert3.getName(), page.get(2).getName());
+
+		//sort by alert name descending
+		page = alertService.findSharedAlertsPaged(10, 0, null, "name", "DESC");
+		assertEquals(alert3.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert1.getName(), page.get(2).getName());
+
+		//sort by create date ascending
+		page = alertService.findSharedAlertsPaged(10, 0, null, "createdDate", "ASC");
+		assertEquals(alert1.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert3.getName(), page.get(2).getName());
+
+		//sort by create date descending
+		page = alertService.findSharedAlertsPaged(10, 0, null, "createdDate", "DESC");
+		assertEquals(alert3.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert1.getName(), page.get(2).getName());
+
+		//sort by modified date ascending
+		page = alertService.findSharedAlertsPaged(10, 0, null, "modifiedDate", "ASC");
+		assertEquals(alert2.getName(), page.get(0).getName());
+		assertEquals(alert3.getName(), page.get(1).getName());
+		assertEquals(alert1.getName(), page.get(2).getName());
+		
+		//sort by modified date descending
+		page = alertService.findSharedAlertsPaged(10, 0, null, "modifiedDate", "DESC");
+		assertEquals(alert1.getName(), page.get(0).getName());
+		assertEquals(alert3.getName(), page.get(1).getName());
+		assertEquals(alert2.getName(), page.get(2).getName());
+		
+		//invalid column
+		try {
+			page = alertService.findSharedAlertsPaged(10, 0, null, "invalidColumn", "DESC");
+		} catch (IllegalArgumentException ex){
+			assertNotNull(ex);
+		}
+		try {
+			page = alertService.findSharedAlertsPaged(10, 0, null, "", "DESC");
+		} catch (IllegalArgumentException ex) {
+			assertNotNull(ex);
+		}
+	}
 	@Test
 	public void testCountSharedAlertsMetaPaged() {
 		UserService userService = system.getServiceFactory().getUserService();
@@ -1066,7 +1259,7 @@ public class AlertServiceTest extends AbstractTest {
 		alertService.updateAlert(alert3);
 
 		// Assert result is empty for non-privileged user
-		assertEquals(0, alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 100, 0, null).size());
+		assertEquals(0, alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 100, 0, null, null, null).size());
 	}
 
 	@Test
@@ -1120,17 +1313,17 @@ public class AlertServiceTest extends AbstractTest {
 		Set<String> alertNames = new HashSet<>();
 
 		// Fetch first page
-		List<Alert> page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 0, null);
+		List<Alert> page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 0, null, null, null);
 		assertEquals(1, page.size());
 		alertNames.add(page.get(0).getName());
 
 		// Fetch second page
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 1, null);
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 1, null, null, null);
 		assertEquals(1, page.size());
 		alertNames.add(page.get(0).getName());
 
 		// Fetch third page, should be empty
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 2, null);
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 2, null, null, null);
 		assertEquals(0, page.size());
 
 		// Assert all private alerts are fetched
@@ -1162,36 +1355,119 @@ public class AlertServiceTest extends AbstractTest {
 		alertService.updateAlert(alert3);
 
 		// Search by alert name
-		List<Alert> page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "alert-name");
+		List<Alert> page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "alert-name", null, null);
 		assertEquals(2, page.size());
 
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "private1");
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "private1", null, null);
 		assertEquals(1, page.size());
 
 		// Search by alert name case insensitive
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "aLerT-NamE");
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "aLerT-NamE", null, null);
 		assertEquals(2, page.size());
 
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "PrIvAtE1");
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "PrIvAtE1", null, null);
 		assertEquals(1, page.size());
 
 		// Search shared alert name
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "shared3");
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "shared3", null, null);
 		assertEquals(0, page.size());
 
 		// Search shared alert name case insensitive
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "SHaReD3");
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "SHaReD3", null, null);
 		assertEquals(0, page.size());
 
 		// Search by owner name
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "test2");
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "test2", null, null);
 		assertEquals(1, page.size());
 		assertEquals("test2", page.get(0).getOwner().getUserName());
 
 		// Search by owner name case insensitive
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "TeSt2");
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "TeSt2", null, null);
 		assertEquals(1, page.size());
 		assertEquals("test2", page.get(0).getOwner().getUserName());
+	}
+
+	@Test
+	public void testFindPrivateAlertsPagedForPrivilegedUserWithSorting() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		ManagementService managementService = system.getServiceFactory().getManagementService();
+
+		// By default user is not privileged
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+		managementService.setAdministratorPrivilege(user1, true);
+
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+		Alert alert2 = alertService.updateAlert(new Alert(user1, user1, "alert2", EXPRESSION, "* * * * *"));
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+		Alert alert3 = alertService.updateAlert(new Alert(user1, user1, "alert3", EXPRESSION, "* * * * *"));
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+		
+		//Change modified date
+		alert1.setShared(false);
+		alertService.updateAlert(alert1);
+		try{
+			Thread.sleep(1000);
+		}catch(Exception e) {
+		}
+
+		//sort by alert name ascending
+		List<Alert> page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, null, "name", "ASC");
+		assertEquals(alert1.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert3.getName(), page.get(2).getName());
+
+		//sort by alert name descending
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, null, "name", "DESC");
+		assertEquals(alert3.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert1.getName(), page.get(2).getName());
+
+		//sort by create date ascending
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, null, "createdDate", "ASC");
+		assertEquals(alert1.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert3.getName(), page.get(2).getName());
+
+		//sort by create date descending
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, null, "createdDate", "DESC");
+		assertEquals(alert3.getName(), page.get(0).getName());
+		assertEquals(alert2.getName(), page.get(1).getName());
+		assertEquals(alert1.getName(), page.get(2).getName());
+
+		//sort by modified date ascending
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, null, "modifiedDate", "ASC");
+		assertEquals(alert2.getName(), page.get(0).getName());
+		assertEquals(alert3.getName(), page.get(1).getName());
+		assertEquals(alert1.getName(), page.get(2).getName());
+		
+		//sort by modified date descending
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, null, "modifiedDate", "DESC");
+		assertEquals(alert1.getName(), page.get(0).getName());
+		assertEquals(alert3.getName(), page.get(1).getName());
+		assertEquals(alert2.getName(), page.get(2).getName());
+		
+		//invalid column
+		try {
+			page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, null, "invalidColumn", "DESC");
+		} catch (IllegalArgumentException ex) {
+			assertNotNull(ex);
+		}
+		try {
+			page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, null, "", "DESC");
+		} catch (IllegalArgumentException ex) {
+			assertNotNull(ex);
+		}
 	}
 
 	@Test

@@ -251,6 +251,8 @@ public final class SystemConfiguration extends Properties {
         CACHE_SERVICE_PROPERTY_FILE("service.config.cache","placeholder_redis.properties"),
 
         MQ_SERVICE_IMPL_CLASS("service.binding.mq", "com.salesforce.dva.argus.service.mq.kafka.KafkaMessageService"),
+        MQ_SERVICE_PRODUCER_IMPL_CLASS("service.binding.mq.producer", "com.salesforce.dva.argus.service.mq.kafka.DefaultProducer"),
+        MQ_SERVICE_CONSUMER_IMPL_CLASS("service.binding.mq.consumer", "com.salesforce.dva.argus.service.mq.kafka.DefaultConsumer"),
         MQ_SERVICE_PROPERTY_FILE("service.config.mq","placeholder_kafka.properties"),
 
         ALERT_SERVICE_IMPL_CLASS("service.binding.alert", "com.salesforce.dva.argus.service.alert.DefaultAlertService"),
@@ -286,7 +288,9 @@ public final class SystemConfiguration extends Properties {
         WARDEN_SERVICE_IMPL_CLASS("service.binding.warden", "com.salesforce.dva.argus.service.warden.DefaultWardenService"),
         WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "placeholder_warden.properties"),
 
-        OAUTH_SERVICE_PROPERTY_FILE("service.config.oauth","placeholder_oauth.properties");
+        OAUTH_SERVICE_PROPERTY_FILE("service.config.oauth","placeholder_oauth.properties"),
+        
+        DISCOVERY_SERVICE_IMPL_CLASS("service.binding.discovery", "com.salesforce.dva.argus.service.schema.CachedDiscoveryService");
 
         private final String _name;
         private final String _defaultValue;

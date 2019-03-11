@@ -75,6 +75,8 @@ public abstract class AbstractTest {
         apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
         ch.qos.logback.classic.Logger kafkaLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("kafka");
         kafkaLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+        ch.qos.logback.classic.Logger zkLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.I0Itec.zkclient");
+        zkLogger.setLevel(ch.qos.logback.classic.Level.OFF);
     }
 
     protected TestingServer zkTestServer;
@@ -195,6 +197,7 @@ public abstract class AbstractTest {
         properties.put("num.partitions", "2");
         properties.put("log.flush.interval.ms", "10");
         properties.put("log.dir", "/tmp/kafka-logs/" + createRandomName());
+        properties.put("offsets.topic.replication.factor", "1");
 
         KafkaConfig config = new KafkaConfig(properties);
 

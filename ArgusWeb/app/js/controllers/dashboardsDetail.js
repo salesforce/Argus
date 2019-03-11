@@ -56,8 +56,12 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 			$scope.selectedTab = tab;
 			if(tab === 1 && $scope.needToRefreshView){
 				var url = $window.location.href;
-				url = url.substring(0, url.indexOf('?')); //clear the query paramter
-				window.location.href = url;
+				var indexOfQuery = url.indexOf('?');
+				if (indexOfQuery > 0){
+					url = url.substring(0, indexOfQuery); //clear the query paramter
+					window.location.href = url;
+				}
+				window.location.reload();
 			}
 		};
 
