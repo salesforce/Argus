@@ -86,8 +86,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private HashAlgorithm _idgenHashAlgo;
 
 	/** Main index properties */
-	private static final String INDEX_NAME = "metadata_index";
-	private static final String TYPE_NAME = "metadata_type";
+	private static String TAGS_INDEX_NAME;
+	private static String TAGS_TYPE_NAME;
 	private final ObjectMapper _createMetadataMapper;
 	private final ObjectMapper _updateMetadataMapper;
 	private final int _replicationFactor;
@@ -172,11 +172,15 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		/** Set up main index stuff */
 		_createMetadataMapper = _getMetadataObjectMapper(new MetricSchemaRecordList.CreateSerializer());
 		_updateMetadataMapper = _getMetadataObjectMapper(new MetricSchemaRecordList.UpdateSerializer());
+		TAGS_INDEX_NAME = config.getValue(Property.ELASTICSEARCH_TAGS_INDEX_NAME.getName(),
+				Property.ELASTICSEARCH_TAGS_INDEX_NAME.getDefaultValue());
+		TAGS_TYPE_NAME = config.getValue(Property.ELASTICSEARCH_TAGS_TYPE_NAME.getName(),
+				Property.ELASTICSEARCH_TAGS_TYPE_NAME.getDefaultValue());
 		_replicationFactor = Integer.parseInt(
-				config.getValue(Property.ELASTICSEARCH_NUM_REPLICAS.getName(), Property.ELASTICSEARCH_NUM_REPLICAS.getDefaultValue()));
+				config.getValue(Property.ELASTICSEARCH_NUM_REPLICAS_FOR_TAGS_INDEX.getName(), Property.ELASTICSEARCH_NUM_REPLICAS_FOR_TAGS_INDEX.getDefaultValue()));
 		_numShards = Integer.parseInt(
-				config.getValue(Property.ELASTICSEARCH_SHARDS_COUNT.getName(), Property.ELASTICSEARCH_SHARDS_COUNT.getDefaultValue()));
-		_createIndexIfNotExists(INDEX_NAME, _replicationFactor, _numShards, () -> _createMappingsNode());
+				config.getValue(Property.ELASTICSEARCH_SHARDS_COUNT_FOR_TAGS_INDEX.getName(), Property.ELASTICSEARCH_SHARDS_COUNT_FOR_TAGS_INDEX.getDefaultValue()));
+		_createIndexIfNotExists(TAGS_INDEX_NAME, _replicationFactor, _numShards, () -> _createMappingsNode());
 
 		/** Set up scope-only index stuff */
 		_createScopeOnlyMapper = _getScopeOnlyObjectMapper(new ScopeOnlySchemaRecordList.CreateSerializer());
@@ -437,9 +441,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		long start = System.currentTimeMillis();
 		boolean scroll = false;
 		StringBuilder sb = new StringBuilder().append("/")
-				.append(INDEX_NAME)
+				.append(TAGS_INDEX_NAME)
 				.append("/")
-				.append(TYPE_NAME)
+				.append(TAGS_TYPE_NAME)
 				.append("/")
 				.append("_search");
 
@@ -533,8 +537,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		tags.put("type", "REGEXP_WITH_AGGREGATION");
 		long start = System.currentTimeMillis();
 
-		String indexName = INDEX_NAME;
-		String typeName = TYPE_NAME;
+		String indexName = TAGS_INDEX_NAME;
+		String typeName = TAGS_TYPE_NAME;
 
 		if (query.isQueryOnlyOnScope() && RecordType.SCOPE.equals(type))
 		{
@@ -598,9 +602,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		tags.put("type", "FTS_WITH_AGGREGATION");
 		long start = System.currentTimeMillis();
 		StringBuilder sb = new StringBuilder().append("/")
-				.append(INDEX_NAME)
+				.append(TAGS_INDEX_NAME)
 				.append("/")
-				.append(TYPE_NAME)
+				.append(TAGS_TYPE_NAME)
 				.append("/")
 				.append("_search");
 		try {
@@ -734,7 +738,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		List<String> tokens = new ArrayList<>();
 
-		String requestUrl = new StringBuilder("/").append(INDEX_NAME).append("/_analyze").toString();
+		String requestUrl = new StringBuilder("/").append(TAGS_INDEX_NAME).append("/_analyze").toString();
 
 		String requestBody = "{\"analyzer\" : \"metadata_analyzer\", \"text\": \"" + query + "\" }";
 
@@ -759,7 +763,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	 * @return	List of records that FAILED to upsert
 	 */
 	protected Set<MetricSchemaRecord> upsertMetadataRecords(Set<MetricSchemaRecord> records) {
-		String requestUrl = String.format("/%s/%s/_bulk", INDEX_NAME, TYPE_NAME);
+		String requestUrl = String.format("/%s/%s/_bulk", TAGS_INDEX_NAME, TAGS_TYPE_NAME);
 		String strResponse;
 
 		MetricSchemaRecordList msrList = new MetricSchemaRecordList(records, _idgenHashAlgo);
@@ -815,7 +819,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	 * @return	List of records that FAILED to update
 	 */
 	protected Set<MetricSchemaRecord> updateMetadataRecordMts(Set<MetricSchemaRecord> records) {
-		String requestUrl = String.format("/%s/%s/_bulk", INDEX_NAME, TYPE_NAME);
+		String requestUrl = String.format("/%s/%s/_bulk", TAGS_INDEX_NAME, TAGS_TYPE_NAME);
 		Set<MetricSchemaRecord> failedRecords = new HashSet<>();
 		try {
 			MetricSchemaRecordList updateSchemaRecordList = new MetricSchemaRecordList(records, _idgenHashAlgo);
@@ -1340,7 +1344,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		typeNode.put("properties", propertiesNode);
 
 		ObjectNode mappingsNode = mapper.createObjectNode();
-		mappingsNode.put(TYPE_NAME, typeNode);
+		mappingsNode.put(TAGS_TYPE_NAME, typeNode);
 		return mappingsNode;
 	}
 
@@ -1472,37 +1476,40 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		ELASTICSEARCH_ENDPOINT_SOCKET_TIMEOUT("service.property.schema.elasticsearch.endpoint.socket.timeout", "10000"),
 		/** Connection count for ES REST client. */
 		ELASTICSEARCH_CONNECTION_COUNT("service.property.schema.elasticsearch.connection.count", "10"),
-		/** Replication factor for metadata_index. */
-		ELASTICSEARCH_NUM_REPLICAS("service.property.schema.elasticsearch.num.replicas", "1"),
-		/** Shard count for metadata_index. */
-		ELASTICSEARCH_SHARDS_COUNT("service.property.schema.elasticsearch.shards.count", "10"),
-		/** Replication factor for scopenames */
-		ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_INDEX("service.property.schema.elasticsearch.num.replicas.for.scope.index", "1"),
-		/** Shard count for scopenames */
-		ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_INDEX("service.property.schema.elasticsearch.shards.count.for.scope.index", "6"),
-		/** Replication factor for metatags */
-		ELASTICSEARCH_NUM_REPLICAS_FOR_METATAGS_INDEX("service.property.schema.elasticsearch.num.replicas.for.metatags.index", "1"),
-		/** Shard count for metatags */
-		ELASTICSEARCH_SHARDS_COUNT_FOR_METATAGS_INDEX("service.property.schema.elasticsearch.shards.count.for.metatags.index", "6"),
 		/** The no. of records to batch for bulk indexing requests.
 		 * https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html#_using_and_sizing_bulk_requests
 		 */
 		ELASTICSEARCH_INDEXING_BATCH_SIZE("service.property.schema.elasticsearch.indexing.batch.size", "10000"),
-
-		ELASTICSEARCH_USE_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.use.scopeandmetric.index", "false"),
-
 		/** The hashing algorithm to use for generating document id. */
 		ELASTICSEARCH_IDGEN_HASH_ALGO("service.property.schema.elasticsearch.idgen.hash.algo", "MD5"),
+
+		/** Name of the main scope:metric:tagk:tagv index */
+		ELASTICSEARCH_TAGS_INDEX_NAME("service.property.schema.elasticsearch.index.name", "metadata_index"),
+		/** Type within the main index */
+		ELASTICSEARCH_TAGS_TYPE_NAME("service.property.schema.elasticsearch.type.name", "metadata_type"),
+		/** Replication factor for main index */
+		ELASTICSEARCH_NUM_REPLICAS_FOR_TAGS_INDEX("service.property.schema.elasticsearch.num.replicas", "1"),
+		/** Shard count for main index */
+		ELASTICSEARCH_SHARDS_COUNT_FOR_TAGS_INDEX("service.property.schema.elasticsearch.shards.count", "10"),
+
 
 		/** Name of scope only index */
 		ELASTICSEARCH_SCOPE_INDEX_NAME("service.property.schema.elasticsearch.scope.index.name", "scopenames"),
 		/** Type within scope only index */
 		ELASTICSEARCH_SCOPE_TYPE_NAME("service.property.schema.elasticsearch.scope.type.name", "scope_type"),
+		/** Replication factor for scopenames */
+		ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_INDEX("service.property.schema.elasticsearch.num.replicas.for.scope.index", "1"),
+		/** Shard count for scopenames */
+		ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_INDEX("service.property.schema.elasticsearch.shards.count.for.scope.index", "6"),
 
 		/** Name of metatags only index */
 		ELASTICSEARCH_METATAGS_INDEX_NAME("service.property.schema.elasticsearch.metatags.index.name", "metatags"),
 		/** Type within metatags only index */
-		ELASTICSEARCH_METATAGS_TYPE_NAME("service.property.schema.elasticsearch.metatags.type.name", "metatags_type");
+		ELASTICSEARCH_METATAGS_TYPE_NAME("service.property.schema.elasticsearch.metatags.type.name", "metatags_type"),
+		/** Replication factor for metatags */
+		ELASTICSEARCH_NUM_REPLICAS_FOR_METATAGS_INDEX("service.property.schema.elasticsearch.num.replicas.for.metatags.index", "1"),
+		/** Shard count for metatags */
+		ELASTICSEARCH_SHARDS_COUNT_FOR_METATAGS_INDEX("service.property.schema.elasticsearch.shards.count.for.metatags.index", "6");
 
 		private final String _name;
 		private final String _defaultValue;
