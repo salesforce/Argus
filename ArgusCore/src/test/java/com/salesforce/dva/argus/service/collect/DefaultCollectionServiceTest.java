@@ -120,6 +120,27 @@ public class DefaultCollectionServiceTest extends AbstractTest {
     }
 
     @Test
+    public void testSubmitHistogramBucketsExceeded() {
+        Histogram histogram = createHistogram(101);
+        collectionService.submitHistogram(user, histogram);
+        verify(monitorService).modifyCounter(MonitorService.Counter.HISTOGRAM_DROPPED, 1, null);
+    }
+    
+    @Test
+    public void testSubmitHistogramBucketsEmpty() {
+        Histogram histogram = createHistogram(0);
+        collectionService.submitHistogram(user, histogram);
+        verify(monitorService).modifyCounter(MonitorService.Counter.HISTOGRAM_DROPPED, 1, null);
+    }
+    
+    @Test
+    public void testSubmitHistogramBucketsWrongBounds() {
+        Histogram histogram = createHistogramWrongBounds(2);
+        collectionService.submitHistogram(user, histogram);
+        verify(monitorService).modifyCounter(MonitorService.Counter.HISTOGRAM_DROPPED, 1, null);
+    }
+    
+    @Test
     public void testCommitMetrics() {
         List<Serializable> messages = Arrays.asList(
                 new ArrayList<>(Arrays.asList(createMetric())),

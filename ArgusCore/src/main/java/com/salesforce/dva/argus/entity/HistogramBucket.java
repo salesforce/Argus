@@ -29,6 +29,14 @@ public class HistogramBucket implements Serializable, Comparable<HistogramBucket
         this.lowerBound = Float.parseFloat(bounds[0].trim());
         this.upperBound = Float.parseFloat(bounds[1].trim());
     }
+    
+    public float getLowerBound() {
+        return lowerBound;
+    }
+    
+    public float getUpperBound() {
+        return upperBound;
+    }
 
     @Override
     public int compareTo(HistogramBucket that) {
