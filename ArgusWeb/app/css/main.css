@@ -416,6 +416,7 @@ ag-dashboard table {width: 100%; table-layout:fixed;}
 .fullscreen {
   width: 100%;
   height: 100%;
+  background-color: white;
 }
 
 /* for ag-table */
