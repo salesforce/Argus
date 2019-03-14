@@ -56,6 +56,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Histogram;
+import com.salesforce.dva.argus.entity.HistogramBucket;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.TSDBEntity;
@@ -84,6 +85,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
 
     protected static final int MAX_ANNOTATION_SIZE_BYTES = 2000;
     private static final int BATCH_METRICS = 50;
+    private static final int MAX_HISTOGRAM_BUCKETS = 100;
     private static final Logger _logger = LoggerFactory.getLogger(DefaultCollectionService.class);
 
     //~ Instance fields ******************************************************************************************************************************
@@ -256,7 +258,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
         }
         return dequeued.size();
     }
-    
+
     @Override
     public int commitHistograms(int histogramCount, int timeout) {
         requireNotDisposed();
@@ -271,7 +273,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
         }
         return dequeued.size();
     }
-    
+
     @Override
     public void submitHistogram(PrincipalUser submitter, Histogram histogram) {
         submitHistograms(submitter, Arrays.asList(new Histogram[] { histogram }));
@@ -283,9 +285,44 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
         requireArgument(submitter != null, "Submitting user cannot be null.");
         requireArgument(histograms != null, "The list of histograms to submit cannot be null.");
         checkSubmitHistogramPolicyRequirementsMet(submitter, histograms);
-        _monitorService.modifyCounter(Counter.HISTOGRAM_WRITES, histograms.size(), null);
-        _mqService.enqueue(HISTOGRAM.getQueueName(), histograms);
-    }    
+
+        List<Histogram> filteredHistograms = new ArrayList<>();
+
+        /* Replace unsupported characters in histogram and validate bounds */
+        for (Histogram histogram : histograms) {
+            if(histogram.getBuckets() == null || histogram.getBuckets().isEmpty()){
+                _logger.warn("Histogram buckets is null or empty. Dropping this histogram");
+                _monitorService.modifyCounter(Counter.HISTOGRAM_DROPPED, 1, null);
+            } else if (histogram.getBuckets().size() > MAX_HISTOGRAM_BUCKETS) {
+                _logger.warn("Histogram buckets exceeded max size {}. Dropping this histogram", MAX_HISTOGRAM_BUCKETS);
+                _monitorService.modifyCounter(Counter.HISTOGRAM_DROPPED, 1, null);
+            } else {
+                boolean boundsCheck = true;
+                for(HistogramBucket histogramBucket: histogram.getBuckets().keySet()){
+                    if(histogramBucket.getLowerBound() >= histogramBucket.getUpperBound()){
+                        _logger.warn("Histogram lower bound, must be less than upper bound. Dropping this histogram");
+                        _monitorService.modifyCounter(Counter.HISTOGRAM_DROPPED, 1, null);
+                        boundsCheck = false;
+                        break;
+                    }
+                }
+                if(boundsCheck == false) continue;
+
+                histogram.setScope(TSDBEntity.replaceUnsupportedChars(histogram.getScope()));
+                histogram.setMetric(TSDBEntity.replaceUnsupportedChars(histogram.getMetric()));
+                Map<String, String> filteredTags = new HashMap<>();
+                for (String tagKey : histogram.getTags().keySet()) {
+                    filteredTags.put(TSDBEntity.replaceUnsupportedChars(tagKey), TSDBEntity.replaceUnsupportedChars(histogram.getTags().get(tagKey)));
+                }
+                histogram.setTags(filteredTags);
+
+                filteredHistograms.add(histogram);
+            }
+        }
+
+        _monitorService.modifyCounter(Counter.HISTOGRAM_WRITES, filteredHistograms.size(), null);
+        _mqService.enqueue(HISTOGRAM.getQueueName(), filteredHistograms);
+    }
 
     @Override
     public void dispose() {
@@ -334,7 +371,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
                 metricCategoryMap.put(metricCategory, new ArrayList<Long>(metric.getDatapoints().keySet()));
             }
         }
-        
+
         Metric minResolutionMetric = null;
         for (Entry<Metric, List<Long>> entry : metricCategoryMap.entrySet()) {
             Long minDiffInMetricCategory = null;
@@ -350,16 +387,16 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
                     minDiff = minDiffInMetricCategory;
                     minResolutionMetric = entry.getKey();
                 }else {
-                	   if(minDiff>minDiffInMetricCategory) {
-                		   minResolutionMetric = entry.getKey();
-                		   minDiff = minDiffInMetricCategory;
-                	   }
+                    if(minDiff>minDiffInMetricCategory) {
+                        minResolutionMetric = entry.getKey();
+                        minDiff = minDiffInMetricCategory;
+                    }
                 }
             }
         }
-        
+
         if(minDiff!=null && minDiff<PolicyCounter.MINIMUM_RESOLUTION_MS.getDefaultValue()) {
-        	    _logger.error("Minimum resolution policy has been violated for the metric " + minResolutionMetric.toString());
+            _logger.error("Minimum resolution policy has been violated for the metric " + minResolutionMetric.toString());
         }
         return new MetricData(dataPointsSize, minDiff);
     }

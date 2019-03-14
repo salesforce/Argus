@@ -4,7 +4,7 @@
 
     <groupId>com.salesforce.argus</groupId>
     <artifactId>argus</artifactId>
-    <version>3.9.0</version>
+    <version>${global.version}</version>
     <packaging>pom</packaging>
 
     <name>Argus</name>
@@ -118,11 +118,15 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
         <dockerImages.base.name>salesforce</dockerImages.base.name>
-        <project.version>3.9.0</project.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.9.5</jackson.version>
         <httpclient.version>4.5.3</httpclient.version>
         <junit.version>4.12</junit.version>
+        <!-- Developers set global.major.minor.version. -SNAPSHOT is automatically appended
+             in local builds. When run on Jenkins you get major.minor.build_number. When
+             run in the master branch pipeline, the git tag gets pushed and artifact published -->
+        <global.major.minor.version>4.73</global.major.minor.version>
+        <global.version>${global.major.minor.version}-SNAPSHOT</global.version>
         <jacoco-maven-plugin.version>0.7.9</jacoco-maven-plugin.version>
     </properties>
     <build>
@@ -150,7 +154,7 @@
                         <dockerDirectory>${project.basedir}/src/main/docker</dockerDirectory>
                         <forceTags>true</forceTags>
                         <imageTags>
-                            <imageTag>${project.version}</imageTag>
+                            <imageTag>${global.version}</imageTag>
                         </imageTags>
                     </configuration>
                 </plugin>
@@ -306,7 +310,91 @@
         </plugins>
     </reporting>
     <profiles>
-        <profile>
+      <profile>
+        <id>jenkins</id>
+        <activation>
+          <property>
+            <!-- Only activate tagging on jenkins when on master branch -->
+            <name>env.GIT_BRANCH</name>
+            <value>origin/master</value>
+          </property>
+        </activation>
+        <properties>
+          <global.version>${global.major.minor.version}.${env.BUILD_NUMBER}</global.version>
+        </properties>
+        <build>
+          <plugins>
+            <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>exec-maven-plugin</artifactId>
+              <version>${exec-maven-plugin.version}</version>
+              <executions>
+                <execution>
+                  <id>git-tag</id>
+                  <phase>test</phase>
+                  <goals>
+                    <goal>exec</goal>
+                  </goals>
+                  <configuration>
+                    <executable>git</executable>
+                    <commandlineArgs>tag  -m "${project.artifactId}-${global.version}-${maven.build.timestamp}" v${global.version}</commandlineArgs>
+                  </configuration>
+                </execution>
+                <execution>
+                  <id>git-log-tags</id>
+                  <phase>test</phase>
+                  <goals>
+                    <goal>exec</goal>
+                  </goals>
+                  <configuration>
+                    <!-- List git tags on head since tag command is silent
+                         Example output:
+                         f966edb710c70ce264316d8c4cf20c1e0ed2e284 (HEAD -> master, tag: v1.0.9) Fix executable in pom -->
+                    <executable>git</executable>
+                    <commandlineArgs>--no-pager log -n 1 --decorate --pretty=oneline</commandlineArgs>
+                  </configuration>
+                </execution>
+                <execution>
+                  <id>git-list-tags</id>
+                  <phase>test</phase>
+                  <goals>
+                    <goal>exec</goal>
+                  </goals>
+                  <configuration>
+                    <!-- List git tags on head since tag command is silent
+                         Example output:
+                         v1.0.9          dva-pipelines-smoketests-1.0.9-2017-03-21T20:55:24Z -->
+                    <executable>git</executable>
+                    <!-- -n<NUM> specifies how many lines from the annotation, if any, are printed when using -l. The default is not to print any annotation lines.
+                         'l' is for 'list' which is not available in older versions of git -->
+                    <commandlineArgs>tag -l -n4 --contains HEAD</commandlineArgs>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </build>
+      </profile>
+      <profile>
+        <!-- Used for publishing to nexus on DVA CI -->
+        <id>jenkins-nexus-publish</id>
+        <activation>
+          <property>
+            <name>env.BUILD_NUMBER</name>
+          </property>
+        </activation>
+        <distributionManagement>
+          <repository>
+            <id>nexus</id>
+            <url>${salesforce.nexus.url}content/repositories/releases/</url>
+          </repository>
+          <snapshotRepository>
+            <id>nexus</id>
+            <url>${salesforce.nexus.url}content/repositories/snapshots/</url>
+          </snapshotRepository>
+        </distributionManagement>
+      </profile>
+      <profile>
             <id>release</id>
             <build>
                 <plugins>

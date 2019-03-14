@@ -193,6 +193,7 @@ public interface MonitorService extends Service {
         ANNOTATION_WRITES("argus.core", "annotation.writes", MetricType.COUNTER),
         ANNOTATION_DROPS_MAXSIZEEXCEEDED("argus.core", "annotation.drops.maxSizeExceeded", MetricType.COUNTER),
         HISTOGRAM_WRITES("argus.core", "histogram.writes", MetricType.COUNTER),
+        HISTOGRAM_DROPPED("argus.core", "histogram.dropped", MetricType.COUNTER),
         METRIC_READS("argus.core", "metric.reads", MetricType.COUNTER),
         ANNOTATION_READS("argus.core", "annotation.reads", MetricType.COUNTER),
         WARDEN_TRIGGERS("argus.core", "triggers.warden", MetricType.COUNTER),

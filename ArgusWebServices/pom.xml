@@ -3,7 +3,7 @@
     <parent>
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
-        <version>3.9.0</version>
+        <version>${global.version}</version>
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-webservices</artifactId>
@@ -154,7 +154,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>argus</artifactId>
-            <version>${project.version}</version>
+            <version>${global.version}</version>
             <classifier>resources</classifier>
             <type>zip</type>
             <scope>provided</scope>
@@ -162,7 +162,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>argus</artifactId>
-            <version>${project.version}</version>
+            <version>${global.version}</version>
             <classifier>test-resources</classifier>
             <type>zip</type>
             <scope>provided</scope>
@@ -186,7 +186,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>argus-core</artifactId>
-            <version>${project.version}</version>
+            <version>${global.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

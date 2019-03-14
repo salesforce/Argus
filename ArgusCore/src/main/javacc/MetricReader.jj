@@ -165,7 +165,7 @@ public class MetricReader<T> {
 	public String getQueryTimeWindow() {
   	 	return queryTimeWindow; 
   	}
-
+  	
 	public enum TimeUnit {
 
         SECOND("s", 1000),
