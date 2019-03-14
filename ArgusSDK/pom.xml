@@ -4,7 +4,7 @@
     <parent>
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
-        <version>3.10.0</version>
+        <version>${global.version}</version>
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-sdk</artifactId>
@@ -36,7 +36,7 @@
                             </descriptorRefs>
                             <destFileName>${project.artifactId}-${project.parent.version}.jar</destFileName>
                         </configuration>
-                        <phase>package</phase> 
+                        <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
@@ -116,7 +116,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>argus</artifactId>
-            <version>${project.version}</version>
+            <version>${global.version}</version>
             <classifier>resources</classifier>
             <type>zip</type>
             <scope>provided</scope>
@@ -124,7 +124,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>argus</artifactId>
-            <version>${project.version}</version>
+            <version>${global.version}</version>
             <classifier>test-resources</classifier>
             <type>zip</type>
             <scope>provided</scope>

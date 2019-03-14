@@ -4,7 +4,7 @@
 BuildArch:     noarch
 Name:          argusclient
 Version:       4.73
-Release:       1
+Release:       %{getenv:BUILD_NUMBER}
 License:       BSD-3-Clause
 Group:         Applications/System
 Summary:       Argus web services
