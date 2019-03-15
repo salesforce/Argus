@@ -1,4 +1,4 @@
-pipeline_template: rpm/Jenkinsfile-auto-versioning-deployment
+pipeline_template: rpm/Jenkinsfile
 email_reply_to: argus-admin@salesforce.com
 time_out_mins: 180
 number_of_artifacts_to_keep: 3
