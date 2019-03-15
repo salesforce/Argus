@@ -315,7 +315,7 @@
         <activation>
           <property>
             <!-- Only activate tagging on jenkins when on master branch -->
-            <name>env.GIT_BRANCH</name>
+            <name>origin/env.GIT_BRANCH</name>
             <value>origin/master</value>
           </property>
         </activation>
