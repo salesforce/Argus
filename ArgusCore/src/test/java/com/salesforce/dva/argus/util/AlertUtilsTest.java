@@ -185,7 +185,7 @@ public class AlertUtilsTest extends AbstractTest {
 		when(cacheServiceMock.get("*DC*:metric{{}}")).thenReturn(CACHED_QUERIES_1);
 		DiscoveryService discoveryServiceMock = mock(DiscoveryService.class);
 
-		CachedDiscoveryService service = new CachedDiscoveryService(cacheServiceMock, discoveryServiceMock, system.getConfiguration());
+		CachedDiscoveryService service = new CachedDiscoveryService(cacheServiceMock, discoveryServiceMock, system.getConfiguration(), null);
 		Provider<MetricReader<MetricQuery>> queryprovider = () -> new MetricReader<>(system.getServiceFactory().getTSDBService(), service,null);
 
 		DefaultMetricService _mServiceMock = new DefaultMetricService(system.getServiceFactory().getMonitorService(),null, null,queryprovider, system.getConfiguration());

@@ -253,7 +253,8 @@ public interface MonitorService extends Service {
         BLOOM_CREATED_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.created.approximate.element.count", MetricType.COUNTER),
         BLOOM_MODIFIED_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.modified.approximate.element.count", MetricType.COUNTER),
 
-        DATALAG_PER_DC_TIME_LAG("argus.core", "datalag.seconds");
+        DATALAG_PER_DC_TIME_LAG("argus.core", "datalag.seconds"),
+        QUERY_MAX_DATAPOINTS_LIMIT_EXCEEDED("argus.core", "datapoints.limit.exceeded");
 
         private final String _scope;
         private final String _metric;

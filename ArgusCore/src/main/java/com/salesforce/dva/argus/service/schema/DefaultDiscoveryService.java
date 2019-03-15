@@ -38,6 +38,7 @@ import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.entity.SchemaQuery;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.DiscoveryService;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchemaService;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
@@ -66,6 +67,8 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
     
     private final Logger _logger = LoggerFactory.getLogger(DefaultDiscoveryService.class);
     private final SchemaService _schemaService;
+    private final long _maxDataPointsPerQuery;
+    private final MonitorService _monitorService;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -76,9 +79,11 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
      * @param config Service properties
      */
     @Inject
-    public DefaultDiscoveryService(SchemaService schemaService, SystemConfiguration config) {
+    public DefaultDiscoveryService(SchemaService schemaService, SystemConfiguration config, MonitorService monitorService) {
         super(config);
         this._schemaService = schemaService;
+        this._maxDataPointsPerQuery = Long.valueOf(config.getValue(SystemConfiguration.Property.MAX_DATAPOINTS_ALLOWED_PER_QUERY));
+        this._monitorService = monitorService;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -142,10 +147,10 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
             _logger.info(MessageFormat.format("MetricQuery {0} contains wildcards. Will match against schema records.", query));
             
             int limit = 10000;
-            int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query);
+            int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query, _maxDataPointsPerQuery);
             
             if(noOfTimeseriesAllowed == 0) {
-                throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
+                DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _monitorService, _logger);
             }
             
             Map<String, MetricQuery> queries = new HashMap<>();
@@ -167,7 +172,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 
                         if (!queries.containsKey(identifier)) {
                             if (queries.size() == noOfTimeseriesAllowed) {
-                                throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
+                                DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _monitorService, _logger);
                             }
 
                             MetricQuery mq = new MetricQuery(record.getScope(), record.getMetric(), null, 0L, 1L);
@@ -219,7 +224,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 
                         for (MetricSchemaRecord record : records) {
                             if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
-                                throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
+                                DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _monitorService, _logger);
                             }
                             
                             String identifier = _getIdentifier(record);

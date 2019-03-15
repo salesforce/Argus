@@ -61,7 +61,7 @@ public class FillTransform implements Transform {
     /** The default metric scope for results. */
     public static final String DEFAULT_SCOPE_NAME = "scope";
     
-    public static final int MAX_DATAPOINTS_FOR_FILL = DiscoveryService.MAX_DATAPOINTS_PER_RESPONSE;    
+    public static final int MAX_DATAPOINTS_FOR_FILL = 5000000;  
 
     //~ Methods **************************************************************************************************************************************
 

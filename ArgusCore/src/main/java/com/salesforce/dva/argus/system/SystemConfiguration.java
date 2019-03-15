@@ -290,7 +290,10 @@ public final class SystemConfiguration extends Properties {
 
         OAUTH_SERVICE_PROPERTY_FILE("service.config.oauth","placeholder_oauth.properties"),
         
-        DISCOVERY_SERVICE_IMPL_CLASS("service.binding.discovery", "com.salesforce.dva.argus.service.schema.CachedDiscoveryService");
+        DISCOVERY_SERVICE_IMPL_CLASS("service.binding.discovery", "com.salesforce.dva.argus.service.schema.CachedDiscoveryService"),
+        
+        // the default value of 5 million datapoints roughly correspond to 500mb of memory
+        MAX_DATAPOINTS_ALLOWED_PER_QUERY("system.property.max.datapoints.query", "5000000");
 
         private final String _name;
         private final String _defaultValue;

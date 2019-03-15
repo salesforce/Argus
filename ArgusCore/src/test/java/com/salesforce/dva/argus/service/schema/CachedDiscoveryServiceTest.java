@@ -25,7 +25,7 @@ public class CachedDiscoveryServiceTest extends AbstractTest {
 		when(cacheServiceMock.get(anyString())).thenReturn(CACHED_QUERIES);
 		DiscoveryService discoveryServiceMock = mock(DiscoveryService.class);
 		
-		CachedDiscoveryService service = new CachedDiscoveryService(cacheServiceMock, discoveryServiceMock, system.getConfiguration());
+		CachedDiscoveryService service = new CachedDiscoveryService(cacheServiceMock, discoveryServiceMock, system.getConfiguration(), null);
 		List<MetricQuery> queries = service.getMatchingQueries(new MetricQuery("scope*", "metric", null, System.currentTimeMillis() - (30 * 24 * 60 * 60 * 1000L), System.currentTimeMillis()));
 		assertEquals(30, queries.size());
 	}
@@ -37,7 +37,7 @@ public class CachedDiscoveryServiceTest extends AbstractTest {
 		when(cacheServiceMock.get(anyString())).thenReturn(CACHED_QUERIES);
 		DiscoveryService discoveryServiceMock = mock(DiscoveryService.class);
 		
-		CachedDiscoveryService service = new CachedDiscoveryService(cacheServiceMock, discoveryServiceMock, system.getConfiguration());
+		CachedDiscoveryService service = new CachedDiscoveryService(cacheServiceMock, discoveryServiceMock, system.getConfiguration(), null);
 		service.getMatchingQueries(new MetricQuery("scope*", "metric", null, System.currentTimeMillis() - (300 * 24 * 60 * 60 * 1000L), System.currentTimeMillis()));
 	}
 

@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -27,7 +28,9 @@ import com.salesforce.dva.argus.entity.SchemaQuery;
 import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.DiscoveryService;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.NamedBinding;
+import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
@@ -41,6 +44,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final int EXPIRY_TIME_SECS = 3600;
 	private final long UPPER_LIMIT_TIME_GET_QUERIES_IN_MILLIS;
+    private final long _maxDataPointsPerQuery;
 	
 	//~ Instance fields ******************************************************************************************************************************
 
@@ -48,11 +52,12 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
     private final DiscoveryService _discoveryService;
     private final CacheService _cacheService;
     private final ExecutorService _executorService;
+    private final MonitorService _monitorService;
 
     //~ Constructors *********************************************************************************************************************************
 
     @Inject
-    public CachedDiscoveryService(CacheService cacheService, @NamedBinding DiscoveryService discoveryService, SystemConfiguration config) {
+    public CachedDiscoveryService(CacheService cacheService, @NamedBinding DiscoveryService discoveryService, SystemConfiguration config, MonitorService monitorService) {
     	super(config);
     	SystemAssert.requireArgument(cacheService != null, "Cache Service cannot be null.");
         SystemAssert.requireArgument(discoveryService != null, "Discovery Service cannot be null.");
@@ -63,6 +68,8 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
         _cacheService = cacheService;
         _discoveryService = discoveryService;
         _executorService = Executors.newCachedThreadPool();
+        _maxDataPointsPerQuery = Long.valueOf(config.getValue(SystemConfiguration.Property.MAX_DATAPOINTS_ALLOWED_PER_QUERY));
+        this._monitorService = monitorService;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -188,14 +195,14 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 	
 	private void _checkIfExceedsLimits(MetricQuery query, List<MetricQuery> matchedQueries) {
 		
-		int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query);
+		int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query, _maxDataPointsPerQuery);
 		int numOfExpandedTimeseries = 1;
 		for(MetricQuery mq : matchedQueries) {
 			numOfExpandedTimeseries += DiscoveryService.numApproxTimeseriesForQuery(mq);
 		}
 		
 		if(numOfExpandedTimeseries > noOfTimeseriesAllowed) {
-			throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
+		    DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _monitorService, _logger);
 		}
 	}
 
