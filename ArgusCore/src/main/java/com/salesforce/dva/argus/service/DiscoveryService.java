@@ -131,14 +131,18 @@ public interface DiscoveryService extends Service {
     }
     
     static int maxTimeseriesAllowed(MetricQuery query) {
-    	
-    	long timeWindowInMillis = query.getEndTimestamp() - query.getStartTimestamp();
-    	long downsamplingDivisor = (query.getDownsamplingPeriod() == null || query.getDownsamplingPeriod() <= 0) ? 1 : query.getDownsamplingPeriod(); 
-    	long numDatapointsPerTimeSeries = timeWindowInMillis / DATAPOINT_SAMPLING_FREQ_IN_MILLIS / downsamplingDivisor;
-    	
-    	numDatapointsPerTimeSeries = numDatapointsPerTimeSeries <= 0 ? 1 : numDatapointsPerTimeSeries; 
-    	
-    	return (int) (MAX_DATAPOINTS_PER_RESPONSE / numDatapointsPerTimeSeries);
+
+        long timeWindowInMillis = query.getEndTimestamp() - query.getStartTimestamp();
+        long downsamplingDivisor = (query.getDownsamplingPeriod() == null || query.getDownsamplingPeriod() <= 0) ? 60000l : query.getDownsamplingPeriod();
+        downsamplingDivisor = (timeWindowInMillis > downsamplingDivisor) ? downsamplingDivisor : timeWindowInMillis;
+        long samplingPeriod = (downsamplingDivisor>DATAPOINT_SAMPLING_FREQ_IN_MILLIS) ? DATAPOINT_SAMPLING_FREQ_IN_MILLIS : downsamplingDivisor;
+        
+        double numRawDPsPerSeries = (timeWindowInMillis*1.0)/samplingPeriod;
+        double numDownsampledDPsPerSeries = (numRawDPsPerSeries) / (downsamplingDivisor/(samplingPeriod*1.0));
+        
+        numDownsampledDPsPerSeries = numDownsampledDPsPerSeries <= 0 ? 1 : numDownsampledDPsPerSeries; 
+
+        return (int) (MAX_DATAPOINTS_PER_RESPONSE / numDownsampledDPsPerSeries);
     }
     
     static int numApproxTimeseriesForQuery(MetricQuery mq) {
