@@ -123,6 +123,19 @@
         <global.version>${global.major.minor.version}-SNAPSHOT</global.version>
         <jacoco-maven-plugin.version>0.7.9</jacoco-maven-plugin.version>
     </properties>
+    <parent>
+        <groupId>com.salesforce</groupId>
+        <artifactId>salesforce-company-pom</artifactId>
+        <version>1.0.3</version>
+    </parent>
+     <!-- Add repositories here instead of maintaining in maven-settings.xml
+         Please add <server> information in ~/.m2/settings.xml -->
+    <repositories>
+        <repository>
+            <id>nexus</id>
+            <url>https://nexus.soma.salesforce.com/nexus/content/groups/public</url>
+        </repository>
+    </repositories>
     <build>
         <filters>
             <filter>${top}/argus-build.properties</filter>
