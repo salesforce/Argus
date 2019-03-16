@@ -152,6 +152,7 @@
                     <artifactId>docker-maven-plugin</artifactId>
                     <version>0.4.11</version>
                     <configuration>
+                      <skipDockerBuild>true</skipDockerBuild>
                         <imageName>${dockerImages.base.name}/${project.artifactId}</imageName>
                         <dockerDirectory>${project.basedir}/src/main/docker</dockerDirectory>
                         <forceTags>true</forceTags>
@@ -248,6 +249,10 @@
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>2.19.1</version>
+                <configuration>
+                  <skipITs>true</skipITs>
+                </configuration>
+                <!-- Disable ITs by default
                 <executions>
                     <execution>
                         <id>default-test</id>
@@ -263,7 +268,8 @@
                             <reuseForks>true</reuseForks>
                         </configuration>
                     </execution>
-                </executions>
+                    </executions>
+                    -->
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
