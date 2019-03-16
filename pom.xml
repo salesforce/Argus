@@ -103,13 +103,6 @@
             <organization>Salesforce</organization>
         </developer>
     </developers>
-    <scm>
-        <connection>scm:git:git://github.com/salesforce/Argus.git</connection>
-        <developerConnection>scm:git:ssh://github.com:salesforce/Argus.git</developerConnection>
-        <url>https://github.com/salesforce/Argus/tree/master</url>
-        <tag>argus-2.2.0</tag>
-    </scm>
-
     <properties>
         <top>${project.basedir}</top>
         <timestamp>${maven.build.timestamp}</timestamp>
@@ -315,8 +308,8 @@
         <activation>
           <property>
             <!-- Only activate tagging on jenkins when on master branch -->
-            <name>origin/env.GIT_BRANCH</name>
-            <value>origin/master</value>
+            <name>env.GIT_BRANCH</name>
+            <value>master</value>
           </property>
         </activation>
         <properties>
