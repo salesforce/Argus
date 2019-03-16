@@ -10,7 +10,7 @@ unit_tests_command: |-
   #mvn jacoco:report
   #touch target/jacoco.exec
   #cat $(find ./ -name "jacoco.exec" -mindepth 3  -type f) >target/jacoco.exec
-  mvn -DskipITs -DskipDockerBuild -DskipTests install
+  mvn -DskipITs -DskipDockerBuild install
 pipeline_initial_build_number: 84
 docker_package_images:
 - sfdc_centos7_java_rpmbuild
