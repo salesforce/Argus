@@ -336,6 +336,7 @@
               <artifactId>exec-maven-plugin</artifactId>
               <version>${exec-maven-plugin.version}</version>
               <executions>
+                <!-- Disable git tagging temporarily
                 <execution>
                   <id>git-tag</id>
                   <phase>test</phase>
@@ -347,6 +348,7 @@
                     <commandlineArgs>tag  -m "${project.artifactId}-${global.version}-${maven.build.timestamp}" v${global.version}</commandlineArgs>
                   </configuration>
                 </execution>
+                -->
                 <execution>
                   <id>git-log-tags</id>
                   <phase>test</phase>
