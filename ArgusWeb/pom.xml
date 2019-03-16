@@ -4,7 +4,7 @@
     <parent>
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
-        <version>${global.version}</version>
+        <version>4.74-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-web</artifactId>
