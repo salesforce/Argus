@@ -4,13 +4,13 @@
 
     <groupId>com.salesforce.argus</groupId>
     <artifactId>argus</artifactId>
-    <version>${global.version}</version>
+    <version>4.74-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Argus</name>
     <description>A pom for all Argus projects. It provides standards for plugin versions, configuration and a number of other things.</description>
     <inceptionYear>2016</inceptionYear>
-    <url>https://www.github.com/salesforce/argus</url>
+    <url>https://git.soma.salesforce.com/ArgusMonitoring/Argus</url>
     <organization>
         <name>Salesforce</name>
         <url>http://www.salesforce.com</url>
@@ -123,11 +123,6 @@
         <global.version>${global.major.minor.version}-SNAPSHOT</global.version>
         <jacoco-maven-plugin.version>0.7.9</jacoco-maven-plugin.version>
     </properties>
-    <parent>
-        <groupId>com.salesforce</groupId>
-        <artifactId>salesforce-company-pom</artifactId>
-        <version>1.0.3</version>
-    </parent>
      <!-- Add repositories here instead of maintaining in maven-settings.xml
          Please add <server> information in ~/.m2/settings.xml -->
     <repositories>
@@ -168,6 +163,20 @@
             </plugins>
         </pluginManagement>
         <plugins>
+          <plugin>
+            <groupId>com.github.danielflower.mavenplugins</groupId>
+            <artifactId>multi-module-maven-release-plugin</artifactId>
+            <version>2.2.0</version>
+            <configuration>
+              <noChangesAction>ReleaseNone</noChangesAction>
+              <releaseGoals>
+                <releaseGoal>deploy</releaseGoal>
+              </releaseGoals>
+              <releaseProfiles>
+                <releaseProfile>release</releaseProfile>
+              </releaseProfiles>
+            </configuration>
+          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-release-plugin</artifactId>
@@ -316,7 +325,37 @@
             </plugin>
         </plugins>
     </reporting>
+
+    <scm>
+      <connection>scm:git:ssh://git@git.soma.salesforce.com/ArgusMonitoring/Argus</connection>
+      <url>https://git.soma.salesforce.com/ArgusMonitoring/Argus</url>
+    </scm>
+
     <profiles>
+      <profile>
+        <id>ci</id>
+        <activation>
+          <property>
+            <name>env.BUILD_NUMBER</name>
+          </property>
+        </activation>
+        <properties>
+          <sort.skip>true</sort.skip>
+        </properties>
+        <distributionManagement>
+          <repository>
+            <id>nexus</id>
+            <url>https://nexus.soma.salesforce.com/nexus/content/repositories/releases/</url>
+          </repository>
+        </distributionManagement>
+      </profile>
+      <profile>
+        <id>release</id>
+        <properties>
+          <sort.skip>true</sort.skip>
+        </properties>
+      </profile>
+
       <profile>
         <id>jenkins</id>
         <activation>
