@@ -4,7 +4,7 @@
     <parent>
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
-        <version>4.74-SNAPSHOT</version>
+        <version>3.9-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-client</artifactId>
@@ -149,7 +149,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>argus-core</artifactId>
-            <version>4.74-SNAPSHOT</version>
+            <version>3.9-SNAPSHOT</version>
             <optional>true</optional>
         </dependency>
     </dependencies>
