@@ -6,3 +6,4 @@ number_of_artifacts_to_keep: 3
 compliance_required: false
 build_pull_requests: true
 pipeline_initial_build_number: 1
+publish_jar: true
