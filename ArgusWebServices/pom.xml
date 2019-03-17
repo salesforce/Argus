@@ -168,6 +168,12 @@
             <version>2.26</version>
         </dependency>
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>argus-core</artifactId>
+            <version>4.74-SNAPSHOT</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
