@@ -152,22 +152,6 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>argus</artifactId>
-            <version>4.74-SNAPSHOT</version>
-            <classifier>resources</classifier>
-            <type>zip</type>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>argus</artifactId>
-            <version>4.74-SNAPSHOT</version>
-            <classifier>test-resources</classifier>
-            <type>zip</type>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>4.0.0</version>
@@ -187,6 +171,7 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>argus-core</artifactId>
             <version>4.74-SNAPSHOT</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
