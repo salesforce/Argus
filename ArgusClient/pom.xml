@@ -146,11 +146,5 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>argus-core</artifactId>
-            <version>4.74-SNAPSHOT</version>
-            <optional>true</optional>
-        </dependency>
     </dependencies>
 </project>
