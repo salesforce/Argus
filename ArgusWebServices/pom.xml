@@ -170,7 +170,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>argus-core</artifactId>
-            <version>3.9-SNAPSHOT</version>
+            <version>3.8-SNAPSHOT</version>
             <optional>true</optional>
         </dependency>
         <dependency>
