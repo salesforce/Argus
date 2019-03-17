@@ -132,9 +132,6 @@
         </repository>
     </repositories>
     <build>
-        <filters>
-            <filter>${top}/argus-build.properties</filter>
-        </filters>
         <pluginManagement>
             <plugins>
                 <plugin>

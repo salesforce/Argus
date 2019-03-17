@@ -4,10 +4,10 @@
     <parent>
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
-        <version>3.9-SNAPSHOT</version>
-        <relativePath>..</relativePath>
+        <version>4-SNAPSHOT</version>
     </parent>
     <artifactId>argus-web</artifactId>
+    <version>4.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>ArgusWeb</name>
     <description>Web frontend for the Argus Production Monitoring Tool.</description>
