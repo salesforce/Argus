@@ -6,6 +6,7 @@
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
         <version>4-SNAPSHOT</version>
+        <relativePath>..</relativePath>
     </parent>
 
     <artifactId>argus-core</artifactId>
@@ -152,6 +153,22 @@
     <!-- ENDSFDC specific repositories -->
 
     <dependencies>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>argus</artifactId>
+        <version>${project.parent.version}</version>
+        <classifier>resources</classifier>
+        <type>zip</type>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>argus</artifactId>
+        <version>${project.parent.version}</version>
+        <classifier>test-resources</classifier>
+        <type>zip</type>
+        <scope>provided</scope>
+      </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
