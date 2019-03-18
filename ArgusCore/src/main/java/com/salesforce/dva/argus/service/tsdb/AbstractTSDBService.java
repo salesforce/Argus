@@ -597,7 +597,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		throw new SystemException("Failed to create new annotation metric.");
 	}
 
-	private ObjectMapper getMapper() {
+	ObjectMapper getMapper() {
 	    ObjectMapper mapper = new ObjectMapper();
 	    SimpleModule module = new SimpleModule();
 	    module.addSerializer(Metric.class, new MetricTransform.Serializer());

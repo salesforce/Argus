@@ -1,5 +1,6 @@
 package com.salesforce.dva.argus.service.schema;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -13,9 +14,11 @@ import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchemaService;
 import com.salesforce.dva.argus.system.SystemException;
+import org.apache.http.HttpEntity;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,10 +36,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -673,6 +679,42 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 		spySchemaService.put(metrics);
 		verify(spySchemaService, times(1)).updateMetadataRecordMts(any());
 	}
+
+	@Test
+	public void testConstructTagNotEqualsQuery() throws IOException {
+        String tagValue = "notTagValue";
+        AtomicInteger invocationCount = new AtomicInteger(0);
+        ObjectMapper mapper = new ObjectMapper();
+        RestClient customClient = mock(RestClient.class);
+        Answer<Response> requestAnswer = invocation -> {
+            String requestUrl = invocation.getArgumentAt(1, String.class);
+            assertTrue(requestUrl.endsWith("_search"));
+            StringEntity requestBodyEntity = invocation.getArgumentAt(3, StringEntity.class);
+            JsonNode root = mapper.readTree(EntityUtils.toString(requestBodyEntity));
+            JsonNode nots = root.get("query").get("bool").get("must_not");
+            JsonNode filters = root.get("query").get("bool").get("filter");
+            assertEquals(3, filters.size());
+            String actualTagValue = nots.get(0).get("regexp").get("tagv.raw").asText();
+            assertEquals(tagValue, actualTagValue);
+            invocationCount.incrementAndGet();
+            return null;
+        };
+        doAnswer(requestAnswer).when(customClient).performRequest(anyString(), anyString(), anyMap(), any(HttpEntity.class));
+
+        ElasticSearchSchemaService schemaService = spy(new ElasticSearchSchemaService(system.getConfiguration(), mock(MonitorService.class)));
+        schemaService.setRestClient(customClient);
+
+        doReturn("{\"hits\":{\"total\": 0, \"max_score\": null, \"hits\": []}}").when(schemaService).extractResponse(any());
+        schemaService.setRestClient(customClient);
+        schemaService.get(new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder()
+                .scope("scope")
+                .metric("metric")
+                .tagKey("tagKey")
+                .tagValue("~" + tagValue)
+                .build()
+        );
+        assertEquals(1, invocationCount.get());
+    }
 
     private String convertToPrettyJson(String jsonString) {
         JsonParser parser = new JsonParser();

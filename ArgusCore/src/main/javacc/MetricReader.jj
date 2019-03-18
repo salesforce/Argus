@@ -1018,7 +1018,7 @@ private Map<String, String> getTags() :
 			String[] tagKVPair = tag.split("!=");
 			if(tagKVPair!=null && tagKVPair.length==2){
 			    tagK = tagKVPair[0];
-			    tagV = MetricQuery.NOT_QUERY_PREFIX + tagKVPair[1] + MetricQuery.NOT_QUERY_SUFFIX;
+			    tagV = MetricQuery.TAG_NOT_EQUALS_INTERNAL_PREFIX + tagKVPair[1];
 			}else{
 			    tagKVPair = tag.split("=");
 			    tagK = tagKVPair[0];

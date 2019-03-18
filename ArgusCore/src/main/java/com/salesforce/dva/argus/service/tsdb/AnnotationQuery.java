@@ -32,10 +32,16 @@
 package com.salesforce.dva.argus.service.tsdb;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
 import com.salesforce.dva.argus.system.SystemException;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -52,9 +58,10 @@ import static java.net.URLEncoder.encode;
  */
 public class AnnotationQuery {
 
-    public static final String NOT_QUERY_PREFIX = "not_literal_or(";
-
-    public static final String NOT_QUERY_SUFFIX = ")";
+    // The ~ character is not allowed in user-facing Argus syntax
+    public static final String TAG_NOT_EQUALS_INTERNAL_PREFIX = "~";
+    public static final String TAG_NOT_EQUALS_TSDB_PREFIX = "not_literal_or(";
+    public static final String TAG_NOT_EQUALS_TSDB_SUFFIX = ")";
 
     //~ Instance fields ******************************************************************************************************************************
 
