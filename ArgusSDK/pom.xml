@@ -5,6 +5,7 @@
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
         <version>4-SNAPSHOT</version>
+        <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-sdk</artifactId>
     <version>4.0-SNAPSHOT</version>
@@ -113,6 +114,22 @@
         </testResources>
     </build>
     <dependencies>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>argus</artifactId>
+        <version>${project.parent.version}</version>
+        <classifier>resources</classifier>
+        <type>zip</type>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>argus</artifactId>
+        <version>${project.parent.version}</version>
+        <classifier>test-resources</classifier>
+        <type>zip</type>
+        <scope>provided</scope>
+      </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
