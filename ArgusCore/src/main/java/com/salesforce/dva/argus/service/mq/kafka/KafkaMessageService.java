@@ -108,6 +108,8 @@ public class KafkaMessageService extends DefaultService implements MQService {
             return _config.getValue(Property.KAFKA_ANNOTATIONS_TOPIC.getName(), Property.KAFKA_ANNOTATIONS_TOPIC.getDefaultValue());
         } else if (topic.equals(MQQueue.METRIC.getQueueName())) {
             return _config.getValue(Property.KAFKA_METRICS_TOPIC.getName(), Property.KAFKA_METRICS_TOPIC.getDefaultValue());
+        } else if (topic.equals(MQQueue.HISTOGRAM.getQueueName())) {
+            return _config.getValue(Property.KAFKA_HISTOGRAMS_TOPIC.getName(), Property.KAFKA_HISTOGRAMS_TOPIC.getDefaultValue());
         } else {
             return topic;
         }
@@ -232,6 +234,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
         KAFKA_ALERTS_TOPIC("service.property.mq.kafka.alerts.topic", "argusAlertQueue"),
         KAFKA_ANNOTATIONS_TOPIC("service.property.mq.kafka.annotations.topic", "argusAnnotationQueue"),
         KAFKA_METRICS_TOPIC("service.property.mq.kafka.metrics.topic", "argusMetricQueue"),
+        KAFKA_HISTOGRAMS_TOPIC("service.property.mq.kafka.histograms.topic", "argusHistogramQueue"),
         /** Kafka Client SSL properties */
         KAFKA_SECURITY_PROTOCOL("service.property.mq.kafka.security.protocol", "PLAINTEXT"),
         KAFKA_SSL_PROVIDER("service.property.mq.kafka.ssl.provider", ""),
