@@ -25,6 +25,7 @@ import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.SchemaService;
 import com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService.PutResponse.Item;
 import com.salesforce.dva.argus.service.schema.MetricSchemaRecordList.HashAlgorithm;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
@@ -508,9 +509,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			}
 
 		} catch (UnsupportedEncodingException | JsonProcessingException e) {
-			throw new SystemException("Search failed.", e);
+			throw new SystemException("Search failed: " + e);
 		} catch (IOException e) {
-			throw new SystemException("IOException when trying to perform ES request.", e);
+			throw new SystemException("IOException when trying to perform ES request" + e);
 		}
 	}
 
@@ -1157,12 +1158,19 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			filterNodes.add(node);
 		}
 
+		ArrayNode mustNotNodes = mapper.createArrayNode();
 		if(SchemaService.containsFilter(query.getTagValue())) {
+			String trueTagValue = query.getTagValue();
+			ArrayNode parentNode = filterNodes;
+			if (query.getTagValue().charAt(0) == MetricQuery.TAG_NOT_EQUALS_INTERNAL_PREFIX.charAt(0)) {
+				trueTagValue = trueTagValue.substring(1);
+				parentNode = mustNotNodes;
+			}
 			ObjectNode node = mapper.createObjectNode();
 			ObjectNode regexpNode = mapper.createObjectNode();
-			regexpNode.put(RecordType.TAGV.getName() + ".raw", SchemaService.convertToRegex(query.getTagValue()));
+			regexpNode.put(RecordType.TAGV.getName() + ".raw", SchemaService.convertToRegex(trueTagValue));
 			node.put("regexp", regexpNode);
-			filterNodes.add(node);
+			parentNode.add(node);
 		}
 
 		if(SchemaService.containsFilter(query.getNamespace())) {
@@ -1175,6 +1183,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		ObjectNode boolNode = mapper.createObjectNode();
 		boolNode.put("filter", filterNodes);
+		if (mustNotNodes.size() > 0) {
+			boolNode.put("must_not", mustNotNodes);
+		}
 
 		ObjectNode queryNode = mapper.createObjectNode();
 		queryNode.put("bool", boolNode);

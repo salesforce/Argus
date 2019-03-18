@@ -75,9 +75,14 @@ class MetricQueryTransform {
 			jgen.writeStringField("aggregator", agg == null ? MetricQuery.Aggregator.AVG.getDescription() : agg.getDescription());
 			jgen.writeStringField("metric", query.getTSDBMetricName());
 			if(!query.getTags().isEmpty()) {
+				// Rewrite tag values that start with the '~' internal not-equals indicator with the TSDB not-equals
 				jgen.writeObjectFieldStart("tags");
 				for(Map.Entry<String, String> tag : query.getTags().entrySet()) {
-					jgen.writeStringField(tag.getKey(), tag.getValue());
+					String value = tag.getValue();
+					if (value.charAt(0) == '~') {
+						value = MetricQuery.TAG_NOT_EQUALS_TSDB_PREFIX + value.substring(1) + MetricQuery.TAG_NOT_EQUALS_TSDB_SUFFIX;
+					}
+					jgen.writeStringField(tag.getKey(), value);
 				}
 				jgen.writeEndObject();
 			}

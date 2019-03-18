@@ -21,6 +21,11 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+import com.salesforce.dva.argus.service.MonitorService;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
@@ -389,6 +394,22 @@ public class AbstractTSDBServiceTest extends AbstractTest {
                 assertEquals(RUNS * THREADS / endpoints.length, count);
             }
         }
+    }
+
+    @Test
+    public void testConstructNotEqualsQuery() throws IOException {
+        DefaultTSDBService service = new DefaultTSDBService(system.getConfiguration(), mock(MonitorService.class));
+        ObjectMapper mapper = service.getMapper();
+        MetricQuery query = new MetricQuery(
+                "scope",
+                "metric",
+                new ImmutableMap.Builder<String, String>().put("tagk", "~tagv").build(),
+                0L,
+                1L);
+        String queryJson = mapper.writeValueAsString(query);
+        JsonNode root = mapper.readTree(queryJson);
+        String tagValue = root.get("queries").get(0).get("tags").get("tagk").asText();
+        assertEquals(MetricQuery.TAG_NOT_EQUALS_TSDB_PREFIX + "tagv" + MetricQuery.TAG_NOT_EQUALS_TSDB_SUFFIX, tagValue);
     }
 
     class IterateTask implements Runnable {

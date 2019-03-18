@@ -272,7 +272,7 @@ public class QueryUtilsTest extends AbstractTest {
         assertTrue(scopes.contains(new String("argus.core2")));     
         assertTrue(scopes.contains(new String("argus.core3")));  
     }
-    
+
     @Test
     public void testNotEqualsQuery() {
         long relativeTo = System.currentTimeMillis();
@@ -287,7 +287,7 @@ public class QueryUtilsTest extends AbstractTest {
         assertEquals(expression.getAggregator().toString(), "ZIMSUM");
         assertEquals(expression.getDownsampler().toString(), "SUM");
         assertEquals(expression.getTags().keySet().size(),1);
-        assertEquals(expression.getTags().get("host"),AnnotationQuery.NOT_QUERY_PREFIX+"shared1-argusalert1-3-prd.eng.sfdc.net"+AnnotationQuery.NOT_QUERY_SUFFIX);
+        assertEquals(expression.getTags().get("host"),AnnotationQuery.TAG_NOT_EQUALS_INTERNAL_PREFIX+"shared1-argusalert1-3-prd.eng.sfdc.net");
         assertEquals(expression.getDownsamplingPeriod(), new Long(60000));
         assertEquals(expression.getStartTimestamp(),new Long(((relativeTo - 3600*1000)/1000)*1000));
         assertEquals(expression.getEndTimestamp(),new Long(relativeTo));
