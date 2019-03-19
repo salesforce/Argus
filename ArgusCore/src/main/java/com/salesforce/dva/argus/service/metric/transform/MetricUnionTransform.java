@@ -182,7 +182,7 @@ public class MetricUnionTransform implements Transform {
 
     @Override
     public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("Union doesn't need list of list");
+        throw new UnsupportedOperationException("Union doesn't support multiple lists of metrics!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

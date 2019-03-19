@@ -184,7 +184,7 @@ public class AnomalySTLTransform implements Transform {
 
     @Override
     public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("This class is deprecated!");
+        throw new UnsupportedOperationException("AnomalySTLTransform doesn't support multiple lists of metrics!");
     }
 
 }

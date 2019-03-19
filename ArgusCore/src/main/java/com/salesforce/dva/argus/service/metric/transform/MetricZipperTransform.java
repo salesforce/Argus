@@ -178,7 +178,7 @@ public class MetricZipperTransform implements Transform {
 
     @Override
     public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("Zipper doesn't need list of list!");
+        throw new UnsupportedOperationException("SUM_V, SCALE_V, DIFF_V, DIVIDE_V, NORMALIZE_V transform doesn't support multiple lists of metrics!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

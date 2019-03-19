@@ -220,7 +220,7 @@ public class MetricReducerOrMappingTransform implements Transform {
 
 	@Override
 	public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-		throw new UnsupportedOperationException("ReducerOrMapping doesn't need list of list!");
+		throw new UnsupportedOperationException("ReducerOrMapping doesn't support multiple lists of metrics!");
 	}
 
 }

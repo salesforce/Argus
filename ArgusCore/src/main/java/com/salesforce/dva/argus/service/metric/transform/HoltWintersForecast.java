@@ -117,7 +117,7 @@ public class HoltWintersForecast extends HoltWintersAnalysis implements Transfor
     @SuppressWarnings("unchecked")
     @Override
     public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-    	throw new UnsupportedOperationException("HoltWintersForecast doesn't need list of list!");
+    	throw new UnsupportedOperationException("HoltWintersForecast doesn't support multiple lists of metrics!");
     }
 
     @Override
