@@ -125,7 +125,7 @@ public class AliasTransform implements Transform {
 
     @Override
     public List<Metric> transform(QueryContext queryContext, @SuppressWarnings("unchecked") List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("Alias doesn't need list of list!");
+        throw new UnsupportedOperationException("Alias doesn't support multiple lists of metrics!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

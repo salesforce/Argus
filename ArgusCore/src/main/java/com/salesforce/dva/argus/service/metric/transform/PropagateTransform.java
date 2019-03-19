@@ -154,7 +154,7 @@ public class PropagateTransform implements Transform {
 
     @Override
     public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("Propagate Transform doesn't accept list of metric list!");
+        throw new UnsupportedOperationException("Propagate Transform doesn't support multiple lists of metrics!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

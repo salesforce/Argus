@@ -34,11 +34,12 @@ public class GroupByTagTransform implements Transform {
 		// scanning back to find the transform function
 		TransformFactory.Function functionName = null;
 		int functionElementId = -1;
-
+		String providedFunctionName = null;
+		
 		for (int i = constants.size() - 1; i >= 0; i--) {
-        	String constant = constants.get(i);
+		    providedFunctionName = constants.get(i);
         	try {
-        		functionName = TransformFactory.Function.valueOf(constant);
+        		functionName = TransformFactory.Function.valueOf(providedFunctionName);
         		functionElementId = i;
         		break;
 			}
@@ -48,7 +49,7 @@ public class GroupByTagTransform implements Transform {
 		}
 
 		if (functionName == null) {
-			throw new UnsupportedOperationException("GroupByTag needs a function name to be provided");
+			throw new UnsupportedOperationException("GroupByTag needs a valid function name to be provided in uppercase.Provided function = " + providedFunctionName);
 		}
 
 		List<String> tags = constants.subList(0, functionElementId);
@@ -88,7 +89,7 @@ public class GroupByTagTransform implements Transform {
 
 	@Override
 	public List<Metric> transform(QueryContext queryContext, @SuppressWarnings("unchecked") List<Metric>... metrics) {
-		throw new UnsupportedOperationException("Group By Tags Transform doesn't need list of list!");
+		throw new UnsupportedOperationException("Group By Tags Transform doesn't support multiple lists of metrics!");
 	}
 
 	@Override

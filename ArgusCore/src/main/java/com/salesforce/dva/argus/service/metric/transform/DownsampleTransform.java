@@ -282,7 +282,7 @@ public class DownsampleTransform implements Transform {
 
 	@Override
 	public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-		throw new UnsupportedOperationException("Downsample doesn't need list of list!");
+		throw new UnsupportedOperationException("Downsample doesn't support multiple lists of metrics!");
 	}
 
 	private long truncateTimeField(long time, int field){

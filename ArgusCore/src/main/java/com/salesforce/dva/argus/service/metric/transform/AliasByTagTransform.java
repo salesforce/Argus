@@ -57,7 +57,7 @@ public class AliasByTagTransform implements Transform {
 
 	@Override
 	public List<Metric> transform(QueryContext queryContext, @SuppressWarnings("unchecked") List<Metric>... metrics) {
-		throw new UnsupportedOperationException("ALIASBYTAG doesn't need a list of lists!");
+		throw new UnsupportedOperationException("ALIASBYTAG doesn't support multiple lists of metrics!");
 	}
 
 	@Override

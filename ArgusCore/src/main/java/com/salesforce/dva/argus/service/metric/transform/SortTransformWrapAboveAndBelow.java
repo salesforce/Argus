@@ -114,7 +114,7 @@ public class SortTransformWrapAboveAndBelow implements Transform {
 
     @Override
     public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("Sort transform doesn't support list of metric list!");
+        throw new UnsupportedOperationException("Sort transform doesn't support multiple lists of metrics!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
