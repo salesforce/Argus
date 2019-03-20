@@ -8,7 +8,7 @@
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-sdk</artifactId>
-    <version>4.0-SNAPSHOT</version>
+    <version>4.74-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>ArgusSDK</name>
     <description>Java SDK for the Argus Production Monitoring Tool.</description>

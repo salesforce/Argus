@@ -7,7 +7,7 @@
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-webservices</artifactId>
-    <version>4.0-SNAPSHOT</version>
+    <version>4.74-SNAPSHOT</version>
     <packaging>war</packaging>
     <name>ArgusWebServices</name>
     <description>Web Services for the Argus Production Monitoring Tool.</description>
@@ -187,7 +187,7 @@
         <dependency>
             <groupId>com.salesforce.argus</groupId>
             <artifactId>argus-core</artifactId>
-            <version>4.0-SNAPSHOT</version>
+            <version>4.74-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

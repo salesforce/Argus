@@ -8,7 +8,7 @@
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-web</artifactId>
-    <version>4.0-SNAPSHOT</version>
+    <version>4.74-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>ArgusWeb</name>
     <description>Web frontend for the Argus Production Monitoring Tool.</description>
