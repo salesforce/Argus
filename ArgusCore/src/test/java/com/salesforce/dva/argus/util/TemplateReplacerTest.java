@@ -151,7 +151,7 @@ public class TemplateReplacerTest extends AbstractTest {
         assertEquals(expectedOutput, TemplateReplacer.applyTemplateChanges(context, customTemplate));
     }
 
-    @Test(expected = ComparisonFailure.class)
+    @Test
     public void testCornerCases() {
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "${alert.name}", expression, "* * * * *");
@@ -180,8 +180,8 @@ public class TemplateReplacerTest extends AbstractTest {
         customTemplate = "Failed template evaluation: ${triggerTimeStamp}";
         assertEquals(customTemplate, TemplateReplacer.applyTemplateChanges(context, customTemplate));
 
-        customTemplate = "Success template evaluation: ${triggerTimestamp}";
-        assertEquals("Success template evaluation: Dec 11, 2014 9:40:00 AM", TemplateReplacer.applyTemplateChanges(context, customTemplate));
+        customTemplate = "Success template evaluation: ${triggerTimestamp?datetime?iso('GMT')}";
+        assertEquals("Success template evaluation: 2014-12-11T17:40:00Z", TemplateReplacer.applyTemplateChanges(context, customTemplate));
     }
 
 }
