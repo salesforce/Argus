@@ -85,6 +85,8 @@ import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.MonitoringUtils;
+import com.salesforce.dva.argus.util.RequestContext;
+import com.salesforce.dva.argus.util.RequestContextHolder;
 
 /**
  * Default implementation of the alert service.
@@ -450,6 +452,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 			jobStartTime = System.currentTimeMillis();
 			alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
+            RequestContextHolder.setRequestContext(new RequestContext(alert.getOwner()+"-alert"));
 
 			updateAlertStartEvaluationStats(alertEnqueueTimestampsByAlertId, alert, jobStartTime);
 

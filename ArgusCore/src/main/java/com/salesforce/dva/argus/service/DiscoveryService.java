@@ -39,6 +39,7 @@ import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.service.schema.WildcardExpansionLimitExceededException;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+import com.salesforce.dva.argus.util.RequestContextHolder;
 
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -150,11 +151,21 @@ public interface DiscoveryService extends Service {
             Map<String, String> tags = new HashMap<>();
             tags.put("scope", TSDBEntity.replaceUnsupportedChars(query.getScope()));
             tags.put("metric", TSDBEntity.replaceUnsupportedChars(query.getMetric()));
-
+            if(RequestContextHolder.getRequestContext()!=null) {
+                tags.put("user", RequestContextHolder.getRequestContext().getUserName());
+            }else {
+                tags.put("user", "unknown");
+            }
             monitorService.modifyCounter(Counter.QUERY_MAX_DATAPOINTS_LIMIT_EXCEEDED, 1, tags);
-            logger.error("Maximum datapoints limit execeeded for query - " + query.toString());
+            logger.error("Maximum datapoints limit execeeded for query - " + query.toString() + ", user - "+tags.get("user"));
         }
-        throw new WildcardExpansionLimitExceededException(MessageFormat.format(EXCEPTION_MESSAGE, maxDataPointsPerQuery)) ;
+
+        // We are throwing the exception only when the downsampler is absent, 
+        // as we want to give users some time to adjust their queries which have downsampler in them
+
+        if(query.getDownsamplingPeriod()==null || query.getDownsamplingPeriod()==0) {
+            throw new WildcardExpansionLimitExceededException(MessageFormat.format(EXCEPTION_MESSAGE, maxDataPointsPerQuery)) ;
+        }
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
