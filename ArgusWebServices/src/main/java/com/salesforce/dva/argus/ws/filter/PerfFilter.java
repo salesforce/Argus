@@ -48,6 +48,8 @@ import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.util.RequestContext;
+import com.salesforce.dva.argus.util.RequestContextHolder;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 
 /**
@@ -101,6 +103,7 @@ public class PerfFilter implements Filter {
 		long start = System.currentTimeMillis();
 
 		try {
+			RequestContextHolder.setRequestContext(new RequestContext(_getUserName(req)));
 			chain.doFilter(request, response);
 		} finally {
 			long delta = System.currentTimeMillis() - start;
@@ -125,8 +128,7 @@ public class PerfFilter implements Filter {
 				tags.put(TAGS_ENDPOINT_KEY, endPoint);
 			}
 
-			Object user = req.getAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
-			String username = user != null ? String.class.cast(user) : "NULLUSER";
+			String username = _getUserName(req);
 			if(!username.isEmpty()) {
 				tags.put(TAGS_USER_KEY, username);
 			}
@@ -197,6 +199,12 @@ public class PerfFilter implements Filter {
 		}
 
 		return null;
+	}
+	
+	private String _getUserName(HttpServletRequest req) {
+		Object user = req.getAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
+		String username = user != null ? String.class.cast(user) : "NULLUSER";
+		return username;
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
