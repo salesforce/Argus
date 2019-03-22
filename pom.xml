@@ -397,6 +397,7 @@
         <module>ArgusWebServices</module>
         <module>ArgusClient</module>
         <module>ArgusSDK</module>
+        <module>ArgusKafkaConsumer</module>
         <!--<module>ArgusQuerySnapshots</module>-->
         <!--ArgusQuerySnaphots is a child directory that does not depend on the latest ArgusCore, not needs to be built frequently-->
     </modules>
