@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>argus-client</artifactId>
-    <version>4.74-SNAPSHOT</version>
+    <version>4.75-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>ArgusClient</name>
     <description>Command line client for the Argus Production Monitoring Tool.</description>
@@ -168,7 +168,7 @@
         <dependency>
             <groupId>com.salesforce.argus</groupId>
             <artifactId>argus-core</artifactId>
-            <version>4.74-SNAPSHOT</version>
+            <version>4.75-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>

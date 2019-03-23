@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>argus-kafka-consumer</artifactId>
-    <version>4.74-SNAPSHOT</version>
+    <version>4.75-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>ArgusKafkaConsumer</name>
 
@@ -49,7 +49,7 @@
         <dependency>
             <groupId>com.salesforce.argus</groupId>
             <artifactId>argus-core</artifactId>
-            <version>4.74-SNAPSHOT</version>
+            <version>4.75-SNAPSHOT</version>
             <!-- Exclude to fix dependency conflict that causing consumer crash on startup -->
             <exclusions>
                 <exclusion>

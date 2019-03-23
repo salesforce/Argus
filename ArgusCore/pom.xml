@@ -11,7 +11,7 @@
 
     <artifactId>argus-core</artifactId>
     <packaging>jar</packaging>
-    <version>4.74-SNAPSHOT</version>
+    <version>4.75-SNAPSHOT</version>
     <name>ArgusCore</name>
     <description>Argus core services.</description>
     <properties>
