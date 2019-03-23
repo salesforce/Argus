@@ -393,7 +393,6 @@
     </dependencyManagement>
     <modules>
         <module>ArgusCore</module>
-        <module>ArgusWeb</module>
         <module>ArgusWebServices</module>
         <module>ArgusClient</module>
         <module>ArgusSDK</module>
