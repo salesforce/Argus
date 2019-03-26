@@ -237,7 +237,8 @@ public final class SystemConfiguration extends Properties {
 
         DATA_LAG_THRESHOLD("system.property.data.lag.threshold.millis", "300000"),
         DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
-        DATA_LAG_WHITE_LISTED_SCOPES("system.property.data.lag.whitelisted.scopes", ""),
+        DATA_LAG_WHITE_LISTED_SCOPES("system.property.data.lag.whitelisted.scopes", "whiteListedScope"),
+        DATA_LAG_WHITE_LISTED_USERS("system.property.data.lag.whitelisted.username", "default"),
         DATA_LAG_QUERY_EXPRESSION("system.property.data.lag.expression.list","expressionListPerDC"),
         DATA_LAG_DEFAULT_EXPRESSION("system.property.data.lag.default.expression","defaultExpression"),
 

@@ -52,10 +52,7 @@ import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 @RunWith(MockitoJUnitRunner.class)
@@ -141,10 +138,15 @@ public class MonitorServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testDatalagIncrement() throws Exception {
+    public void testDatalagIncrement() {
         DataLagMonitor dataLagMonitor = new DataLagMonitor(system.getConfiguration(), metricServiceMock, tsdbMock);
-        Field testField = dataLagMonitor.getClass().getDeclaredField("_lagPerDC");  // Checks superclasses.
-        testField.setAccessible(true);
+        Field testField = null;  // Checks superclasses.
+        try {
+            testField = dataLagMonitor.getClass().getDeclaredField("_lagPerDC");
+            testField.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            fail();
+        }
         Map<String, Double> _lagPerDCTest = new TreeMap<>();
         Map<String, Double> expectedOutput = new TreeMap<>();
         Double minute = 1.0 * 60 * 1000;
@@ -158,10 +160,19 @@ public class MonitorServiceTest extends AbstractTest {
         expectedOutput.put("DC4", 4.0 * 60 * 60 * 1000);
         _lagPerDCTest.put("DC5", 7.0 * 60 * 60 * 1000);
         expectedOutput.put("DC5", 4.0 * 60 * 60 * 1000);
-        testField.set(dataLagMonitor, _lagPerDCTest);
+        try {
+            testField.set(dataLagMonitor, _lagPerDCTest);
+        } catch (IllegalAccessException e) {
+            fail();
+        }
 
         for(String dc: _lagPerDCTest.keySet()) {
-            Double lagTime = Whitebox.invokeMethod(dataLagMonitor, "getLagTimeInMillis", dc, System.currentTimeMillis(), null);
+            Double lagTime = null;
+            try {
+                lagTime = Whitebox.invokeMethod(dataLagMonitor, "getLagTimeInMillis", dc, System.currentTimeMillis(), null);
+            } catch (Exception e) {
+                fail();
+            }
             assertEquals(expectedOutput.get(dc), lagTime, 0.01);
         }
 

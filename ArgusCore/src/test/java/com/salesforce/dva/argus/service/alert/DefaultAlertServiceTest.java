@@ -23,6 +23,7 @@ import com.salesforce.dva.argus.service.*;
 import com.salesforce.dva.argus.service.alert.notifier.RefocusNotifier;
 import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 
+import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,13 +47,14 @@ import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.MQService.MQQueue;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
 import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
+import org.powermock.reflect.Whitebox;
 
 @RunWith(org.mockito.runners.MockitoJUnitRunner.class)
 public class DefaultAlertServiceTest extends AbstractTest {
-    
+
     private static final String EXPRESSION =
             "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
-    
+
     @Mock private Provider<EntityManager> _emProviderMock;
     @Mock private MQService _mqServiceMock;
     @Mock private MetricService _metricServiceMock;
@@ -65,11 +67,11 @@ public class DefaultAlertServiceTest extends AbstractTest {
 
     private DefaultAlertService alertService;
     private EntityManager em;
-    
+
     @Before
     public void setup() {
         alertService = new DefaultAlertService(system.getConfiguration(), _mqServiceMock, _metricServiceMock, _auditServiceMock,
-                _tsdbServiceMock, _mailServiceMock, _historyServiceMock, _monitorServiceMock, system.getNotifierFactory(), 
+                _tsdbServiceMock, _mailServiceMock, _historyServiceMock, _monitorServiceMock, system.getNotifierFactory(),
                 _emProviderMock);
         try {
             Field field = alertService.getClass().getDeclaredField("_mapper");
@@ -87,19 +89,19 @@ public class DefaultAlertServiceTest extends AbstractTest {
         System.gc();
     }
 
-    
+
     @Test
     public void testExecuteScheduledAlerts_ForOneTimeSeries() {
         ServiceFactory sFactory = system.getServiceFactory();
         UserService userService = sFactory.getUserService();
-        
+
         int triggerMinValue = 50, inertiaPeriod = 1000 * 60 * 5;
         int cooldownPeriod = 1000 * 5;
         final AtomicInteger notificationCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
-        
+
         Metric metric = _createMetric(createRandomName(), createRandomName(), triggerMinValue, inertiaPeriod);
-        
+
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
         _setAlertId(alert, "100001");
         Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", triggerMinValue, inertiaPeriod);
@@ -112,30 +114,30 @@ public class DefaultAlertServiceTest extends AbstractTest {
         alert.setNotifications(Arrays.asList(notification));
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
-        
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, 
-                Arrays.asList(metric), alert, notification);
-        
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric), alert, notification, false);
+
         spyAlertService.executeScheduledAlerts(1, 1000);
 
         assertEquals(1, notificationCount.get());
     }
-    
+
     @Test
     public void testExecuteScheduledAlerts_ForOneTimeSeriesMultipleTriggers() {
         ServiceFactory sFactory = system.getServiceFactory();
         UserService userService = sFactory.getUserService();
-        
+
         final AtomicInteger notificationCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
-        
+
         Metric metric = new Metric("scope", "metric");
         Map<Long, String> dps = new HashMap<Long, String>();
         dps.put(1000L, "11");
         dps.put(2000L, "21");
         dps.put(3000L, "31");
         metric.setDatapoints(_convertDatapoints(dps));
-        
+
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
         _setAlertId(alert, "100001");
         Trigger trigger1 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger1", 10, 0);
@@ -149,30 +151,58 @@ public class DefaultAlertServiceTest extends AbstractTest {
         alert.setNotifications(Arrays.asList(notification));
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
-        
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, 
-                Arrays.asList(metric), alert, notification);
-        
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric), alert, notification, false);
+
         spyAlertService.executeScheduledAlerts(1, 1000);
 
         assertEquals(2, notificationCount.get());
     }
-    
+
+    @Test
+    public void testExecuteScheduledAlerts_ForNoDataTrigger() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+        final AtomicInteger clearCount = new AtomicInteger(0);
+
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger1 = new Trigger(alert, TriggerType.NO_DATA, "testTrigger1", 10, 1000*60);
+        _setTriggerId(trigger1, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(), 0);
+        _setNotificationId(notification, "100004");
+
+        alert.setTriggers(Arrays.asList(trigger1));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(), alert, notification, false);
+
+        spyAlertService.executeScheduledAlerts(1, 1000);
+
+        assertEquals(1, notificationCount.get());
+    }
+
     @Test
     public void testExecuteScheduledAlerts_OnCooldown() {
         ServiceFactory sFactory = system.getServiceFactory();
         UserService userService = sFactory.getUserService();
-        
+
         final AtomicInteger notificationCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
-        
+
         Metric metric = new Metric("scope", "metric");
         Map<Long, String> dps = new HashMap<Long, String>();
         dps.put(1000L, "11");
         dps.put(2000L, "21");
         dps.put(3000L, "31");
         metric.setDatapoints(_convertDatapoints(dps));
-        
+
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
         _setAlertId(alert, "100001");
         Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 10, 0);
@@ -185,11 +215,11 @@ public class DefaultAlertServiceTest extends AbstractTest {
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
-        
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, 
-                Arrays.asList(metric), alert, notification);
-        
-        //This will set the notification on cooldown for the given metric and trigger. 
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric), alert, notification, false);
+
+        //This will set the notification on cooldown for the given metric and trigger.
         spyAlertService.executeScheduledAlerts(1, 1000);
         //This evaluation should not send notification. Hence notificationCount count would still be 1.
         spyAlertService.executeScheduledAlerts(1, 1000);
@@ -197,13 +227,13 @@ public class DefaultAlertServiceTest extends AbstractTest {
         assertEquals(1, notificationCount.get());
         assertEquals(1, notification.getCooldownExpirationMap().size());
     }
-    
+
     @Test
     public void testExecuteScheduledAlerts_ForMoreThanOneTimeSeries() {
         UserService userService = system.getServiceFactory().getUserService();
         final AtomicInteger notificationCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
-        
+
         Metric metric1 = new Metric("scope1", "metric");
         Map<Long, String> dps1 = new HashMap<Long, String>();
         dps1.put(1000L, "1");
@@ -224,20 +254,20 @@ public class DefaultAlertServiceTest extends AbstractTest {
         _setTriggerId(trigger, "100002");
         Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(), 0);
         _setNotificationId(notification, "100003");
-        
+
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
-        
+
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
-                Arrays.asList(metric1, metric2), alert, notification);
-        
+                Arrays.asList(metric1, metric2), alert, notification, false);
+
         spyAlertService.executeScheduledAlerts(10, 1000);
 
-        assertEquals(1, notificationCount.get());   
+        assertEquals(1, notificationCount.get());
     }
-    
+
     @Test
     public void testExecuteScheduledAlerts_ClearNotification() {
         UserService userService = system.getServiceFactory().getUserService();
@@ -257,36 +287,37 @@ public class DefaultAlertServiceTest extends AbstractTest {
         _setTriggerId(trigger, "100002");
         Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(), 0);
         _setNotificationId(notification, "100003");
-        
+
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
-        
+        alert.setEnabled(true);
+
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
-                Arrays.asList(metric), alert, notification);
-        
+                Arrays.asList(metric), alert, notification, false);
+
         spyAlertService.executeScheduledAlerts(10, 1000);
         assertEquals(1, notificationCount.get());
         //assertEquals(true, notification.isActiveForTriggerAndMetric(trigger, metric));
-        
+
         notificationCount.set(0);
         clearCount.set(0);
-        
+
         dps = new HashMap<Long, String>();
         dps.put(4000L, "1");
         dps.put(5000L, "2");
         dps.put(6000L, "3");
         metric.setDatapoints(_convertDatapoints(dps));
-        
-        spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric), 
-                alert, notification);
-        
+
+        spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric),
+                alert, notification, false);
+
         spyAlertService.executeScheduledAlerts(10, 1000);
         assertEquals(0, notificationCount.get());
         assertEquals(1, clearCount.get());
         //assertEquals(false, notification.isActiveForTriggerAndMetric(trigger, metric));
-        
+
     }
 
     @Test
@@ -318,7 +349,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
         alert.setEnabled(true);
 
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
-                Arrays.asList(metric), alert, notification);
+                Arrays.asList(metric), alert, notification, false);
 
         //This will set the notification on cooldown for the given metric and trigger.
         spyAlertService.executeScheduledAlerts(1, 1000);
@@ -357,7 +388,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
         alert.setEnabled(true);
 
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
-                Arrays.asList(metric), alert, notification);
+                Arrays.asList(metric), alert, notification, false);
 
         spyAlertService.executeScheduledAlerts(10, 1000);
         assertEquals(1, notificationCount.get());
@@ -373,7 +404,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
         metric.setDatapoints(_convertDatapoints(dps));
 
         spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric),
-                alert, notification);
+                alert, notification, false);
 
         spyAlertService.executeScheduledAlerts(10, 1000);
         assertEquals(0, notificationCount.get());
@@ -388,7 +419,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
         UserService userService = system.getServiceFactory().getUserService();
         final AtomicInteger notificationCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
-        
+
         Metric metric1 = new Metric("scope1", "metric");
         Map<Long, String> dps1 = new HashMap<Long, String>();
         dps1.put(1000L, "11");
@@ -409,29 +440,29 @@ public class DefaultAlertServiceTest extends AbstractTest {
         _setTriggerId(trigger, "100002");
         Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(), 300000);
         _setNotificationId(notification, "100003");
-        
+
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
-        
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, 
-                Arrays.asList(metric1, metric2), alert, notification);
-        
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric1, metric2), alert, notification, false);
+
         spyAlertService.executeScheduledAlerts(10, 1000);
 
         assertEquals(2, notificationCount.get());
         assertEquals(2, notification.getCooldownExpirationMap().size());
         assertEquals(2, notification.getActiveStatusMap().size());
     }
-    
+
     /**
      * This test case is for the following scenario:
-     * 
-     * Evaluation1: 
+     *
+     * Evaluation1:
      *      - metric1 violates threshold, notification sent out, notification set on cooldown for metric1.
      *      - metric2 does not violate threshold.
-     * Evaluation2: 
+     * Evaluation2:
      *      - metric1 goes back to normal state, since notification was in active state a clear notification is sent out.
      *      - metric2 violates threshold, notification is sent out, notification set on cooldown for metric2.
      */
@@ -440,7 +471,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
         UserService userService = system.getServiceFactory().getUserService();
         final AtomicInteger notificationCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
-        
+
         Metric metric1 = new Metric("scope1", "metric");
         Map<Long, String> dps1 = new HashMap<Long, String>();
         dps1.put(1000L, "11");
@@ -461,23 +492,23 @@ public class DefaultAlertServiceTest extends AbstractTest {
         _setTriggerId(trigger, "100002");
         Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(), 300000);
         _setNotificationId(notification, "100003");
-            
+
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
-        
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, 
-                Arrays.asList(metric1, metric2), alert, notification);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric1, metric2), alert, notification, false);
         spyAlertService.executeScheduledAlerts(10, 1000);
 
         assertEquals(1, notificationCount.get());
         assertEquals(1, notification.getCooldownExpirationMap().size());
         assertEquals(1, notification.getActiveStatusMap().size());
-        
+
         notificationCount.set(0);
         clearCount.set(0);
-        
+
         metric1 = new Metric("scope1", "metric");
         dps1 = new HashMap<Long, String>();
         dps1.put(1000L, "1");
@@ -491,19 +522,19 @@ public class DefaultAlertServiceTest extends AbstractTest {
         dps2.put(5000L, "21");
         dps2.put(6000L, "31");
         metric2.setDatapoints(_convertDatapoints(dps2));
-        
-        spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric1, metric2), 
-                alert, notification);
+
+        spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric1, metric2),
+                alert, notification, false);
         spyAlertService.executeScheduledAlerts(10, 1000);
-        
+
         assertEquals(1, notificationCount.get());
         assertEquals(1, clearCount.get());
         assertEquals(2, notification.getCooldownExpirationMap().size());
         assertEquals(1, _getActiveSize(notification.getActiveStatusMap()));
     }
-    
+
     private int _getActiveSize(Map<String, Boolean> activeStatusMap) {
-        int size = 0; 
+        int size = 0;
         for(Map.Entry<String, Boolean> entry : activeStatusMap.entrySet()) {
             if(entry.getValue()) {
                 size++;
@@ -595,7 +626,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetTriggerFiredDatapointTimeWehnNoDatapoints() {
+    public void testGetTriggerFiredDatapointTimeWhenNoDatapoints() {
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", EXPRESSION, "* * * * *");
         Metric metric = new Metric("scope", "metric");
@@ -612,7 +643,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 
         assertNull(actualValue);
     }
-    
+
     @Test
     public void testGetTriggerFiredDatapointTimeWhenMissingTimeStamps() {
         UserService userService = system.getServiceFactory().getUserService();
@@ -672,7 +703,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
         }
         return newDps;
     }
-    
+
     @Test
     public void testGetTriggerFiredDatapointTimeWhenMissingTimeStamps4() {
         UserService userService = system.getServiceFactory().getUserService();
@@ -692,7 +723,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
         long expectedTriggerTime = 6 * 60 * 1000;
         assertEquals(expectedTriggerTime, actualValue);
     }
-    
+
     @Test
     public void testGetTriggerFiredDatapointTimeWhenMissingTimeStamps5() {
         UserService userService = system.getServiceFactory().getUserService();
@@ -711,7 +742,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
         Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
         assertNull(actualValue);
     }
-    
+
     @Test
     public void testGetTriggerFiredDatapointTimeWhenMissingTimeStampsReturnNull() {
         UserService userService = system.getServiceFactory().getUserService();
@@ -728,12 +759,112 @@ public class DefaultAlertServiceTest extends AbstractTest {
         Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
         assertNull(actualValue);
     }
-    
-        
+
+    @Test
+    public void testExecuteScheduledAlerts_DuringDatalagPresent() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        int triggerMinValue = 50, inertiaPeriod = 1000;
+        int cooldownPeriod = 1000 * 5;
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+        final AtomicInteger clearCount = new AtomicInteger(0);
+
+        Metric metric = new Metric("scope", "metric");
+        Map<Long, Double> datapoints = new HashMap<>();
+        metric.setDatapoints(datapoints);
+
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger = new Trigger(alert, TriggerType.NO_DATA, "testTrigger", triggerMinValue, inertiaPeriod);
+        _setTriggerId(trigger, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+                cooldownPeriod);
+        _setNotificationId(notification, "100003");
+
+        alert.setTriggers(Arrays.asList(trigger));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric), alert, notification, true);
+
+        spyAlertService.executeScheduledAlerts(1, 1000);
+
+        assertEquals(0, notificationCount.get());
+        enableDatalag(false);
+    }
+
+    @Test
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithWhiteListedScope() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        int triggerMinValue = 50, inertiaPeriod = 1000;
+        int cooldownPeriod = 1000 * 5;
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+        final AtomicInteger clearCount = new AtomicInteger(0);
+
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:whiteListedScope:metric:avg", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger = new Trigger(alert, TriggerType.NO_DATA, "testTrigger", triggerMinValue, inertiaPeriod);
+        _setTriggerId(trigger, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+                cooldownPeriod);
+        _setNotificationId(notification, "100003");
+
+        alert.setTriggers(Arrays.asList(trigger));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(), alert, notification, true);
+
+        spyAlertService.executeScheduledAlerts(1, 1000);
+
+        assertEquals(1, notificationCount.get());
+        enableDatalag(false);
+    }
+
+    @Test
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithWhiteListedUser() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        int triggerMinValue = 50, inertiaPeriod = 1000;
+        int cooldownPeriod = 1000 * 5;
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+        final AtomicInteger clearCount = new AtomicInteger(0);
+
+        Alert alert = new Alert(userService.findDefaultUser(), userService.findDefaultUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger = new Trigger(alert, TriggerType.NO_DATA, "testTrigger", triggerMinValue, inertiaPeriod);
+        _setTriggerId(trigger, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+                cooldownPeriod);
+        _setNotificationId(notification, "100003");
+
+        alert.setTriggers(Arrays.asList(trigger));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(), alert, notification, true);
+
+        spyAlertService.executeScheduledAlerts(1, 1000);
+
+        assertEquals(1, notificationCount.get());
+        enableDatalag(false);
+    }
+
+
     private DefaultAlertService _initializeSpyAlertServiceWithStubs(final AtomicInteger notificationCount, final AtomicInteger clearCount,
-            List<Metric> metrics, Alert alert, Notification notification) {
+                                                                    List<Metric> metrics, Alert alert, Notification notification, boolean isDataLagging) {
         DefaultAlertService spyAlertService = spy(alertService);
-        em = Persistence.createEntityManagerFactory("argus-pu").createEntityManager();
+        EntityManager em = Persistence.createEntityManagerFactory("argus-pu").createEntityManager();
         when(_emProviderMock.get()).thenReturn(em);
 
         Long enqueueTime = System.currentTimeMillis();
@@ -744,16 +875,15 @@ public class DefaultAlertServiceTest extends AbstractTest {
         module.addSerializer(Notification.class, new Notification.Serializer());
         module.addSerializer(PrincipalUser.class, new Alert.PrincipalUserSerializer());
         mapper.registerModule(module);
-        
+
         try {
             AlertWithTimestamp alertWithTimestamp = new AlertWithTimestamp(mapper.writeValueAsString(alert), enqueueTime);
             when(_mqServiceMock.dequeue(eq(MQQueue.ALERT.getQueueName()), eq(AlertWithTimestamp.class), anyInt(), anyInt())).
-            thenReturn(Arrays.asList(alertWithTimestamp));
+                    thenReturn(Arrays.asList(alertWithTimestamp));
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
             fail("Failed to serialize Alert");
         }
-        
+
         try {
             doReturn(alert).when(_mapper).readValue(mapper.writeValueAsString(alert), Alert.class);
         } catch (IOException e) {
@@ -763,7 +893,10 @@ public class DefaultAlertServiceTest extends AbstractTest {
         MetricQueryResult queryResult = new MetricQueryResult();
         queryResult.setMetricsList(metrics);
         when(_metricServiceMock.getMetrics(anyString(), anyLong())).thenReturn(queryResult);
-        
+        when(_monitorServiceMock.isDataLagging(anyString())).thenReturn(isDataLagging);
+
+        enableDatalag(isDataLagging);
+
         doAnswer(new Answer<Notification>() {
 
             @Override
@@ -771,18 +904,18 @@ public class DefaultAlertServiceTest extends AbstractTest {
                 return invocation.getArgumentAt(1, Notification.class);
             }
         }).when(spyAlertService).mergeEntity(em, notification);
-        
-        
+
+
         doAnswer(new Answer<Void>() {
 
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
                 return null;
             }
-            
+
         }).when(spyAlertService).updateNotificationsActiveStatusAndCooldown(Arrays.asList(notification));
-        
-        
+
+
         doAnswer(new Answer<Void>() {
 
             @Override
@@ -790,14 +923,14 @@ public class DefaultAlertServiceTest extends AbstractTest {
                 notificationCount.incrementAndGet();
                 return null;
             }
-        }).when(spyAlertService).sendNotification(any(Trigger.class), 
-                                                            any(Metric.class), 
-                                                            any(History.class), 
-                                                            any(Notification.class), 
-                                                            any(Alert.class), 
-                                                            anyLong(),
-                                                            anyLong());
-        
+        }).when(spyAlertService).sendNotification(any(Trigger.class),
+                any(Metric.class),
+                any(History.class),
+                any(Notification.class),
+                any(Alert.class),
+                anyLong(),
+                anyLong());
+
         doAnswer(new Answer<Void>() {
 
             @Override
@@ -805,18 +938,30 @@ public class DefaultAlertServiceTest extends AbstractTest {
                 clearCount.incrementAndGet();
                 return null;
             }
-        }).when(spyAlertService).sendClearNotification(any(Trigger.class), 
-                                                            any(Metric.class), 
-                                                            any(History.class), 
-                                                            any(Notification.class), 
-                                                            any(Alert.class),
-                                                            anyLong());
-        
+        }).when(spyAlertService).sendClearNotification(any(Trigger.class),
+                any(Metric.class),
+                any(History.class),
+                any(Notification.class),
+                any(Alert.class),
+                anyLong());
+
         return spyAlertService;
     }
-    
+
+    private void enableDatalag(boolean isDataLagging) {
+        Field testField = null;  // Checks superclasses.
+        try {
+            Whitebox.setInternalState(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED, "_defaultValue", Boolean.toString(isDataLagging));
+            testField = alertService.getClass().getDeclaredField("_configuration");
+            testField.setAccessible(true);
+            testField.set(alertService, system.getConfiguration());
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            fail();
+        }
+    }
+
     private Metric _createMetric(String scope, String metricName, int triggerMinValue, int inertiaPeriod) {
-        
+
         long startTime = 1L;
         inertiaPeriod = inertiaPeriod / (1000 * 60);
 
@@ -838,7 +983,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
         result.setUnits(createRandomName());
         return result;
     }
-    
+
     private void _setAlertId(Alert alert, String id) {
         try {
             Field idField = Alert.class.getSuperclass().getDeclaredField("id");
@@ -848,7 +993,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
             fail("Failed to set alert id using reflection.");
         }
     }
-    
+
     private void _setTriggerId(Trigger trigger, String id) {
         try {
             Field idField = Trigger.class.getSuperclass().getDeclaredField("id");
@@ -858,7 +1003,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
             fail("Failed to set alert id using reflection.");
         }
     }
-    
+
     private void _setNotificationId(Notification notification, String id) {
         try {
             Field idField = Notification.class.getSuperclass().getDeclaredField("id");
@@ -868,7 +1013,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
             fail("Failed to set alert id using reflection.");
         }
     }
-    
+
     private Map<Long, String> _createDatapoints(long size, Double value, long startTime, boolean greaterThan) {
         Map<Long, String> result = new HashMap<Long, String>();
 
@@ -879,5 +1024,5 @@ public class DefaultAlertServiceTest extends AbstractTest {
         }
         return result;
     }
-    
+
 }

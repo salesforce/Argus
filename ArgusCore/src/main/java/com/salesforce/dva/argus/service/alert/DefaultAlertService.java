@@ -116,6 +116,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private final ObjectMapper _mapper = new ObjectMapper();
 	private static NotificationsCache _notificationsCache = null;
 	private static List<Pattern> _whiteListedScopeRegexPatterns = null;
+	private static List<Pattern> _whiteListedUserRegexPatterns = null;
 	private static final String HOSTNAME;
 
 	//~ Constructors *********************************************************************************************************************************
@@ -365,6 +366,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		}
 
+		if (_whiteListedUserRegexPatterns == null) {
+			String whiteListedUsersProperty = _configuration.getValue(SystemConfiguration.Property.DATA_LAG_WHITE_LISTED_USERS);
+			if (!StringUtils.isEmpty(whiteListedUsersProperty)) {
+				_whiteListedUserRegexPatterns = Stream.of(whiteListedUsersProperty.split(",")).map(elem -> Pattern.compile(elem.toLowerCase())).collect(Collectors.toList());
+			} else {
+				_whiteListedUserRegexPatterns = new ArrayList<Pattern>();
+			}
+		}
+
 		_monitorService.modifyCounter(Counter.ALERTS_EVALUATED_RAWTOTAL, alertsWithTimestamp.size(), new HashMap<>());
 		for(AlertWithTimestamp alertWithTimestamp : alertsWithTimestamp) {
 			String serializedAlert = alertWithTimestamp.getSerializedAlert();
@@ -487,7 +497,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						metrics.removeIf(m -> shouldMetricBeRemovedForDataLag(alert, m, historyList));
 
 						if ((metrics.size() <= 0 && initialMetricSize > 0) || // Skip alert evaluation if all the expanded alert expression contains dc with data lag and initial size was non-zero.
-								(initialMetricSize == 0 && _monitorService.isDataLagging(null))) { // or, if the initial size is 0 and data lag is present in atleast one dc.
+								(initialMetricSize == 0 && doesDatalagConditionSatisfy(alert, null))) { // or, if the initial size is 0 and data lag is present in atleast one dc.
 							Map<String, String> tags = new HashMap<>();
 							tags.put(USERTAG, alert.getOwner().getUserName());
 							_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
@@ -566,10 +576,16 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return historyList;
 	}
 
+	private boolean doesDatalagConditionSatisfy(Alert alert, String currentDC) {
+		return _monitorService.isDataLagging(currentDC) &&
+				(_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isPatternPresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns)) &&
+				(_whiteListedUserRegexPatterns.isEmpty() || !AlertUtils.isPatternPresentInWhiteList(alert.getOwner().getUserName(), _whiteListedUserRegexPatterns));
+	}
+
 	private boolean shouldMetricBeRemovedForDataLag(Alert alert, Metric m, List<History> historyList) {
 		try {
 			String currentDC = _metricService.getDCFromScope(m.getScope());
-			if (_monitorService.isDataLagging(currentDC) && (_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns))) {
+			if (doesDatalagConditionSatisfy(alert, currentDC)) {
 				String logMessage = MessageFormat.format("Skipping evaluation of the alert expression with scope: {0} in alert with id: {1} due metric data was lagging in DC: {2}", m.getScope(), alert.getId().intValue(), currentDC);
 				_logger.info(logMessage);
 				History history = new History(History.addDateToMessage(JobStatus.SKIPPED.getDescription()), HOSTNAME, alert.getId(), JobStatus.SKIPPED);
