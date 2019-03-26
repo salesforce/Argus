@@ -39,6 +39,7 @@
 		"selectize": "0.12.4"
 	},
 	"devDependencies": {
+		"prebuild-install": "^5.2.5",
 		"eslint": "^3.19.0"
 	},
 	"scripts": {
