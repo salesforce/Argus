@@ -48,6 +48,8 @@
     "lint": "npm run lint --prefix ./app/",
     "prebundle": "npm run transformTemplates",
     "postbundle": "npm run undoTransformTemplates",
+    "prestart": "npm run transformTemplates",
+    "poststart": "npm run undoTransformTemplates",
     "bundle": "webpack",
     "preupdate-webdriver": "npm install",
     "update-webdriver": "webdriver-manager update",
