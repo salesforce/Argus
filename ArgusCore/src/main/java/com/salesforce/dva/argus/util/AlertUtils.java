@@ -23,7 +23,7 @@ public class AlertUtils {
 
 	private static final Logger _logger = LoggerFactory.getLogger(AlertUtils.class);
 
-	public static boolean isScopePresentInWhiteList(String expression, List<Pattern> scopeRegexPatterns) {
+	public static boolean isPatternPresentInWhiteList(String expression, List<Pattern> scopeRegexPatterns) {
 		for(Pattern regexPattern : scopeRegexPatterns) {
 			if(regexPattern.matcher(expression.toLowerCase()).find()) {
 				return true;
