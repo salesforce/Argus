@@ -745,7 +745,7 @@ public class Notification extends JPAEntity implements Serializable {
 		try {
 			GOCFields = new JsonParser().parse(this.notificationCustomData).getAsJsonObject();
 		} catch (Exception ex) {
-			_logger.error("Unable to parse notification object. Creating a new object. Exception: {}", ex);
+			_logger.debug("Unable to parse notification object. Creating a new object. Exception: {}", ex);
 			GOCFields.addProperty(ARTICLE_NUMBER_KEY, "");
 			GOCFields.addProperty(EVENT_NAME_KEY, "");
 			GOCFields.addProperty(ELEMENT_NAME_KEY, "");

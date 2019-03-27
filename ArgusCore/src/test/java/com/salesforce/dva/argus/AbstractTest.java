@@ -210,7 +210,7 @@ public abstract class AbstractTest {
         return result;
     }
     
-    private void setupEmbeddedKafka() {
+    protected void setupEmbeddedKafka() {
         Properties properties = new Properties();
 
         properties.put("zookeeper.connect", zkTestServer.getConnectString());
@@ -236,8 +236,7 @@ public abstract class AbstractTest {
         }
     }
 
-    @Before
-    public void setUp() {
+    protected void setUpZkTestServer() {
         try {
             Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
             DriverManager.getConnection("jdbc:derby:memory:argus;create=true").close();
@@ -246,6 +245,11 @@ public abstract class AbstractTest {
             LoggerFactory.getLogger(getClass()).error("Exception in setUp:{}", ex.getMessage());
             fail("Exception during database startup.");
         }
+    }
+
+    @Before
+    public void setUp() {
+        setUpZkTestServer();
         setupEmbeddedKafka();
         system = getInstance();
         system.start();
@@ -310,7 +314,9 @@ public abstract class AbstractTest {
                 }
             }
         }
-        system.stop();
+        if (system != null) {
+            system.stop();
+        }
         system = SystemMain.getInstance(config);
         system.start();
         return system;

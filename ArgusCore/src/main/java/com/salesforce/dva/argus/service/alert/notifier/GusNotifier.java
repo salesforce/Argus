@@ -28,73 +28,62 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 package com.salesforce.dva.argus.service.alert.notifier;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.sql.Date;
 import java.text.MessageFormat;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
 import javax.persistence.EntityManager;
 
-import com.salesforce.dva.argus.entity.History;
+import com.google.gson.Gson;
+import com.google.inject.Singleton;
+import com.salesforce.dva.argus.service.MonitorService;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
-import com.salesforce.dva.argus.service.MailService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
+import com.salesforce.dva.argus.service.alert.notifier.GusTransport.EndpointInfo;
+import com.salesforce.dva.argus.service.alert.notifier.GusTransport.GetAuthenticationTokenFailureException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
 
-import joptsimple.internal.Strings;
 
 /**
  * Chatter Notifier: api user can only post alert to PUBLIC group
  *
  * @author  Ruofan Zhang (rzhang@salesforce.com)
  */
+@Singleton
 public class GusNotifier extends AuditNotifier {
 
-	//~ Static fields/initializers *******************************************************************************************************************
-	private static final int CONNECTION_TIMEOUT_MILLIS = 10000;
-	private static final int READ_TIMEOUT_MILLIS = 10000;
-	private static final String UTF_8 = "UTF-8";
-
-	//~ Instance fields ******************************************************************************************************************************
-	@SLF4JTypeListener.InjectLogger
-	private static Logger _logger;
-	private static final MultiThreadedHttpConnectionManager theConnectionManager = new MultiThreadedHttpConnectionManager();
-	{
-
-		HttpConnectionManagerParams params = theConnectionManager.getParams();
-
-		params.setConnectionTimeout(CONNECTION_TIMEOUT_MILLIS);
-		params.setSoTimeout(READ_TIMEOUT_MILLIS);
-	}    
+	private static final Logger _logger = LoggerFactory.getLogger(GusNotifier.class);
+	private static final int MAX_ATTEMPTS_GUS_POST = 3;
+	private final MonitorService monitorService;
+	private volatile GusTransport gusTransport = null;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -104,16 +93,15 @@ public class GusNotifier extends AuditNotifier {
 	 * @param  metricService      The metric service to use.  Cannot be null.
 	 * @param  annotationService  The annotation service to use.  Cannot be null.
 	 * @param  auditService       The audit service to use.  Cannot be null.
-	 * @param  mailService        The mail service to use.  Cannot be null.
 	 * @param  config             The system configuration.  Cannot be null.
 	 * @param  emf                The entity manager factory to use.  Cannot be null.
 	 */
 	@Inject
-	public GusNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, MailService mailService,
-			SystemConfiguration config, Provider<EntityManager> emf) {
+	public GusNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
+			SystemConfiguration config, Provider<EntityManager> emf, MonitorService monitorService) {
 		super(metricService, annotationService, auditService, config, emf);
-		requireArgument(mailService != null, "Mail service cannot be null.");
 		requireArgument(config != null, "The configuration cannot be null.");
+		this.monitorService = monitorService;
 	}
 
 	//~ Methods **************************************************************************************************************************************
@@ -139,7 +127,7 @@ public class GusNotifier extends AuditNotifier {
         return sendGusNotification(context, NotificationStatus.CLEARED);
     }
     
-    private boolean sendGusNotification(NotificationContext context, NotificationStatus status) {
+    protected boolean sendGusNotification(NotificationContext context, NotificationStatus status) {
 		Notification notification = null;
 		Trigger trigger = null;
 
@@ -212,110 +200,81 @@ public class GusNotifier extends AuditNotifier {
 		return sb.toString();
 	}
 
-	public static boolean postToGus(History history, Set<String> to, String feed, SystemConfiguration _config) {
-
+	public boolean postToGus(History history, Set<String> to, String feed, SystemConfiguration _config) {
+		boolean result = false;
 		String failureMsg = null;
+		int retries = 0;
+
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GUS_ENABLED))) {
 			// So far works for only one group, will accept a set of string in future.
 			String groupId = to.toArray(new String[to.size()])[0];
-			PostMethod gusPost = new PostMethod(_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()));
 
-			try {
-				HttpClient httpclient = getHttpClient(_config);
-				gusPost.setRequestHeader("Authorization", "Bearer " + generateAccessToken(httpclient, _config));
-				String gusMessage = MessageFormat.format("{0}&subjectId={1}&text={2}",
-						_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()), groupId,
-						URLEncoder.encode(feed.toString(), "UTF-8"));
+			boolean refresh = false; // get cached EndpointInfo by default
+			for (int i = 0; i < MAX_ATTEMPTS_GUS_POST; i++) {
+				retries = i;
+				PostMethod gusPost = new PostMethod(_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()));
 
-				gusPost.setRequestEntity(new StringRequestEntity(gusMessage, "application/x-www-form-urlencoded", null));
-				int respCode = httpclient.executeMethod(gusPost);
-				_logger.info("Gus message response code '{}'", respCode);
-				if (respCode == 201 || respCode == 204) {
-					String infoMsg = MessageFormat.format("Success - send to GUS group {0}", groupId);
-					_logger.info(infoMsg);
-					history.appendMessageNUpdateHistory(infoMsg, null, 0);
-					return true;
-				} else {
-					failureMsg = MessageFormat.format("Failure - send to GUS group {0}. Cause {1}", groupId, gusPost.getResponseBodyAsString());
+				try {
+					EndpointInfo endpointInfo = getGusTransportInstance().getEndpointInfo(refresh);
+					HttpClient httpclient = getGusTransportInstance().getHttpClient();
+					gusPost.setRequestHeader("Authorization", "Bearer " + endpointInfo.getToken());
+					String gusMessage = MessageFormat.format("{0}&subjectId={1}&text={2}",
+							_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()), groupId,
+							URLEncoder.encode(feed.toString(), "UTF-8"));
+
+					gusPost.setRequestEntity(new StringRequestEntity(gusMessage, "application/x-www-form-urlencoded", null));
+					int respCode = httpclient.executeMethod(gusPost);
+					_logger.info("Gus message response code '{}'", respCode);
+					if (respCode == 201 || respCode == 204) {
+						String infoMsg = MessageFormat.format("Success - send to GUS group {0}", groupId);
+						_logger.info(infoMsg);
+						history.appendMessageNUpdateHistory(infoMsg, null, 0);
+						result = true;
+						break;
+					} else {
+						final String gusPostResponseBody = gusPost.getResponseBodyAsString();
+						failureMsg = MessageFormat.format("Failure - send to GUS group {0}. Cause {1}", groupId, gusPostResponseBody);
+						_logger.error(failureMsg);
+						history.appendMessageNUpdateHistory(failureMsg, null, 0);
+
+						List<Map<String, Object>> jsonResponseBody = new Gson().fromJson(gusPostResponseBody, List.class);
+						if (jsonResponseBody != null && jsonResponseBody.size() > 0) {
+							Map<String, Object> responseBodyMap = jsonResponseBody.get(0);
+							if (responseBodyMap != null &&
+									("INVALID_HEADER_TYPE".equals(responseBodyMap.get("message")) ||
+											"INVALID_AUTH_HEADER".equals(responseBodyMap.get("errorCode")))) {
+								_logger.warn("Failed with invalid auth header, attempting to refresh token if possible");
+								refresh = true;
+								continue;
+							}
+						}
+						refresh = false;
+					}
+				} catch (GetAuthenticationTokenFailureException e) {
+					failureMsg = MessageFormat.format("Caught GetAuthenticationTokenFailureException {0} when posting to gus group {1}, attempting to refresh token if possible",
+							e, groupId);
 					_logger.error(failureMsg);
+					history.appendMessageNUpdateHistory(failureMsg, null, 0);
+					refresh = true; // try forced refresh of token
+				} catch (Exception e) {
+					failureMsg = MessageFormat.format("Throws Exception {0} when posting to gus group {1}", e, groupId);
+					_logger.error(failureMsg);
+					history.appendMessageNUpdateHistory(failureMsg, null, 0);
+					refresh = false;
+				} finally {
+					gusPost.releaseConnection();
 				}
-			} catch (Exception e) {
-				failureMsg = MessageFormat.format("Throws Exception {0} when posting to gus group {1}", e, groupId);
-				_logger.error(failureMsg);
-			} finally {
-				gusPost.releaseConnection();
 			}
+			monitorService.modifyCounter(MonitorService.Counter.GUS_NOTIFICATIONS_RETRIES, retries, null);
+			monitorService.modifyCounter(MonitorService.Counter.GUS_NOTIFICATIONS_FAILED, result ? 0 : 1, null);
 		} else {
 			failureMsg = MessageFormat.format("Sending GUS notification is disabled.  Not sending message to groups {0}.", to);
 			_logger.warn(failureMsg);
-		}
-
-		if (StringUtils.isNotBlank(failureMsg)) {
 			history.appendMessageNUpdateHistory(failureMsg, null, 0);
 		}
-		return false;
+
+		return result;
 	}
-
-	private static String generateAccessToken(HttpClient httpClient, SystemConfiguration _config) {
-
-		// Send a post request to the OAuth URL.
-		PostMethod oauthPost = new PostMethod(_config.getValue(Property.GUS_ENDPOINT.getName(), Property.GUS_ENDPOINT.getDefaultValue()));
-
-		try {
-			oauthPost.addParameter("grant_type", "password");
-			oauthPost.addParameter("client_id",
-					URLEncoder.encode(_config.getValue(Property.GUS_CLIENT_ID.getName(), Property.GUS_CLIENT_ID.getDefaultValue()), UTF_8));
-			oauthPost.addParameter("client_secret",
-					URLEncoder.encode(_config.getValue(Property.GUS_CLIENT_SECRET.getName(), Property.GUS_CLIENT_SECRET.getDefaultValue()), UTF_8));
-			oauthPost.addParameter("username", _config.getValue(Property.ARGUS_GUS_USER.getName(), Property.ARGUS_GUS_USER.getDefaultValue()));
-			oauthPost.addParameter("password", _config.getValue(Property.ARGUS_GUS_PWD.getName(), Property.ARGUS_GUS_PWD.getDefaultValue()));
-
-			int respCode = httpClient.executeMethod(oauthPost);
-
-			_logger.info("Response code '{}'", respCode);
-
-			// Check for success
-			if (respCode == 200) {
-				JsonObject authResponse = new Gson().fromJson(oauthPost.getResponseBodyAsString(), JsonObject.class);
-				String endpoint = authResponse.get("instance_url").getAsString();
-				String token = authResponse.get("access_token").getAsString();
-
-				_logger.info("Success - getting access_token for endpoint '{}'", endpoint);
-				_logger.info("access_token '{}'", token);
-				return token;
-			}
-			else {
-				_logger.error("Failure - getting oauth2 token, check username/password: '{}'", oauthPost.getResponseBodyAsString());
-			} 
-		} catch (RuntimeException | IOException e) {
-			_logger.error("Failure - exception getting gus access_token {}", e);
-		} finally {
-			oauthPost.releaseConnection();
-		}
-		return Strings.EMPTY;
-	}
-
-	/**
-	 * Get HttpClient with proper proxy and timeout settings.
-	 *
-	 * @param   config  The system configuration.  Cannot be null.
-	 *
-	 * @return  HttpClient
-	 */
-	public  static HttpClient getHttpClient(SystemConfiguration config) {
-		HttpClient httpclient = new HttpClient(theConnectionManager);
-
-		// Wait for 2 seconds to get a connection from pool
-		httpclient.getParams().setParameter("http.connection-manager.timeout", 2000L); 
-
-		String host = config.getValue(Property.GUS_PROXY_HOST.getName(), Property.GUS_PROXY_HOST.getDefaultValue());
-
-		if (host != null && host.length() > 0) {
-			httpclient.getHostConfiguration().setProxy(host,
-					Integer.parseInt(config.getValue(Property.GUS_PROXY_PORT.getName(), Property.GUS_PROXY_PORT.getDefaultValue())));
-		}
-		return httpclient;
-	}    
 
 	@Override
 	public Properties getNotifierProperties() {
@@ -325,6 +284,24 @@ public class GusNotifier extends AuditNotifier {
 			result.put(property.getName(), property.getDefaultValue());
 		}
 		return result;
+	}
+
+	protected GusTransport getGusTransportInstance() {
+		if (gusTransport == null) {
+			synchronized (this) {
+				if (gusTransport == null) {
+					gusTransport = new GusTransport(_config.getValue(Property.GUS_PROXY_HOST.getName(), null), // no default since this is optional
+							_config.getValue(Property.GUS_PROXY_PORT.getName(), null), // no default since this is optional
+							_config.getValue(Property.GUS_ENDPOINT.getName(), Property.GUS_ENDPOINT.getDefaultValue()),
+							_config.getValue(Property.GUS_CLIENT_ID.getName(), Property.GUS_CLIENT_ID.getDefaultValue()),
+							_config.getValue(Property.GUS_CLIENT_SECRET.getName(), Property.GUS_CLIENT_SECRET.getDefaultValue()),
+							_config.getValue(Property.ARGUS_GUS_USER.getName(), Property.ARGUS_GUS_USER.getDefaultValue()),
+							_config.getValue(Property.ARGUS_GUS_PWD.getName(), Property.ARGUS_GUS_PWD.getDefaultValue()),
+							new GusTransport.EndpointInfo(_config.getValue(Property.GUS_ENDPOINT.getName(), Property.GUS_ENDPOINT.getDefaultValue()), GusTransport.NO_TOKEN));
+				}
+			}
+		}
+		return gusTransport;
 	}
 
 	public enum Property {
