@@ -34,12 +34,11 @@ public class GroupByTagTransform implements Transform {
 		// scanning back to find the transform function
 		TransformFactory.Function functionName = null;
 		int functionElementId = -1;
-		String providedFunctionName = null;
 		
 		for (int i = constants.size() - 1; i >= 0; i--) {
-		    providedFunctionName = constants.get(i);
+		    String constant = constants.get(i);
         	try {
-        		functionName = TransformFactory.Function.valueOf(providedFunctionName);
+        		functionName = TransformFactory.Function.valueOf(constant);
         		functionElementId = i;
         		break;
 			}
@@ -49,7 +48,7 @@ public class GroupByTagTransform implements Transform {
 		}
 
 		if (functionName == null) {
-			throw new UnsupportedOperationException("GroupByTag needs a valid function name to be provided in uppercase.Provided function = " + providedFunctionName);
+			throw new UnsupportedOperationException("GroupByTag needs a valid function name to be provided in uppercase.");
 		}
 
 		List<String> tags = constants.subList(0, functionElementId);
