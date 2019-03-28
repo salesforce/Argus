@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
 import static org.junit.Assert.assertFalse;
@@ -42,7 +42,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.AbstractTestIT;
 import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.PrincipalUser;
@@ -50,7 +50,7 @@ import com.salesforce.dva.argus.service.WardenService.SubSystem;
 import com.salesforce.dva.argus.system.SystemException;
 
 @Category(IntegrationTest.class)
-public class WardenServiceIT extends AbstractTest {
+public class WardenServiceIT extends AbstractTestIT {
 
     private UserService _userService;
     private WardenService _wardenService;
@@ -136,7 +136,7 @@ public class WardenServiceIT extends AbstractTest {
             }
         }
     }
-    
+
     @Test
     public void testSuspendUserIndefinitely() {
         PrincipalUser user = _userService.findUserByUsername("bhinav.sura");
@@ -154,7 +154,7 @@ public class WardenServiceIT extends AbstractTest {
         isIndefinitelySuspended = _wardenService.suspendUser(user, SubSystem.API);
         assertTrue(isIndefinitelySuspended);
     }
-    
+
     @Test(expected = SystemException.class)
     public void testAssertSubsystemUsePermitted_IndefiniteSuspension() {
         PrincipalUser user = _userService.findUserByUsername("bhinav.sura");

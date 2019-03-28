@@ -28,10 +28,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.AbstractTestIT;
 import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.auth.LDAPAuthService.Property;
@@ -41,7 +41,7 @@ import org.junit.experimental.categories.Category;
 import static org.junit.Assert.assertNotNull;
 
 @Category(IntegrationTest.class)
-public class AuthServiceIT extends AbstractTest {
+public class AuthServiceIT extends AbstractTestIT {
 
     @Test
     public void testCreateAudit() {

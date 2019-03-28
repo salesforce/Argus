@@ -28,10 +28,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service.metric;
 
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.AbstractTestIT;
 import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.MetricService;
@@ -49,7 +49,7 @@ import java.util.TreeMap;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
-public class MetricServiceIT extends AbstractTest {
+public class MetricServiceIT extends AbstractTestIT {
 
     @Test
     public void testGetMetricsRelativeTo() throws InterruptedException {
@@ -74,7 +74,7 @@ public class MetricServiceIT extends AbstractTest {
 
             List<Metric> metrics = metricService.getMetrics("-10000s" + MessageFormat.format(":{0}:{1}:avg", m.getScope(), m.getMetric()), currentTime).getMetricsList();
             assertTrue(metrics.size() == 0 || metrics.get(0).getDatapoints().size() == 0);
-            
+
             metrics = metricService.getMetrics("-10000s" + MessageFormat.format(":{0}:{1}:avg", m.getScope(), m.getMetric()),
                 (currentTime - 10000000)).getMetricsList();
             assertTrue(_datapointsBetween(metrics.get(0).getDatapoints(), currentTime - 20000000, System.currentTimeMillis() - 10000000));

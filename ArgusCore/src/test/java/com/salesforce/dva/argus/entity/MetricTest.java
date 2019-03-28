@@ -1,6 +1,5 @@
 package com.salesforce.dva.argus.entity;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.util.AlertUtils;
 import org.junit.Test;
 

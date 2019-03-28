@@ -5,15 +5,28 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import java.util.Properties;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
-public class TSDBServiceTest extends AbstractTest {
-    @Test
-    public void isTSDBServiceSingleton() {
-        TSDBService service1 = system.getServiceFactory().getTSDBService();
-        TSDBService service2 = system.getServiceFactory().getTSDBService();
-        assertTrue(service1 == service2);
+
+
+public class TSDBServiceTest {
+
+    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+
+    @BeforeClass
+    static public void setUpClass() {
     }
+
+    @AfterClass
+    static public void tearDownClass() {
+    }
+
 
     @Test
     public void testQueryWindow() {

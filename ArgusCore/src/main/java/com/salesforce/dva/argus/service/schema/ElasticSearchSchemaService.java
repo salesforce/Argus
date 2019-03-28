@@ -23,6 +23,7 @@ import com.salesforce.dva.argus.entity.ScopeOnlySchemaRecord;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.service.schema.ElasticSearchUtils;
 import com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService.PutResponse.Item;
 import com.salesforce.dva.argus.service.schema.MetricSchemaRecordList.HashAlgorithm;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
@@ -109,10 +110,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private final ObjectMapper _updateMetatagsMapper;
 	private final int _replicationFactorForMetatagsIndex;
 	private final int _numShardsForMetatagsIndex;
+        private final String _metatagsBulkIndexUrl;
 
-	@Inject
-	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService) {
-		super(config, monitorService);
+
+        @Inject
+	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService, ElasticSearchUtils esUtils) {
+                super(config, monitorService);
 
 		/** Setup Global ES stuff */
 		String algorithm = config.getValue(Property.ELASTICSEARCH_IDGEN_HASH_ALGO.getName(), Property.ELASTICSEARCH_IDGEN_HASH_ALGO.getDefaultValue());
@@ -181,7 +184,13 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				config.getValue(Property.ELASTICSEARCH_NUM_REPLICAS_FOR_TAGS_INDEX.getName(), Property.ELASTICSEARCH_NUM_REPLICAS_FOR_TAGS_INDEX.getDefaultValue()));
 		_numShards = Integer.parseInt(
 				config.getValue(Property.ELASTICSEARCH_SHARDS_COUNT_FOR_TAGS_INDEX.getName(), Property.ELASTICSEARCH_SHARDS_COUNT_FOR_TAGS_INDEX.getDefaultValue()));
-		_createIndexIfNotExists(TAGS_INDEX_NAME, _replicationFactor, _numShards, () -> _createMappingsNode());
+
+                esUtils.createIndexIfNotExists(_esRestClient,
+                                               TAGS_INDEX_NAME,
+                                               _replicationFactor,
+                                               _numShards,
+                                               () -> _createMappingsNode());
+
 
 		/** Set up scope-only index stuff */
 		_createScopeOnlyMapper = _getScopeOnlyObjectMapper(new ScopeOnlySchemaRecordList.CreateSerializer());
@@ -194,8 +203,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				config.getValue(Property.ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_INDEX.getName(), Property.ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_INDEX.getDefaultValue()));
 		_numShardsForScopeIndex = Integer.parseInt(
 				config.getValue(Property.ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_INDEX.getName(), Property.ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_INDEX.getDefaultValue()));
-		_createIndexIfNotExists(SCOPE_INDEX_NAME, _replicationFactorForScopeIndex, _numShardsForScopeIndex,
-				() -> _createScopeMappingsNode());
+
+                esUtils.createIndexIfNotExists(_esRestClient,
+                                               SCOPE_INDEX_NAME,
+                                               _replicationFactorForScopeIndex,
+                                               _numShardsForScopeIndex,
+                                               () -> _createScopeMappingsNode());
 
 		/** Set up metatags index stuff */
 		_createMetatagsMapper = _getMetatagsObjectMapper(new MetatagsSchemaRecordList.CreateSerializer());
@@ -204,14 +217,20 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				Property.ELASTICSEARCH_METATAGS_INDEX_NAME.getDefaultValue());
 		METATAGS_TYPE_NAME = config.getValue(Property.ELASTICSEARCH_METATAGS_TYPE_NAME.getName(),
 				Property.ELASTICSEARCH_METATAGS_TYPE_NAME.getDefaultValue());
+                _metatagsBulkIndexUrl = String.format("/%s/%s/_bulk", METATAGS_INDEX_NAME, METATAGS_TYPE_NAME);
 		_replicationFactorForMetatagsIndex = Integer.parseInt(
 				config.getValue(Property.ELASTICSEARCH_NUM_REPLICAS_FOR_METATAGS_INDEX.getName(),
 						Property.ELASTICSEARCH_NUM_REPLICAS_FOR_METATAGS_INDEX.getDefaultValue()));
 		_numShardsForMetatagsIndex = Integer.parseInt(
 				config.getValue(Property.ELASTICSEARCH_SHARDS_COUNT_FOR_METATAGS_INDEX.getName(),
 						Property.ELASTICSEARCH_SHARDS_COUNT_FOR_METATAGS_INDEX.getDefaultValue()));
-		_createIndexIfNotExists(METATAGS_INDEX_NAME, _replicationFactorForMetatagsIndex,
-				_numShardsForMetatagsIndex, () -> _createMetatagsMappingsNode());
+
+                esUtils.createIndexIfNotExists(_esRestClient,
+                                               METATAGS_INDEX_NAME,
+                                               _replicationFactorForMetatagsIndex,
+                                               _numShardsForMetatagsIndex,
+                                               () -> _createMetatagsMappingsNode());
+
 	}
 
 	@Override
@@ -907,19 +926,22 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return failedRecords;
 	}
 
+    protected Pair<MetatagsSchemaRecordList, String> getListAndBodyForUpsertMetatags(Set<MetatagsRecord> records) throws IOException {
+        MetatagsSchemaRecordList createMetatagsSchemaRecordList = new MetatagsSchemaRecordList(records, _idgenHashAlgo);
+        String requestBody = _createMetatagsMapper.writeValueAsString(createMetatagsSchemaRecordList);
+        return Pair.of(createMetatagsSchemaRecordList, requestBody);
+    }
 	/**
 	 * @param records
 	 * @return	List of records that FAILED to upsert
 	 */
 	protected Set<MetatagsRecord> upsertMetatags(Set<MetatagsRecord> records) {
-		String requestUrl = String.format("/%s/%s/_bulk", METATAGS_INDEX_NAME, METATAGS_TYPE_NAME);
-
 		try {
 			Set<MetatagsRecord> failedRecords = new HashSet<>();
-			MetatagsSchemaRecordList createMetatagsSchemaRecordList = new MetatagsSchemaRecordList(records, _idgenHashAlgo);
-			String requestBody = _createMetatagsMapper.writeValueAsString(createMetatagsSchemaRecordList);
-			PutResponse putResponse = _performRequest(requestUrl, requestBody);
-
+                        Pair<MetatagsSchemaRecordList, String> retPair = getListAndBodyForUpsertMetatags(records);
+                        MetatagsSchemaRecordList createMetatagsSchemaRecordList = retPair.getKey();
+                        String requestBody = retPair.getValue();
+			PutResponse putResponse = _performRequest(_metatagsBulkIndexUrl, requestBody);
 			Pair<List<String>, List<String>> failedResponses = _parseFailedResponses(putResponse);
 
 			List<String> failedIds = failedResponses.getLeft();
@@ -1417,31 +1439,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return fieldNode;
 	}
 
-	private void _createIndexIfNotExists(String indexName, int replicationFactor, int numShards,
-										 Supplier<ObjectNode> createMappingsNode) {
-		try {
-			Response response = _esRestClient.performRequest(HttpMethod.HEAD.getName(), "/" + indexName);
-			boolean indexExists = response.getStatusLine().getStatusCode() == HttpStatus.SC_OK ? true : false;
-
-			if(!indexExists) {
-				_logger.info("Index [" + indexName + "] does not exist. Will create one.");
-				ObjectMapper mapper = new ObjectMapper();
-
-				ObjectNode rootNode = mapper.createObjectNode();
-				rootNode.put("settings", _createSettingsNode(replicationFactor, numShards));
-				rootNode.put("mappings", createMappingsNode.get());
-
-				String settingsAndMappingsJson = rootNode.toString();
-				String requestUrl = new StringBuilder().append("/").append(indexName).toString();
-
-				response = _esRestClient.performRequest(HttpMethod.PUT.getName(), requestUrl, Collections.emptyMap(), new StringEntity(settingsAndMappingsJson));
-				extractResponse(response);
-			}
-		} catch (Exception e) {
-			_logger.error("Failed to check/create {} index. ElasticSearchSchemaService may not function. {}",
-				indexName, e);
-		}
-	}
 
 	/**
 	 * Enumeration of supported HTTP methods.

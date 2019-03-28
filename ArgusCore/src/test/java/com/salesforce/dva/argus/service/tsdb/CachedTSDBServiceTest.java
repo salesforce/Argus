@@ -23,15 +23,21 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
+
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+
+
 @RunWith(MockitoJUnitRunner.class)
-public class CachedTSDBServiceTest extends AbstractTest{
+public class CachedTSDBServiceTest {
 	@Mock
 	private MonitorService monitorService;
 	@Mock
@@ -41,9 +47,26 @@ public class CachedTSDBServiceTest extends AbstractTest{
 	@Mock
 	CachedTSDBService cachedTSDBService;
 
+    static private SystemMain system;
+
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
+
 	@Before
 	public void setup() throws Exception{
-		Constructor<CachedTSDBService> constructor = CachedTSDBService.class.getDeclaredConstructor(SystemConfiguration.class, 
+		Constructor<CachedTSDBService> constructor = CachedTSDBService.class.getDeclaredConstructor(SystemConfiguration.class,
 				MonitorService.class,CacheService.class,TSDBService.class);
 		constructor.setAccessible(true);
 		cachedTSDBService = constructor.newInstance(system.getConfiguration(), monitorService,cacheService,tsdbService);
@@ -52,7 +75,7 @@ public class CachedTSDBServiceTest extends AbstractTest{
 	@Test
 	public void testWhenCacheMissShouldCallTSDBServiceGetMetricsMethod() throws Exception {
 		long startTime = System.currentTimeMillis()-60*60*1000, endTime = System.currentTimeMillis();
-		MetricQuery query = new MetricQuery("scope", "metric", new HashMap<>(), 
+		MetricQuery query = new MetricQuery("scope", "metric", new HashMap<>(),
 				startTime, endTime);
 		cachedTSDBService.getMetrics(Arrays.asList(query));
 		verify(tsdbService,times(1)).getMetrics(any());
@@ -62,7 +85,7 @@ public class CachedTSDBServiceTest extends AbstractTest{
 	@Test
 	public void testWhenCacheMissShouldReturnMetricsFromOnlyTSDBNShouldNotCallCacheService() {
 		long startTime = System.currentTimeMillis()-60*60*1000, endTime = System.currentTimeMillis();
-		MetricQuery query = new MetricQuery("scope", "metric", new HashMap<>(), 
+		MetricQuery query = new MetricQuery("scope", "metric", new HashMap<>(),
 				startTime, endTime);
 
 		Metric metric = new Metric("scope", "metric");
@@ -83,7 +106,7 @@ public class CachedTSDBServiceTest extends AbstractTest{
 	public void testWhenMetricsExistInCacheShouldReturnMetricsFromBothCacheNTSDB() throws Exception {
 		long currTime = System.currentTimeMillis();
 		long startTime = currTime-4*24*60*60*1000, endTime = currTime;
-		MetricQuery query = new MetricQuery("scope", "metric", new HashMap<>(), 
+		MetricQuery query = new MetricQuery("scope", "metric", new HashMap<>(),
 				startTime, endTime);
 
 		Metric lastHourMetric= new Metric("scope", "metric");
@@ -91,7 +114,7 @@ public class CachedTSDBServiceTest extends AbstractTest{
 		lastHourDps.put(endTime, 2d);
 		lastHourMetric.setDatapoints(lastHourDps);
 		Map<MetricQuery, List<Metric>> lastHourMetrics = mock(Map.class);
-		when(lastHourMetrics.get(any())).thenReturn(Arrays.asList(lastHourMetric)); 
+		when(lastHourMetrics.get(any())).thenReturn(Arrays.asList(lastHourMetric));
 		when(tsdbService.getMetrics(any())).thenReturn(lastHourMetrics);
 
 		StringBuilder cacheKey = new StringBuilder();

@@ -28,11 +28,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.AbstractTestIT;
 import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
@@ -61,7 +61,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
-public class TSDBServiceIT extends AbstractTest {
+public class TSDBServiceIT extends AbstractTestIT {
 
     private static final long SLEEP_AFTER_PUT_IN_MILLIS = 2000;
 
@@ -127,10 +127,10 @@ public class TSDBServiceIT extends AbstractTest {
             service.dispose();
         }
     }
-    
+
     @Test
     public void testGetMetricsTagValueTooLarge() throws InterruptedException {
-    	
+
     	TSDBService service = system.getServiceFactory().getTSDBService();
         List<Metric> expected = createMetricWithMultipleTags("tagKey", 100);
 
@@ -152,7 +152,7 @@ public class TSDBServiceIT extends AbstractTest {
         } finally {
             service.dispose();
         }
-    	
+
     }
 
     private MetricQuery toWildcardOrQuery(List<Metric> metrics, String commonTagKey) {
@@ -167,7 +167,7 @@ public class TSDBServiceIT extends AbstractTest {
         	sb.append(m.getTag(commonTagKey)).append("|");
         }
         tags.put(commonTagKey, sb.substring(0, sb.length() - 1));
-        
+
         return new MetricQuery(metric.getScope(), metric.getMetric(), tags, start, end);
 	}
 
@@ -181,15 +181,15 @@ public class TSDBServiceIT extends AbstractTest {
         	Metric m = new Metric(scope, metric);
         	Map<Long, Double> datapoints = new HashMap<>();
         	datapoints.put(timestamp, Double.valueOf(i));
-        	
+
         	Map<String, String> tags = new HashMap<>();
         	tags.put(commonTagKey, "someverylooooooooooooooooooooooooooooooooooooooooongTagValue" + i);
-        	
+
         	m.setDatapoints(datapoints);
         	m.setTags(tags);
         	result.add(m);
         }
-        
+
         return result;
 	}
 
@@ -368,17 +368,17 @@ public class TSDBServiceIT extends AbstractTest {
 
     @Test
     public void testPut_DatapointsContainNullValues() {
-    	
+
     	TSDBService service = system.getServiceFactory().getTSDBService();
-    	
+
     	Map<Long, Double> datapoints = new HashMap<>();
     	datapoints.put(1493973552000L, 100D);
     	datapoints.put(1493973652000L, null);
     	Metric m = new Metric("scope", "metric");
     	m.setDatapoints(datapoints);
-    	
+
     	service.putMetrics(Arrays.asList(m));
-    	
+
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

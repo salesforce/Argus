@@ -6,7 +6,6 @@ import java.util.stream.IntStream;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.History.JobStatus;
@@ -21,12 +20,38 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+
+
 /**
  * Created by mingzhong on 26.01.17.
  */
-public class CallbackServiceTest extends AbstractTest {
+public class CallbackServiceTest {
 	private static final String expression =
 			"DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
+
+    static private SystemMain system;
+    static AlertService alertService;
+    static UserService userService;
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+        alertService = system.getServiceFactory().getAlertService();
+        userService = system.getServiceFactory().getUserService();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
 
 	@Test
 	public void testCallbackNotifier() {
@@ -35,7 +60,6 @@ public class CallbackServiceTest extends AbstractTest {
 		WireMock.configureFor("localhost", mockServer.port());
 		stubFor(post(anyUrl()).willReturn(aResponse().withStatus(200)));
 
-		final UserService userService = system.getServiceFactory().getUserService();
 		Alert alert = new Alert(userService.findAdminUser(),
 				userService.findAdminUser(),
 				"alert_name",
@@ -53,7 +77,7 @@ public class CallbackServiceTest extends AbstractTest {
 
 		alert.setTriggers(Collections.singletonList(trigger));
 		alert.setNotifications(Collections.singletonList(notification));
-		alert = system.getServiceFactory().getAlertService().updateAlert(alert);
+		alert = alertService.updateAlert(alert);
 
 		History history = new History(JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, JobStatus.SUCCESS);
 

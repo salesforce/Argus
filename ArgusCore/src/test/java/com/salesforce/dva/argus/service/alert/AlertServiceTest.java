@@ -33,7 +33,6 @@ package com.salesforce.dva.argus.service.alert;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
@@ -46,7 +45,15 @@ import com.salesforce.dva.argus.service.ManagementService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
 import org.junit.Before;
+import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
 import org.junit.Test;
+import java.io.File;
+
+import kafka.server.KafkaConfig;
+import kafka.server.KafkaServerStartable;
+import org.apache.curator.test.TestingServer;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -67,21 +74,148 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class AlertServiceTest extends AbstractTest {
+import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.system.SystemMain;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+import java.sql.DriverManager;
+import java.sql.SQLNonTransientConnectionException;
+import org.slf4j.LoggerFactory;
+
+import com.salesforce.dva.argus.TestUtils;
+
+
+public class AlertServiceTest{
 
 	private static final String EXPRESSION =
 			"DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
-	private PrincipalUser admin;
+
+    static protected TestingServer zkTestServer;
+    static protected KafkaServerStartable kafkaServer;
+    static private String tempDir = "";
+
+    private SystemMain system;
+    private PrincipalUser admin;
+    private AlertService alertService;
+    private UserService userService;
+    private MQService mqService;
+    private ManagementService managementService;
+
+    private static void deleteFolder(File folder) {
+        File[] files = folder.listFiles();
+
+        if (files != null) {
+            for (File f : files) {
+                if (f.isDirectory()) {
+                    deleteFolder(f);
+                } else {
+                    f.delete();
+                }
+            }
+        }
+    }
+
+    private static ch.qos.logback.classic.Logger kafkaLogger;
+    private static ch.qos.logback.classic.Logger zkLogger;
+    private static ch.qos.logback.classic.Logger apacheLogger;
+    private static ch.qos.logback.classic.Logger myClassLogger;
+
+    @BeforeClass
+    static public void setUpClass() {
+        kafkaLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("kafka");
+        kafkaLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+        zkLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.I0Itec.zkclient");
+        zkLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+        myClassLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.salesforce.dva.argus.service.alert.AlertServiceTest");
+        myClassLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+        apacheLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache");
+        apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+
+        try {
+            zkTestServer = new TestingServer(2185);
+        } catch (Exception ex) {
+            LoggerFactory.getLogger(AlertServiceTest.class).error("Exception in setUp:{}", ex.getMessage());
+            fail("Exception during database startup.");
+        }
+        setupEmbeddedKafka();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        tearDownEmbeddedKafka();
+        try {
+            zkTestServer.close();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+
+    static private void setupEmbeddedKafka() {
+        Properties properties = new Properties();
+
+        properties.put("zookeeper.connect", zkTestServer.getConnectString());
+        properties.put("host.name", "localhost");
+        properties.put("port", "9093");
+        properties.put("broker.id", "0");
+        properties.put("num.partitions", "2");
+        properties.put("log.flush.interval.ms", "10");
+        properties.put("log.dir", "/tmp/kafka-logs/" + TestUtils.createRandomName());
+        properties.put("offsets.topic.replication.factor", "1");
+
+        KafkaConfig config = new KafkaConfig(properties);
+
+        kafkaServer = new KafkaServerStartable(config);
+        kafkaServer.startup();
+    }
+
+    static private void tearDownEmbeddedKafka() {
+        if (kafkaServer != null) {
+            kafkaServer.shutdown();
+            kafkaServer.awaitShutdown();
+            deleteFolder(new File(tempDir));
+        }
+    }
 
 	@Before
 	public void setup() {
-		admin = system.getServiceFactory().getUserService().findAdminUser();
+            try {
+                Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
+                DriverManager.getConnection("jdbc:derby:memory:argus;create=true").close();
+            } catch (Exception ex) {
+                LoggerFactory.getLogger(AlertServiceTest.class).error("Exception in setUp:{}", ex.getMessage());
+                fail("Exception during database startup.");
+            }
+            system = TestUtils.getInstance();
+            system.start();
+            userService = system.getServiceFactory().getUserService();
+            admin = userService.findAdminUser();
+            alertService = system.getServiceFactory().getAlertService();
+            mqService = system.getServiceFactory().getMQService();
+            managementService = system.getServiceFactory().getManagementService();
 	}
+
+    @After
+    public void tearDown() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+        try {
+            DriverManager.getConnection("jdbc:derby:memory:argus;shutdown=true").close();
+        } catch (SQLNonTransientConnectionException ex) {
+            if (ex.getErrorCode() >= 50000 || ex.getErrorCode() < 40000) {
+                throw new RuntimeException(ex);
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
 
 	@Test
 	public void testUpdateAlert() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", expected, "notifier-name", new ArrayList<String>(), 5000L);
 		Trigger trigger = new Trigger(expected, TriggerType.GREATER_THAN, "trigger-name", 0.95, 60000);
@@ -105,8 +239,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testDeleteAlert() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification1 = new Notification("notification1", alert, "notifier-name1", new ArrayList<String>(), 5000L);
 		Notification notification2 = new Notification("notification2", alert, "notifier-name2", new ArrayList<String>(), 5000L);
@@ -156,7 +288,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindAlertByNameAndOwner() {
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		String alertName = "testAlert";
 		PrincipalUser expectedUser = new PrincipalUser(admin, "testUser", "testuser@testcompany.com");
 		Alert expectedAlert = new Alert(expectedUser, expectedUser, alertName, EXPRESSION, "* * * * *");
@@ -171,10 +302,8 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testfindAlertsByOwner() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		String userName = createRandomName();
-		int alertsCount = random.nextInt(20) + 1;
+		String userName = TestUtils.createRandomName();
+		int alertsCount = TestUtils.random.nextInt(20) + 1;
 		PrincipalUser user = new PrincipalUser(admin ,userName, userName + "@testcompany.com");
 
 		user = userService.updateUser(user);
@@ -199,10 +328,8 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testfindAlertsByOwnerMeta() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		String userName = createRandomName();
-		int alertsCount = random.nextInt(20) + 1;
+		String userName = TestUtils.createRandomName();
+		int alertsCount = TestUtils.random.nextInt(20) + 1;
 		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
 		user = userService.updateUser(user);
@@ -227,9 +354,7 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindAlertsByOwnerPaged() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		String userName = createRandomName();
+		String userName = TestUtils.createRandomName();
 		int alertsCount = 25;
 		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
@@ -273,9 +398,7 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindAlertsByOwnerPagedWithSearchText() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		String userName = createRandomName();
+		String userName = TestUtils.createRandomName();
 		int alertsCount = 25;
 		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
@@ -374,10 +497,8 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindAlertsByOwnerPagedWithSorting() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		
+
 		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
 		try{
 			Thread.sleep(1000);
@@ -393,7 +514,7 @@ public class AlertServiceTest extends AbstractTest {
 			Thread.sleep(1000);
 		}catch(Exception e) {
 		}
-		
+
 		//Change modified date
 		alert1.setShared(true);
 		alertService.updateAlert(alert1);
@@ -431,13 +552,13 @@ public class AlertServiceTest extends AbstractTest {
 		assertEquals(alert2.getName(), page.get(0).getName());
 		assertEquals(alert3.getName(), page.get(1).getName());
 		assertEquals(alert1.getName(), page.get(2).getName());
-		
+
 		//sort by modified date descending
 		page = alertService.findAlertsByOwnerPaged(user1, 10, 0, null, "modifiedDate", "DESC");
 		assertEquals(alert1.getName(), page.get(0).getName());
 		assertEquals(alert3.getName(), page.get(1).getName());
 		assertEquals(alert2.getName(), page.get(2).getName());
-		
+
 		//invalid column
 		try {
 			page = alertService.findAlertsByOwnerPaged(user1, 10, 0, null, "invalidColumn", "DESC");
@@ -449,14 +570,12 @@ public class AlertServiceTest extends AbstractTest {
 		} catch (IllegalArgumentException ex){
 			assertNotNull(ex);
 		}
-	}	
+	}
 
 	@Test
 	public void testCountAlertsByOwner() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		String userName = createRandomName();
-		int alertsCount = random.nextInt(20) + 1;
+		String userName = TestUtils.createRandomName();
+		int alertsCount = TestUtils.random.nextInt(20) + 1;
 		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
 		user = userService.updateUser(user);
@@ -475,10 +594,8 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testCountAlertsByOwnerWithSearchText() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		String userName = createRandomName();
-		int alertsCount = random.nextInt(20) + 1;
+		String userName = TestUtils.createRandomName();
+		int alertsCount = TestUtils.random.nextInt(20) + 1;
 		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
 		user = userService.updateUser(user);
@@ -546,10 +663,8 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void findAllAlerts() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		String userName = createRandomName();
-		int alertsCount = random.nextInt(100) + 1;
+		String userName = TestUtils.createRandomName();
+		int alertsCount = TestUtils.random.nextInt(100) + 1;
 		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
 		user = userService.updateUser(user);
@@ -574,10 +689,8 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindAllAlertsMeta() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		String userName = createRandomName();
-		int alertsCount = random.nextInt(100) + 1;
+		String userName = TestUtils.createRandomName();
+		int alertsCount = TestUtils.random.nextInt(100) + 1;
 		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
 		user = userService.updateUser(user);
@@ -602,9 +715,7 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void findAlertsInRange() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		String userName = createRandomName();
+		String userName = TestUtils.createRandomName();
 		int alertsCount = 50;
 		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
@@ -633,9 +744,7 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void findAlertsModifiedAfterDate() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		String userName = createRandomName();
+		String userName = TestUtils.createRandomName();
 		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
 		user = userService.updateUser(user);
@@ -674,9 +783,7 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void findFullAlertObjectRetrieval() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		String userName = createRandomName();
+		String userName = TestUtils.createRandomName();
 
 		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
@@ -748,10 +855,8 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testAlertDelete() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user = userService.findAdminUser();
-		String alertName = createRandomName();
+		String alertName = TestUtils.createRandomName();
 		Alert expectedAlert = new Alert(user, user, alertName, EXPRESSION, "* * * * *");
 
 		expectedAlert = alertService.updateAlert(expectedAlert);
@@ -761,8 +866,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testDeletedTriggersInNotifications() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification1 = new Notification("notification1", alert, "notifier-name1", new ArrayList<String>(), 5000L);
 		Notification notification2 = new Notification("notification2", alert, "notifier-name2", new ArrayList<String>(), 5000L);
@@ -787,10 +890,8 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testAlertDeleteCreateAnotherAlertWithSameName() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user = userService.findAdminUser();
-		String alertName = createRandomName();
+		String alertName = TestUtils.createRandomName();
 		Alert alert = new Alert(user, user, alertName, EXPRESSION, "* * * * *");
 
 		alert = alertService.updateAlert(alert);
@@ -803,14 +904,11 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testAlertEnqueue() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		MQService mqService = system.getServiceFactory().getMQService();
 		PrincipalUser user = userService.findAdminUser();
 		List<Alert> actualAlertList = new ArrayList<>();
 
 		for (int i = 0; i < 5; i++) {
-			actualAlertList.add(alertService.updateAlert(new Alert(user, user, createRandomName(), EXPRESSION, "* * * * *")));
+			actualAlertList.add(alertService.updateAlert(new Alert(user, user, TestUtils.createRandomName(), EXPRESSION, "* * * * *")));
 		}
 		alertService.enqueueAlerts(actualAlertList);
 
@@ -821,8 +919,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testSharedAlertWhenOneSharedAlert() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 
 		alertService.updateAlert(new Alert(user1, user1, "alert-name1", EXPRESSION, "* * * * *"));
@@ -839,8 +935,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testSharedAlertWhenTwoSharedAlert() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
 
@@ -862,8 +956,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindSharedAlertsMeta() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
 
@@ -885,8 +977,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindSharedAlertsMetaPaged() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
 
@@ -927,8 +1017,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindSharedAlertsMetaPagedWithSearchText() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
 
@@ -979,12 +1067,10 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindSharedAlertsMetaPagedWithSorting() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
 		PrincipalUser user3 = userService.updateUser(new PrincipalUser(admin, "test3", "test3@salesforce.com"));
-		
+
 
 		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
 		try{
@@ -1068,13 +1154,13 @@ public class AlertServiceTest extends AbstractTest {
 		assertEquals(alert2.getName(), page.get(0).getName());
 		assertEquals(alert3.getName(), page.get(1).getName());
 		assertEquals(alert1.getName(), page.get(2).getName());
-		
+
 		//sort by modified date descending
 		page = alertService.findSharedAlertsPaged(10, 0, null, "modifiedDate", "DESC");
 		assertEquals(alert1.getName(), page.get(0).getName());
 		assertEquals(alert3.getName(), page.get(1).getName());
 		assertEquals(alert2.getName(), page.get(2).getName());
-		
+
 		//invalid column
 		try {
 			page = alertService.findSharedAlertsPaged(10, 0, null, "invalidColumn", "DESC");
@@ -1089,8 +1175,6 @@ public class AlertServiceTest extends AbstractTest {
 	}
 	@Test
 	public void testCountSharedAlertsMetaPaged() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
 
@@ -1112,8 +1196,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testCountSharedAlertsMetaPagedWithSearchText() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
 
@@ -1155,8 +1237,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindSharedAlertsByOwner() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
 
@@ -1197,8 +1277,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindSharedAlertsMetaByOwner() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
 
@@ -1239,8 +1317,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindPrivateAlertsPagedForNonPrivilegedUser() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 
 		// By default user is not privileged
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
@@ -1264,8 +1340,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testCountPrivateAlertsForNonPrivilegedUser() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 
 		// By default user is not privileged
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
@@ -1289,9 +1363,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindPrivateAlertsPagedForPrivilegedUser() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		ManagementService managementService = system.getServiceFactory().getManagementService();
 
 		// By default user is not privileged
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
@@ -1333,9 +1404,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindPrivateAlertsPagedForPrivilegedUserWithSearchText() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		ManagementService managementService = system.getServiceFactory().getManagementService();
 
 		// By default user is not privileged
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
@@ -1389,9 +1457,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testFindPrivateAlertsPagedForPrivilegedUserWithSorting() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		ManagementService managementService = system.getServiceFactory().getManagementService();
 
 		// By default user is not privileged
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
@@ -1412,7 +1477,7 @@ public class AlertServiceTest extends AbstractTest {
 			Thread.sleep(1000);
 		}catch(Exception e) {
 		}
-		
+
 		//Change modified date
 		alert1.setShared(false);
 		alertService.updateAlert(alert1);
@@ -1450,13 +1515,13 @@ public class AlertServiceTest extends AbstractTest {
 		assertEquals(alert2.getName(), page.get(0).getName());
 		assertEquals(alert3.getName(), page.get(1).getName());
 		assertEquals(alert1.getName(), page.get(2).getName());
-		
+
 		//sort by modified date descending
 		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, null, "modifiedDate", "DESC");
 		assertEquals(alert1.getName(), page.get(0).getName());
 		assertEquals(alert3.getName(), page.get(1).getName());
 		assertEquals(alert2.getName(), page.get(2).getName());
-		
+
 		//invalid column
 		try {
 			page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, null, "invalidColumn", "DESC");
@@ -1472,9 +1537,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testCountPrivateAlertsForPrivilegedUser() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		ManagementService managementService = system.getServiceFactory().getManagementService();
 
 		// By default user is not privileged
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
@@ -1499,9 +1561,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testCountPrivateAlertsForPrivilegedUserWithSearchText() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		ManagementService managementService = system.getServiceFactory().getManagementService();
 
 		// By default user is not privileged
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
@@ -1548,8 +1607,6 @@ public class AlertServiceTest extends AbstractTest {
 	@Test
 	public void testAlertSerDes() {
 
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", alert, "notifier-name", new ArrayList<String>(), 5000L);
 		notification.setArticleNumber("an");
@@ -1634,8 +1691,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testUpdateNotification() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 
 		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", expected, "notifier-name", new ArrayList<String>(), 5000L);
@@ -1665,7 +1720,7 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testAlertsCountContext() {
-		String userName = createRandomName();
+		String userName = TestUtils.createRandomName();
 		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
 		// Test count user alerts context
@@ -1712,8 +1767,6 @@ public class AlertServiceTest extends AbstractTest {
 
 	@Test
 	public void testTriggerInertiaSetting() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
 		ArrayList<String> expressionArray = new ArrayList<String> (Arrays.asList(
 				"ABOVE(-1d:scope:metric:avg:4h-avg, #0.5#, #avg#)",
 				"LIMIT( -21d:-1d:scope:metricA:avg:4h-avg, -1d:scope:metricB:avg:4h-avg,#1#)",

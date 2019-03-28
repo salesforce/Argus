@@ -28,11 +28,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
 import com.google.inject.Provider;
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
@@ -59,8 +58,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+
+
 @RunWith(org.mockito.runners.MockitoJUnitRunner.class)
-public class SchedulingServiceTest extends AbstractTest {
+public class SchedulingServiceTest {
     @Mock Provider<EntityManager> _emProviderMock;
     @Mock TSDBService _tsdbServiceMock;
     @Mock private MetricService _metricServiceMock;
@@ -70,6 +75,28 @@ public class SchedulingServiceTest extends AbstractTest {
     @Mock private AuditService _auditServiceMock;
 
     private EntityManager em;
+
+    static private UserService userService;
+    static private SystemMain system;
+    static private MQService mqService;
+
+
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+        userService = system.getServiceFactory().getUserService();
+        mqService = system.getServiceFactory().getMQService();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
 
     @Before
     public void setup() {
@@ -90,9 +117,6 @@ public class SchedulingServiceTest extends AbstractTest {
 
     @Test
     public void testAlertSchedulingWithGlobalInterlock() throws InterruptedException {
-        ServiceFactory serviceFactory = system.getServiceFactory();
-        MQService mqService = serviceFactory.getMQService();
-        UserService userService = serviceFactory.getUserService();
 
         // Alert service with mocked tsdb service
         DefaultAlertService alertServiceOriginal = new DefaultAlertService(system.getConfiguration(), mqService, _metricServiceMock, _auditServiceMock,
@@ -102,28 +126,32 @@ public class SchedulingServiceTest extends AbstractTest {
         DefaultAlertService alertService = Mockito.spy(alertServiceOriginal);
         doNothing().when(alertService).enqueueAlerts(any());
 
-        DefaultSchedulingService schedulingService = new DefaultSchedulingService(alertService, serviceFactory.getGlobalInterlockService(),
-                userService, serviceFactory.getServiceManagementService(), serviceFactory.getAuditService(), system.getConfiguration());
+        DefaultSchedulingService schedulingService = new DefaultSchedulingService(alertService,
+                                                                                  system.getServiceFactory().getGlobalInterlockService(),
+                                                                                  userService,
+                                                                                  system.getServiceFactory().getServiceManagementService(),
+                                                                                  system.getServiceFactory().getAuditService(),
+                                                                                  system.getConfiguration());
 
         schedulingService.enableScheduling();
 
         long schedulingIterations = 1;
-        int noOfAlerts = random.nextInt(2) + 9;
+        int noOfAlerts = TestUtils.random.nextInt(2) + 9;
         PrincipalUser user = userService.findAdminUser();
 
         for (int i = 0; i < noOfAlerts; i++) {
             String expression = "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, " +
                 "-1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
 
-            Alert alert = alertService.updateAlert(new Alert(user, user, createRandomName(), expression, "* * * * *"));
+            Alert alert = alertService.updateAlert(new Alert(user, user, TestUtils.createRandomName(), expression, "* * * * *"));
             alert.setEnabled(true);
-            
+
             Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 0, 0);
             alert.setTriggers(Arrays.asList(trigger));
     		Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
     				0);
     		alert.setNotifications(Arrays.asList(notification));
-            
+
             alertService.updateAlert(alert);
         }
         schedulingService.startAlertScheduling();

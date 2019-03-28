@@ -28,10 +28,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.PrincipalUser.Preference;
 import org.junit.Test;
@@ -42,12 +41,38 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
 
-public class UserServiceTest extends AbstractTest {
+
+import com.salesforce.dva.argus.system.SystemMain;
+
+import com.salesforce.dva.argus.TestUtils;
+
+public class UserServiceTest {
+
+    static private UserService userService;
+    static private SystemMain system;
+
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+        userService = system.getServiceFactory().getUserService();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
+
 
     @Test
     public void testUserCrud() {
-        UserService userService = system.getServiceFactory().getUserService();
         PrincipalUser user = new PrincipalUser(userService.findAdminUser(), "aUser", "aUser@mycompany.abc");
 
         user = userService.updateUser(user);
@@ -69,16 +94,14 @@ public class UserServiceTest extends AbstractTest {
 
     @Test
     public void testAdminUserExistence() {
-        UserService userService = system.getServiceFactory().getUserService();
         PrincipalUser admin = userService.findUserByUsername("admin");
 
         assertNotNull(admin);
         assertEquals(BigInteger.ONE, admin.getId());
     }
-    
+
     @Test
     public void testDefaultUserExistence() {
-        UserService userService = system.getServiceFactory().getUserService();
         PrincipalUser defaultUser = userService.findUserByUsername("default");
 
         assertNotNull(defaultUser);
@@ -87,7 +110,6 @@ public class UserServiceTest extends AbstractTest {
 
     @Test
     public void testUniqueUserCount() {
-        UserService userService = system.getServiceFactory().getUserService();
         long uniqueUserCount = userService.getUniqueUserCount();
 
         assertTrue("There should always be at least one user at system startup.", uniqueUserCount >= 1);

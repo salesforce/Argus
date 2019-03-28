@@ -28,15 +28,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.system;
 
-import com.salesforce.dva.argus.AbstractTest;
 import org.junit.Test;
+import java.util.Properties;
+import java.io.IOException;
+import java.io.InputStream;
 
 import static org.junit.Assert.*;
 
-public class SystemConfiguratorTest extends AbstractTest {
+public class SystemConfiguratorTest {
+
+    public SystemMain getInstance() {
+        Properties config = new Properties();
+        InputStream is = null;
+
+        try {
+            is = getClass().getResourceAsStream("/argus.properties");
+            config.load(is);
+        } catch (IOException ex) {
+            throw new SystemException(ex);
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException ex) {
+                    assert false : "This should never occur.";
+                }
+            }
+        }
+        return SystemMain.getInstance(config);
+    }
 
     @Test
     public void testLifecycle() {

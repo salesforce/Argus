@@ -3,7 +3,6 @@ package com.salesforce.dva.argus.service.collect;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.Metric;
@@ -23,6 +22,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.TestUtils;
+
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -40,9 +44,15 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
+import org.slf4j.LoggerFactory;
+
+
+import java.util.Properties;
+
 
 @RunWith(org.mockito.runners.MockitoJUnitRunner.class)
-public class DefaultCollectionServiceTest extends AbstractTest {
+public class DefaultCollectionServiceTest {
 
     @Mock MQService mqService;
     @Mock TSDBService tsdbService;
@@ -53,17 +63,31 @@ public class DefaultCollectionServiceTest extends AbstractTest {
     @Mock NamespaceService namespaceService;
     DefaultCollectionService collectionService;
     PrincipalUser user;
+    static private SystemConfiguration systemConfig;
 
     @Before
     public void setup() {
-        collectionService = new DefaultCollectionService(mqService, tsdbService, auditService, system.getConfiguration(), schemaService, wardenService, monitorService, namespaceService);
-        UserService userService = system.getServiceFactory().getUserService();
-        user = new PrincipalUser(userService.findAdminUser(), "aUser", "aUser@mycompany.abc");
+        ch.qos.logback.classic.Logger apacheLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache");
+        apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+        ch.qos.logback.classic.Logger myClassLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.salesforce.dva.argus.service.collect.DefaultCollectionService");
+        myClassLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+
+        Properties config = new Properties();
+        systemConfig = new SystemConfiguration(config);
+        collectionService = new DefaultCollectionService(mqService,
+                                                         tsdbService,
+                                                         auditService,
+                                                         systemConfig,
+                                                         schemaService,
+                                                         wardenService,
+                                                         monitorService,
+                                                         namespaceService);
+        user = mock(PrincipalUser.class);
         when(wardenService.isWardenServiceEnabled()).thenReturn(true);
     }
 
     Metric createMetricWithIncreasingResolution(long minResolution, int dpCount) {
-        Metric metric = createMetric();
+        Metric metric = TestUtils.createMetric();
         metric.clearDatapoints();
         long time = System.currentTimeMillis();
         Map<Long, Double> dps = new HashMap<>();
@@ -107,44 +131,44 @@ public class DefaultCollectionServiceTest extends AbstractTest {
 
     @Test
     public void testSubmitAnnotation() {
-        Annotation annotation = createAnnotation();
+        Annotation annotation = TestUtils.createAnnotation();
         collectionService.submitAnnotation(user, annotation);
         verify(monitorService).modifyCounter(MonitorService.Counter.ANNOTATION_WRITES, 1, null);
     }
-    
+
     @Test
     public void testSubmitHistogram() {
-        Histogram histogram = createHistogram(3);
+        Histogram histogram = TestUtils.createHistogram(3);
         collectionService.submitHistogram(user, histogram);
         verify(monitorService).modifyCounter(MonitorService.Counter.HISTOGRAM_WRITES, 1, null);
     }
 
     @Test
     public void testSubmitHistogramBucketsExceeded() {
-        Histogram histogram = createHistogram(101);
+        Histogram histogram = TestUtils.createHistogram(101);
         collectionService.submitHistogram(user, histogram);
         verify(monitorService).modifyCounter(MonitorService.Counter.HISTOGRAM_DROPPED, 1, null);
     }
-    
+
     @Test
     public void testSubmitHistogramBucketsEmpty() {
-        Histogram histogram = createHistogram(0);
+        Histogram histogram = TestUtils.createHistogram(0);
         collectionService.submitHistogram(user, histogram);
         verify(monitorService).modifyCounter(MonitorService.Counter.HISTOGRAM_DROPPED, 1, null);
     }
-    
+
     @Test
     public void testSubmitHistogramBucketsWrongBounds() {
-        Histogram histogram = createHistogramWrongBounds(2);
+        Histogram histogram = TestUtils.createHistogramWrongBounds(2);
         collectionService.submitHistogram(user, histogram);
         verify(monitorService).modifyCounter(MonitorService.Counter.HISTOGRAM_DROPPED, 1, null);
     }
-    
+
     @Test
     public void testCommitMetrics() {
         List<Serializable> messages = Arrays.asList(
-                new ArrayList<>(Arrays.asList(createMetric())),
-                new ArrayList<>(Arrays.asList(createMetric()))
+                new ArrayList<>(Arrays.asList(TestUtils.createMetric())),
+                new ArrayList<>(Arrays.asList(TestUtils.createMetric()))
         );
         when(mqService.dequeue(eq(MQService.MQQueue.METRIC.getQueueName()), any(CollectionType.class), anyInt(), anyInt())).thenReturn(messages);
         assertEquals(2, collectionService.commitMetrics(2, 60000).size());
@@ -153,8 +177,8 @@ public class DefaultCollectionServiceTest extends AbstractTest {
     @Test
     public void testCommitMetricSchema() {
         List<Serializable> messages = Arrays.asList(
-                new ArrayList<>(Arrays.asList(createMetric())),
-                new ArrayList<>(Arrays.asList(createMetric()))
+                new ArrayList<>(Arrays.asList(TestUtils.createMetric())),
+                new ArrayList<>(Arrays.asList(TestUtils.createMetric()))
         );
         when(mqService.dequeue(eq(MQService.MQQueue.METRIC.getQueueName()), any(CollectionType.class), anyInt(), anyInt())).thenReturn(messages);
         assertEquals(2, collectionService.commitMetricSchema(2, 60000));
@@ -162,21 +186,21 @@ public class DefaultCollectionServiceTest extends AbstractTest {
 
     @Test
     public void testCommitAnnotations() {
-        List<Annotation> messages = Arrays.asList(createAnnotation(), createAnnotation());
+        List<Annotation> messages = Arrays.asList(TestUtils.createAnnotation(), TestUtils.createAnnotation());
         when(mqService.dequeue(eq(MQService.MQQueue.ANNOTATION.getQueueName()), eq(Annotation.class), anyInt(), anyInt())).thenReturn(messages);
         assertEquals(2, collectionService.commitAnnotations(2, 60000));
     }
-    
+
     @Test
     public void testCommitHistograms() {
-        List<Histogram> messages = Arrays.asList(createHistogram(4), createHistogram(5));
+        List<Histogram> messages = Arrays.asList(TestUtils.createHistogram(4), TestUtils.createHistogram(5));
         when(mqService.dequeue(eq(MQService.MQQueue.HISTOGRAM.getQueueName()), eq(Histogram.class), anyInt(), anyInt())).thenReturn(messages);
         assertEquals(2, collectionService.commitHistograms(2, 60000));
     }
 
     @Test
     public void submitAnnotations_testAnnotationSizeLessThanMax() {
-        Annotation a = createAnnotation();
+        Annotation a = TestUtils.createAnnotation();
 
         // test
         collectionService.submitAnnotations(user, ImmutableList.of(a));
@@ -191,7 +215,7 @@ public class DefaultCollectionServiceTest extends AbstractTest {
 
     @Test
     public void submitAnnotations_testListContainingOneAnnotationSizeGreaterThanMax() {
-        Annotation a = createAnnotation();
+        Annotation a = TestUtils.createAnnotation();
         Annotation tooLargeAnnotation = createAnnotationWithSizeTooLarge();
 
         // test

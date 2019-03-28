@@ -36,7 +36,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.inject.Provider;
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
@@ -49,8 +48,14 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimes
 import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
 import org.powermock.reflect.Whitebox;
 
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+
+
 @RunWith(org.mockito.runners.MockitoJUnitRunner.class)
-public class DefaultAlertServiceTest extends AbstractTest {
+public class DefaultAlertServiceTest {
 
     private static final String EXPRESSION =
             "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
@@ -67,6 +72,22 @@ public class DefaultAlertServiceTest extends AbstractTest {
 
     private DefaultAlertService alertService;
     private EntityManager em;
+
+    static private SystemMain system;
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
 
     @Before
     public void setup() {
@@ -100,7 +121,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
         final AtomicInteger notificationCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
 
-        Metric metric = _createMetric(createRandomName(), createRandomName(), triggerMinValue, inertiaPeriod);
+        Metric metric = _createMetric(TestUtils.createRandomName(), TestUtils.createRandomName(), triggerMinValue, inertiaPeriod);
 
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
         _setAlertId(alert, "100001");
@@ -116,7 +137,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
         alert.setEnabled(true);
 
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
-                Arrays.asList(metric), alert, notification, false);
+        Arrays.asList(metric), alert, notification, false);
 
         spyAlertService.executeScheduledAlerts(1, 1000);
 
@@ -292,8 +313,6 @@ public class DefaultAlertServiceTest extends AbstractTest {
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
-        alert.setEnabled(true);
-
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(metric), alert, notification, false);
 
@@ -924,12 +943,12 @@ public class DefaultAlertServiceTest extends AbstractTest {
                 return null;
             }
         }).when(spyAlertService).sendNotification(any(Trigger.class),
-                any(Metric.class),
-                any(History.class),
-                any(Notification.class),
-                any(Alert.class),
-                anyLong(),
-                anyLong());
+                                                            any(Metric.class),
+                                                            any(History.class),
+                                                            any(Notification.class),
+                                                            any(Alert.class),
+                                                            anyLong(),
+                                                            anyLong());
 
         doAnswer(new Answer<Void>() {
 
@@ -939,11 +958,11 @@ public class DefaultAlertServiceTest extends AbstractTest {
                 return null;
             }
         }).when(spyAlertService).sendClearNotification(any(Trigger.class),
-                any(Metric.class),
-                any(History.class),
-                any(Notification.class),
-                any(Alert.class),
-                anyLong());
+                                                            any(Metric.class),
+                                                            any(History.class),
+                                                            any(Notification.class),
+                                                            any(Alert.class),
+                                                            anyLong());
 
         return spyAlertService;
     }
@@ -969,18 +988,18 @@ public class DefaultAlertServiceTest extends AbstractTest {
         Map<Long, Double> datapoints = new HashMap<>();
         int index = 0;
 
-        for (int j = 0; j <= random.nextInt(10); j++) {
-            datapoints.put(startTime + (++index * 60000L), (double)(random.nextInt(triggerMinValue)));
+        for (int j = 0; j <= TestUtils.random.nextInt(10); j++) {
+            datapoints.put(startTime + (++index * 60000L), (double)(TestUtils.random.nextInt(triggerMinValue)));
         }
         for (int j = 0; j <= inertiaPeriod; j++) {
-            datapoints.put(startTime + (++index * 60000L), (double)(triggerMinValue + random.nextInt(10)));
+            datapoints.put(startTime + (++index * 60000L), (double)(triggerMinValue + TestUtils.random.nextInt(10)));
         }
-        for (int j = 0; j <= random.nextInt(10); j++) {
-            datapoints.put(startTime + (++index * 60000L), (double)(random.nextInt(triggerMinValue)));
+        for (int j = 0; j <= TestUtils.random.nextInt(10); j++) {
+            datapoints.put(startTime + (++index * 60000L), (double)(TestUtils.random.nextInt(triggerMinValue)));
         }
         result.setDatapoints(datapoints);
-        result.setDisplayName(createRandomName());
-        result.setUnits(createRandomName());
+        result.setDisplayName(TestUtils.createRandomName());
+        result.setUnits(TestUtils.createRandomName());
         return result;
     }
 
@@ -1018,7 +1037,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
         Map<Long, String> result = new HashMap<Long, String>();
 
         for (int i = 0; i < size; i++) {
-            double dataPointValue = random.nextInt(value.intValue()) + (greaterThan ? (value + 2) : -1);
+            double dataPointValue = TestUtils.random.nextInt(value.intValue()) + (greaterThan ? (value + 2) : -1);
 
             result.put(startTime++, String.valueOf(dataPointValue));
         }

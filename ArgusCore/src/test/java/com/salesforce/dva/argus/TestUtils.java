@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus;
 
 import com.salesforce.dva.argus.entity.Annotation;
@@ -57,53 +57,120 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
+import java.security.SecureRandom;
+
 
 import static org.junit.Assert.fail;
 
-@Ignore
-public abstract class AbstractTest {
 
+public class TestUtils {
+
+    public static final SecureRandom random = new SecureRandom();
     private static final String scopeNameTemplate = "MetricGenerator.{0,number,#}";
     private static final String metricNameTemplate = "app_record_count.{0,number,#}";
-    protected static final SecureRandom random = new SecureRandom();
+
     protected static final Map<String, String> tags;
+    static private Properties props;
 
     static {
         tags = new HashMap<>();
         tags.put("source", "unittest");
-        ch.qos.logback.classic.Logger apacheLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache");
-        apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
-        ch.qos.logback.classic.Logger kafkaLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("kafka");
-        kafkaLogger.setLevel(ch.qos.logback.classic.Level.OFF);
-        ch.qos.logback.classic.Logger zkLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.I0Itec.zkclient");
-        zkLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+        props = new Properties();
+        props.put("system.property.mail.enabled", "false");
+        props.put("system.property.admin.email", "argus-admin@mycompany.com");
+        props.put("system.property.log.level", "ERROR");
+        props.put("service.binding.cache", "com.salesforce.dva.argus.service.cache.NoOperationCacheService");
+        props.put("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService");
+        props.put("service.binding.audit", "com.salesforce.dva.argus.service.audit.DefaultAuditService");
+        props.put("service.property.mq.connection.count", "2");
+        props.put("service.property.mq.endpoint", "vm://localhost?broker.persistent=false");
+        props.put("service.property.auth.ldap.authtype", "simple");
+        props.put("service.property.auth.ldap.endpoint", "ldaps://ldaps.mycomany.com:636");
+        props.put("service.property.auth.ldap.searchbase", "OU=active,OU=users,DC=mycompany,DC=com:OU=active,OU=robot,DC=mycompany,DC=com");
+        props.put("service.property.auth.ldap.searchdn", "CN=argus_service,OU=active,OU=users,DC=mycompany,DC=com");
+        props.put("service.property.auth.ldap.searchpwd", "argus_service_password");
+        props.put("service.property.auth.ldap.usernamefield", "sAMAccountName");
+        props.put("service.property.mail.alerturl.template", "https://localhost:8443/argus/#/alerts/$alertid$");
+        props.put("service.property.mail.metricurl.template", "https://localhost:8443/argus/#/viewmetrics?expression=$expression$");
+        props.put("service.property.mail.smtp.auth", "false");
+        props.put("service.property.mail.smtp.host", "smtprelay.mycompany.com");
+        props.put("service.property.mail.smtp.starttls.enable", "false");
+        props.put("service.property.tsdb.connection.count", "2");
+        props.put("service.property.tsdb.endpoint.read", "http://tsdbread.mycompany.com:4466");
+        props.put("service.property.tsdb.endpoint.timeout", "10000");
+        props.put("service.property.tsdb.endpoint.write", "http://tsdbwrite.mycompany.com:4477");
+        props.put("service.property.tsdb.phoenix.jdbc.url", "${service.property.tsdb.phoenix.jdbc.url}");
+        props.put("service.property.cache.redis.cluster", "redis0.mycompany.com:6379,redis1.mycompany.com:6389");
     }
 
-    protected TestingServer zkTestServer;
-    protected SystemMain system;
-    protected KafkaServerStartable kafkaServer;
-    private String tempDir = "";
-    
-    private static void deleteFolder(File folder) {
-        File[] files = folder.listFiles();
 
-        if (files != null) {
-            for (File f : files) {
-                if (f.isDirectory()) {
-                    deleteFolder(f);
-                } else {
-                    f.delete();
+
+
+    static public SystemMain getInstance() {
+        Properties config = new Properties();
+        InputStream is = null;
+
+        try {
+            is = TestUtils.class.getResourceAsStream("/argus.properties");
+            config.load(is);
+        } catch (IOException ex) {
+            throw new SystemException(ex);
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException ex) {
+                    assert false : "This should never occur.";
                 }
             }
         }
+        return SystemMain.getInstance(config);
+    }
+
+    static public SystemMain getInstanceWithInMemProps() {
+        long start = System.currentTimeMillis();
+        SystemMain system = SystemMain.getInstance(props);
+        long end = System.currentTimeMillis();
+        //        System.out.println("getInstanceWithInMemProps " + (end - start) + " milliseconds");
+        return system;
     }
 
     public static String createRandomName() {
-        String className = AbstractTest.class.getSimpleName();
+        return createRandomName(TestUtils.class.getSimpleName());
+    }
+
+    public static String createRandomName(String name) {
+        String className = name;
         Long randomTime = random.nextLong();
         Long systemTime = System.currentTimeMillis();
 
         return MessageFormat.format("{0}-{1}-{2}", className, Long.toHexString(systemTime), Long.toHexString(randomTime));
+    }
+
+    public static List<Metric> createRandomMetrics(String className, String scope, String metric, int count) {
+        List<Metric> result = new ArrayList<>(count);
+
+        scope = scope == null ? createRandomName(className) : scope;
+
+        String tag = createRandomName(className);
+
+        for (int i = 0; i < count; i++) {
+            String metricName = metric == null ? createRandomName(className) : metric;
+            Metric met = new Metric(scope, metricName);
+            int datapointCount = random.nextInt(25) + 1;
+            Map<Long, Double> datapoints = new HashMap<>();
+            long start = System.currentTimeMillis() - 60000L;
+
+            for (int j = 0; j < datapointCount; j++) {
+                datapoints.put(start - (j * 60000L), (double)(random.nextInt(100) + 1));
+            }
+            met.setDatapoints(datapoints);
+            met.setDisplayName(createRandomName(className));
+            met.setUnits(createRandomName(className));
+            met.setTag(tag, String.valueOf(i));
+            result.add(met);
+        }
+        return result;
     }
 
     public static Metric createMetric() {
@@ -123,32 +190,6 @@ public abstract class AbstractTest {
         }
         result.setDatapoints(datapoints);
         result.setTags(tags);
-        return result;
-    }
-    
-    public List<Metric> createRandomMetrics(String scope, String metric, int count) {
-        List<Metric> result = new ArrayList<>(count);
-
-        scope = scope == null ? createRandomName() : scope;
-
-        String tag = createRandomName();
-
-        for (int i = 0; i < count; i++) {
-            String metricName = metric == null ? createRandomName() : metric;
-            Metric met = new Metric(scope, metricName);
-            int datapointCount = random.nextInt(25) + 1;
-            Map<Long, Double> datapoints = new HashMap<>();
-            long start = System.currentTimeMillis() - 60000L;
-
-            for (int j = 0; j < datapointCount; j++) {
-                datapoints.put(start - (j * 60000L), (double)(random.nextInt(100) + 1));
-            }
-            met.setDatapoints(datapoints);
-            met.setDisplayName(createRandomName());
-            met.setUnits(createRandomName());
-            met.setTag(tag, String.valueOf(i));
-            result.add(met);
-        }
         return result;
     }
 
@@ -171,7 +212,7 @@ public abstract class AbstractTest {
         String metric = MessageFormat.format(metricNameTemplate, metricIndex);
         long timestamp = System.currentTimeMillis();
         Histogram result = new Histogram(scope, metric);
-        
+
         Map<HistogramBucket, Long> buckets = new HashMap<>();
         float lowerBound = 0;
         float upperBound = 50;
@@ -186,7 +227,7 @@ public abstract class AbstractTest {
         result.setTags(tags);
         return result;
     }
-    
+
     public static Histogram createHistogramWrongBounds(int numHistogramBuckets) {
         int scopeIndex = ((int) (random.nextDouble() * 100));
         int metricIndex = ((int) (random.nextDouble() * 10));
@@ -194,7 +235,7 @@ public abstract class AbstractTest {
         String metric = MessageFormat.format(metricNameTemplate, metricIndex);
         long timestamp = System.currentTimeMillis();
         Histogram result = new Histogram(scope, metric);
-        
+
         Map<HistogramBucket, Long> buckets = new HashMap<>();
         float lowerBound = 2;
         float upperBound = 1;
@@ -209,117 +250,5 @@ public abstract class AbstractTest {
         result.setTags(tags);
         return result;
     }
-    
-    protected void setupEmbeddedKafka() {
-        Properties properties = new Properties();
 
-        properties.put("zookeeper.connect", zkTestServer.getConnectString());
-        properties.put("host.name", "localhost");
-        properties.put("port", "9093");
-        properties.put("broker.id", "0");
-        properties.put("num.partitions", "2");
-        properties.put("log.flush.interval.ms", "10");
-        properties.put("log.dir", "/tmp/kafka-logs/" + createRandomName());
-        properties.put("offsets.topic.replication.factor", "1");
-
-        KafkaConfig config = new KafkaConfig(properties);
-
-        kafkaServer = new KafkaServerStartable(config);
-        kafkaServer.startup();
-    }
-
-    private void tearDownEmbeddedKafka() {
-        if (kafkaServer != null) {
-            kafkaServer.shutdown();
-            kafkaServer.awaitShutdown();
-            deleteFolder(new File(tempDir));
-        }
-    }
-
-    protected void setUpZkTestServer() {
-        try {
-            Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
-            DriverManager.getConnection("jdbc:derby:memory:argus;create=true").close();
-            zkTestServer = new TestingServer(2185);
-        } catch (Exception ex) {
-            LoggerFactory.getLogger(getClass()).error("Exception in setUp:{}", ex.getMessage());
-            fail("Exception during database startup.");
-        }
-    }
-
-    @Before
-    public void setUp() {
-        setUpZkTestServer();
-        setupEmbeddedKafka();
-        system = getInstance();
-        system.start();
-    }
-
-    @After
-    public void tearDown() {
-        if (system != null) {
-            system.getServiceFactory().getManagementService().cleanupRecords();
-            system.stop();
-        }
-        tearDownEmbeddedKafka();
-        try {
-            zkTestServer.close();
-            DriverManager.getConnection("jdbc:derby:memory:argus;shutdown=true").close();
-        } catch (SQLNonTransientConnectionException ex) {
-            if (ex.getErrorCode() >= 50000 || ex.getErrorCode() < 40000) {
-                throw new RuntimeException(ex);
-            }
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public SystemMain getInstance() {
-        Properties config = new Properties();
-        InputStream is = null;
-
-        try {
-            is = getClass().getResourceAsStream("/argus.properties");
-            config.load(is);
-        } catch (IOException ex) {
-            throw new SystemException(ex);
-        } finally {
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (IOException ex) {
-                    assert false : "This should never occur.";
-                }
-            }
-        }
-        return SystemMain.getInstance(config);
-    } 
-    
-    public SystemMain getInstance(Properties props) {
-        Properties config = new Properties();
-        InputStream is = null;
-
-        try {
-            is = getClass().getResourceAsStream("/argus.properties");
-            config.load(is);
-            config.putAll(props);
-        } catch (IOException ex) {
-            throw new SystemException(ex);
-        } finally {
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (IOException ex) {
-                    assert false : "This should never occur.";
-                }
-            }
-        }
-        if (system != null) {
-            system.stop();
-        }
-        system = SystemMain.getInstance(config);
-        system.start();
-        return system;
-    } 
 }
-/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -1,6 +1,6 @@
 package com.salesforce.dva.argus.service.alert.notifier;
 
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.AbstractTestIT;
 import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
@@ -25,7 +25,7 @@ import java.util.Properties;
 import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
-public class GusNotifierIT extends AbstractTest {
+public class GusNotifierIT extends AbstractTestIT {
     private GusNotifier notifier;
 
     @Override

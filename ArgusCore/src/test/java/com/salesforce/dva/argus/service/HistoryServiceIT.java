@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
 import static org.junit.Assert.assertEquals;
@@ -36,14 +36,14 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.AbstractTestIT;
 import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.History.JobStatus;
 
 @Category(IntegrationTest.class)
-public class HistoryServiceIT extends AbstractTest {
+public class HistoryServiceIT extends AbstractTestIT {
 
     private static final String expression = "-1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg";
 
@@ -60,7 +60,7 @@ public class HistoryServiceIT extends AbstractTest {
 
         History actual = historyService.createHistory(job, "test", JobStatus.SUCCESS, 0);
         expected.setCreationTime(actual.getCreationTime());
-        
+
         assertEquals(expected, actual);
     }
 
@@ -76,7 +76,7 @@ public class HistoryServiceIT extends AbstractTest {
         History expected = historyService.createHistory(job, "test", JobStatus.SUCCESS, 0);
 
         History actual = historyService.findByJob(job.getId(), 1).get(0);
-        
+
         assertEquals(expected, actual);
     }
 
@@ -90,12 +90,12 @@ public class HistoryServiceIT extends AbstractTest {
         job = alertService.updateAlert(job);
 
         History expected = historyService.createHistory(job, "test", JobStatus.SUCCESS, 0);
-        
+
         History actual = historyService.findByJobAndStatus(job.getId(), 1, JobStatus.SUCCESS).get(0);
 
         assertEquals(expected, actual);
         assertEquals(0, historyService.findByJobAndStatus(job.getId(), 1, JobStatus.FAILURE).size());
     }
-    
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

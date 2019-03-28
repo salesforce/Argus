@@ -1,6 +1,5 @@
 package com.salesforce.dva.argus.util;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
@@ -20,10 +19,32 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class TemplateReplacerTest extends AbstractTest {
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+
+
+public class TemplateReplacerTest {
 
     private static final String expression =
             "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
+
+    static private SystemMain system;
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
 
     @Test
     public void testTemplateNaming() {
@@ -115,7 +136,12 @@ public class TemplateReplacerTest extends AbstractTest {
     @Test
     public void testConditionalOutput() {
         UserService userService = system.getServiceFactory().getUserService();
-        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert_name", expression, "* * * * *");
+        String alertName = "alert_name-" + TestUtils.createRandomName();
+        Alert alert = new Alert(userService.findAdminUser(),
+                                userService.findAdminUser(),
+                                alertName,
+                                expression,
+                                "* * * * *");
         Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
         Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 7.1D,5);
 
