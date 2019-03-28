@@ -141,6 +141,7 @@ public abstract class DefaultJPAService extends DefaultService {
 		requireArgument(id != null && id.compareTo(ZERO) > 0, "ID must be positive and non-zero");
 		requireArgument(type != null, "The entity cannot be null.");
 
+		em.getEntityManagerFactory().getCache().evictAll();
 		return em.find(type, id);
 	}
 
@@ -159,6 +160,7 @@ public abstract class DefaultJPAService extends DefaultService {
 		requireArgument(type != null, "The entity cannot be null.");
 		requireArgument(limit == -1 || limit > 0, "Limit if not -1, must be greater than 0.");
 
+		em.getEntityManagerFactory().getCache().evictAll();
 		return JPAEntity.findEntitiesMarkedForDeletion(em, type, limit);
 	}
 }

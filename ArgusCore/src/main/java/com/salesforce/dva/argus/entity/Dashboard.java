@@ -220,6 +220,8 @@ public class Dashboard extends JPAEntity implements Serializable {
 
 		}
 		
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+
 		if(limit!= null){
 			query.setMaxResults(limit);
 		}
@@ -379,6 +381,8 @@ public class Dashboard extends JPAEntity implements Serializable {
 		List<Dashboard> dashboards = new ArrayList<>();
 		
 		TypedQuery<Tuple> query = em.createQuery(cq);
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		
 		if (limit != null) {
             query.setMaxResults(limit);
         }

@@ -49,6 +49,8 @@ import javax.persistence.Table;
 import javax.persistence.TypedQuery;
 import javax.persistence.Version;
 
+import org.eclipse.persistence.config.HintValues;
+import org.eclipse.persistence.config.QueryHints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,6 +126,7 @@ public class DistributedSchedulingLock {
 		requireArgument(em != null, "Entity manager can not be null.");
 		
 		TypedQuery<DistributedSchedulingLock> query = em.createNamedQuery("DistributedSchedulingLock.GetEntryById", DistributedSchedulingLock.class);
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
 		try {
 			query.setParameter("type", type);
 			return query.getSingleResult();
