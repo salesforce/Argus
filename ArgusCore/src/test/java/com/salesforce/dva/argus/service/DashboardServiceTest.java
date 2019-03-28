@@ -49,6 +49,12 @@ import org.junit.BeforeClass;
 import org.junit.AfterClass;
 import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.TestUtils;
+import java.sql.DriverManager;
+import java.sql.SQLNonTransientConnectionException;
+import org.slf4j.LoggerFactory;
+
+import static org.junit.Assert.fail;
+
 
 public class DashboardServiceTest {
 
@@ -57,6 +63,11 @@ public class DashboardServiceTest {
     UserService uService;
 
     private SystemMain system;
+
+    static {
+        ch.qos.logback.classic.Logger apacheLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache");
+        apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+    }
 
     @BeforeClass
     static public void setUpClass() {
@@ -68,6 +79,13 @@ public class DashboardServiceTest {
 
     @Before
     public void setUp() {
+        try {
+            Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
+            DriverManager.getConnection("jdbc:derby:memory:argus;create=true").close();
+        } catch (Exception ex) {
+            LoggerFactory.getLogger(getClass()).error("Exception in setUp:{}", ex.getMessage());
+            fail("Exception during database startup.");
+        }
         system = TestUtils.getInstance();
         system.start();
         dService = system.getServiceFactory().getDashboardService();
@@ -80,6 +98,15 @@ public class DashboardServiceTest {
         if (system != null) {
             system.getServiceFactory().getManagementService().cleanupRecords();
             system.stop();
+        }
+        try {
+            DriverManager.getConnection("jdbc:derby:memory:argus;shutdown=true").close();
+        } catch (SQLNonTransientConnectionException ex) {
+            if (ex.getErrorCode() >= 50000 || ex.getErrorCode() < 40000) {
+                throw new RuntimeException(ex);
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
         }
     }
 
