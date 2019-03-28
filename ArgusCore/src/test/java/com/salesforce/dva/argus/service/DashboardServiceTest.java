@@ -58,11 +58,11 @@ import static org.junit.Assert.fail;
 
 public class DashboardServiceTest {
 
-	private PrincipalUser admin;
-    DashboardService dService;
-    UserService uService;
+    static private PrincipalUser admin;
+    static DashboardService dService;
+    static UserService uService;
 
-    private SystemMain system;
+    static private SystemMain system;
 
     static {
         ch.qos.logback.classic.Logger apacheLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache");
