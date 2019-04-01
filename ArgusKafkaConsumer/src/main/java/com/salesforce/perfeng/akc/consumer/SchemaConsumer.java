@@ -39,7 +39,7 @@ class SchemaConsumer extends BaseMetricConsumer {
         this.schemaService = schemaService;
     }
 
-    void processAjnaMetricKafkaRecords(ConsumerRecords<byte[], byte[]> records, Map<String, Metric> argusMetrics, Map<String, Histogram> unused) {
+    void processAjnaMetricKafkaRecords(ConsumerRecords<byte[], byte[]> records, Map<String, Metric> argusMetrics, List<Histogram> unused) {
         records.forEach(record -> {
             //ajnaWireFromBytes() is not affected by the template class, i.e. Metric in this case
             AjnaWire ajnaWire = metricAvroDecoder.ajnaWireFromBytes(record.value());

@@ -42,7 +42,7 @@ class HistogramConsumer extends BaseConsumer {
         this.histogramAvroDecoder = new AjnaWireFormatDecoder<>();
     }
 
-    void processAjnaWireRecord(Map<String, Histogram> argusHistograms, AjnaWire ajnaWire, Map<String, String> dpTags) {
+    void processAjnaWireRecord(List<Histogram> argusHistograms, AjnaWire ajnaWire, Map<String, String> dpTags) {
         List<com.salesforce.mandm.ajna.Histogram> ajnaHistograms = extractAjnaHistograms(ajnaWire);
         if (ajnaHistograms == null) {
             instrumentationService.updateCounter(HISTOGRAM_DROPPED, 1, dpTags);
@@ -58,7 +58,7 @@ class HistogramConsumer extends BaseConsumer {
                 }
 
                 if (isHistogramSizeSafe(argusHistogram)) {
-                    argusHistograms.put(argusHistogram.getIdentifier(), argusHistogram);
+                    argusHistograms.add(argusHistogram);
                 } else {
                     dpTags.put(SchemaField.SERVICE,
                             resolveCharSequence(ajnaHistogram.getService(), NONE, cs -> replaceUnsupportedChars(cs.subSequence(0, Math.min(cs.length(), 50)).toString().toLowerCase())));

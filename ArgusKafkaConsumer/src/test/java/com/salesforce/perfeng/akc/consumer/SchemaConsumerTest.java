@@ -23,6 +23,7 @@ import org.powermock.core.classloader.annotations.SuppressStaticInitializationFo
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -98,7 +99,7 @@ public class SchemaConsumerTest {
                 null, Lists.newArrayList("metricName"), 1.0, System.currentTimeMillis(),  LatencyType.NORMAL);
         when(task.schemaConsumer.metricAvroDecoder.listFromAjnaWire(any(), any())).thenReturn(Lists.newArrayList(ajnaMetric));
 
-        Map<String, Histogram> argusHistograms = Maps.newHashMap();
+        List<Histogram> argusHistograms = Lists.newArrayList();
         Map<String, Metric> argusMetrics = Maps.newHashMap();
         ConsumerRecord<byte[], byte[]> record = new ConsumerRecord<>("topic", 1, 1, null, null);
         task.schemaConsumer.processAjnaMetricKafkaRecords(new ConsumerRecords<>(ImmutableMap.of(new TopicPartition("topic", 1),

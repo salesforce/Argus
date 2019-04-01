@@ -18,6 +18,7 @@ import org.powermock.core.classloader.annotations.SuppressStaticInitializationFo
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -88,18 +89,25 @@ public class HistogramConsumerTest {
         HistogramConsumer consumer = new HistogramConsumer(tsdbService, instrumentationService ,blacklistService);
         consumer.histogramAvroDecoder = PowerMockito.mock(AjnaWireFormatDecoder.class);
 
+        long timestamp = System.currentTimeMillis();
         Map<CharSequence, Long> ajnaBuckets = Maps.newHashMap();
         ajnaBuckets.put("10,20", 1L);
         ajnaBuckets.put("20,100", 50L);
-        com.salesforce.mandm.ajna.Histogram ajnaHistogram = new com.salesforce.mandm.ajna.Histogram("service", "subservice", 1, 1L, 1L,
+        com.salesforce.mandm.ajna.Histogram ajnaHistogram1 = new com.salesforce.mandm.ajna.Histogram("service", "subservice", 1, 1L, 1L,
                 ajnaBuckets, null,
-                Lists.newArrayList("metricName"), System.currentTimeMillis(), LatencyType.NORMAL);
+                Lists.newArrayList("metricName"), timestamp, LatencyType.NORMAL);
+        com.salesforce.mandm.ajna.Histogram ajnaHistogram2 = new com.salesforce.mandm.ajna.Histogram("service", "subservice", 1, 1L, 1L,
+                ajnaBuckets, null,
+                Lists.newArrayList("metricName"), timestamp+10000, LatencyType.NORMAL);
+        com.salesforce.mandm.ajna.Histogram ajnaHistogram3 = new com.salesforce.mandm.ajna.Histogram("service", "subservice", 1, 1L, 1L,
+                ajnaBuckets, null,
+                Lists.newArrayList("metricName"), timestamp+20000, LatencyType.NORMAL);
 
-        when(consumer.histogramAvroDecoder.listFromAjnaWire(any(), any())).thenReturn(Lists.newArrayList(ajnaHistogram));
+        when(consumer.histogramAvroDecoder.listFromAjnaWire(any(), any())).thenReturn(Lists.newArrayList(ajnaHistogram1, ajnaHistogram2, ajnaHistogram3));
 
-        Map<String, Histogram> results = Maps.newHashMap();
+        List<Histogram> results = Lists.newArrayList();
         consumer.processAjnaWireRecord(results, null, Maps.newHashMap());
-        assertEquals(1, results.size());
+        assertEquals(3, results.size());
     }
 
     @Test

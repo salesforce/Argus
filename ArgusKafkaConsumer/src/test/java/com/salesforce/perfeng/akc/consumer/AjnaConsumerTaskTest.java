@@ -747,7 +747,7 @@ public class AjnaConsumerTaskTest {
         Map<String, String> topicMap = new HashMap<>();
         topicMap.put("topic", prdTopicName);
         // function under test
-        metricTask.metricConsumer.processAjnaMetricKafkaRecords(consumerRecords, Maps.newHashMap(), Maps.newHashMap());
+        metricTask.metricConsumer.processAjnaMetricKafkaRecords(consumerRecords, Maps.newHashMap(), Lists.newArrayList());
         // verify if datapoints were consumed are updated
         verify(mockInstrumentationService, atLeast(1)).
             updateCounter(eq(InstrumentationService.DATAPOINTS_CONSUMED),

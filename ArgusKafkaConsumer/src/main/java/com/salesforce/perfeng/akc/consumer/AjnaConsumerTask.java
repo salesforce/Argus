@@ -45,7 +45,7 @@ public class AjnaConsumerTask implements AmurSinkTask<byte[], byte[]> {
     @Override
     public void handleBatch(ConsumerRecords<byte[], byte[]> records) {
         if (ConsumerType.METRICS.equals(consumerType) ){
-            metricConsumer.processAjnaMetricKafkaRecords(records, Maps.newHashMap(), Maps.newHashMap());
+            metricConsumer.processAjnaMetricKafkaRecords(records, Maps.newHashMap(), Lists.newArrayList());
         } else if (ConsumerType.SCHEMA.equals(consumerType)) {
             schemaConsumer.processAjnaMetricKafkaRecords(records, Maps.newHashMap(), null);
         } else if (ConsumerType.ANNOTATIONS.equals(consumerType)) {

@@ -24,6 +24,7 @@ import org.powermock.core.classloader.annotations.SuppressStaticInitializationFo
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -103,7 +104,7 @@ public class MetricConsumerTest {
                 Lists.newArrayList("metricName"), System.currentTimeMillis(),  LatencyType.NORMAL);
         when(task.metricConsumer.histogramConsumer.histogramAvroDecoder.listFromAjnaWire(any(), any())).thenReturn(Lists.newArrayList(ajnaHistogram));
 
-        Map<String, Histogram> argusHistograms = Maps.newHashMap();
+        List<Histogram> argusHistograms = Lists.newArrayList();
         Map<String, Metric> argusMetrics = Maps.newHashMap();
         ConsumerRecord<byte[], byte[]> record = new ConsumerRecord<>("topic", 1, 1, null, null);
         task.metricConsumer.processAjnaMetricKafkaRecords(new ConsumerRecords<>(ImmutableMap.of(new TopicPartition("topic", 1),
@@ -124,7 +125,7 @@ public class MetricConsumerTest {
         when(task.metricConsumer.metricAvroDecoder.listFromAjnaWire(any(), any())).thenReturn(Lists.newArrayList(ajnaMetric));
 
 
-        Map<String, Histogram> argusHistograms = Maps.newHashMap();
+        List<Histogram> argusHistograms = Lists.newArrayList();
         Map<String, Metric> argusMetrics = Maps.newHashMap();
         ConsumerRecord<byte[], byte[]> record = new ConsumerRecord<>("topic", 1, 1, null, null);
         task.metricConsumer.processAjnaMetricKafkaRecords(new ConsumerRecords<>(ImmutableMap.of(new TopicPartition("topic", 1),
@@ -148,7 +149,7 @@ public class MetricConsumerTest {
         when(task.metricConsumer.metricAvroDecoder.listFromAjnaWire(any(), any())).thenThrow(new RuntimeException("bad entity"));
 
 
-        Map<String, Histogram> argusHistograms = Maps.newHashMap();
+        List<Histogram> argusHistograms = Lists.newArrayList();
         Map<String, Metric> argusMetrics = Maps.newHashMap();
         ConsumerRecord<byte[], byte[]> record = new ConsumerRecord<>("topic", 1, 1, null, null);
         task.metricConsumer.processAjnaMetricKafkaRecords(new ConsumerRecords<>(ImmutableMap.of(new TopicPartition("topic", 1),
