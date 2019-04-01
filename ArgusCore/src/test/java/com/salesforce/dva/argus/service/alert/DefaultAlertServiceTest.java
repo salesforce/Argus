@@ -54,9 +54,7 @@ import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.TestUtils;
 
 
-@RunWith(org.mockito.runners.MockitoJUnitRunner.class)
 public class DefaultAlertServiceTest {
-
     private static final String EXPRESSION =
             "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
 
