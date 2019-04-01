@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
 import static org.junit.Assert.assertEquals;
@@ -44,7 +44,6 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.util.AlertUtils;
 import org.junit.Test;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
@@ -55,15 +54,42 @@ import com.salesforce.dva.argus.service.AlertService.SupportedNotifier;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
 
-public class NotifierTest extends AbstractTest {
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+
+
+public class NotifierTest {
 
     private static final String expression =
         "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
 
+    static private SystemMain system;
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
+
     @Test
     public void testDBNotifier() {
         UserService userService = system.getServiceFactory().getUserService();
-        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert_name", expression, "* * * * *");
+        String alertName = "alert_name-" + TestUtils.createRandomName();
+        Alert alert = new Alert(userService.findAdminUser(),
+                                userService.findAdminUser(),
+                                alertName,
+                                expression,
+                                "* * * * *");
         Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
         Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
 
@@ -75,7 +101,7 @@ public class NotifierTest extends AbstractTest {
 
         NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification,
                 1418319600000L, 0.0, new Metric("scope", "metric"), history);
-        int count = 1 + random.nextInt(5);
+        int count = 1 + TestUtils.random.nextInt(5);
 
         for (int i = 0; i < count; i++) {
             Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.DATABASE);

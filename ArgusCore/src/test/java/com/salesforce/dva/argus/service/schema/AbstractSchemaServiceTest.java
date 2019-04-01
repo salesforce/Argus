@@ -1,19 +1,30 @@
 package com.salesforce.dva.argus.service.schema;
 
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.TestUtils;
 import com.salesforce.dva.argus.entity.Metric;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.service.MonitorService;
+
 
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import java.util.Properties;
+
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import static org.mockito.Mockito.mock;
 
 
 /**
@@ -24,22 +35,34 @@ import static org.junit.Assert.assertTrue;
  * @author Bhinav Sura (bhinav.sura@salesforce.com)
  *
  */
-public class AbstractSchemaServiceTest extends AbstractTest {
+public class AbstractSchemaServiceTest {
 
 	private int scopesCreatedCount = 0;
 	private int metricsCreatedCount = 0;
 	private int scopesModifiedCount = 0;
 	private int metricsModifiedCount = 0;
 
+    private ElasticSearchSchemaService _esSchemaService;
+    private SystemConfiguration systemConfig;
+    private String myClassName = AbstractSchemaServiceTest.class.getSimpleName();
+
+
+    @Before
+    public void setUpClass() {
+        Properties config = new Properties();
+        systemConfig = new SystemConfiguration(config);
+        MonitorService mockedMonitor = mock(MonitorService.class);
+        ElasticSearchUtils mockedElasticSearchUtils = mock(ElasticSearchUtils.class);
+        _esSchemaService = new ElasticSearchSchemaService(systemConfig, mockedMonitor, mockedElasticSearchUtils);
+    }
+
 	@Test
 	public void testPutEverythingCached() {
-		List<Metric> metrics = createRandomMetrics("test-scope", "test-metric", 10);
+            List<Metric> metrics = TestUtils.createRandomMetrics(myClassName, "test-scope", "test-metric", 10);
 
-		metrics.addAll(createRandomMetrics(null, null, 10));
+		metrics.addAll(TestUtils.createRandomMetrics(myClassName, null, null, 10));
 
-		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
-
-		ElasticSearchSchemaService spyService = _initializeSpyService(service);
+		ElasticSearchSchemaService spyService = _initializeSpyService(_esSchemaService);
 
 		spyService.put(metrics);
 
@@ -65,10 +88,9 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 
 	@Test
 	public void testPutPartialCached() {
-		List<Metric> metrics = createRandomMetrics("test-scope", "test-metric", 10);
+		List<Metric> metrics = TestUtils.createRandomMetrics(myClassName, "test-scope", "test-metric", 10);
 
-		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
-		ElasticSearchSchemaService spyService = _initializeSpyService(service);
+		ElasticSearchSchemaService spyService = _initializeSpyService(_esSchemaService);
 
 		spyService.put(metrics);
 
@@ -82,7 +104,7 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 		assertEquals(metricsCreatedCount, metrics.size());
 		assertEquals(scopesCreatedCount, scopeNames.size());
 
-		List<Metric> newMetrics = createRandomMetrics(null, null, 10);
+		List<Metric> newMetrics = TestUtils.createRandomMetrics(myClassName, null, null, 10);
 
 		// 1st metric already in cache (partial case scenario), and now we call put with both list of metrics
 
@@ -105,11 +127,10 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 
 	@Test
 	public void testPutSameMetricWithDifferentTags() {
-		List<Metric> metrics = createRandomMetrics("test-scope", "test-metric", 1);
+		List<Metric> metrics = TestUtils.createRandomMetrics(myClassName, "test-scope", "test-metric", 1);
 		Metric metric = metrics.get(0);
 
-		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
-		ElasticSearchSchemaService spyService = _initializeSpyService(service);
+		ElasticSearchSchemaService spyService = _initializeSpyService(_esSchemaService);
 		Set<String> scopeNames = new HashSet<>();
 		scopeNames.add(metric.getScope());
 		spyService.put(metrics);
@@ -122,8 +143,8 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 		Map.Entry<String,String> originalTagEntry = metric.getTags().entrySet().iterator().next();
 		String originalTagKey = originalTagEntry.getKey();
 		String originalTagValue = originalTagEntry.getValue();
-		String randomTagKey = createRandomName();
-		String randomTagValue = createRandomName();
+		String randomTagKey = TestUtils.createRandomName(AbstractSchemaServiceTest.class.getSimpleName());
+		String randomTagValue = TestUtils.createRandomName(AbstractSchemaServiceTest.class.getSimpleName());
 
 		// New tagvalue for same scope:metric should update metric
 		initCounters();
@@ -155,12 +176,11 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 
 	@Test
 	public void testPutNothingCached() {
-		List<Metric> metrics = createRandomMetrics("test-scope", "test-metric", 10);
+		List<Metric> metrics = TestUtils.createRandomMetrics(myClassName, "test-scope", "test-metric", 10);
 
-		metrics.addAll(createRandomMetrics(null, null, 10));
+		metrics.addAll(TestUtils.createRandomMetrics(myClassName, null, null, 10));
 
-		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
-		ElasticSearchSchemaService spyService = _initializeSpyService(service);
+		ElasticSearchSchemaService spyService = _initializeSpyService(_esSchemaService);
 
 		// Make implementationSpecificPut specifically NOT add to the bloomfilters on a put
 		Mockito.doAnswer((Answer<Void>) invocation -> {
@@ -244,13 +264,11 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 
 	@Test
 	public void testNumHoursUntilNextFlushBloomFilter() {
-		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
-
 		Calendar calendar = Calendar.getInstance();
 
 		// Will wait 24 hours before next flush if at same hour boundary
 		int hour = calendar.get(Calendar.HOUR_OF_DAY);
-		int secondsUntil = service.getNumSecondsUntilTargetHour(hour);
+		int secondsUntil = _esSchemaService.getNumSecondsUntilTargetHour(hour);
 		System.out.println(secondsUntil);
 		assertTrue(secondsUntil >= 23 * 60 * 60 && secondsUntil <= 24 * 60 * 60);
 	}

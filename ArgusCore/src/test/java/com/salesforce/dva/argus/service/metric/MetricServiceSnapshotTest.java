@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Provider;
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.TSDBEntity;
 import com.salesforce.dva.argus.service.DiscoveryService;
@@ -30,17 +29,36 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
-public class MetricServiceSnapshotTest extends AbstractTest {
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+
+public class MetricServiceSnapshotTest {
     final String RELATIVE_TO_TIMESTAMP_KEY = "RELATIVE_TO_TIMESTAMP_KEY";
     ObjectMapper mapper = new ObjectMapper();
     DefaultMetricService metricService;
     DiscoveryService discoveryService;
     TSDBService tsdbService;
 
+    static private SystemMain system;
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
+
     @Before
-    @Override
     public void setUp() {
-        super.setUp();
         discoveryService = spy(system.getServiceFactory().getDiscoveryService());
         tsdbService = spy(system.getServiceFactory().getTSDBService());
         MetricQueryProcessor processor = new MetricQueryProcessor(

@@ -28,10 +28,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Namespace;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.system.SystemException;
@@ -44,83 +43,100 @@ import java.math.BigInteger;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class NamespaceServiceTest extends AbstractTest {
-	
-	private PrincipalUser _admin;
-    private NamespaceService _namespaceService;
-    private UserService _userService;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
 
-    @Before
-    public void setupNamespaceServiceTest() {
-        _namespaceService = system.getServiceFactory().getNamespaceService();
-        _userService = system.getServiceFactory().getUserService();
-        _admin = system.getServiceFactory().getUserService().findAdminUser();
+
+public class NamespaceServiceTest {
+
+    static private SystemMain system;
+    static private UserService userService;
+    static private PrincipalUser admin;
+    static private NamespaceService namespaceService;
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+        namespaceService = system.getServiceFactory().getNamespaceService();
+        userService = system.getServiceFactory().getUserService();
+        admin = system.getServiceFactory().getUserService().findAdminUser();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
     }
 
     @Test
     public void testCreateNamespace() {
-        PrincipalUser user = _userService.findAdminUser();
-        Namespace namespace = new Namespace("namespace", user);
+        PrincipalUser user = userService.findAdminUser();
+        Namespace namespace = new Namespace("namespace1", user);
 
-        namespace = _namespaceService.createNamespace(namespace);
+        namespace = namespaceService.createNamespace(namespace);
         assertTrue(namespace.getId() != null && namespace.getId().compareTo(BigInteger.ZERO) > 0);
     }
 
     @Test(expected = SystemException.class)
     public void testNamespaceUnique() {
-        PrincipalUser user = _userService.findAdminUser();
-        Namespace namespace = new Namespace("namespace", user);
+        PrincipalUser user = userService.findAdminUser();
+        Namespace namespace = new Namespace("namespace2", user);
 
-        _namespaceService.createNamespace(namespace);
-        _namespaceService.createNamespace(namespace);
+        namespaceService.createNamespace(namespace);
+        namespaceService.createNamespace(namespace);
     }
 
     @Test
     public void testFindNamespaceByPrimaryKey() {
-        PrincipalUser user = _userService.findAdminUser();
-        Namespace namespace = new Namespace("namespace", user);
+        PrincipalUser user = userService.findAdminUser();
+        Namespace namespace = new Namespace("namespace3", user);
 
-        namespace = _namespaceService.createNamespace(namespace);
+        namespace = namespaceService.createNamespace(namespace);
 
-        Namespace retrievedNamespace = _namespaceService.findNamespaceByPrimaryKey(namespace.getId());
+        Namespace retrievedNamespace = namespaceService.findNamespaceByPrimaryKey(namespace.getId());
 
         assertTrue(namespace.equals(retrievedNamespace));
     }
 
     @Test
     public void testAddAdditionalUsersToNamespace() {
-        PrincipalUser user = _userService.findAdminUser();
-        PrincipalUser user1 = new PrincipalUser(_admin, "abc", "abc@xyz.com");
-        Namespace namespace = new Namespace("namespace", user);
+        PrincipalUser user = userService.findAdminUser();
+        PrincipalUser user1 = new PrincipalUser(admin, "abc1", "abc1@xyz.com");
+        Namespace namespace = new Namespace("namespace4", user);
 
-        namespace = _namespaceService.createNamespace(namespace);
+        namespace = namespaceService.createNamespace(namespace);
         namespace.getUsers().add(user1);
-        namespace = _namespaceService.updateNamespace(namespace);
+        namespace = namespaceService.updateNamespace(namespace);
         assertTrue(namespace.getUsers().size() == 2);
     }
 
     @Test
     public void testUserIsPermitted() {
-        PrincipalUser user = _userService.findAdminUser();
-        PrincipalUser user1 = new PrincipalUser(_admin, "abc", "abc@xyz.com");
-        Namespace namespace = new Namespace("namespace", user);
+        PrincipalUser user = userService.findAdminUser();
+        PrincipalUser user1 = new PrincipalUser(admin, "abc2", "abc2@xyz.com");
+        Namespace namespace = new Namespace("namespace5", user);
 
-        namespace = _namespaceService.createNamespace(namespace);
-        assertTrue(_namespaceService.isPermitted(namespace.getQualifier(), user));
-        assertFalse(_namespaceService.isPermitted(namespace.getQualifier(), user1));
+        namespace = namespaceService.createNamespace(namespace);
+        assertTrue(namespaceService.isPermitted(namespace.getQualifier(), user));
+        assertFalse(namespaceService.isPermitted(namespace.getQualifier(), user1));
     }
 
     @Test
     public void testAdditionalUserIsPermitted() {
-        PrincipalUser user = _userService.findAdminUser();
-        PrincipalUser user1 = new PrincipalUser(_admin, "abc", "abc@xyz.com");
-        Namespace namespace = new Namespace("namespace", user);
+        PrincipalUser user = userService.findAdminUser();
+        PrincipalUser user1 = new PrincipalUser(admin, "abc3", "abc3@xyz.com");
+        Namespace namespace = new Namespace("namespace6", user);
 
-        namespace = _namespaceService.createNamespace(namespace);
+        namespace = namespaceService.createNamespace(namespace);
         namespace.getUsers().add(user1);
-        namespace = _namespaceService.updateNamespace(namespace);
-        assertTrue(_namespaceService.isPermitted(namespace.getQualifier(), user));
-        assertTrue(_namespaceService.isPermitted(namespace.getQualifier(), user1));
+        namespace = namespaceService.updateNamespace(namespace);
+        assertTrue(namespaceService.isPermitted(namespace.getQualifier(), user));
+        assertTrue(namespaceService.isPermitted(namespace.getQualifier(), user1));
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

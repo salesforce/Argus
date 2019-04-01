@@ -6,14 +6,16 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.MetatagsRecord;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.StringEntity;
@@ -26,6 +28,12 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.mockito.Mock;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import java.util.Properties;
+
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -37,6 +45,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.io.IOException;
+import java.io.InputStream;
+
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -52,7 +63,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class ElasticSearchSchemaServiceTest extends AbstractTest {
+public class ElasticSearchSchemaServiceTest {
 
     private RestClient restClient;
 
@@ -347,6 +358,23 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
             "  }",
             "}");
 
+    static private ElasticSearchSchemaService _esSchemaService;
+    static private SystemConfiguration systemConfig;
+
+    @BeforeClass
+    public static void setUpClass() {
+        Properties config = new Properties();
+        systemConfig = new SystemConfiguration(config);
+        MonitorService mockedMonitor = mock(MonitorService.class);
+        ElasticSearchUtils mockedElasticSearchUtils = mock(ElasticSearchUtils.class);
+        _esSchemaService = new ElasticSearchSchemaService(systemConfig, mockedMonitor, mockedElasticSearchUtils);
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+    }
+
+
     @Test
     public void testPutCreateUsingMetatagsIndex() throws IOException {
 
@@ -361,11 +389,6 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
         myMetric.setMetatagsRecord(metatags);
         metrics.add(myMetric);
 
-        MonitorService mockedMonitor = mock(MonitorService.class);
-        ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), mockedMonitor);
-
-        ElasticSearchSchemaService spyService = _initializeSpyService(service, createSucessReply, createSucessReply);
-
         Set<MetatagsRecord> records = new HashSet<>();
 
         for(Metric m : metrics) {
@@ -373,21 +396,13 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
             records.add(msr);
         }
 
-        spyService.upsertMetatags(records);
-
-        ArgumentCaptor<String> requestUrlCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<StringEntity> createJsonCaptor = ArgumentCaptor.forClass(StringEntity.class);
-
-        verify(restClient, times(1)).performRequest(any(), requestUrlCaptor.capture(), any(), createJsonCaptor.capture());
-
-        String requestUrl = requestUrlCaptor.getValue();
-        String createJson = EntityUtils.toString(createJsonCaptor.getValue());
+        Pair<MetatagsSchemaRecordList, String> retPair = _esSchemaService.getListAndBodyForUpsertMetatags(records);
+        String createJson = retPair.getValue();
 
         assertTrue(createJson.contains("create"));
         assertFalse(createJson.contains("update"));
         assertTrue(createJson.contains("cts"));
         assertTrue(createJson.contains("mts"));
-        assertEquals("/metatags/metatags_type/_bulk", requestUrl);
     }
 
 
@@ -405,9 +420,8 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
         SchemaService.RecordType scopeType = SchemaService.RecordType.SCOPE;
 
         MonitorService mockedMonitor = mock(MonitorService.class);
-        ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), mockedMonitor);
 
-        ElasticSearchSchemaService spyService = _initializeSpyService(service, getReply, getReply);
+        ElasticSearchSchemaService spyService = _initializeSpyService(_esSchemaService, getReply, getReply);
 
         spyService.getUnique(queryForScope, scopeType);
 
@@ -439,10 +453,8 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 
         SchemaService.RecordType scopeType = SchemaService.RecordType.TAGV;
 
-        MonitorService mockedMonitor = mock(MonitorService.class);
-        ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), mockedMonitor);
 
-        ElasticSearchSchemaService spyService = _initializeSpyService(service, getReply, getReply);
+        ElasticSearchSchemaService spyService = _initializeSpyService(_esSchemaService, getReply, getReply);
 
         spyService.getUnique(queryForMetric, scopeType);
 
@@ -474,9 +486,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 
         SchemaService.RecordType scopeType = SchemaService.RecordType.NAMESPACE;
 
-        MonitorService mockedMonitor = mock(MonitorService.class);
-        ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), mockedMonitor);
-        ElasticSearchSchemaService spyService = _initializeSpyService(service, getReply, getReply);
+        ElasticSearchSchemaService spyService = _initializeSpyService(_esSchemaService, getReply, getReply);
 
         spyService.getUnique(queryForMetric, scopeType);
 
@@ -535,9 +545,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 				"    }" +
 				"  ]" +
 				"}");
-        MonitorService mockedMonitor = mock(MonitorService.class);
-		ElasticSearchSchemaService schemaService = new ElasticSearchSchemaService(system.getConfiguration(), mockedMonitor);
-		ElasticSearchSchemaService spySchemaService = spy(schemaService);
+		ElasticSearchSchemaService spySchemaService = spy(_esSchemaService);
 		RestClient _restClient = mock(RestClient.class);
 		doReturn(null).when(_restClient).performRequest(any(), any(), any(),any());
 		spySchemaService.setRestClient(_restClient);
@@ -591,9 +599,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 				"    }" +
 				"  ]" +
 				"}");
-        MonitorService mockedMonitor = mock(MonitorService.class);
-		ElasticSearchSchemaService schemaService = new ElasticSearchSchemaService(system.getConfiguration(), mockedMonitor);
-		ElasticSearchSchemaService spySchemaService = spy(schemaService);
+		ElasticSearchSchemaService spySchemaService = spy(_esSchemaService);
 		RestClient _restClient = mock(RestClient.class);
 		doReturn(null).when(_restClient).performRequest(any(), any(), any(),any());
 		spySchemaService.setRestClient(_restClient);
@@ -654,9 +660,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 				"    }" +
 				"  ]" +
 				"}");
-        MonitorService mockedMonitor = mock(MonitorService.class);
-		ElasticSearchSchemaService schemaService = new ElasticSearchSchemaService(system.getConfiguration(), mockedMonitor);
-		ElasticSearchSchemaService spySchemaService = spy(schemaService);
+		ElasticSearchSchemaService spySchemaService = spy(_esSchemaService);
 		RestClient _restClient = mock(RestClient.class);
 		doReturn(null).when(_restClient).performRequest(any(), any(), any(),any());
 		spySchemaService.setRestClient(_restClient);
@@ -701,7 +705,10 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
         };
         doAnswer(requestAnswer).when(customClient).performRequest(anyString(), anyString(), anyMap(), any(HttpEntity.class));
 
-        ElasticSearchSchemaService schemaService = spy(new ElasticSearchSchemaService(system.getConfiguration(), mock(MonitorService.class)));
+        ElasticSearchUtils mockedElasticSearchUtils = mock(ElasticSearchUtils.class);
+        ElasticSearchSchemaService schemaService = spy(new ElasticSearchSchemaService(systemConfig,
+                                                                                      mock(MonitorService.class),
+                                                                                      mockedElasticSearchUtils));
         schemaService.setRestClient(customClient);
 
         doReturn("{\"hits\":{\"total\": 0, \"max_score\": null, \"hits\": []}}").when(schemaService).extractResponse(any());

@@ -6,11 +6,10 @@ import java.util.List;
 
 import org.junit.Test;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory.Function;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 
-public class QueryUtilsTest extends AbstractTest {
+public class QueryUtilsTest {
 
     @Test
     public void testGetQueryContextWithSingleExpression() {
@@ -149,7 +148,7 @@ public class QueryUtilsTest extends AbstractTest {
         assertEquals(expression2.getStartTimestamp(),new Long(((relativeTo - 3600*1000)/1000)*1000));
         assertEquals(expression2.getEndTimestamp(),new Long(relativeTo));
     }
-    
+
     @Test
     public void testGetQueryWithNestedTransformWithDivide2() {
         long relativeTo = System.currentTimeMillis();
@@ -213,7 +212,7 @@ public class QueryUtilsTest extends AbstractTest {
         assertEquals(context.getChildContexts().size(),0);
         assertNull(context.getExpression());
     }
-    
+
     @Test
     public void testThreeLevelsNestedTransform() {
         long relativeTo = System.currentTimeMillis();
@@ -230,13 +229,13 @@ public class QueryUtilsTest extends AbstractTest {
         assertEquals(context1.getConstants().get(0), "1m-avg");
         assertEquals(context1.getChildContexts().size(),1);
         assertNull(context1.getExpression());
-        
+
         QueryContext context2 = context1.getChildContexts().get(0);
         assertEquals(context2.getTransform(), Function.UNION);
         assertEquals(context2.getConstants().size(), 0);
         assertEquals(context2.getChildContexts().size(),2);
         assertNull(context2.getExpression());
-        
+
         TSDBQueryExpression expression = context2.getChildContexts().get(0).getExpression();
         assertEquals(expression.getScope(), "argus.core");
         assertEquals(expression.getMetric(), "alerts.scheduled");
@@ -256,21 +255,21 @@ public class QueryUtilsTest extends AbstractTest {
         assertEquals(expression1.getStartTimestamp(),new Long(((relativeTo - 3600*1000)/1000)*1000));
         assertEquals(expression1.getEndTimestamp(),new Long(relativeTo));
     }
-    
+
     @Test
     public void testGetScopesFromExpression() {
         List<String> scopes = QueryUtils.getScopesFromExpression("SUM(DOWNSAMPLE(UNION(-1h:argus.core:alerts.scheduled:zimsum:1m-sum,-1h:argus.core:alerts.evaluated:zimsum:1m-sum),#1m-avg#),#union#)");
         assertEquals(scopes.size(),1);
         assertEquals(scopes.get(0),"argus.core");
-        
+
         scopes = QueryUtils.getScopesFromExpression("FILL(#-1d#,#-0d#,#4h#,#0m#,#100#)");
         assertEquals(scopes.size(),0);
-        
+
         scopes = QueryUtils.getScopesFromExpression("DIVIDE(SUM(-1h:argus.core1:alerts.scheduled:zimsum:1m-sum, -1h:argus.core2:alerts.evaluated:zimsum:1m-sum), -1h:argus.core3:alerts.scheduled:zimsum:1m-sum)");
         assertEquals(scopes.size(),3);
-        assertTrue(scopes.contains(new String("argus.core1"))); 
-        assertTrue(scopes.contains(new String("argus.core2")));     
-        assertTrue(scopes.contains(new String("argus.core3")));  
+        assertTrue(scopes.contains(new String("argus.core1")));
+        assertTrue(scopes.contains(new String("argus.core2")));
+        assertTrue(scopes.contains(new String("argus.core3")));
     }
 
     @Test

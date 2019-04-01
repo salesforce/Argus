@@ -776,7 +776,7 @@ public class AlertResources extends AbstractResource {
 			PrincipalUser requestedUser = getRemoteUser(req);
 			Alert clonedAlert = new Alert(requestedUser, requestedUser, newAlertName, oldAlert.getExpression(), oldAlert.getCronEntry());
 
-			List<Trigger> clonedTriggers = new ArrayList<>();
+			Set<Trigger> clonedTriggers = new HashSet<>();
 			List<Notification> clonedNotifications = new ArrayList<>();
 			Map<BigInteger, Trigger> triggersCreatedMapById = new HashMap<>();
 
@@ -807,9 +807,19 @@ public class AlertResources extends AbstractResource {
 				currentNotificationCloned.setTriggers(triggersInCurrentNotification);
 			}
 
+			/*
+			 * Triggers with no notifications attached
+			 * */
+			for(Trigger currentTrigger: oldAlert.getTriggers()) {
+				Trigger currentTriggerCloned = new Trigger(clonedAlert, currentTrigger.getType(), currentTrigger.getName(), currentTrigger.getThreshold(), currentTrigger.getSecondaryThreshold(), currentTrigger.getInertia());
+				clonedTriggers.add(currentTriggerCloned);
+				copyProperties(currentTriggerCloned, currentTrigger);
+				currentTriggerCloned.setAlert(clonedAlert);
+			}
+
 			clonedAlert.setMissingDataNotificationEnabled(oldAlert.isMissingDataNotificationEnabled());
 			clonedAlert.setShared(oldAlert.isShared());
-			clonedAlert.setTriggers(clonedTriggers);
+			clonedAlert.setTriggers(new ArrayList<>(clonedTriggers));
 			clonedAlert.setNotifications(clonedNotifications);
 			clonedAlert.setModifiedBy(getRemoteUser(req));
 			clonedAlert.setEnabled(oldAlert.isEnabled()); // This should be last

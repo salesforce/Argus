@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
 import static org.junit.Assert.assertFalse;
@@ -42,7 +42,7 @@ import com.salesforce.dva.argus.entity.History;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.AbstractTestIT;
 import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Annotation;
@@ -58,7 +58,7 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationCo
 import static org.junit.Assert.fail;
 
 @Category(IntegrationTest.class)
-public class NotifierIT extends AbstractTest {
+public class NotifierIT extends AbstractTestIT {
 
     private static final String expression =
         "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";

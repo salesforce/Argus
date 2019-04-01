@@ -37,29 +37,38 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.sql.Date;
 import java.text.MessageFormat;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import javax.persistence.EntityManager;
-
-import com.salesforce.dva.argus.entity.*;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
+import javax.print.attribute.standard.Severity;
 
 import com.google.gson.Gson;
+import com.google.inject.Singleton;
+import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.History;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.service.MonitorService;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
+import com.salesforce.dva.argus.service.alert.notifier.GusTransport.GetAuthenticationTokenFailureException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.util.AlertUtils;
@@ -70,13 +79,13 @@ import com.salesforce.dva.argus.util.TemplateReplacer;
  *
  * @author  Fiaz Hossain (fiaz.hossain@salesforce.com)
  */
+@Singleton
 public class GOCNotifier extends AuditNotifier {
 
-	//~ Instance fields ******************************************************************************************************************************
-
-	@SLF4JTypeListener.InjectLogger
-	private Logger _logger;
-
+	private static final Logger _logger = LoggerFactory.getLogger(GOCNotifier.class);
+	private static final int MAX_ATTEMPTS_GOC_POST = 3;
+	private final MonitorService monitorService;
+	private volatile GusTransport gusTransport = null;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -91,29 +100,13 @@ public class GOCNotifier extends AuditNotifier {
 	 */
 	@Inject
 	public GOCNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
-					   SystemConfiguration config, Provider<EntityManager> emf) {
+					   SystemConfiguration config, Provider<EntityManager> emf, MonitorService monitorService) {
 		super(metricService, annotationService, auditService, config, emf);
 		requireArgument(config != null, "The configuration cannot be null.");
+		this.monitorService = monitorService;
 	}
 
 	//~ Methods **************************************************************************************************************************************
-
-	private PostMethod getRequestMethod(boolean refresh, String id) throws UnsupportedEncodingException {
-		GOCTransport gocTransport = new GOCTransport();
-		EndpointInfo endpointInfo = gocTransport.getEndpointInfo(_config, _logger, refresh);
-
-		// Create upsert URI with PATCH method
-		PostMethod post = new PostMethod(String.format("%s/services/data/v25.0/sobjects/SM_Alert__c/%s/%s", endpointInfo.getEndPoint(),
-				urlEncode(GOCData.SM_ALERT_ID__C_FIELD), urlEncode(id))) {
-
-			@Override
-			public String getName() {
-				return "PATCH";
-			}
-		};
-		post.setRequestHeader("Authorization", "Bearer " + endpointInfo.getToken());
-		return post;
-	}
 
 	/**
 	 * Sends an GOC++ message.
@@ -131,10 +124,13 @@ public class GOCNotifier extends AuditNotifier {
      * @return true if succeed, false if fail
 	 */
 	private boolean sendMessage(History history, Severity severity, String className, String elementName, String eventName, String message,
-							int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric, String productTag, String articleNumber) {
+								int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric, String productTag, String articleNumber) {
     	requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
 		requireArgument(eventName != null && !eventName.isEmpty(), "EventName cannot be null or empty.");
+
+		boolean result = false;
 		String failureMsg = null;
+		int retries = 0;
 
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GOC_ENABLED))) {
 			try {
@@ -162,16 +158,22 @@ public class GOCNotifier extends AuditNotifier {
 
 				GOCData gocData = builder.build();
 				boolean refresh = false;
-				GOCTransport gocTransport = new GOCTransport();
-				HttpClient httpclient = gocTransport.getHttpClient(_config);
+				HttpClient httpclient = getGusTransportInstance().getHttpClient();
 
-
-				for (int i = 0; i < 1; i++) {
+				for (int i = 0; i < MAX_ATTEMPTS_GOC_POST; i++) {
+					retries = i;
 
 					PostMethod post = null;
 
 					try {
-						post=getRequestMethod(refresh, triggeredOnMetric.hashCode() + " " + gocData.getsm_Alert_Id__c());
+						GusTransport.EndpointInfo endpointInfo = getGusTransportInstance().getEndpointInfo(refresh);
+						// Create upsert URI with PATCH method
+						post = new PatchMethod(
+								String.format("%s/services/data/v25.0/sobjects/SM_Alert__c/%s/%s",
+										endpointInfo.getEndPoint(),
+										urlEncode(GOCData.SM_ALERT_ID__C_FIELD),
+										urlEncode(triggeredOnMetric.hashCode() + " " + gocData.getsm_Alert_Id__c())));
+						post.setRequestHeader("Authorization", "Bearer " + endpointInfo.getToken());
 						post.setRequestEntity(new StringRequestEntity(gocData.toJSON(), "application/json", null));
 
 						int respCode = httpclient.executeMethod(post);
@@ -182,29 +184,54 @@ public class GOCNotifier extends AuditNotifier {
 									elementName, eventName, severity.name());
 							_logger.info(infoMsg);
 							history.appendMessageNUpdateHistory(infoMsg, null, 0);
-							return true;
-						} else if (respCode == 401) {
-							// Indication that the session timedout, Need to refresh and retry
-							failureMsg = MessageFormat.format("Failure - send GOC++ Refocus having element {0} event {1} severity {2}. " +
-									"Response code {3} (session timeout).", elementName, eventName, severity.name(), respCode);
-							_logger.warn(failureMsg);
-							refresh = true;
 
-						} else {
-							failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. " +
-											"Response code {3} response {4}", elementName, eventName, severity.name(), respCode,
-									        post.getResponseBodyAsString());
-							_logger.error(failureMsg);
+							result = true;
 							break;
+						} else {
+							final String gusPostResponseBody = post.getResponseBodyAsString();
+							failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. Response code {3} response {4}",
+									elementName, eventName, severity.name(), respCode, gusPostResponseBody);
+
+							if (respCode == 401) { // Indication that the session timed out, try refreshing token and retrying post
+								_logger.warn(failureMsg);
+								refresh = true;
+								continue; // retry
+							} else if (respCode >= 500 && respCode < 600) { // Server errors
+								_logger.warn(failureMsg);
+								continue; // retry
+							} else {
+
+								List<Map<String, Object>> jsonResponseBody = new Gson().fromJson(gusPostResponseBody, List.class);
+								if (jsonResponseBody != null && jsonResponseBody.size() > 0) {
+									Map<String, Object> responseBodyMap = jsonResponseBody.get(0);
+									if (responseBodyMap != null &&
+											("INVALID_HEADER_TYPE".equals(responseBodyMap.get("message")) ||
+													"INVALID_AUTH_HEADER".equals(responseBodyMap.get("errorCode")))) {
+										_logger.warn("Failed with invalid auth header, attempting to refresh token if possible");
+										refresh = true;
+										continue; // retry
+									}
+								}
+								_logger.error(failureMsg);
+								break; // unknown error, do not retry
+							}
 						}
+					} catch (GetAuthenticationTokenFailureException e) {
+						failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. Exception {3}",
+								elementName, eventName, severity.name(), e.getMessage());
+						_logger.error("Failure - send GOC++ having element '{}' event '{}' severity {}. Exception '{}'", elementName, eventName,
+								severity.name(), e);
+
+						refresh = true; // try forced refresh of token
+						continue; // retry
 					} catch (Exception e) {
 						failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. Exception {3}",
 								elementName, eventName, severity.name(), e.getMessage());
 						_logger.error("Failure - send GOC++ having element '{}' event '{}' severity {}. Exception '{}'", elementName, eventName,
 								severity.name(), e);
-						break;
+						break; // unknown error, do not retry
 					} finally {
-						if(post != null){
+						if (post != null) {
 							post.releaseConnection();
 						}
 					}
@@ -213,6 +240,9 @@ public class GOCNotifier extends AuditNotifier {
 				failureMsg = MessageFormat.format("Failure - send GOC++. Exception {0}",ex.getMessage());
 				history.appendMessageNUpdateHistory(failureMsg, null, 0);
 				throw new SystemException("Failed to send an GOC++ notification.", ex);
+			} finally {
+				monitorService.modifyCounter(MonitorService.Counter.GOC_NOTIFICATIONS_RETRIES, retries, null);
+				monitorService.modifyCounter(MonitorService.Counter.GOC_NOTIFICATIONS_FAILED, result ? 0 : 1, null);
 			}
 		} else {
 			failureMsg = MessageFormat.format("Sending GOC++ notification is disabled.  Not sending message for element {0} event {1} severity {2}.",
@@ -223,7 +253,7 @@ public class GOCNotifier extends AuditNotifier {
 		if (StringUtils.isNotBlank(failureMsg)) {
 			history.appendMessageNUpdateHistory(failureMsg, null, 0);
 		}
-		return false;
+		return result;
 
 	}
 
@@ -243,11 +273,15 @@ public class GOCNotifier extends AuditNotifier {
 
 	@Override
 	protected boolean sendAdditionalNotification(NotificationContext context) {
+		requireArgument(context != null, "Notification context cannot be null.");
+		super.sendAdditionalNotification(context);
 		return _sendAdditionalNotification(context, NotificationStatus.TRIGGERED);
 	}
 
 	@Override
 	protected boolean clearAdditionalNotification(NotificationContext context) {
+		requireArgument(context != null, "Notification context cannot be null.");
+		super.clearAdditionalNotification(context);
 		return _sendAdditionalNotification(context, NotificationStatus.CLEARED);
 	}
 
@@ -258,14 +292,6 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  status   The notification status.  If null, will set the notification severity to <tt>ERROR</tt>
 	 */
 	protected boolean _sendAdditionalNotification(NotificationContext context, NotificationStatus status) {
-		requireArgument(context != null, "Notification context cannot be null.");
-		
-		if(status == NotificationStatus.TRIGGERED) {
-		    super.sendAdditionalNotification(context);
-		}else {
-			super.clearAdditionalNotification(context);
-		}
-
 		Notification notification = null;
 		Trigger trigger = null;
 
@@ -374,6 +400,24 @@ public class GOCNotifier extends AuditNotifier {
 		return notifierProps;
 	}
 
+	protected GusTransport getGusTransportInstance() {
+		if (gusTransport == null) {
+			synchronized (this) {
+				if (gusTransport == null) {
+					gusTransport = new GusTransport(_config.getValue(Property.GOC_PROXY_HOST.getName(), null), // no default since this is optional
+							_config.getValue(Property.GOC_PROXY_PORT.getName(), null), // no default since this is optional
+							_config.getValue(Property.GOC_ENDPOINT.getName(), Property.GOC_ENDPOINT.getDefaultValue()) + "/services/oauth2/token",
+							_config.getValue(Property.GOC_CLIENT_ID.getName(), Property.GOC_CLIENT_ID.getDefaultValue()),
+							_config.getValue(Property.GOC_CLIENT_SECRET.getName(), Property.GOC_CLIENT_SECRET.getDefaultValue()),
+							_config.getValue(Property.GOC_USER.getName(), Property.GOC_USER.getDefaultValue()),
+							_config.getValue(Property.GOC_PWD.getName(), Property.GOC_PWD.getDefaultValue()),
+							new GusTransport.EndpointInfo(_config.getValue(Property.GOC_ENDPOINT.getName(), Property.GOC_ENDPOINT.getDefaultValue()), GusTransport.NO_TOKEN));
+				}
+			}
+		}
+		return gusTransport;
+	}
+
 	private String urlEncode(String s) throws UnsupportedEncodingException{
 		return URLEncoder.encode(s,org.apache.commons.lang3.CharEncoding.UTF_8).replace("+", "%20");
 	}
@@ -446,6 +490,15 @@ public class GOCNotifier extends AuditNotifier {
 	}
 
 	//~ Inner classes ********************************************************************************************************************************
+
+	public class PatchMethod extends PostMethod {
+		public PatchMethod(String uri) { super(uri); }
+
+		@Override
+		public String getName() {
+			return "PATCH";
+		}
+	}
 
 	/**
 	 * GOCData object to generate JSON.
@@ -827,162 +880,5 @@ public class GOCNotifier extends AuditNotifier {
 		}
 	}
 
-
-	/**
-	 * Manage GOC connections, oAuth and timeouts.
-	 *
-	 * @author  Fiaz Hossain (fiaz.hossain@salesforce.com)
-	 */
-	public class GOCTransport {
-
-		//~ Static fields/initializers *******************************************************************************************************************
-
-		private static final String UTF_8 = "UTF-8";
-		private static final String NO_TOKEN = "NO_TOKEN";
-		private static final long MIN_SESSION_REFRESH_THRESHOLD_MILLIS = 5 * 60 * 1000; // Wait at least 5 minutes between refresh attempts
-		private static final int CONNECTION_TIMEOUT_MILLIS = 10000;
-		private static final int READ_TIMEOUT_MILLIS = 10000;
-		private volatile EndpointInfo theEndpointInfo = null;
-		private volatile long lastRefresh = 0;
-		private final MultiThreadedHttpConnectionManager theConnectionManager;
-		{
-			theConnectionManager = new MultiThreadedHttpConnectionManager();
-
-			HttpConnectionManagerParams params = theConnectionManager.getParams();
-
-			params.setConnectionTimeout(CONNECTION_TIMEOUT_MILLIS);
-			params.setSoTimeout(READ_TIMEOUT_MILLIS);
-		}
-
-		//~ Methods **************************************************************************************************************************************
-
-		/**
-		 * Get authenticated endpoint and token.
-		 *
-		 * @param   config   The system configuration.  Cannot be null.
-		 * @param   logger   The logger.  Cannot be null.
-		 * @param   refresh  - If true get a new token even if one exists.
-		 *
-		 * @return  EndpointInfo - with valid endpoint and token. The token can be a dummy or expired.
-		 */
-		public  EndpointInfo getEndpointInfo(SystemConfiguration config, Logger logger, boolean refresh) {
-			if (theEndpointInfo == null || refresh) {
-				updateEndpoint(config, logger, lastRefresh);
-			}
-			return theEndpointInfo;
-		}
-
-		/**
-		 * Get HttpClient with proper proxy and timeout settings.
-		 *
-		 * @param   config  The system configuration.  Cannot be null.
-		 *
-		 * @return  HttpClient
-		 */
-		public  HttpClient getHttpClient(SystemConfiguration config) {
-			HttpClient httpclient = new HttpClient(theConnectionManager);
-
-			httpclient.getParams().setParameter("http.connection-manager.timeout", 2000L); // Wait for 2 seconds to get a connection from pool
-
-			String host = config.getValue(Property.GOC_PROXY_HOST.getName(), Property.GOC_PROXY_HOST.getDefaultValue());
-
-			if (host != null && host.length() > 0) {
-				httpclient.getHostConfiguration().setProxy(host,
-						Integer.parseInt(config.getValue(Property.GOC_PROXY_PORT.getName(), Property.GOC_PROXY_PORT.getDefaultValue())));
-			}
-			return httpclient;
-		}
-
-		/**
-		 * Update the global 'theEndpointInfo' state with a valid endpointInfo if login is successful or a dummy value if not successful.
-		 *
-		 * @param  config           The system configuration.  Cannot be null.
-		 * @param  logger           The logger.  Cannot be null.
-		 * @param  previousRefresh  The last refresh time.
-		 */
-		private synchronized void updateEndpoint(SystemConfiguration config, Logger logger, long previousRefresh) {
-			long diff = System.currentTimeMillis() - previousRefresh;
-
-			if (diff > MIN_SESSION_REFRESH_THRESHOLD_MILLIS) {
-				lastRefresh = System.currentTimeMillis();
-
-				PostMethod post = new PostMethod(config.getValue(Property.GOC_ENDPOINT.getName(), Property.GOC_ENDPOINT.getDefaultValue()) +
-						"/services/oauth2/token");
-
-				try {
-					post.addParameter("grant_type", "password");
-					post.addParameter("client_id",
-							URLEncoder.encode(config.getValue(Property.GOC_CLIENT_ID.getName(), Property.GOC_CLIENT_ID.getDefaultValue()), UTF_8));
-					post.addParameter("client_secret",
-							URLEncoder.encode(config.getValue(Property.GOC_CLIENT_SECRET.getName(), Property.GOC_CLIENT_SECRET.getDefaultValue()), UTF_8));
-					post.addParameter("username", config.getValue(Property.GOC_USER.getName(), Property.GOC_USER.getDefaultValue()));
-					post.addParameter("password", config.getValue(Property.GOC_PWD.getName(), Property.GOC_PWD.getDefaultValue()));
-
-					HttpClient httpclient = getHttpClient(config);
-					int respCode = httpclient.executeMethod(post);
-
-					// Check for success
-					if (respCode == 200) {
-						JsonObject authResponse = new Gson().fromJson(post.getResponseBodyAsString(), JsonObject.class);
-						String endpoint = authResponse.get("instance_url").getAsString();
-						String token = authResponse.get("access_token").getAsString();
-
-						logger.info("Success - getting access_token for endpoint '{}'", endpoint);
-						logger.debug("access_token '{}'", token);
-						theEndpointInfo = new EndpointInfo(endpoint, token);
-					}
-					else {
-						logger.error("Failure - getting oauth2 token, check username/password: '{}'", post.getResponseBodyAsString());
-					}
-
-				} catch (Exception e) {
-					logger.error("Failure - exception getting access_token '{}'", e);
-				} finally {
-					if (theEndpointInfo == null) {
-						theEndpointInfo = new EndpointInfo(config.getValue(Property.GOC_ENDPOINT.getName(), Property.GOC_ENDPOINT.getDefaultValue()),
-								NO_TOKEN);
-					}
-					post.releaseConnection();
-				}
-			}
-		}
-
-		//~ Inner Classes ********************************************************************************************************************************
-
-	}
-
-	/**
-	 * Utility class for endpoint information.
-	 *
-	 * @author  fiaz.hossain
-	 */
-	public class EndpointInfo {
-
-		private final String endPoint;
-		private final String token;
-
-		private EndpointInfo(final String endPoint, final String token) {
-			this.endPoint = endPoint;
-			this.token = token;
-		}
-
-		/**
-		 * Valid endpoint. Either from config or endpont after authentication
-		 *
-		 * @return  endpoint
-		 */
-		public String getEndPoint() {
-			return endPoint;
-		}
-
-		/**
-		 * Token can be either active, expired or a dummy value.
-		 *
-		 * @return  token
-		 */
-		public String getToken() {
-			return token;
-		}
-	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

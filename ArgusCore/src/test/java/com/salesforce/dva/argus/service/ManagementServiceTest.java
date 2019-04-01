@@ -28,17 +28,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class ManagementServiceTest extends AbstractTest {
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+
+
+public class ManagementServiceTest {
+
+    static private SystemMain system;
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
 
     @Test
     public void testPrivilegeGrant() {

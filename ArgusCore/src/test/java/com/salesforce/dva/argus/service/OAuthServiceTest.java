@@ -30,26 +30,40 @@
  */
 package com.salesforce.dva.argus.service;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.OAuthAuthorizationCode;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import java.sql.Timestamp;
 
+import org.junit.BeforeClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+import org.junit.AfterClass;
+
+
 /**
  * @author Chandravyas Annakula (cannakula@salesforce.com)
  */
-public class OAuthServiceTest extends AbstractTest {
-    OAuthAuthorizationCodeService authService;
-    private UserService userService;
+public class OAuthServiceTest {
+    static private SystemMain system;
+    static private OAuthAuthorizationCodeService authService;
+    static private UserService userService;
 
-    @Before
-    @Override
-    public void setUp() {
-        super.setUp();
-        authService = system.getServiceFactory().getOAuthAuthorizationCodeService();
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
         userService = system.getServiceFactory().getUserService();
+        authService = system.getServiceFactory().getOAuthAuthorizationCodeService();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
     }
 
     @Test
@@ -188,7 +202,7 @@ public class OAuthServiceTest extends AbstractTest {
         authService.updateUserId(authCode, "", "test_user");
         authService.updateUserId(authCode, state, "");
     }
-    
+
 
 }
 

@@ -3,12 +3,6 @@
 
     <contextName>ARGUS</contextName>
 
-    <appender name="ARGUS-CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>[ %boldMagenta(%cn) | %replace(%X{USER}){'^$','*NULLUSER*'} | %replace(%X{TXID}){'^$','*NULLTXID*'} | %d{yyyy-MM-dd HH:mm:ss.SSS} | %.15thread | %highlight(%5.-5level) ] %msg%n</pattern>
-        </encoder>
-    </appender>
-
     <appender name="ARGUS-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     	<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">                                                                                                                                                                
 	      	<!-- Daily rollover -->                                                                                                                                                                                                                 
@@ -25,12 +19,10 @@
 
     <logger name="com.salesforce.dva.argus" additivity="false" level="${system.property.log.level}">
         <appender-ref ref="ARGUS-FILE"/>
-        <appender-ref ref="ARGUS-CONSOLE"/>
     </logger>
 
     <root level="TRACE">
         <appender-ref ref="ARGUS-FILE"/>
-        <appender-ref ref="ARGUS-CONSOLE"/>
     </root>
 
 </configuration>

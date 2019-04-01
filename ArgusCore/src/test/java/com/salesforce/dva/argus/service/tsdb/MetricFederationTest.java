@@ -47,14 +47,37 @@ import org.junit.Test;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 
-public class MetricFederationTest extends AbstractTest {
+import org.junit.BeforeClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+import org.junit.AfterClass;
+
+
+
+public class MetricFederationTest {
 	private ObjectMapper _mapper;
+
+    static private SystemMain system;
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
+
 
 	@Before
 	public void initialize() {
@@ -99,7 +122,7 @@ public class MetricFederationTest extends AbstractTest {
 		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation.join(mapQuerySubQueries, subQueryMetricsMap);
 		assertEquals(1, queryMetricsMap.size());
 		assertEquals(3, queryMetricsMap.get(queries.get(0)).size());
-		
+
 		// Three time series
 		assertEquals("{host=machineHost1}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
 		assertEquals("{1477386300=4.940423168E9}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
@@ -108,7 +131,7 @@ public class MetricFederationTest extends AbstractTest {
 		assertEquals("{host=machineHost3}", queryMetricsMap.get(queries.get(0)).get(2).getTags().toString());
 		assertEquals("{1477386500=4.940423168E9, 1477386600=4.940423168E9}", queryMetricsMap.get(queries.get(0)).get(2).getDatapoints().toString());
 	}
-	
+
 	@Test
 	public void testEndPointFederationForkJoinSumDownsamplerWithNoTag() {
 		MetricService metricService = system.getServiceFactory().getMetricService();
@@ -132,12 +155,12 @@ public class MetricFederationTest extends AbstractTest {
 		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation.join(mapQuerySubQueries, subQueryMetricsMap);
 		assertEquals(1, queryMetricsMap.size());
 		assertEquals(1, queryMetricsMap.get(queries.get(0)).size());
-		
+
 		// One time series, since no tag specified
 		assertEquals("{}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
 		assertEquals("{1477386300=7.0, 1477386500=6.0, 1477386600=7.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
 	}
-	
+
 	@Test
 	public void testEndPointFederationForkJoinMinDownsampler() {
 		MetricService metricService = system.getServiceFactory().getMetricService();
@@ -161,12 +184,12 @@ public class MetricFederationTest extends AbstractTest {
 		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation.join(mapQuerySubQueries, subQueryMetricsMap);
 		assertEquals(1, queryMetricsMap.size());
 		assertEquals(1, queryMetricsMap.get(queries.get(0)).size());
-		
+
 		// One time series, since no tag specified
 		assertEquals("{}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
 		assertEquals("{1477386300=3.0, 1477386500=6.0, 1477386600=7.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
 	}
-	
+
 	@Test
 	public void testEndPointFederationForkJoinMaxDownsampler() {
 		MetricService metricService = system.getServiceFactory().getMetricService();
@@ -190,7 +213,7 @@ public class MetricFederationTest extends AbstractTest {
 		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation.join(mapQuerySubQueries, subQueryMetricsMap);
 		assertEquals(1, queryMetricsMap.size());
 		assertEquals(1, queryMetricsMap.get(queries.get(0)).size());
-		
+
 		// One time series, since no tag specified
 		assertEquals("{}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
 		assertEquals("{1477386300=4.0, 1477386500=6.0, 1477386600=7.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
@@ -219,7 +242,7 @@ public class MetricFederationTest extends AbstractTest {
 		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation.join(mapQuerySubQueries, subQueryMetricsMap);
 		assertEquals(1, queryMetricsMap.size());
 		assertEquals(3, queryMetricsMap.get(queries.get(0)).size());
-		
+
 		// Three time series
 		assertEquals("{host=machineHost1}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
 		assertEquals("{1477386300=1.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
@@ -228,7 +251,7 @@ public class MetricFederationTest extends AbstractTest {
 		assertEquals("{host=machineHost3}", queryMetricsMap.get(queries.get(0)).get(2).getTags().toString());
 		assertEquals("{1477386500=1.0, 1477386600=1.0}", queryMetricsMap.get(queries.get(0)).get(2).getDatapoints().toString());
 	}
-	
+
 	@Test
 	public void testEndPointFederationForkJoinCountDownsamplerWithNoTag() {
 		MetricService metricService = system.getServiceFactory().getMetricService();
@@ -252,12 +275,12 @@ public class MetricFederationTest extends AbstractTest {
 		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation.join(mapQuerySubQueries, subQueryMetricsMap);
 		assertEquals(1, queryMetricsMap.size());
 		assertEquals(1, queryMetricsMap.get(queries.get(0)).size());
-		
+
 		// One time series, since no tag specified
 		assertEquals("{}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
 		assertEquals("{1477386300=7.0, 1477386500=6.0, 1477386600=7.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
 	}
-	
+
 	private  List<Metric> getMetricsFromMetricString(String content){
 		List<Metric> metrics = null;
 		try {

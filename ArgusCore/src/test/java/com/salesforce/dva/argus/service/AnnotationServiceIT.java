@@ -28,10 +28,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.AbstractTestIT;
 import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Notification;
@@ -50,7 +50,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
-public class AnnotationServiceIT extends AbstractTest {
+public class AnnotationServiceIT extends AbstractTestIT {
 
     private UserService uService;
     private AnnotationService aService;

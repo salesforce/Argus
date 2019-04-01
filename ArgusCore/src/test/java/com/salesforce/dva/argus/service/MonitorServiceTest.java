@@ -28,10 +28,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.service.monitor.DataLagMonitor;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
@@ -54,12 +53,34 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+
 
 @RunWith(MockitoJUnitRunner.class)
-public class MonitorServiceTest extends AbstractTest {
+public class MonitorServiceTest {
     private static final double DOUBLE_COMPARISON_MAX_DELTA = 0.001;
     private static final String HOSTNAME = SystemConfiguration.getHostname();
     private MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+
+    private SystemMain system;
+
+    @Before
+    public void setUp() {
+        system = TestUtils.getInstance();
+        system.start();
+    }
+
+    @After
+    public void tearDown() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
 
     @Mock
     private TSDBService tsdbMock;

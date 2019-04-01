@@ -34,17 +34,39 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.system.SystemException;
 
-public class AbstractTSDBServiceTest extends AbstractTest {
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+
+
+public class AbstractTSDBServiceTest {
     static final int RUNS = 100;
     static final int THREADS = 20;
     CloseableHttpClient readHttpClient;
     CloseableHttpClient writeHttpClient;
+
+    static private SystemMain system;
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
+
 
     private String getReply1 = String.join("\n",
             "[" +
@@ -189,7 +211,7 @@ public class AbstractTSDBServiceTest extends AbstractTest {
             "        }" +
             "    ]" +
             "}");
-    
+
     private String getAnnotationReply = String.join("\n",
             "[" +
             "    {" +
@@ -250,10 +272,10 @@ public class AbstractTSDBServiceTest extends AbstractTest {
 
         List<AnnotationQuery> queries = new ArrayList<>();
         queries.add(toQuery(annotations.get(0)));
-        
+
         spyService = _initializeSpyService(service, getAnnotationReply);
         spyService.getAnnotations(queries);
-        
+
         verify(spyService, times(1)).executeHttpRequest(any(), urlCaptor.capture(), any(), contentCaptor.capture());
     }
 
@@ -333,7 +355,7 @@ public class AbstractTSDBServiceTest extends AbstractTest {
         Map<Long, Double> datapoints = new HashMap<>();
 
         for (int i = 0; i <= 200; i++) {
-            datapoints.put(System.currentTimeMillis() + (i * 60000L), (double)(random.nextInt(50)));
+            datapoints.put(System.currentTimeMillis() + (i * 60000L), (double)(TestUtils.random.nextInt(50)));
         }
         metric.setDatapoints(datapoints);
         try {
