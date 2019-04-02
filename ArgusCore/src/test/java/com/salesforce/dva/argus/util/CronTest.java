@@ -360,8 +360,8 @@ public class CronTest {
                 quartzCron = Cron.convertToQuartzCronEntry(inputCrons[i]);
                 converted = true;
                 isValid = Cron.isCronEntryValid(inputCron);
-                if (!isValid)
-                    System.out.println(String.format("%d: '%s' -> '%s' is %sa valid quartz cron.", i, inputCron, quartzCron, isValid ? "": "NOT "));
+//                if (!isValid)
+//                    System.out.println(String.format("%d: '%s' -> '%s' is %sa valid quartz cron.", i, inputCron, quartzCron, isValid ? "": "NOT "));
             }
             catch (Exception e)
             {
@@ -495,9 +495,9 @@ public class CronTest {
 
                     if (!isSame)
                     {
-                        System.out.println(String.format("Testing Cron '%s' -> old = '%s', new = '%s' --> Comparison failed at step %d", cronExpr, oldQuartz, newQuartz, i ));
-                        System.out.println(String.format("%s %s %s", i,
-                                oldWhen.toString(), isSame ? "==" : "!=", newWhen.toString()));
+//                        System.out.println(String.format("Testing Cron '%s' -> old = '%s', new = '%s' --> Comparison failed at step %d", cronExpr, oldQuartz, newQuartz, i ));
+//                        System.out.println(String.format("%s %s %s", i,
+//                                oldWhen.toString(), isSame ? "==" : "!=", newWhen.toString()));
                         success = false;
                         break;
                     }
@@ -506,7 +506,6 @@ public class CronTest {
         }
         catch (RuntimeException e)
         {
-            System.out.println(String.format("Error in test: %s", e.getMessage()));
             e.printStackTrace();
             success = false;
         }

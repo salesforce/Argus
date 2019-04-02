@@ -122,7 +122,6 @@ public class AlertUtilsTest {
 			try {
 				Thread.sleep(200);
 			}catch (Exception e) {
-				System.out.println("Exiting");
 				return;
 			}
 			testCronTrigger();
@@ -144,13 +143,6 @@ public class AlertUtilsTest {
 		CronTrigger cronTrigger = TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(quartzCronEntry)).startAt(previousMinuteLastSecondTime).build();
 
 		Date nextFireTime = cronTrigger.getFireTimeAfter(previousMinuteLastSecondTime);
-
-		if(nextFireTime.equals(fireTime))
-		{
-			System.out.println(String.format("Current Time %s: Fire Time %s Matches", sdf.format(new Date()), sdf.format(nextFireTime)));
-		} else {
-			System.out.println(String.format("Current Time %s: Fire Time %s", sdf.format(new Date()), sdf.format(nextFireTime)));
-		}
 
 		assertTrue(nextFireTime.equals(fireTime));
 	}

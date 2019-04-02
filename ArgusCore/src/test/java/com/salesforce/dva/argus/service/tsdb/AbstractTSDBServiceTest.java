@@ -21,7 +21,9 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
@@ -52,6 +54,8 @@ public class AbstractTSDBServiceTest {
     CloseableHttpClient writeHttpClient;
 
     static private SystemMain system;
+
+    private final Logger _logger = LoggerFactory.getLogger(AbstractTSDBServiceTest.class);
 
     @BeforeClass
     static public void setUpClass() {
@@ -388,7 +392,7 @@ public class AbstractTSDBServiceTest {
             Iterator<String> iter = service.constructCyclingIterator(endpoints);
             List<Thread> threads = new ArrayList<>();
             ConcurrentLinkedQueue<String> queue = new ConcurrentLinkedQueue<>();
-            System.out.println(String.format("Trying %d .next() calls with %d threads calling cycling iterator on endpoints %s", RUNS, THREADS, String.join(", ", endpoints)));
+            _logger.debug(String.format("Trying %d .next() calls with %d threads calling cycling iterator on endpoints %s", RUNS, THREADS, String.join(", ", endpoints)));
             for (int i = 0; i < THREADS; i++) {
                 Thread thread = new Thread(new IterateTask(iter, queue));
                 threads.add(thread);

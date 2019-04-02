@@ -3,6 +3,8 @@ package com.salesforce.dva.argus.entity;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -14,6 +16,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class AnnotationTest {
+
+    private final Logger _logger = LoggerFactory.getLogger(AnnotationTest.class);
 
     @Test
     public void testGetSizeBytes() throws Exception {
@@ -58,7 +62,7 @@ public class AnnotationTest {
                     fail(String.format("Unsupported type=%s for field=%s, please update this test", t, f.getName()));
                 }
             }
-            System.out.println(String.format("field=%s, size=%d", f.getName(), expectedSize));
+            _logger.debug(String.format("field=%s, size=%d", f.getName(), expectedSize));
         }
 
         int size = a.computeSizeBytes();
