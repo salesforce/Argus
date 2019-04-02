@@ -147,6 +147,13 @@ public interface DiscoveryService extends Service {
     }
 
     static void throwMaximumDatapointsExceededException(MetricQuery query, long maxDataPointsPerQuery, MonitorService monitorService, Logger logger) throws WildcardExpansionLimitExceededException{
+        // We are throwing the exception only when the downsampler is absent, 
+        // as we want to give users some time to adjust their queries which have downsampler in them
+
+        if(query.getDownsamplingPeriod()==null || query.getDownsamplingPeriod()==0) {
+            throw new WildcardExpansionLimitExceededException(MessageFormat.format(EXCEPTION_MESSAGE, maxDataPointsPerQuery)) ;
+        }
+        
         if(monitorService!=null) {
             Map<String, String> tags = new HashMap<>();
             tags.put("scope", TSDBEntity.replaceUnsupportedChars(query.getScope()));
@@ -158,13 +165,6 @@ public interface DiscoveryService extends Service {
             }
             monitorService.modifyCounter(Counter.QUERY_MAX_DATAPOINTS_LIMIT_EXCEEDED, 1, tags);
             logger.error("Maximum datapoints limit execeeded for query - " + query.toString() + ", user - "+tags.get("user"));
-        }
-
-        // We are throwing the exception only when the downsampler is absent, 
-        // as we want to give users some time to adjust their queries which have downsampler in them
-
-        if(query.getDownsamplingPeriod()==null || query.getDownsamplingPeriod()==0) {
-            throw new WildcardExpansionLimitExceededException(MessageFormat.format(EXCEPTION_MESSAGE, maxDataPointsPerQuery)) ;
         }
     }
 }
