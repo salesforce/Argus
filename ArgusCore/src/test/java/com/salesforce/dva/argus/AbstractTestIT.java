@@ -60,7 +60,6 @@ import java.util.TreeMap;
 
 import static org.junit.Assert.fail;
 
-@Ignore
 public abstract class AbstractTestIT {
 
     private static final String scopeNameTemplate = "MetricGenerator.{0,number,#}";

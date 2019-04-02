@@ -98,7 +98,6 @@ import org.junit.Rule;
 import com.salesforce.dva.argus.TestUtils;
 
 
-@Ignore("Tests are failing in Strata - W-6003515 to investigate, fix and reenable")
 public class AlertServiceTest{
 
 	private static final String EXPRESSION =
@@ -868,7 +867,7 @@ public class AlertServiceTest{
 		assertNotNull((alertService.findAlertByNameAndOwner(alertName, user)));
 	}
 
-        @Ignore
+    @Ignore("re-do this test, it tests things similar to defaultalertservicetest and mqservicetest,and takes longer")
 	@Test
 	public void testAlertEnqueue() {
 
