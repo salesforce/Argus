@@ -262,7 +262,8 @@ public class AlertUtilsTest {
 	{
         String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
 
-        Alert a = alertService.updateAlert(new Alert(admin, admin, "sample", expression, "* * * * *"));
+        String alertName = TestUtils.createRandomName();
+        Alert a = alertService.updateAlert(new Alert(admin, admin, alertName, expression, "* * * * *"));
         String returned_expression = a.getExpression();
         assertEquals(expression, returned_expression);
 
@@ -283,7 +284,8 @@ public class AlertUtilsTest {
 
         try
 		{
-        	a = alertService.updateAlert(new Alert(admin, admin, "sample", expression, "* * * * *"));
+                    String alertName = TestUtils.createRandomName();
+        	a = alertService.updateAlert(new Alert(admin, admin, alertName, expression, "* * * * *"));
         	String returned_expression = a.getExpression();
         	assertEquals(expression, returned_expression);
 
@@ -304,7 +306,8 @@ public class AlertUtilsTest {
         try
         {
 			a = null;
-			a = new Alert(admin, admin, "sample", invalid_expression, "* * * * *");
+                        String alertName = TestUtils.createRandomName();
+			a = new Alert(admin, admin, alertName, invalid_expression, "* * * * *");
             assertTrue(true);
             a.validateAlert();
             assertTrue(false);
@@ -319,7 +322,8 @@ public class AlertUtilsTest {
 		try
 		{
 			a = null;
-			a = new Alert(admin, admin, "sample", "", "* * * * *");
+                        String alertName = TestUtils.createRandomName();
+			a = new Alert(admin, admin, alertName, "", "* * * * *");
 			assertTrue(false);
 		}
 		catch (RuntimeException e)
@@ -330,7 +334,8 @@ public class AlertUtilsTest {
 		try
 		{
 			a = null;
-			a = new Alert(admin, admin, "sample", null, "* * * * *");
+                        String alertName = TestUtils.createRandomName();
+			a = new Alert(admin, admin, alertName, null, "* * * * *");
 			assertTrue(false);
 		}
 		catch (RuntimeException e)
@@ -347,7 +352,8 @@ public class AlertUtilsTest {
         String other_cron = "* */4 * * *";
         String valid_cron = "* * * * *";
 
-        Alert a = alertService.updateAlert(new Alert(admin, admin, "sample", expression, valid_cron));
+        String alertName = TestUtils.createRandomName();
+        Alert a = alertService.updateAlert(new Alert(admin, admin, alertName, expression, valid_cron));
 
         String returned_cron = a.getCronEntry();
         assertEquals(valid_cron, returned_cron);
@@ -371,7 +377,8 @@ public class AlertUtilsTest {
 
         try
         {
-            a = alertService.updateAlert(new Alert(admin, admin, "sample", expression, valid_cron));
+            String alertName = TestUtils.createRandomName();
+            a = alertService.updateAlert(new Alert(admin, admin, alertName, expression, valid_cron));
             a.setCronEntry(invalid_cron);
             a = alertService.updateAlert(a);
             assertTrue(false);
@@ -388,7 +395,8 @@ public class AlertUtilsTest {
         try
         {
 			a = null;
-			a = new Alert(admin, admin, "sample", expression, invalid_cron);
+                        String alertName = TestUtils.createRandomName();
+			a = new Alert(admin, admin, alertName, expression, invalid_cron);
             assertTrue(true);
             a.validateAlert();
             assertTrue(false);
@@ -402,7 +410,8 @@ public class AlertUtilsTest {
 		try
 		{
 			a = null;
-			a = new Alert(admin, admin, "sample", expression, "");
+                        String alertName = TestUtils.createRandomName();
+			a = new Alert(admin, admin, alertName, expression, "");
 			assertTrue(false);
 		}
 		catch (RuntimeException e)
@@ -413,7 +422,8 @@ public class AlertUtilsTest {
 		try
 		{
 			a = null;
-			a = new Alert(admin, admin, "sample", expression, null);
+                        String alertName = TestUtils.createRandomName();
+			a = new Alert(admin, admin, alertName, expression, null);
 			assertTrue(false);
 		}
 		catch (RuntimeException e)
@@ -430,27 +440,30 @@ public class AlertUtilsTest {
 		String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
 		String valid_cron = "* * * * *";
 
-		a = alertService.updateAlert(new Alert(admin, admin, "sample", expression, valid_cron));
+                String alertName = TestUtils.createRandomName();
+		a = alertService.updateAlert(new Alert(admin, admin, alertName, expression, valid_cron));
 		PrincipalUser u = a.getOwner();
 		assertEquals(admin, u);
 
-		PrincipalUser expectedUser = userService.updateUser(new PrincipalUser(admin, "testUser", "testuser@testcompany.com"));
+                String userName1 = TestUtils.createRandomName();
+		PrincipalUser expectedUser = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "testuser@testcompany.com"));
 		a.setOwner(expectedUser);
 		a = alertService.updateAlert(a);
 
 		u = a.getOwner();
 		assertEquals(expectedUser, u);
 
-		PrincipalUser expectedUser2 = userService.updateUser(new PrincipalUser(admin, "testUser2", "testuser2@testcompany.com"));
+                String userName2 = TestUtils.createRandomName();
+		PrincipalUser expectedUser2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "testuser2@testcompany.com"));
 		a.setOwner(expectedUser2);
 		a = alertService.updateAlert(a);
 
 		u = a.getOwner();
 		assertEquals(expectedUser2, u);
 
-		alertService.deleteAlert(a.getName(), userService.findUserByUsername("testUser2"));
-		userService.deleteUser(userService.findUserByUsername("testUser"));
-		userService.deleteUser(userService.findUserByUsername("testUser2"));
+		alertService.deleteAlert(a.getName(), userService.findUserByUsername(userName2));
+		userService.deleteUser(userService.findUserByUsername(userName1));
+		userService.deleteUser(userService.findUserByUsername(userName2));
 	}
 
 
@@ -461,7 +474,8 @@ public class AlertUtilsTest {
         String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
         String valid_cron = "* * * * *";
 
-        a = alertService.updateAlert(new Alert(admin, admin, "sample", expression, valid_cron));
+        String alertName = TestUtils.createRandomName();
+        a = alertService.updateAlert(new Alert(admin, admin, alertName, expression, valid_cron));
         PrincipalUser u = a.getOwner();
         assertEquals( admin, u );
 
@@ -485,8 +499,8 @@ public class AlertUtilsTest {
 	{
         String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
         String valid_cron = "* * * * *";
-        String name = "sample";
-        String name2 = "sample2";
+        String name = TestUtils.createRandomName() + "sample";
+        String name2 = TestUtils.createRandomName() + "sample2";
 
         Alert a = alertService.updateAlert(new Alert(admin, admin, name, expression, valid_cron));
         String n = a.getName();
@@ -506,7 +520,7 @@ public class AlertUtilsTest {
         Alert a = null;
         String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
         String valid_cron = "* * * * *";
-        String name = "sample";
+        String name = TestUtils.createRandomName() + "sample";
 
         a = alertService.updateAlert(new Alert(admin, admin, name, expression, valid_cron));
         String n = a.getName();
@@ -543,7 +557,7 @@ public class AlertUtilsTest {
 	{
         String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
         String valid_cron = "* * * * *";
-        String name = "sample";
+        String name = TestUtils.createRandomName() + "sample";
 
         Alert a = alertService.updateAlert(new Alert(admin, admin, name, expression, valid_cron));
         boolean b = a.isShared();
@@ -567,7 +581,7 @@ public class AlertUtilsTest {
 	{
         String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
         String valid_cron = "* * * * *";
-        String name = "sample";
+        String name = TestUtils.createRandomName() + "sample";
 
         Alert a = alertService.updateAlert(new Alert(admin, admin, name, expression, valid_cron));
         boolean b = a.isMissingDataNotificationEnabled();
@@ -592,7 +606,7 @@ public class AlertUtilsTest {
 	{
         String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
         String valid_cron = "* * * * *";
-        String name = "sample";
+        String name = TestUtils.createRandomName() + "sample";
 
         Alert a = alertService.updateAlert(new Alert(admin, admin, name, expression, valid_cron));
 
@@ -617,7 +631,7 @@ public class AlertUtilsTest {
 	{
 		String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
 		String valid_cron = "* * * * *";
-		String name = "sample";
+		String name = TestUtils.createRandomName() + "sample";
 
 		Alert a = alertService.updateAlert(new Alert(admin, admin, name, expression, valid_cron));
 		Trigger trigger1 = new Trigger(a, Trigger.TriggerType.GREATER_THAN_OR_EQ, "warning", 2D, 100);
@@ -641,7 +655,7 @@ public class AlertUtilsTest {
 		Alert a = null;
 		String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
 		String valid_cron = "* * * * *";
-		String name = "sample";
+		String name = TestUtils.createRandomName() + "sample";
 
 		a = alertService.updateAlert(new Alert(admin, admin, name, expression, valid_cron));
 
@@ -667,7 +681,7 @@ public class AlertUtilsTest {
 //	{
 //		String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
 //		String valid_cron = "* * * * *";
-//		String name = "sample";
+//		String name = TestUtils.createRandomName() + "sample";
 //
 //		Alert a = alertService.updateAlert(new Alert(admin, admin, name, expression, valid_cron));
 //
@@ -715,7 +729,7 @@ public class AlertUtilsTest {
 //
 //		 String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
 //		 String valid_cron = "* * * * *";
-//		 String name = "sample";
+//		 String name = TestUtils.createRandomName() + "sample";
 //
 //		 Alert a = alertService.updateAlert(new Alert(admin, admin, name, expression, valid_cron));
 //
@@ -777,7 +791,7 @@ public class AlertUtilsTest {
 //
 //		String expression = "ABOVE(-4h:scope:metric:avg:4h-avg,#0.5#)";
 //		String valid_cron = "* * * * *";
-//		String name = "sample";
+//		String name = TestUtils.createRandomName() + "sample";
 //
 //		Alert a = alertService.updateAlert(new Alert(admin, admin, name, expression, valid_cron));
 //

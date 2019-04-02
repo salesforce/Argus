@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.management;
 
 import com.google.inject.Inject;
@@ -52,6 +52,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -68,8 +69,7 @@ public class DefaultManagementService extends DefaultService implements Manageme
 
     //~ Instance fields ******************************************************************************************************************************
 
-    @SLF4JTypeListener.InjectLogger
-    private Logger _logger;
+    private final Logger _logger = LoggerFactory.getLogger(DefaultManagementService.class);
     private final WardenService _wardenService;
     private final MonitorService _monitorService;
     private final SchedulingService _schedulingService;
@@ -92,7 +92,7 @@ public class DefaultManagementService extends DefaultService implements Manageme
      * @param  alertService       The alert service.  Cannot be null.
      */
     @Inject
-    DefaultManagementService(WardenService wardenService, MonitorService monitorService, SchedulingService schedulingService, UserService userService,
+    public DefaultManagementService(WardenService wardenService, MonitorService monitorService, SchedulingService schedulingService, UserService userService,
         AuditService auditService, HistoryService historyService, AlertService alertService, SystemConfiguration config) {
     	super(config);
         requireArgument(wardenService != null, "Warden service cannot be null.");
@@ -276,7 +276,7 @@ public class DefaultManagementService extends DefaultService implements Manageme
         _historyService.deleteExpiredHistory();
         _auditService.deleteExpiredAudits();
     }
-    
+
     @Override
     @Transactional
     public void cleanupDeletedAlerts(int limit) {
