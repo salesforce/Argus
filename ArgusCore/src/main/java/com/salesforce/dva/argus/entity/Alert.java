@@ -75,6 +75,8 @@ import javax.persistence.criteria.Selection;
 
 import com.salesforce.dva.argus.util.Cron;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.eclipse.persistence.config.HintValues;
+import org.eclipse.persistence.config.QueryHints;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -284,6 +286,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		requireArgument(alert != null, "Alert cannot be null.");
 
 		Query query = em.createNamedQuery(enabled ? "Alert.setEnabled" : "Alert.setDisabled");
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
 		query.setParameter("alert", alert);
 		query.executeUpdate();
 	}
@@ -303,6 +306,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		requireArgument(owner != null, "Owner cannot be null.");
 
 		TypedQuery<Alert> query = em.createNamedQuery("Alert.findByNameAndOwner", Alert.class);
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		try {
 			query.setParameter("name", alertName);
 			query.setParameter("owner", owner);
@@ -325,6 +330,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		requireArgument(owner != null, "Owner cannot be null.");
 
 		TypedQuery<Alert> query = em.createNamedQuery("Alert.findByOwner", Alert.class);
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		try {
 			query.setParameter("owner", owner);
 			return query.getResultList();
@@ -363,6 +370,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 				query.setParameter(SEARCHTEXT_KEY, _convertSearchTextWildCardForQuery(searchText));
 			}
 
+			query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+			query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 			query.setParameter(OWNER_KEY, owner);
 
 			return query.getSingleResult().intValue();
@@ -455,6 +464,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		requireArgument(em != null, "Entity manager can not be null.");
 
 		TypedQuery<Alert> query = em.createNamedQuery("Alert.findAll", Alert.class);
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		try {
 			return query.getResultList();
 		} catch (NoResultException ex) {
@@ -496,13 +507,15 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 
 		TypedQuery<Alert> query = em.createNamedQuery("Alert.findByStatus", Alert.class);
 
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		query.setHint("eclipselink.join-fetch", "a.triggers");
 		query.setHint("eclipselink.join-fetch", "a.notifications");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.triggers");
 		query.setHint("eclipselink.left-join-fetch", "a.triggers.notifications");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.metricsToAnnotate");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.subscriptions");
-
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+		
 		try {
 			query.setParameter("enabled", enabled);
 			return query.getResultList();
@@ -519,13 +532,15 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		
 		TypedQuery<Alert> query = em.createNamedQuery("Alert.findByRangeAndStatus", Alert.class);
 
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		query.setHint("eclipselink.join-fetch", "a.triggers");
 		query.setHint("eclipselink.join-fetch", "a.notifications");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.triggers");
 		query.setHint("eclipselink.left-join-fetch", "a.triggers.notifications");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.metricsToAnnotate");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.subscriptions");
-
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+		
 		try {
 			query.setParameter("fromId", fromId);
 			query.setParameter("toId", toId);
@@ -542,13 +557,15 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		
 		TypedQuery<Alert> query = em.createNamedQuery("Alert.findAlertsModifiedAfterDate", Alert.class);
 
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		query.setHint("eclipselink.join-fetch", "a.triggers");
 		query.setHint("eclipselink.join-fetch", "a.notifications");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.triggers");
 		query.setHint("eclipselink.left-join-fetch", "a.triggers.notifications");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.metricsToAnnotate");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.subscriptions");
-
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+		
 		try {
 			query.setParameter("modifiedDate",modifiedDate,TemporalType.TIMESTAMP);
 			return query.getResultList();
@@ -570,6 +587,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		requireArgument(em != null, "Entity manager can not be null.");
 
 		TypedQuery<BigInteger> query = em.createNamedQuery("Alert.findIDsByStatus", BigInteger.class);
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
 		try {
 			query.setParameter("enabled", enabled);
 			return query.getResultList();
@@ -590,6 +609,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		requireArgument(em != null, "Entity manager can not be null.");
 
 		TypedQuery<Long> query = em.createNamedQuery("Alert.countByStatus", Long.class);
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		try {
 			query.setParameter("enabled", enabled);
 			return query.getSingleResult().intValue();
@@ -612,6 +633,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		requireArgument(em != null, "Entity manager can not be null.");
 
 		TypedQuery<Alert> query = em.createNamedQuery("Alert.findByStatus", Alert.class);
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		try {
 			query.setParameter("enabled", enabled);
 			query.setFirstResult(offset);
@@ -641,6 +664,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			query = em.createNamedQuery("Alert.getSharedAlertsByOwner", Alert.class);
 			query.setParameter("owner", owner);
 		}
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 
 		if(limit!= null){
 			query.setMaxResults(limit);
@@ -679,6 +704,9 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 				query = em.createNamedQuery("Alert.countSharedAlertsWithSearchText", Long.class);
 				query.setParameter(SEARCHTEXT_KEY, _convertSearchTextWildCardForQuery(searchText));
 			}
+
+			query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+			query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 
 			return query.getSingleResult().intValue();
 		} catch (NoResultException ex) {
@@ -844,6 +872,9 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 				query.setParameter(SEARCHTEXT_KEY, _convertSearchTextWildCardForQuery(searchText));
 			}
 
+			query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+			query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+
 			return query.getSingleResult().intValue();
 		} catch (NoResultException ex) {
 			return 0;
@@ -863,6 +894,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		requireArgument(prefix != null && !prefix.isEmpty(), "Cannot find alerts starting with null of empty prefix");
 
 		TypedQuery<Alert> query = em.createNamedQuery("Alert.findByPrefix", Alert.class);
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		try {
 			query.setParameter("name", prefix + "%");
 			return query.getResultList();
@@ -949,6 +982,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		}
 		
 		TypedQuery<Tuple> query = em.createQuery(cq);
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
 
 		// Set limit for pagination
 		if (limit != null && limit > 0) {
