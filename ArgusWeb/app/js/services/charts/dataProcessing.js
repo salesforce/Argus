@@ -376,7 +376,18 @@ angular.module('argus.services.charts.dataProcessing', [])
 
 		createSeriesName: createSeriesName,
 
-		copyFlagSeries: copyFlagSeries
+		copyFlagSeries: copyFlagSeries,
+
+		getChartTypeByExpressions: function (expressions) {
+			var chartType = 'line';
+			if(expressions.length > 0){
+				// in view metrics page, there will only be one expression
+				if (expressions[0].includes(':histogram-buckets')){
+					chartType = 'stackbar';
+				}
+			}
+			return chartType;
+		}
 	};
 
 	return service;

@@ -241,12 +241,20 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
 		$scope.updateChart = function (series, annotationInfo, expressions) {
 			// if the metric expression is not empty
+			var chartMarkUp = '<div ngsf-fullscreen>' +
+			'<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
+			'</div>';
+			var chartType = ChartDataProcessingService.getChartTypeByExpressions(expressions);
+
 			if (series && series.length > 0) {
 				var chartScope = $scope.$new(false);
 				chartScope.chartConfig = {
 					chartId: 'container',
 					expressions: expressions,
-					chartType: 'line'
+					chartType: chartType,
+					chart: {
+						height: 500
+					}
 				};
 				chartScope.dateConfig = {};
 				chartScope.series = series;
@@ -286,10 +294,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 							annotationCount.tot--;
 							if (annotationCount.tot === 0) {
 								$scope.chartLoaded = true;
-								angular.element('#' + 'container').append($compile(
-									'<div ngsf-fullscreen>' +
-									'<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
-									'</div>')(chartScope)
+								angular.element('#' + 'container').append($compile(chartMarkUp)(chartScope)
 								);
 							}
 						}, function (error) {
@@ -297,20 +302,14 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 							annotationCount.tot--;
 							if (annotationCount.tot === 0) {
 								$scope.chartLoaded = true;
-								angular.element('#' + 'container').append($compile(
-									'<div ngsf-fullscreen>' +
-									'<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
-									'</div>')(chartScope)
+								angular.element('#' + 'container').append($compile(chartMarkUp)(chartScope)
 								);
 							}
 						});
 					}
 				} else {
 					$scope.chartLoaded = true;
-					angular.element('#' + 'container').append($compile(
-						'<div ngsf-fullscreen>' +
-						'<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
-						'</div>')(chartScope)
+					angular.element('#' + 'container').append($compile(chartMarkUp)(chartScope)
 					);
 				}
 			}

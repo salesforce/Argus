@@ -179,7 +179,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .metricFields, .metricFields .form-control {margin:0 2em .5em 0;}
 
 /* main graph/chart - i.e. metrics */
-#graphContainer {margin:1.5em auto 0; min-width:310px; height:400px;}
+.graphContainer {margin:1.5em auto 0; min-width:310px; height:600px;}
 
 /* autocomplete */
 .autoComplete .category {padding:4px; border:1px solid #71ABCE; border-radius:5px; font-size:11px;}

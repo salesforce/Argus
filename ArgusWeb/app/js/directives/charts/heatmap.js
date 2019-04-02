@@ -336,7 +336,7 @@ angular.module('argus.directives.charts.heatmap', [])
 				// color scheme
 				var z = ChartToolService.setColorScheme(scope.menuOption.colorPalette);
 				// determine chart layout and dimensions
-				var containerHeight = isSmallChart ? 150 : 330;
+				var containerHeight = isSmallChart ? ChartElementService.smallChartHeight : ChartElementService.defaultChartHeight;
 				var containerWidth = $('#' + chartId).width();
 				// remember the original size
 				var defaultContainerWidth = -1;
