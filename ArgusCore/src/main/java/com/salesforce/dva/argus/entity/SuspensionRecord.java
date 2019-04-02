@@ -174,6 +174,7 @@ public class SuspensionRecord extends JPAEntity {
         try {
             query.setParameter("user", user);
             query.setParameter("subSystem", subSystem);
+            query.setHint("javax.persistence.cache.storeMode", "REFRESH");
             return query.getSingleResult();
         } catch (NoResultException ex) {
             return null;
