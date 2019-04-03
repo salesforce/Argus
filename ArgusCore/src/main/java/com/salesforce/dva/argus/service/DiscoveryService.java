@@ -163,7 +163,7 @@ public interface DiscoveryService extends Service {
             }else {
                 tags.put("user", "unknown");
             }
-            monitorService.modifyCounter(Counter.QUERY_MAX_DATAPOINTS_LIMIT_EXCEEDED, 1, tags);
+            monitorService.modifyCounter(Counter.QUERY_DATAPOINTS_LIMIT_EXCEEDED, 1, tags);
             logger.error("Maximum datapoints limit execeeded for query - " + query.toString() + ", user - "+tags.get("user"));
         }
     }
