@@ -341,7 +341,7 @@ public class DefaultConsumer implements Consumer {
                     }
 
                     try {
-                        ConsumerRecords<String, String> records = _consumer.poll(Duration.ofMillis(Long.MAX_VALUE));
+                        ConsumerRecords<String, String> records = _consumer.poll(Long.MAX_VALUE);
                         for (ConsumerRecord<String, String> record : records) {
                             String message = record.value();
                             String topic = record.topic();
