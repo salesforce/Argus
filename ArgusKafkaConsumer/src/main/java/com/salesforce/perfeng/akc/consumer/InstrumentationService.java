@@ -336,8 +336,7 @@ public class InstrumentationService {
 			mbeanServer.registerMBean(b, new ObjectName(b.getObjectName()));
 		} catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException
 				| MalformedObjectNameException e) {
-			LOGGER.error(String.format("Error registering MetricMXBean with name=%s, registeredMetrics=%s",
-					b.getObjectName(), registeredMetrics), e);
+			LOGGER.error("Error registering MetricMXBean with name={}:", b.getObjectName(), e);
 		}
 	}
 
