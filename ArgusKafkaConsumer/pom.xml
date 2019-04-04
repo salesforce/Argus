@@ -21,6 +21,7 @@
         <quota.version>0.2.9</quota.version>
         <dynamic-keystore.version>2.0.39</dynamic-keystore.version>
         <logback.version>1.2.3</logback.version>
+        <assembly.skipAssembly>true</assembly.skipAssembly>
     </properties>
 
     <dependencies>
@@ -175,38 +176,6 @@
 
     <build>
       <plugins>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.5.3</version>
-                <executions>
-                    <execution>
-                        <id>make-shared-resources</id>
-                        <phase>none</phase>
-                    </execution>
-                    <execution>
-                        <id>make-shared-test-resources</id>
-                        <phase>none</phase>
-                    </execution>
-                    <execution>
-                        <id>make-assembly</id> <!-- this is used for inheritance merges -->
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>com.salesforce.perfeng.akc.consumer.KafkaConsumerManager</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                        </configuration>
-                        <phase>package</phase> <!-- bind to the packaging phase -->
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
