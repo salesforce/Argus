@@ -18,7 +18,7 @@
         <top>${project.basedir}/${project.parent.relativePath}</top>
         <!--<kafka.client.version>2.1</kafka.client.version>-->
         <!-- BEGINSFDC specific versioning -->
-        <kafka.client.version>2.0.1-sfdc-0.0.5</kafka.client.version>
+        <kafka.version>2.0.1-sfdc-0.0.5</kafka.version>
         <!-- ENDSFDC specific versioning -->
     </properties>
     <build>
@@ -277,8 +277,8 @@
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.12</artifactId>
-            <version>2.1.0</version>
+            <artifactId>kafka_2.11</artifactId>
+            <version>${kafka.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -293,7 +293,7 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-           <version>${kafka.client.version}</version>
+           <version>${kafka.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
