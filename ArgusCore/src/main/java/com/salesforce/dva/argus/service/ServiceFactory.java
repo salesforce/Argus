@@ -93,6 +93,8 @@ public final class ServiceFactory {
     Provider<ChartService> _chartServiceProvider;
     @Inject
     Provider<ServiceManagementService> _serviceManagementServiceProvider;
+    @Inject
+    Provider<QueryStoreService> _queryStoreServiceProvider;
 
 
     //~ Methods **************************************************************************************************************************************
@@ -320,6 +322,15 @@ public final class ServiceFactory {
      */
     public synchronized ServiceManagementService getServiceManagementService() {
         return _serviceManagementServiceProvider.get();
+    }
+
+    /**
+     * Returns an instance of the Queries Store service.
+     *
+     * @return  An instance of the Queries Store service.
+     */
+    public synchronized QueryStoreService getQueryStoreService() {
+        return _queryStoreServiceProvider.get();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

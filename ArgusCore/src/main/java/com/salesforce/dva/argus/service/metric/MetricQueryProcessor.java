@@ -9,6 +9,7 @@ import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.MonitorService;
+import com.salesforce.dva.argus.service.QueryStoreService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.TSDBService.QueryStartTimeWindow;
@@ -22,17 +23,23 @@ import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.QueryContext;
 import com.salesforce.dva.argus.util.TSDBQueryExpression;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
  * This class has methods which are used to evaluate the metric query expression once it is parsed
  */
 public class MetricQueryProcessor {
 
+    private static Logger logger = LoggerFactory.getLogger(MetricQueryProcessor.class);
+
     private DiscoveryService _discoveryService;
 
     private TSDBService _tsdbService;
     
     private MonitorService _monitorService;
+
+    private QueryStoreService _queryStoreService;
 
     private TransformFactory _factory;
     
@@ -44,10 +51,11 @@ public class MetricQueryProcessor {
 
 
     @Inject
-    public MetricQueryProcessor(TSDBService tsdbService, DiscoveryService discoveryService, MonitorService monitorService, TransformFactory factory) {
+    public MetricQueryProcessor(TSDBService tsdbService, DiscoveryService discoveryService, MonitorService monitorService, TransformFactory factory, QueryStoreService queryStoreService) {
         _tsdbService = tsdbService;
         _discoveryService = discoveryService;
         _monitorService=monitorService;
+        _queryStoreService=queryStoreService;
         _factory = factory;
     }
 
@@ -116,6 +124,18 @@ public class MetricQueryProcessor {
 
         List<MetricQuery> queries = _discoveryService.getMatchingQueries(query);
 
+        // Stores all the user queries
+        List<Metric> metricsQueried = new ArrayList<>();
+        for (MetricQuery metricQuery:queries) {
+            metricsQueried.add(new Metric(metricQuery.getScope(),metricQuery.getMetric()));
+        }
+        try {
+            _queryStoreService.putArgusWsQueries(metricsQueried);
+        }
+        catch (Exception e)
+        {
+            logger.warn("Inserting Queries to QueryStore failed due to "+e);
+        }
         List<Metric> metrics = new ArrayList<Metric>();
         Map<MetricQuery, List<Metric>> metricsMap = _tsdbService.getMetrics(queries);
         for(List<Metric> m : metricsMap.values()) {

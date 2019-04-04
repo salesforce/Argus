@@ -57,7 +57,7 @@ import com.salesforce.dva.argus.service.monitor.CounterMetricJMXExporter;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
 import com.salesforce.dva.argus.service.monitor.GaugeExporter;
 import com.salesforce.dva.argus.service.oauth.DefaultOAuthAuthorizationCodeService;
-import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
+import com.salesforce.dva.argus.service.querystore.ElasticSearchQueryStoreService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.CachedTSDBService;
 import com.salesforce.dva.argus.service.users.CachedUserService;
@@ -236,6 +236,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.MAIL_SERVICE_IMPL_CLASS, MailService.class);
         bindConcreteClass(Property.AUTH_SERVICE_IMPL_CLASS, AuthService.class);
         bindConcreteClass(Property.SCHEMA_SERVICE_IMPL_CLASS, SchemaService.class);
+        bindConcreteClass(Property.QUERYSTORE_SERVICE_IMPL_CLASS, QueryStoreService.class);
         bindConcreteClass(Property.HISTORY_SERVICE_IMPL_CLASS, HistoryService.class);
         bindConcreteClass(Property.AUDIT_SERVICE_IMPL_CLASS, AuditService.class);
         bindConcreteClass(Property.CALLBACK_SERVICE_IMPL_CLASS, CallbackService.class);
@@ -297,6 +298,7 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.MAIL_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.AUTH_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.SCHEMA_SERVICE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.QUERYSTORE_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.HISTORY_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.TSDB_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE));

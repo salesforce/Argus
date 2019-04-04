@@ -75,11 +75,11 @@ public class MetricSchemaRecordList {
 	}
 	
 	
-	enum HashAlgorithm {
+	public enum HashAlgorithm {
 		MD5,
 		XXHASH;
 		
-		static HashAlgorithm fromString(String str) throws IllegalArgumentException {
+		public static HashAlgorithm fromString(String str) throws IllegalArgumentException {
 			for(HashAlgorithm algo : HashAlgorithm.values()) {
 				if(algo.name().equalsIgnoreCase(str)) {
 					return algo;

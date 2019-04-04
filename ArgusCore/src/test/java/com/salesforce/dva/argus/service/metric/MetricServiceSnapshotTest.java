@@ -7,6 +7,7 @@ import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.TSDBEntity;
 import com.salesforce.dva.argus.service.DiscoveryService;
+import com.salesforce.dva.argus.service.QueryStoreService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
@@ -40,6 +41,7 @@ public class MetricServiceSnapshotTest {
     DefaultMetricService metricService;
     DiscoveryService discoveryService;
     TSDBService tsdbService;
+    QueryStoreService queryStoreService;
 
     static private SystemMain system;
 
@@ -61,11 +63,12 @@ public class MetricServiceSnapshotTest {
     public void setUp() {
         discoveryService = spy(system.getServiceFactory().getDiscoveryService());
         tsdbService = spy(system.getServiceFactory().getTSDBService());
+        queryStoreService =spy(system.getServiceFactory().getQueryStoreService());
         MetricQueryProcessor processor = new MetricQueryProcessor(
                 tsdbService,
                 discoveryService,
                 system.getServiceFactory().getMonitorService(),
-                new TransformFactory(tsdbService)
+                new TransformFactory(tsdbService), queryStoreService
         );
         Provider metricsProvider = (Provider<MetricReader<Metric>>) () -> new MetricReader<>(tsdbService, discoveryService, new TransformFactory(tsdbService));
         Provider queryProvider = (Provider<MetricReader<MetricQuery>>) () -> new MetricReader<>(tsdbService, discoveryService, new TransformFactory(tsdbService));
