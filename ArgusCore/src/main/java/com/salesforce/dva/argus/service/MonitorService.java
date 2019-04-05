@@ -241,6 +241,9 @@ public interface MonitorService extends Service {
         SCOPEANDMETRICNAMES_QUERY_COUNT("argus.core", "scopeandmetricnames.query.count", MetricType.COUNTER),
         SCOPEANDMETRICNAMES_QUERY_LATENCY("argus.core", "scopeandmetricnames.query.latency"),
 
+        QUERYSTORE_RECORDS_WRITTEN("argus.core", "querystore.records.written", MetricType.COUNTER),
+        QUERYSTORE_RECORDS_WRITE_LATENCY("argus.core", "querystore.records.write.latency"),
+
         SCOPENAMES_WRITTEN("argus.core", "scopenames.written", MetricType.COUNTER),
         SCOPENAMES_WRITE_LATENCY("argus.core", "scopenames.write.latency"),
         SCOPENAMES_QUERY_COUNT("argus.core", "scopenames.query.count", MetricType.COUNTER),
@@ -257,8 +260,10 @@ public interface MonitorService extends Service {
         BLOOM_CREATED_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.created.approximate.element.count", MetricType.COUNTER),
         BLOOM_MODIFIED_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.modified.approximate.element.count", MetricType.COUNTER),
 
+        QUERY_STORE_BLOOM_CREATED_APPROXIMATE_ELEMENT_COUNT("argus.core", "querystore.bloomfilter.created.approximate.element.count", MetricType.COUNTER),
+
         DATALAG_PER_DC_TIME_LAG("argus.core", "datalag.seconds"),
-        QUERY_MAX_DATAPOINTS_LIMIT_EXCEEDED("argus.core", "datapoints.limit.exceeded");
+        QUERY_DATAPOINTS_LIMIT_EXCEEDED("argus.core", "query.datapoints.limit.exceeded");
 
         private final String _scope;
         private final String _metric;

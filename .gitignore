@@ -12,7 +12,7 @@ argus-build.properties
 .settings/
 .DS_Store
 /config
-
+ArgusKafkaConsumer/dependency-reduced-pom.xml
 ArgusCore/bloomstate/*
 
 # Eclipse ignore

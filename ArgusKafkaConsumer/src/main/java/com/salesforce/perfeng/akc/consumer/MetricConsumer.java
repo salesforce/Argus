@@ -51,7 +51,7 @@ class MetricConsumer extends BaseMetricConsumer {
         this.tsdbService = tsdbService;
     }
 
-    void processAjnaMetricKafkaRecords(ConsumerRecords<byte[], byte[]> records, Map<String, Metric> argusMetrics, Map<String, Histogram> argusHistograms) {
+    void processAjnaMetricKafkaRecords(ConsumerRecords<byte[], byte[]> records, Map<String, Metric> argusMetrics, List<Histogram> argusHistograms) {
         records.forEach(record -> {
             //ajnaWireFromBytes() is not affected by the template class, i.e. Metric in this case
             AjnaWire ajnaWire = metricAvroDecoder.ajnaWireFromBytes(record.value());
@@ -75,7 +75,7 @@ class MetricConsumer extends BaseMetricConsumer {
         }
 
         if (!argusHistograms.isEmpty()) {
-            int batches = processInBatches(new ArrayList<>(argusHistograms.values()),
+            int batches = processInBatches(argusHistograms,
                     METRICS_BATCH_SIZE,
                     histogramConsumer::processArgusHistogram);
             instrumentationService.updateCounter(HISTOGRAM_BATCH_COUNT, batches, null);

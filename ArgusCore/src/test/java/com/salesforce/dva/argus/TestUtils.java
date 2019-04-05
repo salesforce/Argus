@@ -37,6 +37,8 @@ import com.salesforce.dva.argus.entity.HistogramBucket;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.system.SystemConfiguration;
+
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServerStartable;
 import org.apache.curator.test.TestingServer;
@@ -105,6 +107,26 @@ public class TestUtils {
 
 
 
+    static public SystemConfiguration getConfiguration() {
+        Properties config = new Properties();
+        InputStream is = null;
+
+        try {
+            is = TestUtils.class.getResourceAsStream("/argus.properties");
+            config.load(is);
+        } catch (IOException ex) {
+            throw new SystemException(ex);
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException ex) {
+                    assert false : "This should never occur.";
+                }
+            }
+        }
+        return new SystemConfiguration(config);
+    }
 
     static public SystemMain getInstance() {
         Properties config = new Properties();

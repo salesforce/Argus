@@ -307,6 +307,7 @@ public class Notification extends JPAEntity implements Serializable {
 		setNotifierName(notifierName);
 		setSubscriptions(subscriptions);
 		setCooldownPeriod(cooldownPeriod);
+		initializeNotificationData();
 	}
 
 	/**
@@ -741,15 +742,12 @@ public class Notification extends JPAEntity implements Serializable {
 	}
 
 	private JsonObject getJsonObject() {
-		JsonObject GOCFields = new JsonObject();
+		JsonObject GOCFields;
 		try {
 			GOCFields = new JsonParser().parse(this.notificationCustomData).getAsJsonObject();
 		} catch (Exception ex) {
-			_logger.debug("Unable to parse notification object. Creating a new object. Exception: {}", ex);
-			GOCFields.addProperty(ARTICLE_NUMBER_KEY, "");
-			GOCFields.addProperty(EVENT_NAME_KEY, "");
-			GOCFields.addProperty(ELEMENT_NAME_KEY, "");
-			GOCFields.addProperty(PRODUCT_TAG_KEY, "");
+			_logger.debug("Unable to parse notification object. Creating a new object. Exception: {}", ex.getMessage());
+			GOCFields = getEmptyNotificationCustomData();
 		}
 		return GOCFields;
 	}
@@ -767,6 +765,19 @@ public class Notification extends JPAEntity implements Serializable {
 		} else {
 			return null;
 		}
+	}
+
+	private JsonObject getEmptyNotificationCustomData() {
+		JsonObject GOCFields = new JsonObject();
+		GOCFields.addProperty(ARTICLE_NUMBER_KEY, "");
+		GOCFields.addProperty(EVENT_NAME_KEY, "");
+		GOCFields.addProperty(ELEMENT_NAME_KEY, "");
+		GOCFields.addProperty(PRODUCT_TAG_KEY, "");
+		return GOCFields;
+	}
+
+	private void initializeNotificationData() {
+		this.notificationCustomData = getEmptyNotificationCustomData().toString();
 	}
 
 	@Override

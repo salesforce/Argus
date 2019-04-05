@@ -70,7 +70,7 @@ abstract class BaseMetricConsumer extends BaseConsumer {
      * @param argusMetrics this is exposed for testing
      * @param argusHistograms this is exposed for testing
      */
-    abstract void processAjnaMetricKafkaRecords(ConsumerRecords<byte[], byte[]> records, Map<String, Metric> argusMetrics, Map<String, Histogram> argusHistograms);
+    abstract void processAjnaMetricKafkaRecords(ConsumerRecords<byte[], byte[]> records, Map<String, Metric> argusMetrics, List<Histogram> argusHistograms);
 
     List<com.salesforce.mandm.ajna.Metric> extractAjnaMetrics(ConsumerRecord<byte[], byte[]> record, AjnaWire ajnaWire) {
         try {

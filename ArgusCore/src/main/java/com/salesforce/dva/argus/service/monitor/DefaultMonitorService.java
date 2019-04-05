@@ -639,7 +639,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			_mbeanServer.registerMBean(b, new ObjectName(b.getObjectName()));
 		} catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException
 				| MalformedObjectNameException e) {
-			_logger.error(String.format("Error registering MetricMXBean with name=%s, _registeredMetrics=%s", b.getObjectName(), _registeredMetrics), e);
+			_logger.error("Error registering MetricMXBean with name={}:", b.getObjectName(), e);
 		}
 	}
 

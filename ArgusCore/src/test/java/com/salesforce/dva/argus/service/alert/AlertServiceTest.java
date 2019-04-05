@@ -44,13 +44,22 @@ import com.salesforce.dva.argus.service.MQService;
 import com.salesforce.dva.argus.service.ManagementService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
-import org.junit.*;
-
+import org.junit.Before;
+import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import org.junit.Test;
+import org.junit.Ignore;
 import java.io.File;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import kafka.server.KafkaConfig;
-import kafka.server.KafkaServerStartable;
-import org.apache.curator.test.TestingServer;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyString;
+import org.mockito.stubbing.Answer;
+import static org.mockito.Mockito.mock;
+
+
+
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -79,19 +88,21 @@ import java.util.Properties;
 import java.sql.DriverManager;
 import java.sql.SQLNonTransientConnectionException;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
+import org.junit.rules.MethodRule;
+import org.junit.rules.TestWatchman;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.Rule;
 
 import com.salesforce.dva.argus.TestUtils;
 
-
-@Ignore("Tests are failing in Strata - W-6003515 to investigate, fix and reenable")
+@Ignore
 public class AlertServiceTest{
 
 	private static final String EXPRESSION =
 			"DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
 
-    static protected TestingServer zkTestServer;
-    static protected KafkaServerStartable kafkaServer;
-    static private String tempDir = "";
 
     private SystemMain system;
     private PrincipalUser admin;
@@ -99,82 +110,31 @@ public class AlertServiceTest{
     private UserService userService;
     private MQService mqService;
     private ManagementService managementService;
+    final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static void deleteFolder(File folder) {
-        File[] files = folder.listFiles();
 
-        if (files != null) {
-            for (File f : files) {
-                if (f.isDirectory()) {
-                    deleteFolder(f);
-                } else {
-                    f.delete();
-                }
-            }
-        }
-    }
-
-    private static ch.qos.logback.classic.Logger kafkaLogger;
-    private static ch.qos.logback.classic.Logger zkLogger;
     private static ch.qos.logback.classic.Logger apacheLogger;
     private static ch.qos.logback.classic.Logger myClassLogger;
 
+    @Rule public MethodRule watchman = new TestWatchman() {
+            public void starting(FrameworkMethod method) {
+                logger.info("now running {}", method.getName());
+            }
+        };
+
+
     @BeforeClass
     static public void setUpClass() {
-        kafkaLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("kafka");
-        kafkaLogger.setLevel(ch.qos.logback.classic.Level.OFF);
-        zkLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.I0Itec.zkclient");
-        zkLogger.setLevel(ch.qos.logback.classic.Level.OFF);
         myClassLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.salesforce.dva.argus.service.alert.AlertServiceTest");
-        myClassLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+        myClassLogger.setLevel(ch.qos.logback.classic.Level.INFO);
         apacheLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache");
         apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
-
-        try {
-            zkTestServer = new TestingServer(2185);
-        } catch (Exception ex) {
-            LoggerFactory.getLogger(AlertServiceTest.class).error("Exception in setUp:{}", ex.getMessage());
-            fail("Exception during database startup.");
-        }
-        setupEmbeddedKafka();
     }
 
     @AfterClass
     static public void tearDownClass() {
-        tearDownEmbeddedKafka();
-        try {
-            zkTestServer.close();
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
     }
 
-
-    static private void setupEmbeddedKafka() {
-        Properties properties = new Properties();
-
-        properties.put("zookeeper.connect", zkTestServer.getConnectString());
-        properties.put("host.name", "localhost");
-        properties.put("port", "9093");
-        properties.put("broker.id", "0");
-        properties.put("num.partitions", "2");
-        properties.put("log.flush.interval.ms", "10");
-        properties.put("log.dir", "/tmp/kafka-logs/" + TestUtils.createRandomName());
-        properties.put("offsets.topic.replication.factor", "1");
-
-        KafkaConfig config = new KafkaConfig(properties);
-
-        kafkaServer = new KafkaServerStartable(config);
-        kafkaServer.startup();
-    }
-
-    static private void tearDownEmbeddedKafka() {
-        if (kafkaServer != null) {
-            kafkaServer.shutdown();
-            kafkaServer.awaitShutdown();
-            deleteFolder(new File(tempDir));
-        }
-    }
 
 	@Before
 	public void setup() {
@@ -182,9 +142,10 @@ public class AlertServiceTest{
                 Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
                 DriverManager.getConnection("jdbc:derby:memory:argus;create=true").close();
             } catch (Exception ex) {
-                LoggerFactory.getLogger(AlertServiceTest.class).error("Exception in setUp:{}", ex.getMessage());
+                LoggerFactory.getLogger(getClass()).error("Exception in setUp:{}", ex.getMessage());
                 fail("Exception during database startup.");
             }
+
             system = TestUtils.getInstance();
             system.start();
             userService = system.getServiceFactory().getUserService();
@@ -197,7 +158,6 @@ public class AlertServiceTest{
     @After
     public void tearDown() {
         if (system != null) {
-            system.getServiceFactory().getManagementService().cleanupRecords();
             system.stop();
         }
         try {
@@ -214,7 +174,8 @@ public class AlertServiceTest{
 
 	@Test
 	public void testUpdateAlert() {
-		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
+            String alertName = "alertname-" + TestUtils.createRandomName();
+		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), alertName, EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", expected, "notifier-name", new ArrayList<String>(), 5000L);
 		Trigger trigger = new Trigger(expected, TriggerType.GREATER_THAN, "trigger-name", 0.95, 60000);
 
@@ -237,7 +198,9 @@ public class AlertServiceTest{
 
 	@Test
 	public void testDeleteAlert() {
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
+            String alertName = "alertname-" + TestUtils.createRandomName();
+
+		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), alertName, EXPRESSION, "* * * * *");
 		Notification notification1 = new Notification("notification1", alert, "notifier-name1", new ArrayList<String>(), 5000L);
 		Notification notification2 = new Notification("notification2", alert, "notifier-name2", new ArrayList<String>(), 5000L);
 		Trigger trigger1 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger-name1", 0.95, 60000);
@@ -287,7 +250,8 @@ public class AlertServiceTest{
 	@Test
 	public void testFindAlertByNameAndOwner() {
 		String alertName = "testAlert";
-		PrincipalUser expectedUser = new PrincipalUser(admin, "testUser", "testuser@testcompany.com");
+		String userName = TestUtils.createRandomName();
+                PrincipalUser expectedUser = new PrincipalUser(admin, userName, "testuser@testcompany.com");
 		Alert expectedAlert = new Alert(expectedUser, expectedUser, alertName, EXPRESSION, "* * * * *");
 
 		expectedAlert = alertService.updateAlert(expectedAlert);
@@ -495,7 +459,8 @@ public class AlertServiceTest{
 
 	@Test
 	public void testFindAlertsByOwnerPagedWithSorting() {
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+            String userName = TestUtils.createRandomName();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName, userName + "test1@salesforce.com"));
 
 		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
 		try{
@@ -864,7 +829,9 @@ public class AlertServiceTest{
 
 	@Test
 	public void testDeletedTriggersInNotifications() {
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
+            String alertName = "alertname-" + TestUtils.createRandomName();
+
+		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), alertName, EXPRESSION, "* * * * *");
 		Notification notification1 = new Notification("notification1", alert, "notifier-name1", new ArrayList<String>(), 5000L);
 		Notification notification2 = new Notification("notification2", alert, "notifier-name2", new ArrayList<String>(), 5000L);
 		Notification notification3 = new Notification("notification3", alert, "notifier-name3", new ArrayList<String>(), 5000L);
@@ -900,27 +867,33 @@ public class AlertServiceTest{
 		assertNotNull((alertService.findAlertByNameAndOwner(alertName, user)));
 	}
 
+    @Ignore("re-do this test, it tests things similar to defaultalertservicetest and mqservicetest,and takes longer")
 	@Test
 	public void testAlertEnqueue() {
+
 		PrincipalUser user = userService.findAdminUser();
 		List<Alert> actualAlertList = new ArrayList<>();
 
-		for (int i = 0; i < 5; i++) {
+                int count=5;
+		for (int i = 0; i < count; i++) {
 			actualAlertList.add(alertService.updateAlert(new Alert(user, user, TestUtils.createRandomName(), EXPRESSION, "* * * * *")));
 		}
 		alertService.enqueueAlerts(actualAlertList);
+                List<AlertWithTimestamp> expectedList = mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, 10000, count);
 
-		List<AlertWithTimestamp> expectedList = mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, 10000, 10);
-
-		assertEquals(actualAlertList.size(), expectedList.size());
+                assertEquals(actualAlertList.size(), expectedList.size());
 	}
 
 	@Test
 	public void testSharedAlertWhenOneSharedAlert() {
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+            String userName = TestUtils.createRandomName();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName, userName+ "test1@salesforce.com"));
 
-		alertService.updateAlert(new Alert(user1, user1, "alert-name1", EXPRESSION, "* * * * *"));
-		Alert alertShared = alertService.updateAlert(new Alert(user1, user1, "alert-name-shared2", EXPRESSION, "* * * * *"));
+                String alertName1 = "alertname-" + TestUtils.createRandomName();
+
+		alertService.updateAlert(new Alert(user1, user1, alertName1, EXPRESSION, "* * * * *"));
+                String alertName2 = "alertname-" + TestUtils.createRandomName();
+		Alert alertShared = alertService.updateAlert(new Alert(user1, user1, alertName2, EXPRESSION, "* * * * *"));
 
 		alertShared.setShared(true);
 		alertService.updateAlert(alertShared);
@@ -933,11 +906,15 @@ public class AlertServiceTest{
 
 	@Test
 	public void testSharedAlertWhenTwoSharedAlert() {
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
 
-		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
-		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
+                String alertName1 = "alertname-" + TestUtils.createRandomName();
+		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, alertName1, EXPRESSION, "* * * * *"));
+                String alertName2 = "alertname-" + TestUtils.createRandomName();
+		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, alertName2, EXPRESSION, "* * * * *"));
 
 		alertSharedUser1.setShared(true);
 		alertService.updateAlert(alertSharedUser1);
@@ -954,11 +931,15 @@ public class AlertServiceTest{
 
 	@Test
 	public void testFindSharedAlertsMeta() {
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
 
-		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
-		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
+                String alertName1 = "alertname-" + TestUtils.createRandomName();
+		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, alertName1, EXPRESSION, "* * * * *"));
+                String alertName2 = "alertname-" + TestUtils.createRandomName();
+		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, alertName2, EXPRESSION, "* * * * *"));
 
 		alertSharedUser1.setShared(true);
 		alertService.updateAlert(alertSharedUser1);
@@ -975,8 +956,10 @@ public class AlertServiceTest{
 
 	@Test
 	public void testFindSharedAlertsMetaPaged() {
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
 
 		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
 		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert2", EXPRESSION, "* * * * *"));
@@ -1015,8 +998,10 @@ public class AlertServiceTest{
 
 	@Test
 	public void testFindSharedAlertsMetaPagedWithSearchText() {
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
 
 		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
 		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert2", EXPRESSION, "* * * * *"));
@@ -1035,14 +1020,14 @@ public class AlertServiceTest{
 		sharedAlerts.add("alert2");
 
 		// Search by owner name
-		List<Alert> page = alertService.findSharedAlertsPaged(10, 0, "test1", null, null);
+		List<Alert> page = alertService.findSharedAlertsPaged(10, 0, userName1, null, null);
 		assertEquals(1, page.size());
-		assertTrue("test1".equals(page.get(0).getOwner().getUserName()));
+		assertTrue(userName1.equals(page.get(0).getOwner().getUserName()));
 
 		// Search by owner name case insensitive
-		page = alertService.findSharedAlertsPaged(10, 0, "TeSt1", null, null);
+		page = alertService.findSharedAlertsPaged(10, 0, userName1.toUpperCase(), null, null);
 		assertEquals(1, page.size());
-		assertTrue("test1".equals(page.get(0).getOwner().getUserName()));
+		assertTrue(userName1.equals(page.get(0).getOwner().getUserName()));
 
 		// Search by alert name
 		page = alertService.findSharedAlertsPaged(10, 0, "alert2", null, null);
@@ -1065,9 +1050,14 @@ public class AlertServiceTest{
 
 	@Test
 	public void testFindSharedAlertsMetaPagedWithSorting() {
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
-		PrincipalUser user3 = userService.updateUser(new PrincipalUser(admin, "test3", "test3@salesforce.com"));
+            String userName1 = "test1-" + TestUtils.createRandomName();
+            String userName2 = "test2-" + TestUtils.createRandomName();
+            String userName3 = "test3-" + TestUtils.createRandomName();
+
+
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
+		PrincipalUser user3 = userService.updateUser(new PrincipalUser(admin, userName3, userName3 + "test3@salesforce.com"));
 
 
 		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
@@ -1173,8 +1163,10 @@ public class AlertServiceTest{
 	}
 	@Test
 	public void testCountSharedAlertsMetaPaged() {
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
 
 		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
 		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert2", EXPRESSION, "* * * * *"));
@@ -1194,8 +1186,10 @@ public class AlertServiceTest{
 
 	@Test
 	public void testCountSharedAlertsMetaPagedWithSearchText() {
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
 
 		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
 		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert2", EXPRESSION, "* * * * *"));
@@ -1221,11 +1215,11 @@ public class AlertServiceTest{
 		assertEquals(1, alertService.countAlerts(context));
 
 		// count by user name
-		context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().setSearchText("test1").build();
+		context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().setSearchText(userName1).build();
 		assertEquals(1, alertService.countAlerts(context));
 
 		// count by user name case insensitive
-		context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().setSearchText("tEsT1").build();
+		context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().setSearchText(userName1.toUpperCase()).build();
 		assertEquals(1, alertService.countAlerts(context));
 
 		// Invalid search text
@@ -1235,12 +1229,18 @@ public class AlertServiceTest{
 
 	@Test
 	public void testFindSharedAlertsByOwner() {
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
 
-		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
-		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
-		Alert alertSharedAdmin = alertService.updateAlert(new Alert(admin, admin, "alert-name-shared3", EXPRESSION, "* * * * *"));
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
+
+                String alertName1 = "alertname-" + TestUtils.createRandomName();
+		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, alertName1, EXPRESSION, "* * * * *"));
+                String alertName2 = "alertname-" + TestUtils.createRandomName();
+		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, alertName2, EXPRESSION, "* * * * *"));
+                String alertName3 = "alertname-" + TestUtils.createRandomName();
+		Alert alertSharedAdmin = alertService.updateAlert(new Alert(admin, admin, alertName3, EXPRESSION, "* * * * *"));
 
 		alertSharedUser1.setShared(true);
 		alertService.updateAlert(alertSharedUser1);
@@ -1275,12 +1275,18 @@ public class AlertServiceTest{
 
 	@Test
 	public void testFindSharedAlertsMetaByOwner() {
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
 
-		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
-		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
-		Alert alertSharedAdmin = alertService.updateAlert(new Alert(admin, admin, "alert-name-shared3", EXPRESSION, "* * * * *"));
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
+
+                String alertName1 = "alertname-" + TestUtils.createRandomName();
+		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, alertName1, EXPRESSION, "* * * * *"));
+                String alertName2 = "alertname-" + TestUtils.createRandomName();
+		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, alertName2, EXPRESSION, "* * * * *"));
+                String alertName3 = "alertname-" + TestUtils.createRandomName();
+		Alert alertSharedAdmin = alertService.updateAlert(new Alert(admin, admin, alertName3, EXPRESSION, "* * * * *"));
 
 		alertSharedUser1.setShared(true);
 		alertService.updateAlert(alertSharedUser1);
@@ -1317,13 +1323,19 @@ public class AlertServiceTest{
 	public void testFindPrivateAlertsPagedForNonPrivilegedUser() {
 
 		// By default user is not privileged
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
+
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
 
 
-		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_private1", EXPRESSION, "* * * * *"));
-		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-private2", EXPRESSION, "* * * * *"));
-		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, "alert-name-private3", EXPRESSION, "* * * * *"));
+                String alertName1 = "alertname-" + TestUtils.createRandomName();
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, alertName1, EXPRESSION, "* * * * *"));
+                String alertName2 = "alertname-" + TestUtils.createRandomName();
+		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, alertName2, EXPRESSION, "* * * * *"));
+                String alertName3 = "alertname-" + TestUtils.createRandomName();
+		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, alertName3, EXPRESSION, "* * * * *"));
 
 		alert1.setShared(false);
 		alertService.updateAlert(alert1);
@@ -1340,12 +1352,18 @@ public class AlertServiceTest{
 	public void testCountPrivateAlertsForNonPrivilegedUser() {
 
 		// By default user is not privileged
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
 
-		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_private1", EXPRESSION, "* * * * *"));
-		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-private2", EXPRESSION, "* * * * *"));
-		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, "alert-name-private3", EXPRESSION, "* * * * *"));
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
+
+                String alertName1 = "alertname-" + TestUtils.createRandomName();
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, alertName1, EXPRESSION, "* * * * *"));
+                String alertName2 = "alertname-" + TestUtils.createRandomName();
+		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, alertName2, EXPRESSION, "* * * * *"));
+                String alertName3 = "alertname-" + TestUtils.createRandomName();
+		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, alertName3, EXPRESSION, "* * * * *"));
 
 		alert1.setShared(false);
 		alertService.updateAlert(alert1);
@@ -1363,14 +1381,20 @@ public class AlertServiceTest{
 	public void testFindPrivateAlertsPagedForPrivilegedUser() {
 
 		// By default user is not privileged
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
+
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
 		managementService.setAdministratorPrivilege(user1, true);
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
 
 
-		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_private1", EXPRESSION, "* * * * *"));
-		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-private2", EXPRESSION, "* * * * *"));
-		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared3", EXPRESSION, "* * * * *"));
+                String alertName1 = "alertname-" + TestUtils.createRandomName();
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, alertName1, EXPRESSION, "* * * * *"));
+                String alertName2 = "alertname-" + TestUtils.createRandomName();
+		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, alertName2, EXPRESSION, "* * * * *"));
+                String alertName3 = "alertname-" + TestUtils.createRandomName();
+		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, alertName3, EXPRESSION, "* * * * *"));
 
 		alert1.setShared(false);
 		alertService.updateAlert(alert1);
@@ -1396,22 +1420,28 @@ public class AlertServiceTest{
 		assertEquals(0, page.size());
 
 		// Assert all private alerts are fetched
-		assertTrue(alertNames.contains("alert-name_private1"));
-		assertTrue(alertNames.contains("alert-name-private2"));
+		assertTrue(alertNames.contains(alertName1));
+		assertTrue(alertNames.contains(alertName2));
 	}
 
 	@Test
 	public void testFindPrivateAlertsPagedForPrivilegedUserWithSearchText() {
 
 		// By default user is not privileged
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
+
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
 		managementService.setAdministratorPrivilege(user1, true);
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
 
 
-		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_private1", EXPRESSION, "* * * * *"));
-		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-private2", EXPRESSION, "* * * * *"));
-		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared3", EXPRESSION, "* * * * *"));
+                String alertName1 = "alert-name_private1" + TestUtils.createRandomName();
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, alertName1, EXPRESSION, "* * * * *"));
+                String alertName2 = "alert-name-private2" + TestUtils.createRandomName();
+		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, alertName2, EXPRESSION, "* * * * *"));
+                String alertName3 = "alert-name-shared3" + TestUtils.createRandomName();
+		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, alertName3, EXPRESSION, "* * * * *"));
 
 		alert1.setShared(false);
 		alertService.updateAlert(alert1);
@@ -1443,21 +1473,23 @@ public class AlertServiceTest{
 		assertEquals(0, page.size());
 
 		// Search by owner name
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "test2", null, null);
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, userName2, null, null);
 		assertEquals(1, page.size());
-		assertEquals("test2", page.get(0).getOwner().getUserName());
+		assertEquals(userName2, page.get(0).getOwner().getUserName());
 
 		// Search by owner name case insensitive
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "TeSt2", null, null);
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, userName2.toUpperCase(), null, null);
 		assertEquals(1, page.size());
-		assertEquals("test2", page.get(0).getOwner().getUserName());
+		assertEquals(userName2, page.get(0).getOwner().getUserName());
 	}
 
 	@Test
 	public void testFindPrivateAlertsPagedForPrivilegedUserWithSorting() {
 
 		// By default user is not privileged
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
 		managementService.setAdministratorPrivilege(user1, true);
 
 		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
@@ -1537,14 +1569,20 @@ public class AlertServiceTest{
 	public void testCountPrivateAlertsForPrivilegedUser() {
 
 		// By default user is not privileged
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
+
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
 		managementService.setAdministratorPrivilege(user1, true);
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
 
 
-		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_private1", EXPRESSION, "* * * * *"));
-		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-private2", EXPRESSION, "* * * * *"));
-		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared3", EXPRESSION, "* * * * *"));
+                String alertName1 = "alertname-" + TestUtils.createRandomName();
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, alertName1, EXPRESSION, "* * * * *"));
+                String alertName2 = "alertname-" + TestUtils.createRandomName();
+		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, alertName2, EXPRESSION, "* * * * *"));
+                String alertName3 = "alertname-" + TestUtils.createRandomName();
+		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, alertName3, EXPRESSION, "* * * * *"));
 
 		alert1.setShared(false);
 		alertService.updateAlert(alert1);
@@ -1561,14 +1599,20 @@ public class AlertServiceTest{
 	public void testCountPrivateAlertsForPrivilegedUserWithSearchText() {
 
 		// By default user is not privileged
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+            String userName1 = TestUtils.createRandomName();
+            String userName2 = TestUtils.createRandomName();
+
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, userName1, userName1 + "test1@salesforce.com"));
 		managementService.setAdministratorPrivilege(user1, true);
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, userName2, userName2 + "test2@salesforce.com"));
 
 
-		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_private1", EXPRESSION, "* * * * *"));
-		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-private2", EXPRESSION, "* * * * *"));
-		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared3", EXPRESSION, "* * * * *"));
+                String alertName1 = "alertname-" + TestUtils.createRandomName();
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, alertName1, EXPRESSION, "* * * * *"));
+                String alertName2 = "alertname-" + TestUtils.createRandomName();
+		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, alertName2, EXPRESSION, "* * * * *"));
+                String alertName3 = "alertname-" + TestUtils.createRandomName();
+		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, alertName3, EXPRESSION, "* * * * *"));
 
 		alert1.setShared(false);
 		alertService.updateAlert(alert1);
@@ -1586,15 +1630,15 @@ public class AlertServiceTest{
 		assertEquals(2, alertService.countAlerts(context));
 
 		// count by alert name
-		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText("alert-name_private1").build();
+		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText(alertName1).build();
 		assertEquals(1, alertService.countAlerts(context));
 
 		// count by owner name
-		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText("test2").build();
+		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText(userName2).build();
 		assertEquals(1, alertService.countAlerts(context));
 
 		// count by owner name case insensitive
-		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText("TeST2").build();
+		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText(userName2.toUpperCase()).build();
 		assertEquals(1, alertService.countAlerts(context));
 
 		// count by invalid name
@@ -1605,7 +1649,8 @@ public class AlertServiceTest{
 	@Test
 	public void testAlertSerDes() {
 
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
+            String alertName1 = "alertname-" + TestUtils.createRandomName();
+		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), alertName1, EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", alert, "notifier-name", new ArrayList<String>(), 5000L);
 		notification.setArticleNumber("an");
 		notification.setSRActionable(true);
@@ -1690,7 +1735,8 @@ public class AlertServiceTest{
 	@Test
 	public void testUpdateNotification() {
 
-		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
+            String alertName = "alertname-" + TestUtils.createRandomName();
+		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), alertName, EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", expected, "notifier-name", new ArrayList<String>(), 5000L);
 		Trigger trigger = new Trigger(expected, TriggerType.GREATER_THAN, "trigger-name", 0.95, 60000);
 
@@ -1772,7 +1818,8 @@ public class AlertServiceTest{
 				"DOWNSAMPLE(-2d:alerts.scheduled:alert-1429851:zimsum, #5m-sum#,#-2d#, #-0m#, #0#)"
 		));
 		for (String currentExpression: expressionArray) {
-			Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", currentExpression, "* * * * *");
+                    String alertName = "alertname-" + TestUtils.createRandomName();
+			Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), alertName, currentExpression, "* * * * *");
 			try {
 				Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN, "trigger-name", 0.95, 120000);
 			} catch (IllegalArgumentException ex) {

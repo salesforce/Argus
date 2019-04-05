@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.jpa;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Audit;
 import com.salesforce.dva.argus.entity.Identifiable;
 import com.salesforce.dva.argus.entity.JPAEntity;
@@ -61,6 +62,9 @@ public abstract class DefaultJPAService extends DefaultService {
 	//~ Instance fields ******************************************************************************************************************************
 
 	protected final AuditService _auditService;
+    @Inject
+    protected Provider<EntityManager> emf;
+
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -163,5 +167,10 @@ public abstract class DefaultJPAService extends DefaultService {
 		em.getEntityManagerFactory().getCache().evictAll();
 		return JPAEntity.findEntitiesMarkedForDeletion(em, type, limit);
 	}
+
+    public void setEntityManagerProvider(Provider<EntityManager> emProv) {
+        emf = emProv;
+    }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

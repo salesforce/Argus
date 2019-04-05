@@ -235,7 +235,7 @@ public class DownsampleTransform implements Transform {
 				long currWindowEndTime = windowStart + windowSize;
 				values = new ArrayList<>();
 				for(long timestamp : sortedTimeStamps) {
-					if(timestamp >= windowStart && (timestamp < currWindowEndTime || timestamp==endTime)) {
+					if(timestamp >= windowStart && timestamp < currWindowEndTime) {
 						values.add(originalDatapoints.get(timestamp));
 					}
 				}
