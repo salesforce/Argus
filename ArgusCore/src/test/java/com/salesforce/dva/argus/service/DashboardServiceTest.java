@@ -51,7 +51,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.fail;
 
-@Ignore("Tests are failing in Strata -W-6003515 to investigate and fix and renable")
 public class DashboardServiceTest extends AbstractTestIT {
     static private PrincipalUser admin;
     static DashboardService dService;

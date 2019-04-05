@@ -97,7 +97,6 @@ import org.junit.Rule;
 
 import com.salesforce.dva.argus.TestUtils;
 
-@Ignore
 public class AlertServiceTest{
 
 	private static final String EXPRESSION =
