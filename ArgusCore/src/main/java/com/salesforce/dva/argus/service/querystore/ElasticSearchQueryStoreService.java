@@ -368,8 +368,8 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
         List<Set<QueryStoreRecord>> fracturedToCreateList = fractureQueryStoreRecords(recordsToAdd);
         for(Set<QueryStoreRecord> records : fracturedToCreateList) {
             if(!records.isEmpty()) {
-                Set<QueryStoreRecord> failedOrExistingRecords = upsertQueryStoreRecords(records);
-                records.removeAll(failedOrExistingRecords);
+                Set<QueryStoreRecord> failedRecords = upsertQueryStoreRecords(records);
+                records.removeAll(failedRecords);
                 addQueryRecordsToCreatedBloom(records);
                 totalCount += records.size();
             }
@@ -406,7 +406,7 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
 
     /**
      * @param records Set of records to insert
-     * @return	List of records that failed or already existing
+     * @return	List of records that failed
      */
     protected Set<QueryStoreRecord> upsertQueryStoreRecords(Set<QueryStoreRecord> records) {
 
@@ -414,7 +414,7 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
         String requestUrl = String.format("/%s%s/%s/_bulk", QUERY_STORE_INDEX_TEMPLATE_PATTERN_START,indexNameToAppend, QUERY_STORE_TYPE_NAME);
 
         try {
-            Set<QueryStoreRecord> failedOrExistingRecords = new HashSet<>();
+            Set<QueryStoreRecord> failedRecords = new HashSet<>();
             QueryStoreRecordList createQueryStoreRecordList = new QueryStoreRecordList(records, idgenHashAlgo);
             String requestBody = queryStoreMapper.writeValueAsString(createQueryStoreRecordList);
             PutResponse putResponse = performESRequest(requestUrl, requestBody);
@@ -422,19 +422,14 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
             Pair<List<String>, List<String>> failedOrExistingRecordsResponse = parseFailedResponses(putResponse);
 
             List<String> failedIds = failedOrExistingRecordsResponse.getLeft();
-            List<String> existingIds = failedOrExistingRecordsResponse.getRight();
             if (failedIds.size() > 0) {
                 logger.warn("{} records were not written to query store ES", failedIds.size());
             }
 
             for(String id : failedIds) {
-                failedOrExistingRecords.add(createQueryStoreRecordList.getRecord(id));
+                failedRecords.add(createQueryStoreRecordList.getRecord(id));
             }
-
-            for(String id : existingIds) {
-                failedOrExistingRecords.add(createQueryStoreRecordList.getRecord(id));
-            }
-            return failedOrExistingRecords;
+            return failedRecords;
         } catch (IOException e) {
             throw new SystemException("Failed to upsert query store record to ES. ", e);
         }
