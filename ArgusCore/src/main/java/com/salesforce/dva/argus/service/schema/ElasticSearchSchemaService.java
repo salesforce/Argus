@@ -34,6 +34,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpStatus;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
 import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
@@ -60,7 +61,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.function.Supplier;
 
 import static com.salesforce.dva.argus.entity.MetricSchemaRecord.RETENTION_DISCOVERY;
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -483,7 +483,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		try {
 			_logger.debug("get POST requestUrl {} queryJson {}", requestUrl, queryJson);
-			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
+			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson, ContentType.APPLICATION_JSON));
 
 			MetricSchemaRecordList list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
 
@@ -500,7 +500,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 					String requestJson = new ObjectMapper().writeValueAsString(requestBody);
 					_logger.debug("get Scroll POST requestUrl {} queryJson {}", requestUrl, queryJson);
-					response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestJson));
+					response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestJson, ContentType.APPLICATION_JSON));
 
 					list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
 					records.addAll(list.getRecords());
@@ -578,7 +578,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 			String queryJson = _constructTermAggregationQuery(query, type);
 			_logger.debug("getUnique POST requestUrl {} queryJson {}", requestUrl, queryJson);
-			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
+			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson, ContentType.APPLICATION_JSON));
 			String str = extractResponse(response);
 			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(toEntity(str, new TypeReference<List<String>>() {}), type);
 
@@ -647,7 +647,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				String queryJson = _constructQueryStringQuery(tokens, from, scrollSize);
 				String requestUrl = sb.toString();
 
-				Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
+				Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson, ContentType.APPLICATION_JSON));
 				String strResponse = extractResponse(response);
 				MetricSchemaRecordList list = toEntity(strResponse, new TypeReference<MetricSchemaRecordList>() {});
 
@@ -661,7 +661,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 						requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
 
 						response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(),
-								new StringEntity(new ObjectMapper().writeValueAsString(requestBody)));
+						        new StringEntity(new ObjectMapper().writeValueAsString(requestBody), ContentType.APPLICATION_JSON));
 
 						list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
 
@@ -720,7 +720,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 				String queryJson = _constructQueryStringQuery(kq, tokensMap);
 				String requestUrl = sb.toString();
-				Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
+				Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson, ContentType.APPLICATION_JSON));
 				String strResponse = extractResponse(response);
 
 				List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(
@@ -763,7 +763,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		String requestBody = "{\"analyzer\" : \"metadata_analyzer\", \"text\": \"" + query + "\" }";
 
 		try {
-			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
+			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody, ContentType.APPLICATION_JSON));
 			String strResponse = extractResponse(response);
 			JsonNode tokensNode = _createMetadataMapper.readTree(strResponse).get("tokens");
 			if(tokensNode.isArray()) {
@@ -790,7 +790,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		try {
 			String requestBody = _createMetadataMapper.writeValueAsString(msrList);
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl,
-					Collections.emptyMap(), new StringEntity(requestBody));
+					Collections.emptyMap(), new StringEntity(requestBody, ContentType.APPLICATION_JSON));
 			strResponse = extractResponse(response);
 		} catch (IOException e) {
 			//TODO: Retry with exponential back-off for handling EsRejectedExecutionException/RemoteTransportException/TimeoutException??
@@ -999,7 +999,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		String strResponse = "";
 
-		Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
+		Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody, ContentType.APPLICATION_JSON));
 
 		//TODO: Retry with exponential back-off for handling EsRejectedExecutionException/RemoteTransportException/TimeoutException??
 
