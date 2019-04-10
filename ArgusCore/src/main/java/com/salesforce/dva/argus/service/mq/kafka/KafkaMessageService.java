@@ -230,6 +230,9 @@ public class KafkaMessageService extends DefaultService implements MQService {
         KAFKA_CONSUMER_GROUPID("service.property.mq.kafka.consumer.groupid", "argus-consumer-unit"),
         /** Where to start a new group.id from */
         KAFKA_CONSUMER_OFFSET_RESET("service.property.mq.kafka.consumer.auto.offset.reset", "earliest"),
+        /** Number of abnormal exceptions allowed per X minutes before the Consumer worker-thread stops altogether */
+        KAFKA_CONSUMER_ALLOWED_EXCEPTION_COUNT_PER_TIME_WINDOW("service.property.mq.kafka.consumer.allowed.exception.count", "3"),
+        KAFKA_CONSUMER_ALLOWED_EXCEPTION_TIME_WINDOW_MINUTES("service.property.mq.kafka.consumer.allowed.exception.time.window.mins", "3"),
         /** Customize Kafka topic names to produce to / consume from */
         KAFKA_ALERTS_TOPIC("service.property.mq.kafka.alerts.topic", "argusAlertQueue"),
         KAFKA_ANNOTATIONS_TOPIC("service.property.mq.kafka.annotations.topic", "argusAnnotationQueue"),

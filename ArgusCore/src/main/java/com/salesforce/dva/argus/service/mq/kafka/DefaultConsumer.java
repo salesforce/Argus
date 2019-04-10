@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.mq.kafka;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.salesforce.dva.argus.service.mq.kafka.KafkaMessageService.Property;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -49,6 +51,7 @@ import org.apache.kafka.common.errors.WakeupException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.validation.constraints.Null;
 import java.io.IOException;
 import java.io.Serializable;
 import java.text.MessageFormat;
@@ -80,6 +83,9 @@ public class DefaultConsumer implements Consumer {
     //~ Instance fields ******************************************************************************************************************************
 
     private final int MAX_BUFFER_SIZE;
+    // Number of abnormal exceptions allowed per X time-window minutes, within a topic's consumers, before the Consumer worker-thread stops altogether
+    private final int ALLOWED_EXCEPTION_COUNT;
+    private final int ALLOWED_EXCEPTION_TIME_WINDOW;
     private final Logger _logger = LoggerFactory.getLogger(getClass());
     private final SystemConfiguration _configuration;
     private final Map<String, Topic> _topics = new HashMap<>();
@@ -98,6 +104,11 @@ public class DefaultConsumer implements Consumer {
         this._mapper = new ObjectMapper();
         MAX_BUFFER_SIZE = Integer.parseInt(_configuration.getValue(Property.KAFKA_CONSUMER_MESSAGES_TO_BUFFER.getName(),
                 Property.KAFKA_CONSUMER_MESSAGES_TO_BUFFER.getDefaultValue()));
+        ALLOWED_EXCEPTION_COUNT = Integer.parseInt(_configuration.getValue(Property.KAFKA_CONSUMER_ALLOWED_EXCEPTION_COUNT_PER_TIME_WINDOW.getName(),
+                Property.KAFKA_CONSUMER_ALLOWED_EXCEPTION_COUNT_PER_TIME_WINDOW.getDefaultValue()));
+        ALLOWED_EXCEPTION_TIME_WINDOW = Integer.parseInt(_configuration.getValue(Property.KAFKA_CONSUMER_ALLOWED_EXCEPTION_TIME_WINDOW_MINUTES.getName(),
+                Property.KAFKA_CONSUMER_ALLOWED_EXCEPTION_TIME_WINDOW_MINUTES.getDefaultValue()));
+        _logger.info("MQ DefaultConsumer tolerating no more than {} abnormal exceptions per {} minutes", ALLOWED_EXCEPTION_COUNT, ALLOWED_EXCEPTION_TIME_WINDOW);
     }
 
     @VisibleForTesting
@@ -105,6 +116,8 @@ public class DefaultConsumer implements Consumer {
         _configuration = configuration;
         _mapper = mapper;
         MAX_BUFFER_SIZE = maxBufferSize;
+        ALLOWED_EXCEPTION_COUNT = 3;
+        ALLOWED_EXCEPTION_TIME_WINDOW = 3;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -299,80 +312,97 @@ public class DefaultConsumer implements Consumer {
      */
     private class ConsumerWorker implements Runnable {
         private final AtomicBoolean closed = new AtomicBoolean(false);
-        private final KafkaConsumer<String, String> _consumer;
-        private final String _topic;
+        private Properties consumerProps;
+        private KafkaConsumer<String, String> consumer;
+        private Cache<Long, Exception> exceptionLog = CacheBuilder.newBuilder()
+                .expireAfterWrite(ALLOWED_EXCEPTION_TIME_WINDOW, TimeUnit.MINUTES).build();
+        private final String topic;
 
         /**
          * Creates a new DefaultConsumer object.
          *
          */
-        public ConsumerWorker(KafkaConsumer<String, String> consumer, String topic) {
+        public ConsumerWorker(Properties consumerProps, String topic) {
             _logger.debug("Creating a new stream");
-            _consumer = consumer;
-            _topic = topic;
+            this.consumerProps = consumerProps;
+            this.topic = topic;
         }
 
         public void shutdown() {
             closed.set(true);
             _logger.error("ConsumerWorker received shutdown call");
-            _consumer.wakeup();
+            consumer.wakeup();
         }
 
         @Override
         public void run() {
-            try {
-                _consumer.subscribe(Arrays.asList(_topic), new ConsumerRebalanceListener() {
-                    @Override
-                    public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-                        for (TopicPartition tp: partitions)
-                            _logger.info("Partitions revoked for topic=" + tp.topic() + " and partition=" + tp.partition());
-                    }
+            while (!closed.get() && exceptionLog.size() <= ALLOWED_EXCEPTION_COUNT) {
+                _logger.info("Constructing KafkaConsumer");
+                consumer = new KafkaConsumer<>(consumerProps);
+                try {
+                    consumer.subscribe(Arrays.asList(topic), new ConsumerRebalanceListener() {
+                        @Override
+                        public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+                            for (TopicPartition tp : partitions)
+                                _logger.info("Partitions revoked for topic=" + tp.topic() + " and partition=" + tp.partition());
+                        }
 
-                    @Override
-                    public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-                        for (TopicPartition tp: partitions)
-                            _logger.info("Partitions assigned for topic=" + tp.topic() + " and partition=" + tp.partition());
-                    }
-                });
-                while (!closed.get()) {
-                    if (Thread.currentThread().isInterrupted()) {
-                        _logger.info("Interrupted... Will exit now.");
-                        break;
-                    }
+                        @Override
+                        public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+                            for (TopicPartition tp : partitions)
+                                _logger.info("Partitions assigned for topic=" + tp.topic() + " and partition=" + tp.partition());
+                        }
+                    });
+                    while (!closed.get()) {
+                        if (Thread.currentThread().isInterrupted()) {
+                            _logger.info("Interrupted... Will exit now.");
+                            break;
+                        }
+                        try {
+                            ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(Long.MAX_VALUE));
+                            for (ConsumerRecord<String, String> record : records) {
+                                String message = record.value();
+                                String topic = record.topic();
 
-                    try {
-                        ConsumerRecords<String, String> records = _consumer.poll(Long.MAX_VALUE);
-                        for (ConsumerRecord<String, String> record : records) {
-                            String message = record.value();
-                            String topic = record.topic();
+                                if (message != null) {
+                                    _topics.get(topic).getMessages().put(message);
 
-                            if (message != null) {
-                                _topics.get(topic).getMessages().put(message);
+                                    long c = count.incrementAndGet();
 
-                                long c = count.incrementAndGet();
-
-                                if (c % 50000 == 0) {
-                                    _logger.debug("Read {} messages.", count.get());
-                                }
-                                if (_topics.get(topic).getMessages().size() % 1000 == 0) {
-                                    _logger.debug("Message queued. Queue size = {}", _topics.get(topic).getMessages().size());
+                                    if (c % 50000 == 0) {
+                                        _logger.debug("Read {} messages.", count.get());
+                                    }
+                                    if (_topics.get(topic).getMessages().size() % 1000 == 0) {
+                                        _logger.debug("Message queued. Queue size = {}", _topics.get(topic).getMessages().size());
+                                    }
                                 }
                             }
+                        } catch (InterruptedException ex) {
+                            _logger.debug("Interrupted while consuming message.");
+                            Thread.currentThread().interrupt();
+                        } catch (CommitFailedException ex) {
+                            _logger.error("Commit failed, continuing polls: ", ex);
+                        } catch (WakeupException e) {
+                            throw e;
+                        } catch (Exception ex) {
+                            _logger.error("Abnormal exception encountered in poll loop. Exiting loop: ", ex);
+                            exceptionLog.put(System.currentTimeMillis(), ex);
+                            exceptionLog.cleanUp();
+                            break;
                         }
-                    } catch (InterruptedException ex) {
-                        _logger.debug("Interrupted while consuming message.");
-                        Thread.currentThread().interrupt();
-                    } catch (CommitFailedException ex) {
-                        _logger.error("Commit failed, continuing polls: ", ex) ;
                     }
+                } catch (WakeupException e) {
+                    // Ignore exception if closing
+                    if (!closed.get()) throw e;
+                } finally {
+                    consumer.close();
+                    _logger.info("Consumer closed");
                 }
-            } catch (WakeupException e) {
-                // Ignore exception if closing
-                if (!closed.get()) throw e;
-            } finally {
-                _consumer.close();
-                _logger.info("ConsumerWorker finished");
             }
+            if (exceptionLog.size() > ALLOWED_EXCEPTION_COUNT) {
+                _logger.error("ConsumerWorker exiting because there were more than {} abnormal exceptions within {} minutes", ALLOWED_EXCEPTION_COUNT, ALLOWED_EXCEPTION_TIME_WINDOW);
+            }
+            _logger.info("ConsumerWorker finished");
         }
     }
 
@@ -383,7 +413,6 @@ public class DefaultConsumer implements Consumer {
      * @author  Bhinav Sura (bhinav.sura@salesforce.com)
      */
     private class Topic {
-
         ExecutorService executorService;
         BlockingQueue<String> messages;
         List<ConsumerWorker> workers = new ArrayList<>();
@@ -406,8 +435,7 @@ public class DefaultConsumer implements Consumer {
                 }
             });
             for (int i = 0; i < numStreams; i++) {
-                KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProps);
-                ConsumerWorker worker = new ConsumerWorker(consumer, topicName);
+                ConsumerWorker worker = new ConsumerWorker(consumerProps, topicName);
                 workers.add(worker);
                 executorService.submit(worker);
             }
