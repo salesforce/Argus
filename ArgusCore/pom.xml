@@ -456,8 +456,8 @@
         </dependency>
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
-            <artifactId>rest</artifactId>
-            <version>5.5.1</version>
+            <artifactId>elasticsearch-rest-client</artifactId>
+            <version>6.6.2</version>
         </dependency>
         <dependency>
             <groupId>net.openhft</groupId>

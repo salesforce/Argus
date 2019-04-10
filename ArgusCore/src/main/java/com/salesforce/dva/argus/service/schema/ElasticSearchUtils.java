@@ -33,6 +33,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpStatus;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
 import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
@@ -104,7 +105,7 @@ public class ElasticSearchUtils {
                 response = esRestClient.performRequest(HttpMethod.PUT.getName(),
                                                        requestUrl,
                                                        Collections.emptyMap(),
-                                                       new StringEntity(settingsAndMappingsJson));
+                                                       new StringEntity(settingsAndMappingsJson, ContentType.APPLICATION_JSON));
                 extractResponse(response);
             }
         } catch (Exception e) {
