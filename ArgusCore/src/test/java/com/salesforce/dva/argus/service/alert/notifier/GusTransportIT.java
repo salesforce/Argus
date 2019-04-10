@@ -27,7 +27,9 @@ public class GusTransportIT {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                DEFAULT_EP);
+                DEFAULT_EP,
+                1,
+                1);
     }
 
     @Test

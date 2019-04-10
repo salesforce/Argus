@@ -1,12 +1,15 @@
 package com.salesforce.dva.argus.service.alert.notifier;
 
-import org.apache.commons.httpclient.HostConfiguration;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.params.HttpClientParams;
-import org.apache.commons.lang.StringUtils;
-import org.junit.Before;
 import com.salesforce.dva.argus.service.alert.notifier.GusTransport.EndpointInfo;
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.StatusLine;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -16,21 +19,22 @@ import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.powermock.api.mockito.PowerMockito.verifyNew;
-import static org.powermock.api.mockito.PowerMockito.when;
 import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.whenNew;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
+import static org.powermock.api.mockito.PowerMockito.when;
 
+/**
+ * Ignore the NoSuchAlgorithmException that gets logged for all test cases in this class. This failure is occurring
+ * because SSLContext is loading from PowerMock's classloader.
+ * http://mathieuhicauber-java.blogspot.com/2013/07/powermock-and-ssl-context.html
+ */
 @RunWith(PowerMockRunner.class)
-@PrepareForTest(GusTransport.class)
+@PrepareForTest({HttpClients.class, EntityUtils.class, HttpClientBuilder.class})
 public class GusTransportTest {
-    private static final String HTTP_CONNECTION_MANAGER_TIMEOUT_PARAMETER = "http.connection-manager.timeout";
-    private static final long HTTP_CONNECTION_MANAGER_TIMEOUT_MILLIS = 2000L;
     private static final String PROXY_HOST = "test_proxy_host";
     private static final int PROXY_PORT = 9090;
     private static final String AUTH_ENDPOINT = "https://test_auth_ep.com";
@@ -41,75 +45,70 @@ public class GusTransportTest {
     private static final String DEFAULT_ENDPOINT = "https://test_default_ep.com";
     private static final String TEST_INSTANCE_URL = "https://test_instance_url.com";
     private static final String TEST_TOKEN = "test_token";
+    private static final int CONNECTION_POOL_SIZE = 5;
+    private static final int CONNECTION_POOL_MAX_PER_ROUTE = 5;
 
     // mocks
-    private HttpClient httpClient;
-    private HttpClientParams httpClientParams;
-    private HostConfiguration hostConfiguration;
-    private PostMethod oauthPostMethod;
+    private HttpClientBuilder httpClientBuilder;
+    private CloseableHttpClient httpClient;
+    private CloseableHttpResponse httpResponse;
+    private StatusLine httpResponseStatusLine;
+    private HttpEntity httpResponseEntity;
 
     private GusTransport gusTransport;
 
     @Before
     public void setUp() {
-        httpClient = mock(HttpClient.class);
-        httpClientParams = mock(HttpClientParams.class);
-        hostConfiguration = mock(HostConfiguration.class);
-        oauthPostMethod = mock(PostMethod.class);
+        httpClientBuilder = mock(HttpClientBuilder.class);
+        httpClient = mock(CloseableHttpClient.class);
+        httpResponse = mock(CloseableHttpResponse.class);
+        httpResponseStatusLine = mock(StatusLine.class);
+        httpResponseEntity = mock(HttpEntity.class);
+
+        mockStatic(HttpClients.class);
+        mockStatic(EntityUtils.class);
     }
 
     @Test
     public void constructor_test() throws Exception {
         gusTransport = createGusTransportHappyCase();
 
-        verify(httpClientParams).setParameter(HTTP_CONNECTION_MANAGER_TIMEOUT_PARAMETER, HTTP_CONNECTION_MANAGER_TIMEOUT_MILLIS);
-        verify(httpClient).getHostConfiguration();
-        verify(hostConfiguration).setProxy(PROXY_HOST, PROXY_PORT);
+        verify(httpClientBuilder).setRoutePlanner(any());
     }
 
     @Test
     public void constructor_testProxyHostStringAndProxyPortString() throws Exception {
         gusTransport = createGusTransportHappyCase(PROXY_HOST, new Integer(PROXY_PORT).toString());
 
-        verify(httpClientParams).setParameter(HTTP_CONNECTION_MANAGER_TIMEOUT_PARAMETER, HTTP_CONNECTION_MANAGER_TIMEOUT_MILLIS);
-        verify(httpClient).getHostConfiguration();
-        verify(hostConfiguration).setProxy(PROXY_HOST, PROXY_PORT);
+        verify(httpClientBuilder).setRoutePlanner(any());
     }
 
     @Test
     public void constructor_testEmptyProxyHostString() throws Exception {
         gusTransport = createGusTransportHappyCase("   ", new Integer(PROXY_PORT).toString());
 
-        verify(httpClientParams).setParameter(HTTP_CONNECTION_MANAGER_TIMEOUT_PARAMETER, HTTP_CONNECTION_MANAGER_TIMEOUT_MILLIS);
-        verify(httpClient, never()).getHostConfiguration();
-        verify(hostConfiguration, never()).setProxy(anyString(), anyInt());
+        verify(httpClientBuilder, never()).setRoutePlanner(any());
     }
 
     @Test
     public void constructor_testEmptyProxyHost() throws Exception {
         gusTransport = createGusTransportHappyCase(Optional.empty(), Optional.of(PROXY_PORT));
 
-        verify(httpClientParams).setParameter(HTTP_CONNECTION_MANAGER_TIMEOUT_PARAMETER, HTTP_CONNECTION_MANAGER_TIMEOUT_MILLIS);
-        verify(httpClient, never()).getHostConfiguration();
-        verify(hostConfiguration, never()).setProxy(anyString(), anyInt());
+        verify(httpClientBuilder, never()).setRoutePlanner(any());
     }
 
     @Test
     public void constructor_testEmptyProxyPortString() throws Exception {
         gusTransport = createGusTransportHappyCase(PROXY_HOST, " ");
 
-        verify(httpClientParams).setParameter(HTTP_CONNECTION_MANAGER_TIMEOUT_PARAMETER, HTTP_CONNECTION_MANAGER_TIMEOUT_MILLIS);
-        verify(httpClient, never()).getHostConfiguration();
-        verify(hostConfiguration, never()).setProxy(anyString(), anyInt());
+        verify(httpClientBuilder, never()).setRoutePlanner(any());
     }
 
     @Test
     public void constructor_testEmptyProxyPort() throws Exception {
         gusTransport = createGusTransportHappyCase(Optional.of(PROXY_HOST), Optional.empty());
 
-        verify(httpClientParams).setParameter(HTTP_CONNECTION_MANAGER_TIMEOUT_PARAMETER, HTTP_CONNECTION_MANAGER_TIMEOUT_MILLIS);
-        verify(httpClient, never()).getHostConfiguration();
-        verify(hostConfiguration, never()).setProxy(anyString(), anyInt());
+        verify(httpClientBuilder, never()).setRoutePlanner(any());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -121,7 +120,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -143,7 +144,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -155,7 +158,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -167,7 +172,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -179,7 +186,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -191,7 +200,9 @@ public class GusTransportTest {
                 " ",
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -203,7 +214,9 @@ public class GusTransportTest {
                 null,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -215,7 +228,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 "",
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -227,7 +242,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 null,
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -239,7 +256,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 "",
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -251,7 +270,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 null,
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -263,7 +284,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                null);
+                null,
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -275,7 +298,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo("", GusTransport.NO_TOKEN));
+                new EndpointInfo("", GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -287,7 +312,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo(null, GusTransport.NO_TOKEN));
+                new EndpointInfo(null, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -299,7 +326,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, " "));
+                new EndpointInfo(DEFAULT_ENDPOINT, " "),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -311,7 +340,37 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, null));
+                new EndpointInfo(DEFAULT_ENDPOINT, null),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void constructor_testInvalidConnectionPoolSize() throws Exception {
+        gusTransport = new GusTransport(Optional.of(PROXY_HOST),
+                Optional.of(PROXY_PORT),
+                AUTH_ENDPOINT,
+                AUTH_CLIENT_ID,
+                AUTH_CLIENT_SECRET,
+                AUTH_USERNAME,
+                AUTH_PASSWORD,
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                0,
+                1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void constructor_testInvalidConnectionPoolMaxPerRoute() throws Exception {
+        gusTransport = new GusTransport(Optional.of(PROXY_HOST),
+                Optional.of(PROXY_PORT),
+                AUTH_ENDPOINT,
+                AUTH_CLIENT_ID,
+                AUTH_CLIENT_SECRET,
+                AUTH_USERNAME,
+                AUTH_PASSWORD,
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                1,
+                -1);
     }
 
     @Test
@@ -331,9 +390,10 @@ public class GusTransportTest {
             assertSame(ei, ei2);
         }
 
-        verifyNew(PostMethod.class, times(1)).withArguments(AUTH_ENDPOINT);
-        verify(httpClient, times(1)).executeMethod(oauthPostMethod);
-        verify(oauthPostMethod, times(1)).getResponseBodyAsString();
+        verify(httpClient, times(1)).execute(any());
+        verify(httpResponse, times(1)).getStatusLine();
+        verify(httpResponseStatusLine, times(1)).getStatusCode();
+        verify(httpResponse, times(1)).getEntity();
     }
 
     @Test
@@ -353,15 +413,16 @@ public class GusTransportTest {
             assertEquals(ei, ei2);
         }
 
-        verifyNew(PostMethod.class, times(times)).withArguments(AUTH_ENDPOINT);
-        verify(httpClient, times(times)).executeMethod(oauthPostMethod);
-        verify(oauthPostMethod, times(times)).getResponseBodyAsString();
+        verify(httpClient, times(times)).execute(any());
+        verify(httpResponse, times(times)).getStatusLine();
+        verify(httpResponseStatusLine, times(times)).getStatusCode();
+        verify(httpResponse, times(times)).getEntity();
     }
 
     @Test
     public void getEndpointInfo_testFailToInitEndpointOnConstructionWithBadResponse() throws Exception {
-        whenNew(PostMethod.class).withArguments(AUTH_ENDPOINT).thenReturn(oauthPostMethod);
-        when(httpClient.executeMethod(oauthPostMethod)).thenReturn(401); // get token response code
+        mockCacheInitExpectations();
+        when(httpResponseStatusLine.getStatusCode()).thenReturn(401); // get token response code
 
         gusTransport = createGusTransport();
         EndpointInfo ei = gusTransport.getEndpointInfo();
@@ -369,18 +430,19 @@ public class GusTransportTest {
         assertEquals(DEFAULT_ENDPOINT, ei.getEndPoint());
         assertEquals(GusTransport.NO_TOKEN, ei.getToken());
 
-        verifyNew(PostMethod.class, times(1)).withArguments(AUTH_ENDPOINT);
-        verify(httpClient, times(1)).executeMethod(oauthPostMethod);
-        verify(oauthPostMethod, times(1)).getResponseBodyAsString();
+        verify(httpClient, times(1)).execute(any());
+        verify(httpResponse, times(1)).getStatusLine();
+        verify(httpResponseStatusLine, times(1)).getStatusCode();
+        verify(httpResponse, times(1)).getEntity();
     }
 
     @Test
     public void getEndpointInfo_testFailToRefreshEndpointWithBadResponse() throws Exception {
         boolean refresh = true;
-        whenNew(PostMethod.class).withArguments(AUTH_ENDPOINT).thenReturn(oauthPostMethod);
-        when(httpClient.executeMethod(oauthPostMethod)).thenReturn(200) // first time, return OK
+        mockCacheInitExpectations();
+        when(httpResponseStatusLine.getStatusCode()).thenReturn(200) // first time, return OK
                 .thenReturn(401); // 2nd time, return bad response
-        when(oauthPostMethod.getResponseBodyAsString())
+        when(EntityUtils.toString(httpResponseEntity))
                 .thenReturn("{\"instance_url\": \"" + TEST_INSTANCE_URL +"\",  \"access_token\": \"" + TEST_TOKEN + "\"}")
                 .thenReturn("bad response");
 
@@ -393,9 +455,10 @@ public class GusTransportTest {
         EndpointInfo ei2 = gusTransport.getEndpointInfo(refresh);
         assertSame(ei, ei2);
 
-        verifyNew(PostMethod.class, times(2)).withArguments(AUTH_ENDPOINT);
-        verify(httpClient, times(2)).executeMethod(oauthPostMethod);
-        verify(oauthPostMethod, times(2)).getResponseBodyAsString();
+        verify(httpClient, times(2)).execute(any());
+        verify(httpResponse, times(2)).getStatusLine();
+        verify(httpResponseStatusLine, times(2)).getStatusCode();
+        verify(httpResponse, times(2)).getEntity();
     }
 
     private GusTransport createGusTransportHappyCase() throws Exception {
@@ -408,14 +471,20 @@ public class GusTransportTest {
 
     private void mockCacheInitExpectations() throws Exception {
         // define mock behavior where cache init is successful
-        whenNew(PostMethod.class).withArguments(AUTH_ENDPOINT).thenReturn(oauthPostMethod);
-        when(httpClient.executeMethod(oauthPostMethod)).thenReturn(200); // get token response code
-        when(oauthPostMethod.getResponseBodyAsString()).thenReturn(
+        when(httpClient.execute(any())).thenReturn(httpResponse);
+        when(httpResponse.getStatusLine()).thenReturn(httpResponseStatusLine);
+        when(httpResponse.getEntity()).thenReturn(httpResponseEntity);
+        when(EntityUtils.toString(httpResponseEntity)).thenReturn(
                 "{\"instance_url\": \"" + TEST_INSTANCE_URL +"\",  \"access_token\": \"" + TEST_TOKEN + "\"}");
     }
 
-    private GusTransport createGusTransportHappyCase(String proxyHostString, String proxyPortString) throws Exception {
+    private void mockCacheInitExpectationsHappyCase() throws Exception {
         mockCacheInitExpectations();
+        when(httpResponseStatusLine.getStatusCode()).thenReturn(200);
+    }
+
+    private GusTransport createGusTransportHappyCase(String proxyHostString, String proxyPortString) throws Exception {
+        mockCacheInitExpectationsHappyCase();
         mockHttpClientExpectations(Optional.ofNullable(proxyHostString),
                 StringUtils.isNumeric(proxyPortString) ? Optional.of(Integer.parseInt(proxyPortString)) : Optional.empty());
         return new GusTransport(proxyHostString,
@@ -425,21 +494,27 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
     private GusTransport createGusTransportHappyCase(Optional<String> proxyHost, Optional<Integer> proxyPort) throws Exception {
-        mockCacheInitExpectations();
+        mockCacheInitExpectationsHappyCase();
         return createGusTransport(proxyHost, proxyPort);
     }
 
     private void mockHttpClientExpectations(Optional<String> proxyHost, Optional<Integer> proxyPort) throws Exception {
         // define mock behavior
-        whenNew(HttpClient.class).withAnyArguments().thenReturn(httpClient);
-        when(httpClient.getParams()).thenReturn(httpClientParams);
+        when(HttpClients.custom()).thenReturn(httpClientBuilder);
+        when(httpClientBuilder.setDefaultRequestConfig(any())).thenReturn(httpClientBuilder);
+        when(httpClientBuilder.setConnectionManager(any())).thenReturn(httpClientBuilder);
+        when(httpClientBuilder.setSSLContext(any())).thenReturn(httpClientBuilder);
+        when(httpClientBuilder.setSSLHostnameVerifier(any())).thenReturn(httpClientBuilder);
         if (proxyHost.isPresent() && proxyPort.isPresent()) {
-            when(httpClient.getHostConfiguration()).thenReturn(hostConfiguration);
+            when(httpClientBuilder.setRoutePlanner(any())).thenReturn(httpClientBuilder);
         }
+        when(httpClientBuilder.build()).thenReturn(httpClient);
     }
 
     private GusTransport createGusTransport(Optional<String> proxyHost, Optional<Integer> proxyPort) throws Exception {
@@ -453,7 +528,9 @@ public class GusTransportTest {
                 AUTH_CLIENT_SECRET,
                 AUTH_USERNAME,
                 AUTH_PASSWORD,
-                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN));
+                new EndpointInfo(DEFAULT_ENDPOINT, GusTransport.NO_TOKEN),
+                CONNECTION_POOL_SIZE,
+                CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
 }
