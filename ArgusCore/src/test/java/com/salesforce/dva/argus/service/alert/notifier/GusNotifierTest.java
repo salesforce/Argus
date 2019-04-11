@@ -15,10 +15,11 @@ import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import org.apache.commons.httpclient.HostConfiguration;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.params.HttpClientParams;
+import org.apache.http.HttpEntity;
+import org.apache.http.StatusLine;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,15 +33,17 @@ import java.util.Properties;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.verifyNew;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
+import static org.powermock.api.mockito.PowerMockito.verifyStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
 import static org.powermock.api.mockito.PowerMockito.whenNew;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({GusNotifier.class, GusTransport.class})
+@PrepareForTest({GusNotifier.class, GusTransport.class, EntityUtils.class})
 public class GusNotifierTest {
     /* Constants */
     private static final String SYSTEM_CONFIG_GUS_ENABLED = "system.property.gus.enabled";
@@ -64,11 +67,12 @@ public class GusNotifierTest {
     private AuditService auditService;
     private Provider<EntityManager> emf;
     private MonitorService monitorService;
-    private HttpClient httpClient;
-    private HttpClientParams httpClientParams;
-    private PostMethod oauthPostMethod;
-    private PostMethod gusPostMethod;
+    private CloseableHttpClient httpClient;
     private Audit auditResult;
+    private GusTransport gusTransport;
+    private CloseableHttpResponse httpResponse;
+    private StatusLine httpResponseStatusLine;
+    private HttpEntity httpResponseEntity;
 
     /* Class being tested */
     private GusNotifier notifier;
@@ -91,11 +95,14 @@ public class GusNotifierTest {
         auditService = mock(AuditService.class);
         emf = mock(Provider.class);
         monitorService = mock(MonitorService.class);
-        httpClient = mock(HttpClient.class);
-        httpClientParams = mock(HttpClientParams.class);
-        oauthPostMethod = mock(PostMethod.class);
-        gusPostMethod = mock(PostMethod.class);
+        httpClient = mock(CloseableHttpClient.class);
         auditResult = mock(Audit.class);
+        gusTransport = mock(GusTransport.class);
+        httpResponse = mock(CloseableHttpResponse.class);
+        httpResponseStatusLine = mock(StatusLine.class);
+        httpResponseEntity = mock(HttpEntity.class);
+
+        mockStatic(EntityUtils.class);
 
         // set up test SystemConfiguration properties
         properties = new Properties();
@@ -146,11 +153,9 @@ public class GusNotifierTest {
         int[] postNotificationResponseCode = {405, 201};
         // define mock behavior
         sendOrClearAdditionalNotification_mockBehaviorHappyCaseTemplate();
-        when(oauthPostMethod.getResponseBodyAsString())
-                .thenReturn("{\"instance_url\": \"" + TEST_INSTANCE_URL + "\", \"access_token\": \"" + TEST_TOKEN + "\"}");
-        when(httpClient.executeMethod(gusPostMethod)).thenReturn(postNotificationResponseCode[0])
+        when(httpResponseStatusLine.getStatusCode()).thenReturn(postNotificationResponseCode[0])
                 .thenReturn(postNotificationResponseCode[1]);
-        when(gusPostMethod.getResponseBodyAsString()).thenReturn("");
+        when(EntityUtils.toString(any())).thenReturn("[{\"message\": \"BLAH\", \"errorCode\": \"BLAH2\"}]");
 
         // create object under test
         notifier = new GusNotifier(metricService, annotationService, auditService, config, emf, monitorService);
@@ -160,9 +165,7 @@ public class GusNotifierTest {
         assertTrue(result);
 
         // verify mocks
-        sendOrClearAdditionalNotification_verifyOauthPostMethodMockHappyCaseTemplate(1);
-        boolean[] refreshValuePerRetry = {};
-        sendOrClearAdditionalNotification_verifyGusPostMethodMockTemplate(2, refreshValuePerRetry, 1, true);
+        sendOrClearAdditionalNotification_verifyGusPostMethodMockTemplate(2, 0, 1, true);
     }
 
     @Test
@@ -170,10 +173,8 @@ public class GusNotifierTest {
         int postNotificationResponseCode = 404;
         // define mock behavior
         sendOrClearAdditionalNotification_mockBehaviorHappyCaseTemplate();
-        when(oauthPostMethod.getResponseBodyAsString())
-                .thenReturn("{\"instance_url\": \"" + TEST_INSTANCE_URL + "\", \"access_token\": \"" + TEST_TOKEN + "\"}");
-        when(httpClient.executeMethod(gusPostMethod)).thenReturn(postNotificationResponseCode);
-        when(gusPostMethod.getResponseBodyAsString()).thenReturn("");
+        when(httpResponseStatusLine.getStatusCode()).thenReturn(postNotificationResponseCode);
+        when(EntityUtils.toString(any())).thenReturn("[{\"message\": \"BLAH\", \"errorCode\": \"BLAH2\"}]");
 
         // create object under test
         notifier = new GusNotifier(metricService, annotationService, auditService, config, emf, monitorService);
@@ -183,9 +184,7 @@ public class GusNotifierTest {
         assertFalse(result);
 
         // verify mocks
-        sendOrClearAdditionalNotification_verifyOauthPostMethodMockHappyCaseTemplate(1);
-        boolean[] refreshValuePerRetry = {};
-        sendOrClearAdditionalNotification_verifyGusPostMethodMockTemplate(MAX_ATTEMPTS_GUS_POST, refreshValuePerRetry, MAX_ATTEMPTS_GUS_POST, false);
+        sendOrClearAdditionalNotification_verifyGusPostMethodMockTemplate(MAX_ATTEMPTS_GUS_POST, 0, MAX_ATTEMPTS_GUS_POST, false);
     }
 
     @Test
@@ -193,13 +192,9 @@ public class GusNotifierTest {
         int[] postNotificationResponseCode = {404, 201};
         // define mock behavior
         sendOrClearAdditionalNotification_mockBehaviorHappyCaseTemplate();
-        when(oauthPostMethod.getResponseBodyAsString())
-                .thenReturn("{\"instance_url\": \"" + TEST_INSTANCE_URL + "\", \"access_token\": \"" + TEST_TOKEN + "\"}")
-                .thenReturn("{\"instance_url\": \"" + TEST_INSTANCE_URL + "2\", \"access_token\": \"" + TEST_TOKEN + "2\"}");
-        when(httpClient.executeMethod(gusPostMethod)).thenReturn(postNotificationResponseCode[0])
+        when(httpResponseStatusLine.getStatusCode()).thenReturn(postNotificationResponseCode[0])
                 .thenReturn(postNotificationResponseCode[1]);
-        when(gusPostMethod.getResponseBodyAsString()).thenReturn("[{\"message\":\"INVALID_HEADER_TYPE\",\"errorCode\":\"INVALID_AUTH_HEADER\"}]")
-                .thenReturn("");
+        when(EntityUtils.toString(any())).thenReturn("[{\"message\":\"INVALID_HEADER_TYPE\",\"errorCode\":\"INVALID_AUTH_HEADER\"}]");
 
         // create object under test
         notifier = new GusNotifier(metricService, annotationService, auditService, config, emf, monitorService);
@@ -209,9 +204,7 @@ public class GusNotifierTest {
         assertTrue(result);
 
         // verify mocks
-        sendOrClearAdditionalNotification_verifyOauthPostMethodMockHappyCaseTemplate(2);
-        boolean[] refreshValuePerRetry = {true};
-        sendOrClearAdditionalNotification_verifyGusPostMethodMockTemplate(2, refreshValuePerRetry, 1, true);
+        sendOrClearAdditionalNotification_verifyGusPostMethodMockTemplate(2, 1, 1, true);
     }
 
     @Test
@@ -219,12 +212,8 @@ public class GusNotifierTest {
         int postNotificationResponseCode = 404;
         // define mock behavior
         sendOrClearAdditionalNotification_mockBehaviorHappyCaseTemplate();
-        when(oauthPostMethod.getResponseBodyAsString())
-                .thenReturn("{\"instance_url\": \"" + TEST_INSTANCE_URL + "\", \"access_token\": \"" + TEST_TOKEN + "\"}")
-                .thenReturn("{\"instance_url\": \"" + TEST_INSTANCE_URL + "2\", \"access_token\": \"" + TEST_TOKEN + "2\"}")
-                .thenReturn("{\"instance_url\": \"" + TEST_INSTANCE_URL + "2\", \"access_token\": \"" + TEST_TOKEN + "3\"}");
-        when(httpClient.executeMethod(gusPostMethod)).thenReturn(postNotificationResponseCode);
-        when(gusPostMethod.getResponseBodyAsString()).thenReturn("[{\"message\":\"INVALID_HEADER_TYPE\",\"errorCode\":\"INVALID_AUTH_HEADER\"}]");
+        when(httpResponseStatusLine.getStatusCode()).thenReturn(postNotificationResponseCode);
+        when(EntityUtils.toString(any())).thenReturn("[{\"message\":\"INVALID_HEADER_TYPE\",\"errorCode\":\"INVALID_AUTH_HEADER\"}]");
 
         // create object under test
         notifier = new GusNotifier(metricService, annotationService, auditService, config, emf, monitorService);
@@ -234,9 +223,7 @@ public class GusNotifierTest {
         assertFalse(result);
 
         // verify mocks
-        sendOrClearAdditionalNotification_verifyOauthPostMethodMockHappyCaseTemplate(MAX_ATTEMPTS_GUS_POST);
-        boolean[] refreshValuePerRetry = {true, true};
-        sendOrClearAdditionalNotification_verifyGusPostMethodMockTemplate(MAX_ATTEMPTS_GUS_POST, refreshValuePerRetry, MAX_ATTEMPTS_GUS_POST, false);
+        sendOrClearAdditionalNotification_verifyGusPostMethodMockTemplate(MAX_ATTEMPTS_GUS_POST, 2, MAX_ATTEMPTS_GUS_POST, false);
     }
 
     @Test
@@ -254,7 +241,7 @@ public class GusNotifierTest {
     private boolean sendAdditionalNotification_testHappyCaseTemplate(int postNotificationResponseCode) throws Exception {
         // define mock behavior
         sendOrClearAdditionalNotification_mockBehaviorHappyCaseTemplate();
-        when(httpClient.executeMethod(gusPostMethod)).thenReturn(postNotificationResponseCode); // post notification response code
+        when(httpResponseStatusLine.getStatusCode()).thenReturn(postNotificationResponseCode);
 
         // create object under test
         notifier = new GusNotifier(metricService, annotationService, auditService, config, emf, monitorService);
@@ -271,7 +258,7 @@ public class GusNotifierTest {
     private boolean clearAdditionalNotification_testHappyCaseTemplate(int postNotificationResponseCode) throws Exception {
         // define mock behavior
         sendOrClearAdditionalNotification_mockBehaviorHappyCaseTemplate();
-        when(httpClient.executeMethod(gusPostMethod)).thenReturn(postNotificationResponseCode); // post notification response code
+        when(httpResponseStatusLine.getStatusCode()).thenReturn(postNotificationResponseCode);
 
         // create object under test
         notifier = new GusNotifier(metricService, annotationService, auditService, config, emf, monitorService);
@@ -288,46 +275,29 @@ public class GusNotifierTest {
     private void sendOrClearAdditionalNotification_mockBehaviorHappyCaseTemplate() throws Exception {
         // define mock behavior
         when(auditService.createAudit(any())).thenReturn(auditResult);
-        whenNew(HttpClient.class).withAnyArguments().thenReturn(httpClient);
-        when(httpClient.getParams()).thenReturn(httpClientParams);
-        when(httpClient.getHostConfiguration()).thenReturn(new HostConfiguration());
-        whenNew(PostMethod.class).withArguments(properties.getProperty(GUS_NOTIFIER_GUS_ENDPOINT)).thenReturn(oauthPostMethod);
-        when(httpClient.executeMethod(oauthPostMethod)).thenReturn(200); // get token response code
-        when(oauthPostMethod.getResponseBodyAsString())
-                .thenReturn("{\"instance_url\": \"" + TEST_INSTANCE_URL + "\", \"access_token\": \"" + TEST_TOKEN + "\"}");
-        whenNew(PostMethod.class).withArguments(properties.getProperty(GUS_NOTIFIER_GUS_POST_ENDPOINT)).thenReturn(gusPostMethod);
+        whenNew(GusTransport.class).withAnyArguments().thenReturn(gusTransport);
+        when(gusTransport.getEndpointInfo(anyBoolean())).thenReturn(new GusTransport.EndpointInfo(TEST_INSTANCE_URL, TEST_TOKEN));
+        when(gusTransport.getHttpClient()).thenReturn(httpClient);
+        when(httpClient.execute(any())).thenReturn(httpResponse);
+        when(httpResponse.getStatusLine()).thenReturn(httpResponseStatusLine);
     }
 
     private void sendOrClearAdditionalNotification_verifyMocksHappyCaseTemplate() throws Exception {
         // verify mocks
-        sendOrClearAdditionalNotification_verifyOauthPostMethodMockHappyCaseTemplate(1);
-        boolean[] refreshValuePerRetry = {};
-        sendOrClearAdditionalNotification_verifyGusPostMethodMockTemplate(1, refreshValuePerRetry, 0, true);
+        sendOrClearAdditionalNotification_verifyGusPostMethodMockTemplate(1, 0, 0, true);
     }
 
-    private void sendOrClearAdditionalNotification_verifyOauthPostMethodMockHappyCaseTemplate(int tries) throws Exception {
-        verifyNew(PostMethod.class, times(tries)).withArguments(properties.get(GUS_NOTIFIER_GUS_ENDPOINT));
-        verify(oauthPostMethod, times(tries)).addParameter("grant_type", "password");
-        verify(oauthPostMethod, times(tries)).addParameter("username", properties.getProperty(GUS_NOTIFIER_GUS_USER));
-        verify(oauthPostMethod, times(tries)).addParameter("password", properties.getProperty(GUS_NOTIFIER_GUS_PWD));
-        verify(oauthPostMethod, times(tries)).addParameter("client_id", properties.getProperty(GUS_NOTIFIER_GUS_CLIENT_ID));
-        verify(oauthPostMethod, times(tries)).addParameter("client_secret", properties.getProperty(GUS_NOTIFIER_GUS_CLIENT_SECRET));
-        verify(oauthPostMethod, times(tries)).releaseConnection();
-    }
+    private void sendOrClearAdditionalNotification_verifyGusPostMethodMockTemplate(int tries, int refreshCacheTries, int getResponseBodyAsStringTimes, boolean success) throws Exception {
+        verify(gusTransport, times(tries - refreshCacheTries)).getEndpointInfo(false);
+        verify(gusTransport, times(refreshCacheTries)).getEndpointInfo(true);
+        verify(httpClient, times(tries)).execute(any());
+        verify(httpResponse, times(tries)).getStatusLine();
+        verify(httpResponseStatusLine, times(tries)).getStatusCode();
+        verify(httpResponse, times(tries)).close();
 
-    private void sendOrClearAdditionalNotification_verifyGusPostMethodMockTemplate(int tries, boolean[] refreshValuePerRetry, int getResponseBodyAsStringTimes, boolean success) throws Exception {
-        verifyNew(PostMethod.class, times(tries)).withArguments(properties.get(GUS_NOTIFIER_GUS_POST_ENDPOINT));
-        int defaultParamPatchMethodCount = refreshValuePerRetry.length > 0 ? 1 : tries;
-        verify(gusPostMethod, times(defaultParamPatchMethodCount)).setRequestHeader("Authorization", "Bearer " + TEST_TOKEN);
-        if (refreshValuePerRetry.length >= 1 && refreshValuePerRetry[0] && tries > 0) {
-            verify(gusPostMethod, times(defaultParamPatchMethodCount)).setRequestHeader("Authorization", "Bearer " + TEST_TOKEN + "2");
-        }
-        if (refreshValuePerRetry.length >= 2 && refreshValuePerRetry[1] && tries > 0) {
-            verify(gusPostMethod, times(defaultParamPatchMethodCount)).setRequestHeader("Authorization", "Bearer " + TEST_TOKEN + "3");
-        }
-        verify(gusPostMethod, times(tries)).setRequestEntity(any());
-        verify(gusPostMethod, times(getResponseBodyAsStringTimes)).getResponseBodyAsString();
-        verify(gusPostMethod, times(tries)).releaseConnection();
+        verifyStatic(EntityUtils.class, times(getResponseBodyAsStringTimes));
+        EntityUtils.toString(any());
+
         verify(monitorService).modifyCounter(MonitorService.Counter.GUS_NOTIFICATIONS_RETRIES, tries - 1, null);
         verify(monitorService).modifyCounter(MonitorService.Counter.GUS_NOTIFICATIONS_FAILED, success ? 0 : 1, null);
     }

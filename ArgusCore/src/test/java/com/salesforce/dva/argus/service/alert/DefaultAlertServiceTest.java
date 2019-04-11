@@ -1,6 +1,7 @@
 package com.salesforce.dva.argus.service.alert;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.*;
@@ -24,7 +25,12 @@ import com.salesforce.dva.argus.service.alert.notifier.RefocusNotifier;
 import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import org.junit.*;
+import com.salesforce.dva.argus.util.RequestContextHolder;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
@@ -873,6 +879,17 @@ public class DefaultAlertServiceTest {
         enableDatalag(false);
     }
 
+    @Test
+    public void updateRequestContext_test() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", EXPRESSION, "* * * * *");
+
+        alertService.updateRequestContext(alert);
+
+        assertNotNull(RequestContextHolder.getRequestContext());
+        assertEquals(userService.findAdminUser().getUserName() + "-alert", RequestContextHolder.getRequestContext().getUserName());
+    }
 
     private DefaultAlertService _initializeSpyAlertServiceWithStubs(final AtomicInteger notificationCount, final AtomicInteger clearCount,
                                                                     List<Metric> metrics, Alert alert, Notification notification, boolean isDataLagging) {

@@ -31,48 +31,51 @@
 
 package com.salesforce.dva.argus.service.alert.notifier;
 
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.sql.Date;
-import java.text.MessageFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-
-import javax.persistence.EntityManager;
-import javax.print.attribute.standard.Severity;
-
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
-import com.salesforce.dva.argus.service.MonitorService;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.gson.JsonObject;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.GusTransport.GetAuthenticationTokenFailureException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.persistence.EntityManager;
+import javax.print.attribute.standard.Severity;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.SocketTimeoutException;
+import java.net.URLEncoder;
+import java.sql.Date;
+import java.text.MessageFormat;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
  * Implementation of notifier interface for notifying GOC++.
@@ -158,29 +161,30 @@ public class GOCNotifier extends AuditNotifier {
 
 				GOCData gocData = builder.build();
 				boolean refresh = false;
-				HttpClient httpclient = getGusTransportInstance().getHttpClient();
+				CloseableHttpClient httpClient = getGusTransportInstance().getHttpClient();
 
 				for (int i = 0; i < MAX_ATTEMPTS_GOC_POST; i++) {
 					retries = i;
 
-					PostMethod post = null;
+					CloseableHttpResponse response = null;
 
 					try {
 						GusTransport.EndpointInfo endpointInfo = getGusTransportInstance().getEndpointInfo(refresh);
 						// Create upsert URI with PATCH method
-						post = new PatchMethod(
-								String.format("%s/services/data/v25.0/sobjects/SM_Alert__c/%s/%s",
+						RequestBuilder rb = RequestBuilder.patch()
+								.setUri(String.format("%s/services/data/v25.0/sobjects/SM_Alert__c/%s/%s",
 										endpointInfo.getEndPoint(),
 										urlEncode(GOCData.SM_ALERT_ID__C_FIELD),
-										urlEncode(triggeredOnMetric.hashCode() + " " + gocData.getsm_Alert_Id__c())));
-						post.setRequestHeader("Authorization", "Bearer " + endpointInfo.getToken());
-						post.setRequestEntity(new StringRequestEntity(gocData.toJSON(), "application/json", null));
+										urlEncode(triggeredOnMetric.hashCode() + " " + gocData.getsm_Alert_Id__c())))
+								.setHeader("Authorization", "Bearer " + endpointInfo.getToken())
+								.setEntity(new StringEntity(gocData.toJSON(), ContentType.create("application/json")));
 
-						int respCode = httpclient.executeMethod(post);
+						response = httpClient.execute(rb.build());
+						int respCode = response.getStatusLine().getStatusCode();
 
 						// Check for success
 						if (respCode == 201 || respCode == 204) {
-							String infoMsg = MessageFormat.format ("Success - send GOC++ having element {0} event {1} severity {2}.",
+							String infoMsg = MessageFormat.format("Success - send GOC++ having element {0} event {1} severity {2}.",
 									elementName, eventName, severity.name());
 							_logger.info(infoMsg);
 							history.appendMessageNUpdateHistory(infoMsg, null, 0);
@@ -188,7 +192,7 @@ public class GOCNotifier extends AuditNotifier {
 							result = true;
 							break;
 						} else {
-							final String gusPostResponseBody = post.getResponseBodyAsString();
+							final String gusPostResponseBody = EntityUtils.toString(response.getEntity());
 							failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. Response code {3} response {4}",
 									elementName, eventName, severity.name(), respCode, gusPostResponseBody);
 
@@ -196,12 +200,13 @@ public class GOCNotifier extends AuditNotifier {
 								_logger.warn(failureMsg);
 								refresh = true;
 								continue; // retry
-							} else if (respCode >= 500 && respCode < 600) { // Server errors
-								_logger.warn(failureMsg);
-								continue; // retry
-							} else {
-
-								List<Map<String, Object>> jsonResponseBody = new Gson().fromJson(gusPostResponseBody, List.class);
+							} else if (respCode == 400) {
+								List<Map<String, Object>> jsonResponseBody = null;
+								try {
+									jsonResponseBody = new Gson().fromJson(gusPostResponseBody, List.class);
+								} catch (RuntimeException e) {
+									_logger.warn("Failed to parse response", e);
+								}
 								if (jsonResponseBody != null && jsonResponseBody.size() > 0) {
 									Map<String, Object> responseBodyMap = jsonResponseBody.get(0);
 									if (responseBodyMap != null &&
@@ -213,26 +218,41 @@ public class GOCNotifier extends AuditNotifier {
 									}
 								}
 								_logger.error(failureMsg);
+								break; // do not retry
+							} else if (respCode >= 500 && respCode < 600) { // Server errors
+								_logger.warn(failureMsg);
+								continue; // retry
+							} else {
+								_logger.error(failureMsg);
 								break; // unknown error, do not retry
 							}
 						}
+					} catch (SocketTimeoutException e) {
+						failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. Exception {3}",
+								elementName, eventName, severity.name(), e.getMessage());
+						_logger.error(failureMsg, e);
+
+						refresh = false; // do not refresh token
+						continue; // retry
 					} catch (GetAuthenticationTokenFailureException e) {
 						failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. Exception {3}",
 								elementName, eventName, severity.name(), e.getMessage());
-						_logger.error("Failure - send GOC++ having element '{}' event '{}' severity {}. Exception '{}'", elementName, eventName,
-								severity.name(), e);
+						_logger.error(failureMsg, e);
 
 						refresh = true; // try forced refresh of token
 						continue; // retry
 					} catch (Exception e) {
 						failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. Exception {3}",
 								elementName, eventName, severity.name(), e.getMessage());
-						_logger.error("Failure - send GOC++ having element '{}' event '{}' severity {}. Exception '{}'", elementName, eventName,
-								severity.name(), e);
+						_logger.error(failureMsg, e);
 						break; // unknown error, do not retry
 					} finally {
-						if (post != null) {
-							post.releaseConnection();
+						try {
+							if (response != null) {
+								response.close();
+							}
+						} catch (IOException e) {
+							_logger.error("Exception while attempting to close post to GUS response", e);
 						}
 					}
 				}
@@ -411,7 +431,9 @@ public class GOCNotifier extends AuditNotifier {
 							_config.getValue(Property.GOC_CLIENT_SECRET.getName(), Property.GOC_CLIENT_SECRET.getDefaultValue()),
 							_config.getValue(Property.GOC_USER.getName(), Property.GOC_USER.getDefaultValue()),
 							_config.getValue(Property.GOC_PWD.getName(), Property.GOC_PWD.getDefaultValue()),
-							new GusTransport.EndpointInfo(_config.getValue(Property.GOC_ENDPOINT.getName(), Property.GOC_ENDPOINT.getDefaultValue()), GusTransport.NO_TOKEN));
+							new GusTransport.EndpointInfo(_config.getValue(Property.GOC_ENDPOINT.getName(), Property.GOC_ENDPOINT.getDefaultValue()), GusTransport.NO_TOKEN),
+							Integer.parseInt(_config.getValue(Property.GOC_CONNECTION_POOL_MAX_SIZE.getName(), Property.GOC_CONNECTION_POOL_MAX_SIZE.getDefaultValue())),
+							Integer.parseInt(_config.getValue(Property.GOC_CONNECTION_POOL_MAX_PER_ROUTE.getName(), Property.GOC_CONNECTION_POOL_MAX_PER_ROUTE.getDefaultValue())));
 				}
 			}
 		}
@@ -460,7 +482,11 @@ public class GOCNotifier extends AuditNotifier {
 		/** The alert URL template to be included with GOC notifications. */
 		EMAIL_ALERT_URL_TEMPLATE("notifier.property.goc.alerturl.template", "http://localhost:8080/argus/alertId"),
 		/** The metric URL template to be included with GOC notifications. */
-		EMAIL_METRIC_URL_TEMPLATE("notifier.property.goc.metricurl.template", "http://localhost:8080/argus/metrics");
+		EMAIL_METRIC_URL_TEMPLATE("notifier.property.goc.metricurl.template", "http://localhost:8080/argus/metrics"),
+		/** The connection pool size for connecting to GOC */
+		GOC_CONNECTION_POOL_MAX_SIZE("notifier.property.goc.connectionpool.maxsize", "55"),
+		/** The connection pool max per route for connecting to GOC */
+		GOC_CONNECTION_POOL_MAX_PER_ROUTE("notifier.property.goc.connectionpool.maxperroute", "20");
 
 		private final String _name;
 		private final String _defaultValue;

@@ -30,32 +30,10 @@
  */
 package com.salesforce.dva.argus.service.alert.notifier;
 
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
-
-import java.net.URLEncoder;
-import java.sql.Date;
-import java.text.MessageFormat;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-
-import javax.persistence.EntityManager;
-
 import com.google.gson.Gson;
-import com.google.inject.Singleton;
-import com.salesforce.dva.argus.service.MonitorService;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Notification;
@@ -64,12 +42,34 @@ import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.GusTransport.EndpointInfo;
 import com.salesforce.dva.argus.service.alert.notifier.GusTransport.GetAuthenticationTokenFailureException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.persistence.EntityManager;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.sql.Date;
+import java.text.MessageFormat;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 
 /**
@@ -119,14 +119,14 @@ public class GusNotifier extends AuditNotifier {
 		}
 		return sendGusNotification(context, NotificationStatus.TRIGGERED);
 	}
-	
+
     @Override
     protected boolean clearAdditionalNotification(NotificationContext context) {
         requireArgument(context != null, "Notification context cannot be null.");
         super.clearAdditionalNotification(context);
         return sendGusNotification(context, NotificationStatus.CLEARED);
     }
-    
+
     protected boolean sendGusNotification(NotificationContext context, NotificationStatus status) {
 		Notification notification = null;
 		Trigger trigger = null;
@@ -206,24 +206,29 @@ public class GusNotifier extends AuditNotifier {
 		int retries = 0;
 
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GUS_ENABLED))) {
+		    String postEndpoint = _config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue());
 			// So far works for only one group, will accept a set of string in future.
 			String groupId = to.toArray(new String[to.size()])[0];
 
+			CloseableHttpClient httpClient = getGusTransportInstance().getHttpClient();
 			boolean refresh = false; // get cached EndpointInfo by default
 			for (int i = 0; i < MAX_ATTEMPTS_GUS_POST; i++) {
 				retries = i;
-				PostMethod gusPost = new PostMethod(_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()));
-
+				CloseableHttpResponse response = null;
 				try {
 					EndpointInfo endpointInfo = getGusTransportInstance().getEndpointInfo(refresh);
-					HttpClient httpclient = getGusTransportInstance().getHttpClient();
-					gusPost.setRequestHeader("Authorization", "Bearer " + endpointInfo.getToken());
-					String gusMessage = MessageFormat.format("{0}&subjectId={1}&text={2}",
-							_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()), groupId,
-							URLEncoder.encode(feed.toString(), "UTF-8"));
+                    String gusMessage = MessageFormat.format("{0}&subjectId={1}&text={2}",
+                            postEndpoint,
+                            groupId,
+                            URLEncoder.encode(feed.toString(), "UTF-8"));
+                    RequestBuilder rb = RequestBuilder.post()
+                            .setHeader("Authorization", "Bearer " + endpointInfo.getToken())
+                            .setEntity(new StringEntity(gusMessage, ContentType.create("application/x-www-form-urlencoded")))
+                            .setUri(postEndpoint);
 
-					gusPost.setRequestEntity(new StringRequestEntity(gusMessage, "application/x-www-form-urlencoded", null));
-					int respCode = httpclient.executeMethod(gusPost);
+                    response = httpClient.execute(rb.build());
+                    int respCode = response.getStatusLine().getStatusCode();
+
 					_logger.info("Gus message response code '{}'", respCode);
 					if (respCode == 201 || respCode == 204) {
 						String infoMsg = MessageFormat.format("Success - send to GUS group {0}", groupId);
@@ -232,7 +237,7 @@ public class GusNotifier extends AuditNotifier {
 						result = true;
 						break;
 					} else {
-						final String gusPostResponseBody = gusPost.getResponseBodyAsString();
+                        final String gusPostResponseBody = EntityUtils.toString(response.getEntity());
 						failureMsg = MessageFormat.format("Failure - send to GUS group {0}. Cause {1}", groupId, gusPostResponseBody);
 						_logger.error(failureMsg);
 						history.appendMessageNUpdateHistory(failureMsg, null, 0);
@@ -262,7 +267,13 @@ public class GusNotifier extends AuditNotifier {
 					history.appendMessageNUpdateHistory(failureMsg, null, 0);
 					refresh = false;
 				} finally {
-					gusPost.releaseConnection();
+				    try {
+                        if (response != null) {
+                            response.close();
+                        }
+                    } catch (IOException e) {
+				        _logger.error("Exception while attempting to close post to GUS response", e);
+                    }
 				}
 			}
 			monitorService.modifyCounter(MonitorService.Counter.GUS_NOTIFICATIONS_RETRIES, retries, null);
@@ -297,7 +308,9 @@ public class GusNotifier extends AuditNotifier {
 							_config.getValue(Property.GUS_CLIENT_SECRET.getName(), Property.GUS_CLIENT_SECRET.getDefaultValue()),
 							_config.getValue(Property.ARGUS_GUS_USER.getName(), Property.ARGUS_GUS_USER.getDefaultValue()),
 							_config.getValue(Property.ARGUS_GUS_PWD.getName(), Property.ARGUS_GUS_PWD.getDefaultValue()),
-							new GusTransport.EndpointInfo(_config.getValue(Property.GUS_ENDPOINT.getName(), Property.GUS_ENDPOINT.getDefaultValue()), GusTransport.NO_TOKEN));
+							new GusTransport.EndpointInfo(_config.getValue(Property.GUS_ENDPOINT.getName(), Property.GUS_ENDPOINT.getDefaultValue()), GusTransport.NO_TOKEN),
+							Integer.parseInt(_config.getValue(Property.GUS_CONNECTION_POOL_MAX_SIZE.getName(), Property.GUS_CONNECTION_POOL_MAX_SIZE.getDefaultValue())),
+							Integer.parseInt(_config.getValue(Property.GUS_CONNECTION_POOL_MAX_PER_ROUTE.getName(), Property.GUS_CONNECTION_POOL_MAX_PER_ROUTE.getDefaultValue())));
 				}
 			}
 		}
@@ -320,7 +333,11 @@ public class GusNotifier extends AuditNotifier {
 		/** The GUS proxy host. */
 		GUS_PROXY_HOST("notifier.property.proxy.host", ""),
 		/** The GUS port. */
-		GUS_PROXY_PORT("notifier.property.proxy.port", "");
+		GUS_PROXY_PORT("notifier.property.proxy.port", ""),
+        /** The connection pool size for connecting to Gus */
+        GUS_CONNECTION_POOL_MAX_SIZE("notifier.property.gus.connectionpool.maxsize", "55"),
+		/** The connection pool max per route for connecting to Gus */
+		GUS_CONNECTION_POOL_MAX_PER_ROUTE("notifier.property.gus.connectionpool.maxperroute", "20");
 
 		private final String _name;
 		private final String _defaultValue;

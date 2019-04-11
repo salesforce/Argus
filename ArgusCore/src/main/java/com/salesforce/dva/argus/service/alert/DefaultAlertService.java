@@ -55,6 +55,7 @@ import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.salesforce.dva.argus.entity.*;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -462,7 +463,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 			jobStartTime = System.currentTimeMillis();
 			alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
-            RequestContextHolder.setRequestContext(new RequestContext(alert.getOwner()+"-alert"));
+			updateRequestContext(alert);
 
 			updateAlertStartEvaluationStats(alertEnqueueTimestampsByAlertId, alert, jobStartTime);
 
@@ -574,6 +575,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		} // end for
 		return historyList;
+	}
+
+	@VisibleForTesting
+	protected void updateRequestContext(Alert alert) {
+		RequestContextHolder.setRequestContext(new RequestContext(alert.getOwner().getUserName() + "-alert"));
 	}
 
 	private boolean doesDatalagConditionSatisfy(Alert alert, String currentDC) {

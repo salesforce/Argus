@@ -8,17 +8,31 @@ import com.google.common.util.concurrent.ExecutionError;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpConnectionManager;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpHost;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLContext;
+import java.io.IOException;
 import java.net.URLEncoder;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -42,7 +56,8 @@ public class GusTransport {
     private static final int READ_TIMEOUT_MILLIS = 10000;
     private static final String DUMMY_CACHE_KEY = "endpoint"; // dummy key since we are only caching 1 value
 
-    private final HttpConnectionManager connectionManager;
+    private final PoolingHttpClientConnectionManager connectionManager;
+    private final CloseableHttpClient httpClient;
     /*
      * Using a single entry cache to hold the current EndpointInfo and manage refreshes. Since the CacheLoader ignores
      * the key, there will only ever be 1 value. Therefore, a dummy key is used. If a dummy key is not used, every new
@@ -53,12 +68,11 @@ public class GusTransport {
      * If LoadingCache.refresh() fails, the old value will continue to get used.
      */
     private final LoadingCache<String, EndpointInfo> endpointInfoCache;
-    private final Optional<String> proxyHost;
-    private final Optional<Integer> proxyPort;
 
     public GusTransport(Optional<String> proxyHost, Optional<Integer> proxyPort, String authEndpoint,
                         String authClientId, String authClientSecret, String authUsername, String authPassword,
-                        EndpointInfo defaultEndpointInfo, long tokenCacheRefreshPeriodMillis) {
+                        EndpointInfo defaultEndpointInfo, long tokenCacheRefreshPeriodMillis,
+                        int connectionPoolMaxSize, int connectionPoolMaxPerRoute) {
         requireArgument(!proxyHost.isPresent() || StringUtils.isNotBlank(proxyHost.get()),
                 String.format("proxyHost must not be blank if present", proxyHost.isPresent() ? proxyHost.get() : "null"));
         requireArgument(!proxyPort.isPresent() || proxyPort.get() > 0,
@@ -80,13 +94,51 @@ public class GusTransport {
                 String.format("defaultEndpointInfo.token(%s) must not be blank", defaultEndpointInfo.getToken()));
         requireArgument(tokenCacheRefreshPeriodMillis > 0,
                 String.format("cacheRefreshPeriodMillis(%d) must be > 0", tokenCacheRefreshPeriodMillis));
+        requireArgument(connectionPoolMaxSize > 0,
+                String.format("connectionPoolMaxSize(%d) must be > 0", connectionPoolMaxSize));
+        requireArgument(connectionPoolMaxPerRoute > 0,
+                String.format("connectionPoolMaxPerRoute(%d) must be > 0", connectionPoolMaxPerRoute));
 
-        this.proxyHost = proxyHost;
-        this.proxyPort = proxyPort;
-        this.connectionManager = new MultiThreadedHttpConnectionManager();
-        HttpConnectionManagerParams params = connectionManager.getParams();
-        params.setConnectionTimeout(CONNECTION_TIMEOUT_MILLIS);
-        params.setSoTimeout(READ_TIMEOUT_MILLIS);
+        SSLContext sslContext = null;
+        try {
+            sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, null, null);
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+            LOGGER.error("Failed to init SSLContext", e);
+        }
+        RegistryBuilder<ConnectionSocketFactory> rb = RegistryBuilder.<ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.getSocketFactory());
+        if (sslContext != null) {
+            rb.register("https", new SSLConnectionSocketFactory(sslContext));
+        }
+        Registry<ConnectionSocketFactory> r = rb.build();
+        this.connectionManager = new PoolingHttpClientConnectionManager(r);
+        connectionManager.setMaxTotal(connectionPoolMaxSize);
+        connectionManager.setDefaultMaxPerRoute(connectionPoolMaxPerRoute);
+        LOGGER.info(String.format("Creating connection manager with maxPoolSize=%d, maxPerRoute=%d",
+                connectionPoolMaxSize,
+                connectionPoolMaxPerRoute));
+
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(CONNECTION_TIMEOUT_MILLIS)
+                .setConnectionRequestTimeout(CONNECTION_TIMEOUT_MILLIS)
+                .setSocketTimeout(READ_TIMEOUT_MILLIS)
+                .build();
+
+        HttpClientBuilder builder = HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .setConnectionManager(connectionManager);
+        if (sslContext != null) {
+            builder = builder
+                    .setSSLContext(sslContext)
+                    .setSSLHostnameVerifier(new NoopHostnameVerifier());
+        }
+        if (proxyHost.isPresent() && proxyHost.get().length() > 0 && proxyPort.isPresent()) {
+            HttpHost proxy = new HttpHost(proxyHost.get(), proxyPort.get().intValue());
+            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
+            builder = builder.setRoutePlanner(routePlanner);
+        }
+        this.httpClient = builder.build();
 
         EndpointInfoSupplier supplier = new EndpointInfoSupplier(authEndpoint, authClientId,
                 authClientSecret, authUsername, authPassword);
@@ -106,17 +158,18 @@ public class GusTransport {
 
     public GusTransport(Optional<String> proxyHost, Optional<Integer> proxyPort, String authEndpoint,
                         String authClientId, String authClientSecret, String authUsername, String authPassword,
-                        EndpointInfo defaultEndpointInfo) {
+                        EndpointInfo defaultEndpointInfo, int connectionPoolMaxSize, int connectionPoolMaxPerRoute) {
         this(proxyHost, proxyPort, authEndpoint, authClientId, authClientSecret, authUsername, authPassword,
-                defaultEndpointInfo, MIN_SESSION_REFRESH_THRESHOLD_MILLIS);
+                defaultEndpointInfo, MIN_SESSION_REFRESH_THRESHOLD_MILLIS, connectionPoolMaxSize, connectionPoolMaxPerRoute);
     }
 
     public GusTransport(String proxyHost, String proxyPort, String authEndpoint,
                         String authClientId, String authClientSecret, String authUsername, String authPassword,
-                        EndpointInfo defaultEndpointInfo) {
+                        EndpointInfo defaultEndpointInfo, int connectionPoolMaxSize, int connectionPoolMaxPerRoute) {
         this(validateProxyHostAndPortStrings(proxyHost, proxyPort) ? Optional.of(proxyHost) : Optional.empty(),
                 validateProxyHostAndPortStrings(proxyHost, proxyPort) ? Optional.of(Integer.parseInt(proxyPort)) : Optional.empty(),
-                authEndpoint, authClientId, authClientSecret, authUsername, authPassword, defaultEndpointInfo);
+                authEndpoint, authClientId, authClientSecret, authUsername, authPassword, defaultEndpointInfo,
+                connectionPoolMaxSize, connectionPoolMaxPerRoute);
     }
 
     private static boolean validateProxyHostAndPortStrings(String proxyHost, String proxyPort) {
@@ -159,14 +212,8 @@ public class GusTransport {
      *
      * @return  HttpClient
      */
-    public HttpClient getHttpClient() {
-        HttpClient httpclient = new HttpClient(connectionManager);
-        // Wait for 2 seconds to get a connection from pool
-        httpclient.getParams().setParameter(HTTP_CONNECTION_MANAGER_TIMEOUT_PARAMETER, HTTP_CONNECTION_MANAGER_TIMEOUT_MILLIS);
-        if (proxyHost.isPresent() && proxyHost.get().length() > 0 && proxyPort.isPresent()) {
-            httpclient.getHostConfiguration().setProxy(proxyHost.get(), proxyPort.get());
-        }
-        return httpclient;
+    public CloseableHttpClient getHttpClient() {
+        return httpClient;
     }
 
     /**
@@ -189,19 +236,23 @@ public class GusTransport {
 
         @Override
         public EndpointInfo get() {
-            PostMethod post = new PostMethod(authEndpoint);
-
+            CloseableHttpResponse response = null;
             try {
-                post.addParameter("grant_type", "password");
-                post.addParameter("client_id", URLEncoder.encode(authClientId, UTF_8));
-                post.addParameter("client_secret", URLEncoder.encode(authClientSecret, UTF_8));
-                post.addParameter("username", authUsername);
-                post.addParameter("password", authPassword);
-                int respCode = getHttpClient().executeMethod(post);
+                RequestBuilder rb = RequestBuilder.post()
+                        .setUri(authEndpoint)
+                        .addParameter("grant_type", "password")
+                        .addParameter("client_id", URLEncoder.encode(authClientId, UTF_8))
+                        .addParameter("client_secret", URLEncoder.encode(authClientSecret, UTF_8))
+                        .addParameter("username", authUsername)
+                        .addParameter("password", authPassword);
+
+                response = httpClient.execute(rb.build());
+                int respCode = response.getStatusLine().getStatusCode();
+                String responseBodyAsString = EntityUtils.toString(response.getEntity());
 
                 // Check for success
                 if (respCode == 200) {
-                    JsonObject authResponse = new Gson().fromJson(post.getResponseBodyAsString(), JsonObject.class);
+                    JsonObject authResponse = new Gson().fromJson(responseBodyAsString, JsonObject.class);
                     String endpoint = authResponse.get("instance_url").getAsString();
                     String token = authResponse.get("access_token").getAsString();
 
@@ -211,7 +262,7 @@ public class GusTransport {
                 } else {
                     String errorMessage = String.format("Failure - getting oauth2 token (responseCode=%d), check username/password: '%s'",
                             respCode,
-                            post.getResponseBodyAsString());
+                            responseBodyAsString);
                     LOGGER.error(errorMessage);
                     throw new GetAuthenticationTokenFailureRuntimeException(errorMessage);
                 }
@@ -221,7 +272,13 @@ public class GusTransport {
                 LOGGER.error("Failure - exception getting access_token '{}'", e);
                 throw new GetAuthenticationTokenFailureRuntimeException("Failure - exception getting access_token", e);
             } finally {
-                post.releaseConnection();
+                if (response != null) {
+                    try {
+                        response.close();
+                    } catch (IOException e) {
+                        LOGGER.error("Exception while attempting to close response", e);
+                    }
+                }
             }
         }
     }
