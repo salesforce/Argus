@@ -3,4 +3,7 @@
     <persistence-unit name="argus-pu" transaction-type="RESOURCE_LOCAL">
         ${build.property.persistence.unit}
     </persistence-unit>
+    <persistence-unit name="quota" transaction-type="RESOURCE_LOCAL">
+        ${build.property.persistence.unit.quota}
+    </persistence-unit>
 </persistence>
