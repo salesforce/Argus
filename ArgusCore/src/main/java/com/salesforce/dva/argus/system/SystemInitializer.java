@@ -63,6 +63,7 @@ import com.salesforce.dva.argus.service.tsdb.CachedTSDBService;
 import com.salesforce.dva.argus.service.users.CachedUserService;
 import com.salesforce.dva.argus.service.users.DefaultUserService;
 import com.salesforce.dva.argus.system.SystemConfiguration.Property;
+import com.salesforce.dva.argus.service.alert.notifier.RefocusForwarder;
 
 import org.slf4j.LoggerFactory;
 
@@ -264,6 +265,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultNamespaceService.class, NamespaceService.class);
         bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
         bindConcreteClass(DefaultChartService.class, ChartService.class);
+        bindConcreteClass(RefocusForwarder.class, RefocusService.class);
     }
 
     private <T> void bindConcreteClass(Property property, Class<T> type) {

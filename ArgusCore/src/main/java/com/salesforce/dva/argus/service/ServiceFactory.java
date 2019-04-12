@@ -94,6 +94,8 @@ public final class ServiceFactory {
     @Inject
     Provider<ServiceManagementService> _serviceManagementServiceProvider;
     @Inject
+    Provider<RefocusService> _refocusServiceProvider;
+    @Inject
     Provider<QueryStoreService> _queryStoreServiceProvider;
 
 
@@ -325,6 +327,15 @@ public final class ServiceFactory {
     }
 
     /**
+     * Returns an instance of the refocus service.
+     *
+     * @return  An instance of the refocus service.
+     */
+    public synchronized RefocusService getRefocusService() {
+        return _refocusServiceProvider.get();
+    }
+  
+   /**
      * Returns an instance of the Queries Store service.
      *
      * @return  An instance of the Queries Store service.

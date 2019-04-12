@@ -29,40 +29,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.dva.argus.service.alert.notifier;
+package com.salesforce.dva.argus.service;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.salesforce.dva.argus.service.AnnotationService;
-import com.salesforce.dva.argus.service.AuditService;
-import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.RefocusService;
-import com.salesforce.dva.argus.system.SystemConfiguration;
-import javax.persistence.EntityManager;
-
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import com.salesforce.dva.argus.entity.History;
+import com.salesforce.dva.argus.service.alert.notifier.NotificationForwarder;
 
 /**
- * Implementation of notifier interface for notifying Refocus.
+ * Provides methods to create, update and delete alerts.
  *
- * @author  Janine Zou (yzou@salesforce.com), Ian Keck (ikeck@salesforce.com)
+ * @author  Ian Keck (ikeck@salesforce.com)
  */
-public class RefocusNotifier extends RefocusBooleanNotifier {
+// FUTURE - separate refocusService and Notification forwarder  Problem. how to set up the factories/providers so that
+// future - they point to the same object in the interrim.
+public interface RefocusService extends Service, NotificationForwarder {
 
-	/**
-	 * Creates a new Refocus notifier.
-	 *
-	 * @param  metricService      The metric service. Cannot be null.
-	 * @param  annotationService  The annotation service. Cannot be null.
-	 * @param  auditService       The audit service. Cannot be null.
-	 * @param  refocusService     The refocus service. Cannot be null.
-	 * @param  config             The system configuration. Cannot be null.
-	 * @param  emf                The entity manager factory. Cannot be null.
-	 */
-	@Inject
-	public RefocusNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, RefocusService refocusService,
-								  SystemConfiguration config, Provider<EntityManager> emf) {
-		super(metricService, annotationService, auditService, refocusService, config, emf);
-		requireArgument(config != null, "The configuration cannot be null.");
-	}
+	public boolean sendRefocusNotification(String subject_aspect, String value, String user_id, String token_id, History history) /*throws InterruptedException */;
+	public boolean sendRefocusNotification(String subject_aspect, String value, String user_id, String token_id, History history, long nextFireTime) /*throws InterruptedException */;
+
 }
+/* Copyright (c) 2019, Salesforce.com, Inc.  All rights reserved. */
