@@ -199,7 +199,7 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 	private boolean checkIsValidAlert(Alert a) {
 		if (!a.isValid()) {
 			String msg = a.validationMessage();
-			_logger.debug("AlertDefinitionsCache: Excluding INVALID ALERT {},{},{},{} : {}",
+			_logger.info("AlertDefinitionsCache: Excluding INVALID ALERT {},{},{},{} : {}",
 					a.getId(), a.getName(), a.getCronEntry(), a.getExpression(), msg);
 			return false;
 		}

@@ -862,7 +862,8 @@ public class AlertResources extends AbstractResource {
 
 			PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
 
-			//Refocus Notification V1 release only for search team (and for Argus team testing)
+			// IMPORTANT - address this!
+			// Refocus Notification V1 release only for search team (and for Argus team testing)
 			if (AlertService.SupportedNotifier.REFOCUS.getName().equals(notificationDto.getNotifierName())) {
 				String ownerUserName = owner.getUserName();
 				if (!"svc_monocle".equalsIgnoreCase(ownerUserName)  // search team username
@@ -972,6 +973,7 @@ public class AlertResources extends AbstractResource {
 				throw new WebApplicationException("Null notification object cannot be created.", Status.BAD_REQUEST);
 			}
 
+			// IMPORTANT - Why isn't the Refocus V1 Notifier ('Boolean Notifier') restricted to Search Team here?
 			Alert alert = alertService.findAlertByPrimaryKey(alertId);
 
 			if (alert != null) {

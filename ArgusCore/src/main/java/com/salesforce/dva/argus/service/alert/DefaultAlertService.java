@@ -528,6 +528,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 							}
 						}
 					} else {
+						// _logger.error("Alert: {}", alert.toString()); // DEBUG - REMOVE
+
 						//Only evaluate those triggers which are associated with any notification.
 						Set<Trigger> triggersToEvaluate = new HashSet<>();
 						for (Notification notification : alert.getNotifications()) {
@@ -539,9 +541,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 						for (Notification notification : alert.getNotifications()) {
 							if (notification.getTriggers().isEmpty()) {
-								logMessage = MessageFormat.format("The notification {0} has no triggers.", notification.getName());
-								_logger.info(logMessage);
-								history.appendMessageNUpdateHistory(logMessage, null, 0);
+							    _processTriggerlessNotification(alert, history, metrics, notification, alertEnqueueTimestamp);
 							} else {
 								_processNotification(alert, history, metrics, triggerFiredTimesAndMetricsByTrigger, notification, alertEnqueueTimestamp);
 								if (missingDataTriggers.size() > 0) {
@@ -702,7 +702,19 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger, Notification notification, Long alertEnqueueTimestamp) {
 
 		//refocus notifier does not need cool down logic, and every evaluation needs to send notification
-		boolean isRefocusNotifier = SupportedNotifier.REFOCUS.getName().equals(notification.getNotifierName());
+        // Future - once refocus v1 notifiers are migrated to refocus_boolean notifiers, remove REFOCUS.
+		boolean isBooleanRefocusNotifier = SupportedNotifier.REFOCUS.getName().equals(notification.getNotifierName()) ||
+                                           SupportedNotifier.REFOCUS_BOOLEAN.getName().equals(notification.getNotifierName());
+        boolean isValueRefocusNotifier   = SupportedNotifier.REFOCUS_VALUE.getName().equals(notification.getNotifierName());
+
+        if (isValueRefocusNotifier)
+        {
+            // Future - For now just ignore RefocusValueNotifiers attached to Triggers.
+            String logMessage = MessageFormat.format("RefocusValueNotifiers must not be associated with triggers. Name: {0}", notification.getName());
+            _logger.info(logMessage);
+            history.appendMessageNUpdateHistory(logMessage, null, 0);
+            return;
+        }
 
 		for(Trigger trigger : notification.getTriggers()) {
 			Map<Metric, Long> triggerFiredTimesForMetrics = triggerFiredTimesAndMetricsByTrigger.get(trigger.getId());
@@ -712,7 +724,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is fired.", trigger.getName(), m.getIdentifier());
 					history.appendMessageNUpdateHistory(logMessage, null, 0);
 
-					if (isRefocusNotifier) {
+					if (isBooleanRefocusNotifier) {
 						sendNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m), alertEnqueueTimestamp);
 						continue;
 					}
@@ -728,7 +740,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is not fired.", trigger.getName(), m.getIdentifier());
 					history.appendMessageNUpdateHistory(logMessage, null, 0);
 
-					if (isRefocusNotifier) {
+					if (isBooleanRefocusNotifier) {
 						sendClearNotification(trigger, m, history, notification, alert, alertEnqueueTimestamp);
 						continue;
 					}
@@ -744,13 +756,58 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 	}
 
+    /**
+     * Evaluates notifiers without triggers.  Only RefocusValueNotifiers can execute with out a trigger.
+     * All other notifiers without triggers are logged.
+     */
+    private void _processTriggerlessNotification(Alert alert, History history, List<Metric> metrics, Notification notification, Long alertEnqueueTimestamp) {
+
+        boolean isRefocusValueNotifier = SupportedNotifier.REFOCUS_VALUE.getName().equals(notification.getNotifierName());
+
+        if (!isRefocusValueNotifier)
+        {
+            String logMessage = MessageFormat.format("The notification {0} has no triggers.", notification.getName());
+            _logger.info(logMessage);
+            history.appendMessageNUpdateHistory(logMessage, null, 0);
+        }
+        else
+        {
+
+            // Refocus Notifiers: every evaluation needs to send notification
+            // Future - file work item for Refocus -> each metric (evaluated expression) will be directed to all of the S+A in the notifier.
+            // future - Work item will request expansion of the S+A based on some part of the metric expression.
+            // FOR NOW - Users should auther Alerts with RefocusValueNotifiers to have only a single expression.
+            for (Metric m : metrics)
+            {
+                Long latestDataPoint = getLatestDatapointTime(m, alert.getExpression(), alertEnqueueTimestamp);
+
+                if (latestDataPoint != null)
+                {
+                    sendNotification(null, m, history, notification, alert, latestDataPoint, alertEnqueueTimestamp);
+                }
+            }
+        }
+    }
+
 	/**
 	 * Evaluates all triggers associated with the missing data notification and updates the job history.
 	 */
 	private void _processMissingDataNotification(Alert alert, History history, Set<Trigger> triggers, Notification notification, boolean isDataMissing, Long alertEnqueueTimestamp) {
 
 		//refocus notifier does not need cool down logic, and every evaluation needs to send notification
-		boolean isRefocusNotifier = SupportedNotifier.REFOCUS.getName().equals(notification.getNotifierName());
+		boolean isRefocusNotifier = SupportedNotifier.REFOCUS.getName().equals(notification.getNotifierName()) ||
+                                    SupportedNotifier.REFOCUS_BOOLEAN.getName().equals(notification.getNotifierName());
+        boolean isValueRefocusNotifier   = SupportedNotifier.REFOCUS_VALUE.getName().equals(notification.getNotifierName());
+
+        // IMPORTANT - Verify that missing data should result in no notification to Refocus for valueNotifier
+        if (isValueRefocusNotifier)
+        {
+            // Future - For now just ignore RefocusValueNotifiers attached to NoData Scenarios.  Later we trigger, but require that the subscriptions for refocusValue have a value supplied too! S|A|Value
+            String logMessage = MessageFormat.format("RefocusValueNotifiers must not be associated with no-data triggers. Name: {0}", notification.getName());
+            _logger.info(logMessage);
+            history.appendMessageNUpdateHistory(logMessage, null, 0);
+            return;
+        }
 
 		for(Trigger trigger : notification.getTriggers()) {
 			if(triggers.contains(trigger)) {
@@ -838,34 +895,46 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public void sendNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert,
 			Long triggerFiredTime, Long alertEnqueueTime) {
 
+	    /* NOTE - For triggerless Notifications (i.e. the RefocusValueNotifier), trigger is null, and the
+	       passed in triggerFiredTime is the most recent value in the metric. */
 		double triggerValue = 0.0;
-		if(!trigger.getType().equals(TriggerType.NO_DATA)){
+		if(trigger == null || !trigger.getType().equals(TriggerType.NO_DATA)){
 			triggerValue = metric.getDatapoints().get(triggerFiredTime);
 		}
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, triggerValue, metric, history);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
-		Map<String, String> tags = new HashMap<>();
+        Map<String, String> tags = new HashMap<>();
 		tags.put("action", "triggered");
 		tags.put("notifyTarget", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		String logMessage = "";
 		
 		boolean rc = true;
 		try{
-			rc = notifier.sendNotification(context);
+            rc = notifier.sendNotification(context);
 		}catch (Exception e){
 			_logger.error("sendNotification() hit exception", e);
 			rc = false;
 		}
-		
+
+		// TODO - log alertId, triggerId, notificationId?
 		if (rc) {
 			tags.put("status", "succeeded");
- 			logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
-					getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
+			if (trigger != null)
+            {
+                logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
+                        getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
+            }
+            else
+            {
+                logMessage = MessageFormat.format("Sent notification to {0}",
+                        SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+            }
 		}else {
 			tags.put("status", "failed");			
-			logMessage = MessageFormat.format("Failed to send notification to {0}", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+			logMessage = MessageFormat.format("Failed to send notification to {0}",
+                    SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		}
 
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
@@ -875,7 +944,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags.put("metricId", metric.getIdentifier().hashCode()+"");
 		tags.put("notificationId", notification.getId().intValue()+"");
 		tags.put("notifyTarget", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
-		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
+		// TODO - QUESTION - can trigger.getAlert().getId() differ from alert.getId()?
+		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(),
+                (trigger != null) ? trigger.getAlert().getId() : alert.getId(), 1.0/*notification sent*/, tags);
 
 		_logger.debug(logMessage);
 		history.appendMessageNUpdateHistory(logMessage, null, 0);
@@ -1232,6 +1303,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			return _notifierFactory.getGusNotifier();
 		case REFOCUS:
 			return _notifierFactory.getRefocusNotifier();
+		case REFOCUS_BOOLEAN:
+			return _notifierFactory.getRefocusBooleanNotifier();
+		case REFOCUS_VALUE:
+			return _notifierFactory.getRefocusValueNotifier();
 		default:
 			return _notifierFactory.getDBNotifier();
 		}
@@ -1268,6 +1343,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				return null;
 			}
 		}
+		// else NOTE - metric.getDataPoints().size() > 1
 
 		Collections.sort(sortedDatapoints, new Comparator<Map.Entry<Long, Double>>() {
 
@@ -1311,6 +1387,25 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 		return null;
 	}
+
+
+    /**
+     * Evaluates the trigger against metric data.
+     *
+     * @param   metric   Metric data for the alert which the trigger belongs.
+     *
+     * @return  The time stamp of the last data point in metric at which the trigger was decided to be fired.
+     */
+    public Long getLatestDatapointTime(Metric metric, String queryExpression, Long alertEnqueueTimestamp) {
+
+        if (metric.getDatapoints().isEmpty()) {
+            return null;
+        }
+
+        Long latestTime = Collections.max(metric.getDatapoints().keySet());
+        return latestTime;
+    }
+
 
 	@Override
 	@Transactional

@@ -234,6 +234,8 @@ public final class SystemConfiguration extends Properties {
         ARGUS_GUS_GROUP_ID("notifier.property.argus.gus.group_id", "groupId"),
 
         REFOCUS_ENABLED("system.property.refocus.enabled", "false"),
+        REFOCUS_CLIENT_THREADS("system.property.refocus.client.threads", "1"),
+        REFOCUS_CLIENT_CONNECT_TIMEOUT("system.property.refocus.client.connect.timeout", "10000"),
 
         DATA_LAG_THRESHOLD("system.property.data.lag.threshold.millis", "300000"),
         DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
@@ -244,6 +246,7 @@ public final class SystemConfiguration extends Properties {
 
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),
+
 
         DC_DEFAULT("system.property.dc.default", "defaultDC"),
         DC_LIST("system.property.dc.list", "DC1,DC2,DC3,DC4,DC5"),

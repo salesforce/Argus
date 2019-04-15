@@ -510,6 +510,11 @@ public class Notification extends JPAEntity implements Serializable {
 	 * @return cool down expiration time in milliseconds
 	 */
 	public long getCooldownExpirationByTriggerAndMetric(Trigger trigger, Metric metric) {
+
+		if (trigger == null)
+		{
+			return 0;
+		}
 		String key = _hashTriggerAndMetric(trigger, metric);
 		return this.cooldownExpirationByTriggerAndMetric.containsKey(key) ? this.cooldownExpirationByTriggerAndMetric.get(key) : 0;
 	}

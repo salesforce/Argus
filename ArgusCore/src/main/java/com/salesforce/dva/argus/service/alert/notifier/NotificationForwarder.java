@@ -31,38 +31,18 @@
 
 package com.salesforce.dva.argus.service.alert.notifier;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.salesforce.dva.argus.service.AnnotationService;
-import com.salesforce.dva.argus.service.AuditService;
-import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.RefocusService;
-import com.salesforce.dva.argus.system.SystemConfiguration;
-import javax.persistence.EntityManager;
-
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
-
 /**
- * Implementation of notifier interface for notifying Refocus.
  *
- * @author  Janine Zou (yzou@salesforce.com), Ian Keck (ikeck@salesforce.com)
+ * @author  Ian Keck (ikeck@salesforce.com)
  */
-public class RefocusNotifier extends RefocusBooleanNotifier {
+public interface NotificationForwarder {
 
-	/**
-	 * Creates a new Refocus notifier.
-	 *
-	 * @param  metricService      The metric service. Cannot be null.
-	 * @param  annotationService  The annotation service. Cannot be null.
-	 * @param  auditService       The audit service. Cannot be null.
-	 * @param  refocusService     The refocus service. Cannot be null.
-	 * @param  config             The system configuration. Cannot be null.
-	 * @param  emf                The entity manager factory. Cannot be null.
-	 */
-	@Inject
-	public RefocusNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, RefocusService refocusService,
-								  SystemConfiguration config, Provider<EntityManager> emf) {
-		super(metricService, annotationService, auditService, refocusService, config, emf);
-		requireArgument(config != null, "The configuration cannot be null.");
-	}
+	public int forwardNotifications() throws InterruptedException;
+	public int getNotificationsDelivered();
+	public int getNotificationsEnqueued();
+	public int getNotificationsDiscarded();
+	public int getMaxQueueLength();
+	public int getNotificationsProcessed();
+
 }
+/* Copyright (c) 2019, Salesforce.com, Inc.  All rights reserved. */

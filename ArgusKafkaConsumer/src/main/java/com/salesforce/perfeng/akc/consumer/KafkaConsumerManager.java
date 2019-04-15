@@ -112,19 +112,19 @@ public class KafkaConsumerManager {
 		 * - if CLI argument present: override akc.config and use CLI
 		 * - Both CLI argument and akc.config default to METRICS ConsumerType
 		 */
-		ConsumerType type = ConsumerType.METRICS;
+		ConsumerType type;
 		if(args.length == 0){
 			type = ConsumerType.valueOf(AKCConfiguration.getParameter(AKCConfiguration.Parameter.CONSUMER_TYPE));
 			LOGGER.info("CLI argument not found. Using consumer.type property from AKCConfiguration: " + type);
 		} else {
-			try{
+			try {
 				type = ConsumerType.valueOf(args[0]);
-			} catch (Exception ex){
-				LOGGER.error("Exception reading CLI ConsumerType argument; default to METRICS: " + ex);
-				type = ConsumerType.METRICS;
-			} finally {
 				AKCConfiguration.setConsumerType(type);
 				LOGGER.info("CLI argument found. Setting consumer.type property in AKCConfiguration to " + type);
+			} catch (Exception ex) {
+				LOGGER.error("Exception reading CLI ConsumerType argument; Exiting: " + ex);
+				System.exit(2);
+				return;
 			}
 		}
 		String bootstrapServers = AKCConfiguration.getParameter(AKCConfiguration.Parameter.BOOTSTRAP_SERVERS);

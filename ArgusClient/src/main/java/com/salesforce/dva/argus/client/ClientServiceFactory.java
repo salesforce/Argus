@@ -48,23 +48,32 @@ class ClientServiceFactory {
 
     //~ Methods **************************************************************************************************************************************
 
-    static ExecutorService startClientService(SystemMain system, ClientType clientType, AtomicInteger jobCounter) {
+    static ExecutorService[] startClientService(SystemMain system, ClientType clientType, AtomicInteger jobCounter) {
         switch (clientType) {
             case ALERT:
-                return startAlertClientService(system, jobCounter);
+                return collect(startAlertClientService(system, jobCounter),
+                               startRefocusClientService(system, jobCounter));
             case COMMIT_SCHEMA:
 
                 /* Alpha feature, not currently supported. */
-                return startCommitSchemaClientService(system, jobCounter);
+                return collect(startCommitSchemaClientService(system, jobCounter));
             case COMMIT_ANNOTATIONS:
-                return startCommitAnnotationsClientService(system, jobCounter);
+                return collect(startCommitAnnotationsClientService(system, jobCounter));
             case COMMIT_HISTOGRAMS:
-                return startCommitHistogramsClientService(system, jobCounter);
+                return collect(startCommitHistogramsClientService(system, jobCounter));
             case PROCESS_QUERIES:
-                return startProcessMetricsClientService(system, jobCounter);
+                return collect(startProcessMetricsClientService(system, jobCounter));
             default:
-                return startCommitMetricsClientService(system, jobCounter);
+                return collect(startCommitMetricsClientService(system, jobCounter));
         }
+    }
+
+
+    private static ExecutorService[] collect(ExecutorService ... services)
+    {
+        ExecutorService[] rv = new ExecutorService[services.length];
+        System.arraycopy(services, 0, rv, 0, services.length);
+        return rv;
     }
 
     private static ExecutorService startAlertClientService(SystemMain system, AtomicInteger jobCounter) {
@@ -84,6 +93,28 @@ class ClientServiceFactory {
         system.getServiceFactory().getMonitorService().startRecordingCounters();
         for (int i = 0; i < threadPoolCount; i++) {
             service.submit(new Alerter(system.getServiceFactory().getAlertService(), timeout, jobCounter));
+        }
+        return service;
+    }
+
+    private static ExecutorService startRefocusClientService(SystemMain system, AtomicInteger jobCounter) {
+        int configuredCount = Integer.valueOf(system.getConfiguration().getValue(SystemConfiguration.Property.REFOCUS_CLIENT_THREADS));
+        int configuredTimeout = Integer.valueOf(system.getConfiguration().getValue(SystemConfiguration.Property.REFOCUS_CLIENT_CONNECT_TIMEOUT));
+        int threadPoolCount = Math.max(configuredCount, 1); // IMPORTANT - TODO - why any other value than 1? // revisit this
+                                                            // No need for >1 thread until threads added for executing the HTTP requests.
+        int timeout = Math.max(10000, configuredTimeout);
+        ExecutorService service = Executors.newFixedThreadPool(threadPoolCount, new ThreadFactory() {
+
+            AtomicInteger id = new AtomicInteger(0);
+
+            @Override
+            public Thread newThread(Runnable r) {
+                return new Thread(r, MessageFormat.format("refocusclient-{0}", id.getAndIncrement()));
+            }
+        });
+        system.getServiceFactory().getMonitorService().startRecordingCounters();
+        for (int i = 0; i < threadPoolCount; i++) {
+            service.submit(new Refocuser(system.getServiceFactory().getRefocusService(), timeout, jobCounter));
         }
         return service;
     }
@@ -157,7 +188,7 @@ class ClientServiceFactory {
                     return new Thread(r, MessageFormat.format("schemacommitclient-{0}", id.getAndIncrement()));
                 }
             });
-	system.getServiceFactory().getMonitorService().startRecordingCounters();
+	    system.getServiceFactory().getMonitorService().startRecordingCounters();
         for (int i = 0; i < threadPoolCount; i++) {
             service.submit(new SchemaCommitter(system.getServiceFactory().getCollectionService(),system.getServiceFactory().getMonitorService(), jobCounter));
         }
