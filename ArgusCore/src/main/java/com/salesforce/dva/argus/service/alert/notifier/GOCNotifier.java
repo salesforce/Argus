@@ -186,7 +186,7 @@ public class GOCNotifier extends AuditNotifier {
 						if (respCode == 201 || respCode == 204) {
 							String infoMsg = MessageFormat.format("Success - send GOC++ having element {0} event {1} severity {2}.",
 									elementName, eventName, severity.name());
-							_logger.info(infoMsg);
+							_logger.debug(infoMsg);
 							history.appendMessageNUpdateHistory(infoMsg, null, 0);
 
 							result = true;

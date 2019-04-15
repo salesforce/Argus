@@ -34,7 +34,6 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +59,6 @@ import com.salesforce.dva.argus.entity.ServiceManagementRecord;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord.Service;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.DefaultService;
@@ -74,6 +72,7 @@ import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.AlertDefinitionsCache;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of Distributed scheduling using database
@@ -87,8 +86,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 
 	//~ Instance fields ******************************************************************************************************************************
 
-	@SLF4JTypeListener.InjectLogger
-	private Logger _logger;
+	private final Logger _logger = LoggerFactory.getLogger(DistributedDatabaseSchedulingService.class);
 	private final AlertService _alertService;
 	private final UserService _userService;
 	private final ServiceManagementService _serviceManagementRecordService;
@@ -300,7 +298,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 		 * Creates a new SchedulingThread object.
 		 *
 		 * @param  name      The name of the thread.
-		 * @param  Schedulingtype  Type of the schedule. Cannot be null.
+		 * @param  lockType  Type of the lockType. TODO: this isn't used?
 		 */
 		public SchedulingThread(String name, LockType lockType) {
 			super(name);

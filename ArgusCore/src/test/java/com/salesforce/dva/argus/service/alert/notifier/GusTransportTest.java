@@ -9,11 +9,15 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
@@ -56,6 +60,17 @@ public class GusTransportTest {
     private HttpEntity httpResponseEntity;
 
     private GusTransport gusTransport;
+
+    private static ch.qos.logback.classic.Logger apacheLogger;
+    private static ch.qos.logback.classic.Logger myClassLogger;
+
+    @BeforeClass
+    static public void setUpClass() {
+        myClassLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.salesforce.dva.argus.service.alert.GusTransportTest");
+        myClassLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+        apacheLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache");
+        apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+    }
 
     @Before
     public void setUp() {
