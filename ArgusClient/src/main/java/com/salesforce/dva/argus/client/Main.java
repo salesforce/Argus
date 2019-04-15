@@ -48,7 +48,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.salesforce.dva.argus.client.ClientType.COMMIT_METRICS;
 import static com.salesforce.dva.argus.util.Option.findOption;
 
 /**
@@ -162,9 +161,14 @@ public class Main {
                 ClientType type;
 
                 try {
-                    type = typeOption == null ? COMMIT_METRICS : ClientType.valueOf(typeOption.getValue());
+                    if (typeOption == null) {
+                        throw new IllegalArgumentException("clientType option '" + TYPE_OPTION.getName() + "' cannot be null");
+                    }
+                    type = ClientType.valueOf(typeOption.getValue());
                 } catch (Exception ex) {
-                    type = COMMIT_METRICS;
+                    LOGGER.error("Exception while reading clientType argument '{}', process will now exit: ", TYPE_OPTION.getName(), ex);
+                    System.exit(2);
+                    return;
                 }
 
                 final Thread mainThread = Thread.currentThread();
