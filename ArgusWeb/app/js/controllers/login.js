@@ -21,7 +21,16 @@
 /*global angular:false */
 
 angular.module('argus.controllers.login', [])
-.controller('Login', ['$scope', function ($scope) {
+.controller('Login', ['$scope', 'growl', 'Storage', function ($scope, growl, Storage) {
 	$scope.username = null;
 	$scope.password = null;
+	try {
+		var loginError = Storage.get('loginError');
+		if (loginError) {
+			growl.error(loginError);
+		}
+	} catch(error) {
+		console.log(error);
+	}
+	Storage.clear('loginError');
 }]);
