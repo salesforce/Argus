@@ -52,7 +52,7 @@ import javax.persistence.Persistence;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -64,7 +64,7 @@ import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.TestUtils;
 
 
-@RunWith(org.mockito.runners.MockitoJUnitRunner.class)
+@RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 public class SchedulingServiceTest {
     @Mock Provider<EntityManager> _emProviderMock;
     @Mock TSDBService _tsdbServiceMock;

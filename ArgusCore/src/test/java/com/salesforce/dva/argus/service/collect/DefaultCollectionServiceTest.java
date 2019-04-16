@@ -14,7 +14,6 @@ import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.NamespaceService;
 import com.salesforce.dva.argus.service.SchemaService;
 import com.salesforce.dva.argus.service.TSDBService;
-import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.WardenService;
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Before;
@@ -22,9 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.TestUtils;
 
 
@@ -38,9 +35,9 @@ import java.util.Map;
 import static com.salesforce.dva.argus.service.MQService.MQQueue.ANNOTATION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -51,7 +48,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Properties;
 
 
-@RunWith(org.mockito.runners.MockitoJUnitRunner.class)
+@RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 public class DefaultCollectionServiceTest {
 
     @Mock MQService mqService;

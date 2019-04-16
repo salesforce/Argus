@@ -12,7 +12,6 @@ import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchemaService;
-import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import org.apache.commons.lang3.tuple.Pair;
@@ -28,8 +27,6 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.mockito.Mock;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.AfterClass;
 import java.util.Properties;
@@ -45,15 +42,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.io.IOException;
-import java.io.InputStream;
 
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -691,9 +686,9 @@ public class ElasticSearchSchemaServiceTest {
         ObjectMapper mapper = new ObjectMapper();
         RestClient customClient = mock(RestClient.class);
         Answer<Response> requestAnswer = invocation -> {
-            String requestUrl = invocation.getArgumentAt(1, String.class);
+            String requestUrl = invocation.getArgument(1, String.class);
             assertTrue(requestUrl.endsWith("_search"));
-            StringEntity requestBodyEntity = invocation.getArgumentAt(3, StringEntity.class);
+            StringEntity requestBodyEntity = invocation.getArgument(3, StringEntity.class);
             JsonNode root = mapper.readTree(EntityUtils.toString(requestBodyEntity));
             JsonNode nots = root.get("query").get("bool").get("must_not");
             JsonNode filters = root.get("query").get("bool").get("filter");
