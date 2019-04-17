@@ -950,7 +950,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags.put("notificationId", notification.getId().intValue()+"");
 		tags.put("notifyTarget", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		// TODO - QUESTION - can trigger.getAlert().getId() differ from alert.getId()?
-		tags.put(ALERTIDTAG, (trigger != null) ? trigger.getAlert().getId() : alert.getId());
+		tags.put(ALERTIDTAG, (trigger != null) ? trigger.getAlert().getId().toString() : alert.getId().toString());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), 1.0/*notification sent*/, tags);
 
 		_logger.debug(logMessage);
