@@ -67,7 +67,8 @@ public class RedisCacheService extends DefaultService implements CacheService {
 
 	private final Logger _logger = LoggerFactory.getLogger(getClass());
 	private final SystemConfiguration _config;
-	private JedisCluster _jedisClusterClient;
+        private JedisCluster _jedisClusterClient;
+
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -77,22 +78,11 @@ public class RedisCacheService extends DefaultService implements CacheService {
 	 * @param  config  The system configuration.  Cannot be null.
 	 */
 	@Inject
-	public RedisCacheService(SystemConfiguration config) {
+	public RedisCacheService(SystemConfiguration config, CacheRedisClient cacheRedisClient) {
 		super(config);
 		_config = config;
-		GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
-		poolConfig.setMaxTotal(Integer.parseInt(
-				_config.getValue(Property.REDIS_SERVER_MAX_CONNECTIONS.getName(), Property.REDIS_SERVER_MAX_CONNECTIONS.getDefaultValue())));
-
-		String[] hostsPorts = _config.getValue(Property.REDIS_CLUSTER.getName(), Property.REDIS_CLUSTER.getDefaultValue()).split(",");
-
-		Set<HostAndPort> jedisClusterNodes = new HashSet<HostAndPort>();
-		for (String hostPort : hostsPorts) {
-			String[] hostPortPair = hostPort.split(":");
-
-			jedisClusterNodes.add(new HostAndPort(hostPortPair[0], Integer.parseInt(hostPortPair[1])));
-		}
-		_jedisClusterClient = new JedisCluster(jedisClusterNodes, poolConfig);
+                cacheRedisClient.init(config);
+                _jedisClusterClient = cacheRedisClient.getJedisClusterClient();
 	}
 
 	//~ Methods **************************************************************************************************************************************
@@ -156,24 +146,6 @@ public class RedisCacheService extends DefaultService implements CacheService {
 	public <V> void expire(Set<String> keys, int ttl) {
 		for (String key : keys) {
 			expire(key, ttl);
-		}
-	}
-
-	@Override
-	public void clear() {
-		Iterator<JedisPool> poolIterator = _jedisClusterClient.getClusterNodes().values().iterator();
-
-		while (poolIterator.hasNext()) {
-			JedisPool pool = poolIterator.next();
-			Jedis jedis = pool.getResource();
-
-			try {
-				jedis.flushAll();
-			} catch (Exception ex) {
-				_logger.error("Exception in cache service: {} ", ex.getMessage());
-			} finally {
-				jedis.close();
-			}
 		}
 	}
 
@@ -286,14 +258,14 @@ public class RedisCacheService extends DefaultService implements CacheService {
 
 	@Override
 	public int getCacheExpirationTime() {
-		return Integer.parseInt(_config.getValue(Property.REDIS_CACHE_EXPIRY_IN_SEC.getName(), Property.REDIS_CACHE_EXPIRY_IN_SEC.getDefaultValue()));
+		return Integer.parseInt(_config.getValue(CacheProperty.REDIS_CACHE_EXPIRY_IN_SEC.getName(), CacheProperty.REDIS_CACHE_EXPIRY_IN_SEC.getDefaultValue()));
 	}
 
 	@Override
 	public Properties getServiceProperties() {
 		Properties serviceProps= new Properties();
 
-		for(Property property:Property.values()){
+		for(CacheProperty property:CacheProperty.values()){
 			serviceProps.put(property.getName(), property.getDefaultValue());
 		}
 		return serviceProps;
@@ -311,45 +283,5 @@ public class RedisCacheService extends DefaultService implements CacheService {
 
 	//~ Enums ****************************************************************************************************************************************
 
-	/**
-	 * Enumerates the implementation specific configuration properties.
-	 *
-	 * @author  Tom Valine (tvaline@salesforce.com)
-	 */
-	public enum Property {
-
-		/** The global cache expiry in seconds. */
-		REDIS_CACHE_EXPIRY_IN_SEC("service.property.cache.redis.cache.expiry.in.sec", "3600"),
-		/** The cache endpoint. */
-		REDIS_CLUSTER("service.property.cache.redis.cluster", "default_value"),
-		/** The maximum number of cache connections. */
-		REDIS_SERVER_MAX_CONNECTIONS("service.property.cache.redis.server.max.connections", "100");
-
-		private final String _name;
-		private final String _defaultValue;
-
-		private Property(String name, String defaultValue) {
-			_name = name;
-			_defaultValue = defaultValue;
-		}
-
-		/**
-		 * Returns the property name.
-		 *
-		 * @return  The property name.
-		 */
-		public String getName() {
-			return _name;
-		}
-
-		/**
-		 * Returns the default value for the property.
-		 *
-		 * @return The default value.
-		 */
-		public String getDefaultValue() {
-			return _defaultValue;
-		}
-	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
