@@ -1,9 +1,9 @@
 package com.salesforce.dva.argus.service.tsdb;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anySet;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -21,7 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.CacheService;
@@ -124,7 +124,7 @@ public class CachedTSDBServiceTest {
 				+ "\"metric\":\"metric\",\"units\":null,\"namespace\":null,\"query\":{\"aggregator\":\"AVG\",\"downsampler\":\"AVG\","
 				+ "\"downsamplingPeriod\":300000,\"metric\":\"metric\",\"startTimestamp\":1544659200000,\"endTimestamp\":1544816134802,"
 				+ "\"scope\":\"scope\",\"tags\":{}},\"displayName\":null,\"scope\":\"scope\",\"uid\":null,\"tags\":{}}";
-		Map<String, List<String>> metricsFromCache = new HashMap<>();
+		Map<String, Object> metricsFromCache = new HashMap<>();
 		metricsFromCache.put(cacheKey.toString(), Arrays.asList(cacheKeyValue));
 		when(cacheService.getRange(anySet(), anyInt(), anyInt())).thenReturn(metricsFromCache);
 

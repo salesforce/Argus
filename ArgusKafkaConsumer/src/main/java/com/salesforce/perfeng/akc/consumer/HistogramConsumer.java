@@ -42,17 +42,19 @@ class HistogramConsumer extends BaseConsumer {
         this.histogramAvroDecoder = new AjnaWireFormatDecoder<>();
     }
 
-    void processAjnaWireRecord(List<Histogram> argusHistograms, AjnaWire ajnaWire, Map<String, String> dpTags) {
+    void processAjnaWireRecord(List<Histogram> argusHistograms, AjnaWire ajnaWire, Map<String, String> tags) {
         List<com.salesforce.mandm.ajna.Histogram> ajnaHistograms = extractAjnaHistograms(ajnaWire);
         if (ajnaHistograms == null) {
-            instrumentationService.updateCounter(HISTOGRAM_DROPPED, 1, dpTags);
+            instrumentationService.updateCounter(HISTOGRAM_DROPPED, 1, tags);
             return;
         }
-        instrumentationService.updateCounter(HISTOGRAM_CONSUMED, ajnaHistograms.size(), dpTags);
+        instrumentationService.updateCounter(HISTOGRAM_CONSUMED, ajnaHistograms.size(), tags);
 
         for (com.salesforce.mandm.ajna.Histogram ajnaHistogram : ajnaHistograms) {
             try {
-                Histogram argusHistogram = transformToArgusHistogram(ajnaHistogram, dpTags, this::updateHistogramTooOld, this::updateHistogramTimestampInvalid);
+                Histogram argusHistogram = transformToArgusHistogram(ajnaHistogram, tags,
+                        this::updateHistogramTooOld, this::updateHistogramTimestampInvalid,
+                        this::updateHistogramBlocked, this::updateHistogramDropped);
                 if (argusHistogram == null) {
                     continue;
                 }
@@ -60,26 +62,34 @@ class HistogramConsumer extends BaseConsumer {
                 if (isHistogramSizeSafe(argusHistogram)) {
                     argusHistograms.add(argusHistogram);
                 } else {
-                    dpTags.put(SchemaField.SERVICE,
+                    tags.put(SchemaField.SERVICE,
                             resolveCharSequence(ajnaHistogram.getService(), NONE, cs -> replaceUnsupportedChars(cs.subSequence(0, Math.min(cs.length(), 50)).toString().toLowerCase())));
-                    instrumentationService.updateCounter(HISTOGRAM_DROPPED_TOOLARGE, 1, dpTags);
+                    instrumentationService.updateCounter(HISTOGRAM_DROPPED_TOOLARGE, 1, tags);
                 }
             } catch(Exception e) {
-                instrumentationService.updateCounter(HISTOGRAM_DROPPED, 1, dpTags);
+                instrumentationService.updateCounter(HISTOGRAM_DROPPED, 1, tags);
                 logger.warn("Exception while processing single ajnaHistogram.  Dropping this ajna histogram", e);
             }
         }
     }
 
-    private void updateHistogramTooOld(Map<String, String> dpTags) {
-        instrumentationService.updateCounter(HISTOGRAM_TOO_OLD, 1, dpTags);
+    private void updateHistogramTooOld(Map<String, String> tags) {
+        instrumentationService.updateCounter(HISTOGRAM_TOO_OLD, 1, tags);
     }
 
-    void updateHistogramTimestampInvalid(Map<String, String> dpTags) {
-        instrumentationService.updateCounter(HISTOGRAM_TIMESTAMP_INVALID, 1, dpTags);
+    void updateHistogramTimestampInvalid(Map<String, String> tags) {
+        instrumentationService.updateCounter(HISTOGRAM_TIMESTAMP_INVALID, 1, tags);
     }
 
-    private List<com.salesforce.mandm.ajna.Histogram> extractAjnaHistograms(AjnaWire ajnaWire) {
+    void updateHistogramDropped(Map<String, String> tags) {
+        instrumentationService.updateCounter(HISTOGRAM_DROPPED, 1, tags);
+    }
+
+    void updateHistogramBlocked(Map<String, String> tags) {
+        instrumentationService.updateCounter(HISTOGRAM_BLOCKED, 1, tags);
+    }
+
+    List<com.salesforce.mandm.ajna.Histogram> extractAjnaHistograms(AjnaWire ajnaWire) {
         try {
             return histogramAvroDecoder.listFromAjnaWire(ajnaWire, HISTOGRAM_SCHEMA_FINGERPRINT);
         }
@@ -109,12 +119,14 @@ class HistogramConsumer extends BaseConsumer {
         }
     }
 
-    Histogram transformToArgusHistogram(com.salesforce.mandm.ajna.Histogram ajnaHistogram, Map<String, String> dpTags,
+    Histogram transformToArgusHistogram(com.salesforce.mandm.ajna.Histogram ajnaHistogram, Map<String, String> tags,
                                         Consumer<Map<String, String>> tooOld,
-                                        Consumer<Map<String, String>> timestampInvalid) {
+                                        Consumer<Map<String, String>> timestampInvalid,
+                                        Consumer<Map<String, String>> blocked,
+                                        Consumer<Map<String, String>> dropped) {
         logger.trace("Consuming Histogram " +ajnaHistogram.toString());
 
-        if (isTimestampInvalidOrOld(ajnaHistogram.getTimestamp(), dpTags, tooOld, timestampInvalid)) {
+        if (isTimestampInvalidOrOld(ajnaHistogram.getTimestamp(), tags, tooOld, timestampInvalid)) {
             return null;
         }
 
@@ -141,8 +153,8 @@ class HistogramConsumer extends BaseConsumer {
                 logger.trace("Encountered a histogram with blacklisted scope: {}. Dropping {}", scope, ajnaHistogram);
                 Map<String,String> droppedScopes = new HashMap<>();
                 droppedScopes.put("scope", scope);
-                droppedScopes.putAll(dpTags);
-                instrumentationService.updateCounter(HISTOGRAM_BLOCKED, 1, droppedScopes);
+                droppedScopes.putAll(tags);
+                blocked.accept(droppedScopes);
                 return null;
             }
 
@@ -160,7 +172,7 @@ class HistogramConsumer extends BaseConsumer {
             return argusHistogram;
         } catch (Exception e) {
             logger.warn("Failed to tranform to Argus Histogram.  Dropping this Ajna Histogram: " + ajnaHistogram, e);
-            instrumentationService.updateCounter(HISTOGRAM_DROPPED, 1, dpTags);
+            dropped.accept(tags);
             return null;
         }
     }

@@ -5,7 +5,6 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.mandm.ajna.AjnaWire;
 import com.salesforce.mandm.avro.SchemaField;
-import com.salesforce.mandm.avro.util.AvroUtils;
 import com.salesforce.perfeng.akc.AKCConfiguration;
 import com.salesforce.quota.IBlacklistService;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -39,7 +38,6 @@ import static com.salesforce.perfeng.akc.consumer.InstrumentationService.QUOTA_S
 class MetricConsumer extends BaseMetricConsumer {
     private static final Logger logger = LoggerFactory.getLogger(MetricConsumer.class);
     private static final int METRICS_BATCH_SIZE = Integer.parseInt(AKCConfiguration.getParameter(AKCConfiguration.Parameter.METRICS_BATCH_SIZE));
-    static final String HISTOGRAM_SCHEMA_FINGERPRINT = AvroUtils.getSchemaFingerprint(com.salesforce.mandm.ajna.Histogram.getClassSchema());
 
     HistogramConsumer histogramConsumer;
     private TSDBService tsdbService;

@@ -228,12 +228,15 @@ public final class SystemConfiguration extends Properties {
         EMAIL_ENABLED("system.property.mail.enabled", "false"),
         GOC_ENABLED("system.property.goc.enabled", "false"),
         GUS_ENABLED("system.property.gus.enabled", "false"),
+        CALLBACK_ENABLED("system.property.callback.enabled", "false"),
 
         EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
 
         ARGUS_GUS_GROUP_ID("notifier.property.argus.gus.group_id", "groupId"),
 
         REFOCUS_ENABLED("system.property.refocus.enabled", "false"),
+        REFOCUS_CLIENT_THREADS("system.property.refocus.client.threads", "1"),
+        REFOCUS_CLIENT_CONNECT_TIMEOUT("system.property.refocus.client.connect.timeout", "10000"),
 
         DATA_LAG_THRESHOLD("system.property.data.lag.threshold.millis", "300000"),
         DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
@@ -244,6 +247,7 @@ public final class SystemConfiguration extends Properties {
 
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),
+
 
         DC_DEFAULT("system.property.dc.default", "defaultDC"),
         DC_LIST("system.property.dc.list", "DC1,DC2,DC3,DC4,DC5"),
@@ -297,7 +301,10 @@ public final class SystemConfiguration extends Properties {
         DISCOVERY_SERVICE_IMPL_CLASS("service.binding.discovery", "com.salesforce.dva.argus.service.schema.CachedDiscoveryService"),
         
         // the default value of 5 million datapoints roughly correspond to 500mb of memory
-        MAX_DATAPOINTS_ALLOWED_PER_QUERY("system.property.max.datapoints.query", "5000000");
+        MAX_DATAPOINTS_ALLOWED_PER_QUERY("system.property.max.datapoints.query", "5000000"),
+
+        PKI_MONITORED_DIRECTORY("pki.monitored.directory", "/etc/pki_service/sfdc/argus-client"),
+        PKI_CA_DIRECTORY("pki.ca.directory", "/etc/pki_service/ca");
 
         private final String _name;
         private final String _defaultValue;

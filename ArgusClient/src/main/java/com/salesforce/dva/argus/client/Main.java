@@ -48,7 +48,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.salesforce.dva.argus.client.ClientType.COMMIT_METRICS;
 import static com.salesforce.dva.argus.util.Option.findOption;
 
 /**
@@ -162,9 +161,14 @@ public class Main {
                 ClientType type;
 
                 try {
-                    type = typeOption == null ? COMMIT_METRICS : ClientType.valueOf(typeOption.getValue());
+                    if (typeOption == null) {
+                        throw new IllegalArgumentException("clientType option '" + TYPE_OPTION.getName() + "' cannot be null");
+                    }
+                    type = ClientType.valueOf(typeOption.getValue());
                 } catch (Exception ex) {
-                    type = COMMIT_METRICS;
+                    LOGGER.error("Exception while reading clientType argument '{}', process will now exit: ", TYPE_OPTION.getName(), ex);
+                    System.exit(2);
+                    return;
                 }
 
                 final Thread mainThread = Thread.currentThread();
@@ -227,7 +231,7 @@ public class Main {
         try {
             LOGGER.info("Starting service.");
 
-            ExecutorService service = ClientServiceFactory.startClientService(_system, clientType, _jobCounter);
+            ExecutorService[] services = ClientServiceFactory.startClientService(_system, clientType, _jobCounter);
 
             LOGGER.info("Service started.");
 
@@ -242,13 +246,21 @@ public class Main {
                 }
             }
             LOGGER.info("Stopping service.");
-            service.shutdownNow();
-            try {
-                if (!service.awaitTermination(60000, TimeUnit.MILLISECONDS)) {
-                    LOGGER.warn("Shutdown timed out after 60 seconds.  Exiting.");
+
+            for (ExecutorService s: services)
+            {
+                s.shutdownNow();
+                try
+                {
+                    if (!s.awaitTermination(60000, TimeUnit.MILLISECONDS))
+                    {
+                        LOGGER.warn("Shutdown timed out after 60 seconds.  Exiting.");
+                    }
+                } catch (InterruptedException iex)
+                {
+                    LOGGER.warn("Forcing shutdown.");
+                    break;
                 }
-            } catch (InterruptedException iex) {
-                LOGGER.warn("Forcing shutdown.");
             }
             LOGGER.info("Service stopped.");
         } catch (Exception ex) {

@@ -700,7 +700,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 				default:
 					throw new SystemException("Attempting to create an unsupported monitoring alert" + alertName);
 				}
-				requireArgument(metricExpression != null && triggerType != null & triggerName != null, "Unsupported monitor alert " + alertName);
+				requireArgument(metricExpression != null && triggerType != null && triggerName != null, "Unsupported monitor alert " + alertName);
 
 				Alert alert = new Alert(_adminUser, _adminUser, _constructAlertName(alertName), metricExpression, "0 * * * *");
 				Notification notification = new Notification(NOTIFICATION_NAME, alert, AuditNotifier.class.getName(), new ArrayList<String>(),

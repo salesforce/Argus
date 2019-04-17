@@ -26,7 +26,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
@@ -100,12 +100,12 @@ public class MetricServiceSnapshotTest {
             }
 
             doAnswer((Answer<List<MetricQuery>>) invocationOnMock -> {
-                MetricQuery query = invocationOnMock.getArgumentAt(0, MetricQuery.class);
+                MetricQuery query = invocationOnMock.getArgument(0, MetricQuery.class);
                 return discoveryMocks.get(query);
             }).when(discoveryService).getMatchingQueries(any());
 
             doAnswer((Answer<Map<MetricQuery, List<Metric>>>) invocationOnMock -> {
-                List<MetricQuery> queries = invocationOnMock.getArgumentAt(0, List.class);
+                List<MetricQuery> queries = invocationOnMock.getArgument(0, List.class);
                 Map<MetricQuery, List<Metric>> results = new LinkedHashMap<>();
                 for (MetricQuery query: queries) {
                     results.put(query, tsdbMocks.get(query));

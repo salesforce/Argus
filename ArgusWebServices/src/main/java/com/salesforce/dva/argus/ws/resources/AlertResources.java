@@ -774,55 +774,7 @@ public class AlertResources extends AbstractResource {
 
 			// Create new alert object.
 			PrincipalUser requestedUser = getRemoteUser(req);
-			Alert clonedAlert = new Alert(requestedUser, requestedUser, newAlertName, oldAlert.getExpression(), oldAlert.getCronEntry());
-
-			Set<Trigger> clonedTriggers = new HashSet<>();
-			List<Notification> clonedNotifications = new ArrayList<>();
-			Map<BigInteger, Trigger> triggersCreatedMapById = new HashMap<>();
-
-			/*For each existing notification, create new cloned notification.
-			 * For each existing trigger in the current notification, create new cloned trigger and add it to cloned notification.
-			 * */
-			for (Notification currentNotification : oldAlert.getNotifications()) {
-				Notification currentNotificationCloned = new Notification(currentNotification.getName(), clonedAlert, currentNotification.getNotifierName(),
-						currentNotification.getSubscriptions(), currentNotification.getCooldownPeriod());
-
-				clonedNotifications.add(currentNotificationCloned);
-
-				copyProperties(currentNotificationCloned, currentNotification);
-				currentNotificationCloned.setAlert(clonedAlert);
-
-				List<Trigger> triggersInCurrentNotification = new ArrayList<>();
-				for (Trigger currentTrigger : currentNotification.getTriggers()) {
-					BigInteger currentTriggerId = currentTrigger.getId();
-					if (!triggersCreatedMapById.containsKey(currentTriggerId)) {
-						Trigger currentTriggerCloned = new Trigger(clonedAlert, currentTrigger.getType(), currentTrigger.getName(), currentTrigger.getThreshold(), currentTrigger.getSecondaryThreshold(), currentTrigger.getInertia());
-						clonedTriggers.add(currentTriggerCloned);
-						copyProperties(currentTriggerCloned, currentTrigger);
-						currentTriggerCloned.setAlert(clonedAlert);
-						triggersCreatedMapById.put(currentTriggerId, currentTriggerCloned);
-					}
-					triggersInCurrentNotification.add(triggersCreatedMapById.get(currentTriggerId));
-				}
-				currentNotificationCloned.setTriggers(triggersInCurrentNotification);
-			}
-
-			/*
-			 * Triggers with no notifications attached
-			 * */
-			for(Trigger currentTrigger: oldAlert.getTriggers()) {
-				Trigger currentTriggerCloned = new Trigger(clonedAlert, currentTrigger.getType(), currentTrigger.getName(), currentTrigger.getThreshold(), currentTrigger.getSecondaryThreshold(), currentTrigger.getInertia());
-				clonedTriggers.add(currentTriggerCloned);
-				copyProperties(currentTriggerCloned, currentTrigger);
-				currentTriggerCloned.setAlert(clonedAlert);
-			}
-
-			clonedAlert.setMissingDataNotificationEnabled(oldAlert.isMissingDataNotificationEnabled());
-			clonedAlert.setShared(oldAlert.isShared());
-			clonedAlert.setTriggers(new ArrayList<>(clonedTriggers));
-			clonedAlert.setNotifications(clonedNotifications);
-			clonedAlert.setModifiedBy(getRemoteUser(req));
-			clonedAlert.setEnabled(oldAlert.isEnabled()); // This should be last
+			Alert clonedAlert = new Alert(oldAlert, newAlertName, requestedUser);
 
 			return AlertDto.transformToDto(alertService.updateAlert(clonedAlert));
 		} catch (Exception ex) {
@@ -862,7 +814,8 @@ public class AlertResources extends AbstractResource {
 
 			PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
 
-			//Refocus Notification V1 release only for search team (and for Argus team testing)
+			// IMPORTANT - address this!
+			// Refocus Notification V1 release only for search team (and for Argus team testing)
 			if (AlertService.SupportedNotifier.REFOCUS.getName().equals(notificationDto.getNotifierName())) {
 				String ownerUserName = owner.getUserName();
 				if (!"svc_monocle".equalsIgnoreCase(ownerUserName)  // search team username
@@ -972,6 +925,7 @@ public class AlertResources extends AbstractResource {
 				throw new WebApplicationException("Null notification object cannot be created.", Status.BAD_REQUEST);
 			}
 
+			// IMPORTANT - Why isn't the Refocus V1 Notifier ('Boolean Notifier') restricted to Search Team here?
 			Alert alert = alertService.findAlertByPrimaryKey(alertId);
 
 			if (alert != null) {

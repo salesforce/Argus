@@ -510,6 +510,11 @@ public class Notification extends JPAEntity implements Serializable {
 	 * @return cool down expiration time in milliseconds
 	 */
 	public long getCooldownExpirationByTriggerAndMetric(Trigger trigger, Metric metric) {
+
+		if (trigger == null)
+		{
+			return 0;
+		}
 		String key = _hashTriggerAndMetric(trigger, metric);
 		return this.cooldownExpirationByTriggerAndMetric.containsKey(key) ? this.cooldownExpirationByTriggerAndMetric.get(key) : 0;
 	}
@@ -786,6 +791,15 @@ public class Notification extends JPAEntity implements Serializable {
 
 		hash = 29 * hash + Objects.hashCode(this.name);
 		hash = 29 * hash + Objects.hashCode(this.alert);
+		hash = 29 * hash + Objects.hashCode(this.metricsToAnnotate);
+		hash = 29 * hash + Objects.hashCode(this.subscriptions);
+		hash = 29 * hash + Objects.hashCode(this.cooldownPeriod);
+		hash = 29 * hash + Objects.hashCode(this.isSRActionable);
+		hash = 29 * hash + Objects.hashCode(this.severityLevel);
+		hash = 29 * hash + Objects.hashCode(this.notifierName);
+		hash = 29 * hash + Objects.hashCode(this.customText);
+		hash = 29 * hash + Objects.hashCode(this.notificationCustomData);
+
 		return hash;
 	}
 
@@ -800,12 +814,10 @@ public class Notification extends JPAEntity implements Serializable {
 
 		final Notification other = (Notification) obj;
 
-		if (!Objects.equals(this.name, other.name)) {
+		if (this.hashCode() != other.hashCode()) {
 			return false;
 		}
-		if (!Objects.equals(this.alert, other.alert)) {
-			return false;
-		}
+
 		return true;
 	}
 

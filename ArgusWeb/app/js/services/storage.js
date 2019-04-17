@@ -2,12 +2,12 @@
 /*global angular:false, LZString:false, Promise:false */
 
 angular.module('argus.services.storage', [])
-.factory('Storage', ['$rootScope', '$localStorage', '$sessionStorage','$injector', '$window', '$location', function ($rootScope, $localStorage, $sessionStorage, $injector, $window, $location) {
+.factory('Storage', ['$rootScope', '$sessionStorage','$injector', '$window', '$location', function ($rootScope, $sessionStorage, $injector, $window, $location) {
 	var storageKeyPrefix = 'ngStorage-';
 	var serializer = angular.toJson;
 	var deserializer = angular.fromJson;
 	var localStorage = $window.localStorage;
-	$rootScope.storage = $localStorage;
+	// $rootScope.storage = $localStorage;
 	var warnModalCount = 0; //prevent user from clicking so many confirm modals
 	function warn (ls) {
 		if (warnModalCount > 0) return;
@@ -60,9 +60,16 @@ angular.module('argus.services.storage', [])
 
 	return {
 		get : function (key) {
-			var result = localStorage.getItem(storageKeyPrefix + key);
-			if(result !== undefined) result = deserializer(result);
-			return angular.isDefined(result) ? result : null;
+			try {
+				var result = localStorage.getItem(storageKeyPrefix + key);
+				if(result !== undefined) {
+					result = deserializer(result);
+				}
+				return angular.isDefined(result) ? result : null;
+			} catch (e){
+				console.log(e);
+			}
+			return null;
 		},
 
 		set : function (key, value) {
@@ -86,6 +93,9 @@ angular.module('argus.services.storage', [])
 			//delete user info, but preserve the storage of preferences
 			this.clear('user');
 			this.clear('target');
+			//remove token
+			this.clear('accessToken');
+			this.clear('refreshToken');
 			$sessionStorage.$reset();
 		},
 		resetAll : function () {

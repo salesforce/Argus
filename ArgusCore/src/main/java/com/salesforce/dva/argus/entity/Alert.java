@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -73,6 +72,7 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Selection;
 
+import com.salesforce.dva.argus.util.CommonUtils;
 import com.salesforce.dva.argus.util.Cron;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.eclipse.persistence.config.HintValues;
@@ -89,7 +89,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.salesforce.dva.argus.service.metric.MetricReader;
-import com.salesforce.dva.argus.service.metric.ParseException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -265,6 +264,97 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		setMissingDataNotificationEnabled(false);
 		setShared(false);
 		setEnabled(false);
+	}
+
+	/**
+	 * Creates an alert object by creating a deep copy of another alert
+	 *
+	 * @param  other       The alert to be copied
+	 * @param  user        The owner of the new alert. Cannot be null.
+	 * @param  alertName   The name of the new alert. Cannot be null or empty.
+	 *
+	 * @throws  Exception  Throws exception if a problem is encountered while copying props of the original alert.
+	 */
+	public Alert(Alert other, String alertName, PrincipalUser user) throws Exception {
+		this(user, user, alertName, other.getExpression(), other.getCronEntry());
+
+		List<Trigger> clonedTriggers = new ArrayList<>();
+		List<Notification> clonedNotifications = new ArrayList<>();
+		Map<Integer, Trigger> triggersCreatedMapByHash = new HashMap<>();
+
+		/*For each existing notification, create new cloned notification.
+		 * For each existing trigger in the current notification, create new cloned trigger and add it to cloned notification.
+		 **/
+		for (Notification currentNotification : other.getNotifications()) {
+			Notification currentNotificationCloned = new Notification(
+					currentNotification.getName(),
+					this,
+					currentNotification.getNotifierName(),
+					currentNotification.getSubscriptions(),
+					currentNotification.getCooldownPeriod()
+			);
+
+			clonedNotifications.add(currentNotificationCloned);
+
+			CommonUtils.copyProperties(currentNotificationCloned, currentNotification);
+			currentNotificationCloned.setAlert(this);
+			currentNotificationCloned.setCreatedBy(user);
+			currentNotificationCloned.setModifiedBy(user);
+
+			List<Trigger> triggersInCurrentNotification = new ArrayList<>();
+			for (Trigger currentTrigger : currentNotification.getTriggers()) {
+				int currentTriggerHash = currentTrigger.hashCode();
+				if (!triggersCreatedMapByHash.containsKey(currentTriggerHash)) {
+					Trigger currentTriggerCloned = new Trigger(
+							this,
+							currentTrigger.getType(),
+							currentTrigger.getName(),
+							currentTrigger.getThreshold(),
+							currentTrigger.getSecondaryThreshold(),
+							currentTrigger.getInertia()
+					);
+					clonedTriggers.add(currentTriggerCloned);
+					CommonUtils.copyProperties(currentTriggerCloned, currentTrigger);
+					currentTriggerCloned.setCreatedBy(user);
+					currentTriggerCloned.setModifiedBy(user);
+					currentTriggerCloned.setAlert(this);
+					triggersCreatedMapByHash.put(currentTriggerHash, currentTriggerCloned);
+				}
+				triggersInCurrentNotification.add(triggersCreatedMapByHash.get(currentTriggerHash));
+			}
+			currentNotificationCloned.setTriggers(triggersInCurrentNotification);
+		}
+
+		/*
+		 * Triggers with no notifications attached
+		 * */
+		for (Trigger currentTrigger : other.getTriggers()) {
+			int currentTriggerHash = currentTrigger.hashCode();
+			if (!triggersCreatedMapByHash.containsKey(currentTriggerHash)) {
+				Trigger currentTriggerCloned = new Trigger(
+						this,
+						currentTrigger.getType(),
+						currentTrigger.getName(),
+						currentTrigger.getThreshold(),
+						currentTrigger.getSecondaryThreshold(),
+						currentTrigger.getInertia()
+				);
+				clonedTriggers.add(currentTriggerCloned);
+				CommonUtils.copyProperties(currentTriggerCloned, currentTrigger);
+				currentTriggerCloned.setCreatedBy(user);
+				currentTriggerCloned.setModifiedBy(user);
+				currentTriggerCloned.setAlert(this);
+				triggersCreatedMapByHash.put(currentTriggerHash, currentTriggerCloned);
+			}
+		}
+
+		// NOTE: whenever a new field gets added to an Alert object make sure to update this clone
+		this.setMissingDataNotificationEnabled(other.isMissingDataNotificationEnabled());
+		this.setShared(other.isShared());
+		this.setTriggers(clonedTriggers);
+		this.setNotifications(clonedNotifications);
+		this.setModifiedBy(user);
+		this.setEnabled(other.isEnabled()); // This should be last
 	}
 
 	/** Creates a new Alert object. */
@@ -1263,6 +1353,12 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 
 		hash = 31 * hash + Objects.hashCode(this.name);
 		hash = 31 * hash + Objects.hashCode(this.owner);
+		hash = 31 * hash + Objects.hashCode(this.cronEntry);
+		hash = 31 * hash + Objects.hashCode(this.enabled);
+		hash = 31 * hash + Objects.hashCode(this.expression);
+		hash = 31 * hash + Objects.hashCode(this.missingDataNotificationEnabled);
+		hash = 31 * hash + Objects.hashCode(this.shared);
+
 		return hash;
 	}
 
@@ -1277,12 +1373,18 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 
 		final Alert other = (Alert) obj;
 
-		if (!Objects.equals(this.name, other.name)) {
+		if (this.hashCode() != other.hashCode()) {
 			return false;
 		}
-		if (!Objects.equals(this.owner, other.owner)) {
+
+		if (!CommonUtils.listsAreEquivelent(this.getTriggers(), other.getTriggers())) {
 			return false;
 		}
+
+		if (!CommonUtils.listsAreEquivelent(this.getNotifications(), other.getNotifications())) {
+			return false;
+		}
+
 		return true;
 	}
 

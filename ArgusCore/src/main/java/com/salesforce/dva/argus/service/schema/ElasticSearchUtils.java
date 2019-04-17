@@ -1,69 +1,26 @@
 package com.salesforce.dva.argus.service.schema;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.salesforce.dva.argus.entity.AbstractSchemaRecord;
-import com.salesforce.dva.argus.entity.KeywordQuery;
-import com.salesforce.dva.argus.entity.MetatagsRecord;
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.entity.MetricSchemaRecord;
-import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
-import com.salesforce.dva.argus.entity.ScopeOnlySchemaRecord;
-import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.service.MonitorService.Counter;
-import com.salesforce.dva.argus.service.SchemaService;
-import com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService.PutResponse.Item;
-import com.salesforce.dva.argus.service.schema.MetricSchemaRecordList.HashAlgorithm;
-import com.salesforce.dva.argus.service.tsdb.MetricQuery;
-import com.salesforce.dva.argus.system.SystemAssert;
-import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.system.SystemException;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpStatus;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
-import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
-import org.elasticsearch.client.RestClientBuilder.RequestConfigCallback;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.SortedSet;
 import java.util.function.Supplier;
 
-import static com.salesforce.dva.argus.entity.MetricSchemaRecord.RETENTION_DISCOVERY;
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Singleton;
+import com.salesforce.dva.argus.system.SystemException;
 
 
 /**

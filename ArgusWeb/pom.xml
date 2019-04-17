@@ -14,6 +14,7 @@
     <description>Web frontend for the Argus Production Monitoring Tool.</description>
     <properties>
         <top>${project.basedir}/${project.parent.relativePath}</top>
+        <sonar.exclusions>**</sonar.exclusions>
     </properties>
     <build>
         <plugins>

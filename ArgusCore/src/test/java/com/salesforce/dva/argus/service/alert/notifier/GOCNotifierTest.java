@@ -21,10 +21,12 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
 import java.math.BigInteger;
@@ -33,8 +35,8 @@ import java.util.Properties;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.mock;
@@ -86,6 +88,17 @@ public class GOCNotifierTest {
     private Notification notification;
     private Metric metric;
     private History history;
+
+    private static ch.qos.logback.classic.Logger apacheLogger;
+    private static ch.qos.logback.classic.Logger myClassLogger;
+
+    @BeforeClass
+    static public void setUpClass() {
+        myClassLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.salesforce.dva.argus.service.alert.GOCNotifierTest");
+        myClassLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+        apacheLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache");
+        apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+    }
 
     @Before
     public void setup() {

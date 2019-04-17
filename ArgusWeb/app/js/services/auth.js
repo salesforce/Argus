@@ -41,14 +41,9 @@ angular.module('argus.services.auth', [])
 			});
 		},
 		logout: function () {
-			Storage.reset();
+			Storage.reset(); //remove user info, token
 			$resource(CONFIG.wsUrl + 'v2/auth/logout', {}, {}).get({}, function () {
 				growl.info('You are now logged out');
-				//-------Token Based Authentication----------
-				//remove token
-				// Storage.clear('accessToken');
-				// Storage.clear('refreshToken');
-
 				$location.path('/login');
 			}, function () {
 				growl.error('Logout failed');
@@ -92,7 +87,7 @@ angular.module('argus.services.auth', [])
 			return $resource(CONFIG.wsUrl + refreshPath, {}, {}).save(creds, function(data){
 				Storage.set('accessToken', data.accessToken);
 			}, function(error){
-				growl.error(error);
+				console.log(error);
 			});
 		}
 	};

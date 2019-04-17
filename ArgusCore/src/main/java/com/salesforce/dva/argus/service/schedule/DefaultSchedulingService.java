@@ -245,9 +245,11 @@ public class DefaultSchedulingService extends DefaultService implements Scheduli
      *
      * @author  Raj Sarkapally (rsarkapally@salesforce.com)
      */
-    private class SchedulingThread extends Thread {
+    class SchedulingThread extends Thread {
 
         private final LockType lockType;
+        Scheduler scheduler = null;
+        String key = null;
 
         /**
          * Creates a new SchedulingThread object.
@@ -282,30 +284,29 @@ public class DefaultSchedulingService extends DefaultService implements Scheduli
 
         @Override
         public void run() {
-            Scheduler scheduler = null;
-            String key = null;
-
             while (!isInterrupted()) {
-                if (_isSchedulingServiceEnabled()) {
-                    if (key == null) {
-                        key = _becomeMaster();
-                    }
-                    while (!isInterrupted() && key != null && _isSchedulingServiceEnabled()) {
-                        scheduler = _refreshJobSchedule(scheduler);
-                        key = _refreshMaster(key);
-                    }
-                }
-                
+                doSchedule();
                 boolean interrupted = interrupted();
-
-                _releaseLock(key);
                 if (!interrupted) {
                     _sleepForMasterPollPeriod();
                 } else {
                     interrupt();
                 }
             }
-            _disposeScheduler(scheduler);
+            disposeScheduler();
+        }
+
+        void doSchedule() {
+            if (_isSchedulingServiceEnabled()) {
+                if (key == null) {
+                    key = _becomeMaster();
+                }
+                while (!isInterrupted() && key != null && _isSchedulingServiceEnabled()) {
+                    scheduler = _refreshJobSchedule();
+                    key = refreshMaster(key);
+                }
+            }
+            _releaseLock(key);
         }
 
         /**
@@ -328,7 +329,7 @@ public class DefaultSchedulingService extends DefaultService implements Scheduli
             }
         }
 
-        private String _refreshMaster(String oldKey) {
+        String refreshMaster(String oldKey) {
             assert oldKey != null : "Can only refresh a key that already exists.";
             try {
                 _logger.info("Sleeping for {}s before next attempt refreshing {} schedule.", GLOBAL_LOCK_REFRESH_PERIOD_MS / 1000, lockType);
@@ -355,34 +356,36 @@ public class DefaultSchedulingService extends DefaultService implements Scheduli
         /**
          * Refreshes the job schedule with the current list of enabled jobs of the type to be scheduled.
          *
-         * @param   scheduler  The scheduler to update.
-         *
          * @return  The updated scheduler.
          */
-        protected Scheduler _refreshJobSchedule(Scheduler scheduler) {
-            _disposeScheduler(scheduler);
+        protected Scheduler _refreshJobSchedule() {
+            disposeScheduler();
 
-            Scheduler result = new Scheduler();
+            scheduler = new Scheduler();
 
             _logger.info("Refreshing job schedule.");
             for (CronJob job : getEnabledJobs()) {
-                _logger.debug("Adding job to scheduler: {}", job);
-                try {
-                    result.schedule(job.getCronEntry(), new RunnableJob(lockType, job));
-                } catch (Exception ex) {
-                    String msg = "Failed to schedule job {0} : {1}";
-                    JPAEntity entity = JPAEntity.class.cast(job);
-
-                    _auditService.createAudit(msg, entity, entity, ex.getMessage());
-                    _logger.error("Failed to schedule job {} : {}", job, ex.getMessage());
-                }
+                doScheduleJob(scheduler, job);
             }
-            result.start();
+            scheduler.start();
             _logger.info("Job schedule refreshed.");
-            return result;
+            return scheduler;
         }
 
-        private void _disposeScheduler(Scheduler scheduler) {
+        void doScheduleJob(Scheduler scheduler, CronJob job) {
+            _logger.debug("Adding job to scheduler: {}", job);
+            try {
+                scheduler.schedule(job.getCronEntry(), new RunnableJob(lockType, job));
+            } catch (Exception ex) {
+                String msg = "Failed to schedule job {0} : {1}";
+                JPAEntity entity = JPAEntity.class.cast(job);
+
+                _auditService.createAudit(msg, entity, entity, ex.getMessage());
+                _logger.error("Failed to schedule job {} : {}", job, ex.getMessage());
+            }
+        }
+
+        void disposeScheduler() {
             if (scheduler != null) {
                 scheduler.stop();
             }

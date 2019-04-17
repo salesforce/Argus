@@ -37,6 +37,7 @@ abstract class BaseMetricConsumer extends BaseConsumer {
     private static final String ULI_METRICS_TOPIC_NAME="FunnelProto";
     static final int DEFAULT_SLOWDOWN_SLEEP_MAX_MS=2000;
     static final String METRIC_SCHEMA_FINGERPRINT = AvroUtils.getSchemaFingerprint(com.salesforce.mandm.ajna.Metric.getClassSchema());
+    static final String HISTOGRAM_SCHEMA_FINGERPRINT = AvroUtils.getSchemaFingerprint(com.salesforce.mandm.ajna.Histogram.getClassSchema());
 
     boolean quotaSystemSwitch;
     private boolean scopeQuotaEnabled;
