@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.MetatagsRecord;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
@@ -21,6 +22,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -28,7 +30,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.junit.BeforeClass;
-import org.junit.AfterClass;
 import java.util.Properties;
 
 
@@ -46,6 +47,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -61,124 +63,6 @@ import static org.mockito.Mockito.verify;
 public class ElasticSearchSchemaServiceTest {
 
     private RestClient restClient;
-
-    private String createSucessReply = String.join("\n",
-    "{" +
-            "    \"took\": 178," +
-            "    \"errors\": false," +
-            "    \"items\": [" +
-            "        {" +
-            "            \"create\": {" +
-            "                \"_index\": \"scopemetricnames\"," +
-            "                \"_type\": \"scopemetric_type\"," +
-            "                \"_id\": \"0f56139fa1c2a1834405bffd8e4570f1\"," +
-            "                \"_version\": 1," +
-            "                \"result\": \"created\"," +
-            "                \"_shards\": {" +
-            "                    \"total\": 2," +
-            "                    \"successful\": 2," +
-            "                    \"failed\": 0" +
-            "                }," +
-            "                \"created\": true," +
-            "                \"status\": 201" +
-            "            }" +
-            "        }," +
-            "        {" +
-            "            \"create\": {" +
-            "                \"_index\": \"scopemetricnames\"," +
-            "                \"_type\": \"scopemetric_type\"," +
-            "                \"_id\": \"5b5d61f40ff3df194cc0e5b2afe0c5b4\"," +
-            "                \"_version\": 1," +
-            "                \"result\": \"created\"," +
-            "                \"_shards\": {" +
-            "                    \"total\": 2," +
-            "                    \"successful\": 2," +
-            "                    \"failed\": 0" +
-            "                }," +
-            "                \"created\": true," +
-            "                \"status\": 201" +
-            "            }" +
-            "        }" +
-            "    ]" +
-            "}");
-
-
-    private String createFailReply = String.join("\n",
-            "{",
-            "    \"took\": 2," +
-            "    \"errors\": true," +
-            "    \"items\": [" +
-            "        {" +
-            "            \"create\": {" +
-            "                \"_index\": \"scopemetricnames\"," +
-            "                \"_type\": \"scopemetric_type\"," +
-            "                \"_id\": \"0f56139fa1c2a1834405bffd8e4570f1\"," +
-            "                \"status\": 409," +
-            "                \"error\": {" +
-            "                    \"type\": \"version_conflict_engine_exception\"," +
-            "                    \"reason\": \"[scopemetric_type][9602e82b184a4930c2cf5de4651e0b3b]: version conflict, document already exists (current version [110])\"," +
-            "                    \"index_uuid\": \"zxhVd68hTPmEfCWYKtkjSQ\"," +
-            "                    \"shard\": \"0\"," +
-            "                    \"index\": \"scopemetricnames\"" +
-            "                }" +
-            "            }" +
-            "        }," +
-            "        {" +
-            "            \"create\": {" +
-            "                \"_index\": \"scopemetricnames\"," +
-            "                \"_type\": \"scopemetric_type\"," +
-            "                \"_id\": \"5b5d61f40ff3df194cc0e5b2afe0c5b4\"," +
-            "                \"status\": 409," +
-            "                \"error\": {" +
-            "                    \"type\": \"version_conflict_engine_exception\"," +
-            "                    \"reason\": \"[scopemetric_type][398b3cee85ea47fa673a2fc3ac9970c3]: version conflict, document already exists (current version [110])\"," +
-            "                    \"index_uuid\": \"zxhVd68hTPmEfCWYKtkjSQ\"," +
-            "                    \"shard\": \"0\"," +
-            "                    \"index\": \"scopemetricnames\"" +
-            "                }" +
-            "            }" +
-            "        }" +
-            "    ]" +
-            "}");
-
-    private String updateSucessReply = String.join("\n",
-            "{",
-            "    \"took\": 2," +
-            "    \"errors\": false," +
-            "    \"items\": [" +
-            "        {" +
-            "            \"update\": {" +
-            "                \"_index\": \"scopemetricnames\"," +
-            "                \"_type\": \"scopemetric_type\"," +
-            "                \"_id\": \"0f56139fa1c2a1834405bffd8e4570f1\"," +
-            "                \"_version\": 87," +
-            "                \"result\": \"noop\"," +
-            "                \"_shards\": {" +
-            "                    \"total\": 2," +
-            "                    \"successful\": 2," +
-            "                    \"failed\": 0" +
-            "                }," +
-            "                \"status\": 200" +
-            "            }" +
-            "        }," +
-            "        {" +
-            "            \"update\": {" +
-            "                \"_index\": \"scopemetricnames\"," +
-            "                \"_type\": \"scopemetric_type\"," +
-            "                \"_id\": \"5b5d61f40ff3df194cc0e5b2afe0c5b4\"," +
-            "                \"_version\": 87," +
-            "                \"result\": \"noop\"," +
-            "                \"_shards\": {" +
-            "                    \"total\": 2," +
-            "                    \"successful\": 2," +
-            "                    \"failed\": 0" +
-            "                }," +
-            "                \"status\": 200" +
-            "            }" +
-            "        }" +
-            "    ]" +
-            "}");
-
     private String getReply = String.join("\n",
             "{",
             "    \"took\": 1,",
@@ -229,39 +113,6 @@ public class ElasticSearchSchemaServiceTest {
             "    \"distinct_values\": {",
             "      \"terms\": {",
             "        \"field\": \"scope.raw\",",
-            "        \"order\": {",
-            "          \"_term\": \"asc\"",
-            "        },",
-            "        \"size\": 10000,",
-            "        \"execution_hint\": \"map\"",
-            "      }",
-            "    }",
-            "  }",
-            "}");
-
-    private String scopeAndMetricQuery = String.join("\n",
-            "{",
-            "  \"query\": {",
-            "    \"bool\": {",
-            "      \"filter\": [",
-            "        {",
-            "          \"regexp\": {",
-            "            \"metric.raw\": \"argus.*\"",
-            "          }",
-            "        },",
-            "        {",
-            "          \"regexp\": {",
-            "            \"scope.raw\": \"system\"",
-            "          }",
-            "        }",
-            "      ]",
-            "    }",
-            "  },",
-            "  \"size\": 0,",
-            "  \"aggs\": {",
-            "    \"distinct_values\": {",
-            "      \"terms\": {",
-            "        \"field\": \"metric.raw\",",
             "        \"order\": {",
             "          \"_term\": \"asc\"",
             "        },",
@@ -365,8 +216,9 @@ public class ElasticSearchSchemaServiceTest {
         _esSchemaService = new ElasticSearchSchemaService(systemConfig, mockedMonitor, mockedElasticSearchUtils);
     }
 
-    @AfterClass
-    static public void tearDownClass() {
+    @After
+    public void tearDown() {
+        _esSchemaService.clearBlooms();
     }
 
 
@@ -398,6 +250,40 @@ public class ElasticSearchSchemaServiceTest {
         assertFalse(createJson.contains("update"));
         assertTrue(createJson.contains("cts"));
         assertTrue(createJson.contains("mts"));
+    }
+
+    @Test
+    public void testGetWithScroll() throws IOException {
+        String reply = "{\"_scroll_id\":\"DnF1ZXJ5VGhlbkZldGNoMgAAAAENlX7HFjdTNVBGTGFmUUNLT3JyZEhKZWlyNXcAAAABDYdg9xZQUUpjNUN5eFRuS0tEYWNIQ1Vwdkp3AAAAAAN8R34WTHJZWWU5cDVTd2VvelRRM3BsTkQ3UQAAAAAGraWTFnRpSFI4eTBLUl9DTGhhaWZURmlnWWcAAAABCFeY2RY5ZTdWUkpKTVNxLXdScFZ2d0l4UGVRAAAAAQ2HYPgWUFFKYzVDeXhUbktLRGFjSENVcHZKdwAAAAAGraWUFnRpSFI4eTBLUl9DTGhhaWZURmlnWWcAAAABCefkTxZ4RDRtTXZhTlNncVUxX0VGYm14YU1RAAAAAAJYwTcWUmRTbE5fWEtUMXktMDVMWG1NU0lnZwAAAAADfUxpFjBwTWJSVEJRVGE2ZDRlaEhKN0VEVEEAAAABDYNu5RZFYUY0dVpST1NPU2JIRWlzMEhxM29RAAAAAAHPMhIWbDhLbkRGMGVRMktlNmVic3hmTTZQdwAAAAEIC84XFjNnYkNhamRMUWdpRDhJRlpTR3l5c2cAAAAA9Bb5phZSV1k3T3ZuT1FZV055ODZLandweUhnAAAAAAatpZUWdGlIUjh5MEtSX0NMaGFpZlRGaWdZZwAAAAENbfO-FlhfN3R5NkM3UWd1c0tKd25XXzh3MVEAAAAA9Bb5pxZSV1k3T3ZuT1FZV055ODZLandweUhnAAAAAQ2DbuYWRWFGNHVaUk9TT1NiSEVpczBIcTNvUQAAAAAGraWWFnRpSFI4eTBLUl9DTGhhaWZURmlnWWcAAAAArdRfQhZaWkpkNWFEX1J3dXl6THMzVk1uU0pRAAAAAAG3nz8WaFZsQi1hVGVRakNsWXUtc3V3dGZJdwAAAAEINqojFmt1T2VDZ0c2UVRxLXY1TXlKRnd0ckEAAAABCAvOGBYzZ2JDYWpkTFFnaUQ4SUZaU0d5eXNnAAAAAQg2qiQWa3VPZUNnRzZRVHEtdjVNeUpGd3RyQQAAAAEOFh5PFlM0MTF4a3hZU0dxVnhuSEZ1Z0p4aVEAAAAAAc8yExZsOEtuREYwZVEyS2U2ZWJzeGZNNlB3AAAAAQ3CTCoWckRCLXNaX2NUb3k5VVgtamRyMnlLZwAAAAADfUxqFjBwTWJSVEJRVGE2ZDRlaEhKN0VEVEEAAAABCGR0zhZUb0Z1eWpaLVJOcW1McUZsLVF0TnZ3AAAAAQ1t878WWF83dHk2QzdRZ3VzS0p3bldfOHcxUQAAAAENwkwrFnJEQi1zWl9jVG95OVVYLWpkcjJ5S2cAAAABDbrdJRZQdmFPTXJ0RFJEbUs1UkhjNmozZ0tnAAAAAQnn5FAWeEQ0bU12YU5TZ3FVMV9FRmJteGFNUQAAAAENwkwsFnJEQi1zWl9jVG95OVVYLWpkcjJ5S2cAAAABDZEgehZRck5Ddnd1RFFDS3J0cGtTaE43cUR3AAAAAK3UX1UWWlpKZDVhRF9Sd3V5ekxzM1ZNblNKUQAAAAENjv2hFm9RdWllMnJsVEJhWlA2alRJR3d6TFEAAAABDbrdJhZQdmFPTXJ0RFJEbUs1UkhjNmozZ0tnAAAAAQhkdM8WVG9GdXlqWi1STnFtTHFGbC1RdE52dwAAAAACtVXxFkx3cE1IQmoyVGZPUk1iMjdET1ZFREEAAAABDZV-yBY3UzVQRkxhZlFDS09ycmRISmVpcjV3AAAAAAIO8osWbm5KMlRwNklTZENsY3p5NWVmZ3JYdwAAAAENg27nFkVhRjR1WlJPU09TYkhFaXMwSHEzb1EAAAAA87q5RBZicGgwSHR3OFRwdTlGeGcwYm51MWNRAAAAAAIO8owWbm5KMlRwNklTZENsY3p5NWVmZ3JYdwAAAADzurlFFmJwaDBIdHc4VHB1OUZ4ZzBibnUxY1EAAAAAAg7yjRZubkoyVHA2SVNkQ2xjenk1ZWZnclh3AAAAAQhkdNAWVG9GdXlqWi1STnFtTHFGbC1RdE52dwAAAAENh2D5FlBRSmM1Q3l4VG5LS0RhY0hDVXB2SncAAAABDauQZxZDYVMxdEdiQVMzS2liS0FCSEkxcElB\",\"took\":937,\"timed_out\":false,\"_shards\":{\"total\":50,\"successful\":50,\"failed\":0},\"hits\":{\"total\":1,\"max_score\":0,\"hits\":[{\"_index\":\"metadata_index\",\"_type\":\"metadata_type\",\"_id\":\"e199fa2a0f00da90fec8c1eb543442b0\",\"_score\":0,\"_source\":{\"scope\":\"ajna.consumer\",\"metric\":\"datapoints.posted\",\"tagk\":\"uuid\",\"tagv\":\"shared1-argusmetrics1-5-prd.eng.sfdc.net9047\",\"mts\":1555112561350,\"ets\":1559000561350}}]}}";
+        ObjectMapper mapper = new ObjectMapper();
+        ElasticSearchSchemaService service = spy(_esSchemaService);
+        restClient =  mock(RestClient.class);
+        service.setRestClient(restClient);
+        doAnswer(new Answer() {
+            int callCount = 0;
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                if (callCount == 1) {
+                    StringEntity requestBody = invocationOnMock.getArgument(3, StringEntity.class);
+                    String jsonStr = EntityUtils.toString(requestBody);
+                    JsonNode tree = mapper.readTree(jsonStr);
+                    assertNotNull(tree.get("scroll"));
+                    assertNotNull(tree.get("scroll_id"));
+                }
+                callCount++;
+                return null;
+            }
+        }).when(restClient).performRequest(any(), any(), any(), any(HttpEntity.class));
+        doAnswer(invoction -> reply).when(service).extractResponse(any());
+        MetricSchemaRecordQuery query = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().scope("system*")
+                .metric("*")
+                .tagKey("*")
+                .tagValue("*")
+                .namespace("*")
+                .limit(10001)
+                .build();
+        service.get(query);
+        verify(restClient, times(2)).performRequest(any(), any(), any(), any(HttpEntity.class));
     }
 
 
@@ -500,6 +386,62 @@ public class ElasticSearchSchemaServiceTest {
         assertFalse(queryForMetric.isQueryOnlyOnScopeAndMetric());
     }
 
+    @Test
+    public void testKeywordSearchWithQueryStringWithScroll() throws IOException {
+        ElasticSearchSchemaService service = spy(_esSchemaService);
+        restClient =  mock(RestClient.class);
+        service.setRestClient(restClient);
+        doAnswer(new Answer() {
+            int callCount = 0;
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                callCount++;
+                if (callCount <= 1) {
+                    return "{\"tokens\":[{\"token\":\"text\",\"start_offset\":0,\"end_offset\":4,\"type\":\"word\",\"position\":0}]}";
+                } else {
+                    return "{\"took\":711,\"timed_out\":false,\"_shards\":{\"total\":50,\"successful\":50,\"failed\":0},\"hits\":{\"total\":0,\"max_score\":null,\"hits\":[]}}";
+                }
+            }
+        }).when(service).extractResponse(any());
+        KeywordQuery query = new KeywordQuery.KeywordQueryBuilder()
+                .query("text*")
+                .limit(10001)
+                .build();
+        service.keywordSearch(query);
+        // 1 time for token analysis, 1 for first scroll call, 1 more for /_search/scroll
+        verify(restClient, times(3)).performRequest(any(), any(), any(), any(HttpEntity.class));
+    }
+
+    @Test
+    public void testKeywordSearchWithType() throws IOException {
+        ElasticSearchSchemaService service = spy(_esSchemaService);
+        restClient =  mock(RestClient.class);
+        service.setRestClient(restClient);
+        doAnswer(new Answer() {
+            int callCount = 0;
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                // First 5 calls are analyzeToken REST calls
+                callCount++;
+                if (callCount <= 5) {
+                    return "{\"tokens\":[{\"token\":\"text\",\"start_offset\":0,\"end_offset\":4,\"type\":\"word\",\"position\":0}]}";
+                } else {
+                    return "{\"took\":3939,\"timed_out\":false,\"_shards\":{\"total\":50,\"successful\":50,\"failed\":0},\"hits\":{\"total\":0,\"max_score\":0,\"hits\":[]},\"aggregations\":{\"distinct_values\":{\"doc_count_error_upper_bound\":0,\"sum_other_doc_count\":0,\"buckets\":[]}}}";
+                }
+            }
+        }).when(service).extractResponse(any());
+        KeywordQuery query = new KeywordQuery.KeywordQueryBuilder().scope("text*")
+                .metric("text*")
+                .tagKey("text*")
+                .tagValue("text*")
+                .namespace("text*")
+                .type(SchemaService.RecordType.METRIC)
+                .limit(10001)
+                .build();
+        service.keywordSearch(query);
+        verify(restClient, times(6)).performRequest(any(), any(), any(), any(HttpEntity.class));
+    }
+
 	@Test
 	public void testUpsertWhenAllNewDocsShouldNotUpdateMTSField() throws IOException {
 		String esCreateResponse=String.join("\n", "{" +
@@ -556,8 +498,8 @@ public class ElasticSearchSchemaServiceTest {
 	}
 
 	@Test
-	public void testUpsertWhenSomeDocsExistShouldUpdateMTSFieldForExistingDocs() throws IOException {
-		String esCreateResponse=String.join("\n", "{" +
+	public void testRealUpsertWithOne409() throws IOException {
+		String esCreateResponse = String.join("\n", "{" +
 				"  \"took\": 5," +
 				"  \"errors\": true," +
 				"  \"items\": [" +
@@ -594,19 +536,41 @@ public class ElasticSearchSchemaServiceTest {
 				"    }" +
 				"  ]" +
 				"}");
+		String updateResponse = "{\"took\":1,\"errors\":false,\"items\":[{\"update\":{\"_index\":\"metadata_index\",\"_type\":\"metadata_type\",\"_id\":\"dd123151c817644189a2d28757b5be8a\",\"_version\":2,\"result\":\"updated\",\"_shards\":{\"total\":2,\"successful\":2,\"failed\":0},\"status\":200}}]}";
+		String scopeCreateResponse = "{\"took\":1,\"errors\":true,\"items\":[{\"create\":{\"_index\":\"scopenames\",\"_type\":\"scope_type\",\"_id\":\"fbeb48e92a72df5f9844d2ecd4d1e825\",\"status\":409,\"error\":{\"type\":\"version_conflict_engine_exception\",\"reason\":\"[scope_type][fbeb48e92a72df5f9844d2ecd4d1e825]: version conflict, document already exists (current version [1])\",\"index_uuid\":\"fbq7sEAmQm6aMSH7z0Ij5A\",\"shard\":\"1\",\"index\":\"scopenames\"}}},{\"create\":{\"_index\":\"scopenames\",\"_type\":\"scope_type\",\"_id\":\"e7ccd95462e7696b26349360b709a1d7\",\"_version\":1,\"result\":\"created\",\"_shards\":{\"total\":2,\"successful\":1,\"failed\":0},\"created\":true,\"status\":201}}]}";
+		String scopeUpdateResopnse = "{\"took\":2,\"errors\":false,\"items\":[{\"update\":{\"_index\":\"scopenames\",\"_type\":\"scope_type\",\"_id\":\"fbeb48e92a72df5f9844d2ecd4d1e825\",\"_version\":2,\"result\":\"updated\",\"_shards\":{\"total\":2,\"successful\":2,\"failed\":0},\"status\":200}}]}";
 		ElasticSearchSchemaService spySchemaService = spy(_esSchemaService);
 		RestClient _restClient = mock(RestClient.class);
-		doReturn(null).when(_restClient).performRequest(any(), any(), any(),any());
+		doAnswer(new Answer() {
+		    int count = 0;
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                count++;
+                // 2nd call: the updateMetadata, and 4th call: the updateScope, should only update one object AKA request body should be 2 lines
+                if (count == 2 || count == 4) {
+                    StringEntity entity = invocationOnMock.getArgument(1, StringEntity.class);
+                    assertTrue(EntityUtils.toString(entity).split("\r\n|\r|\n").length == 2);
+                }
+                return null;
+            }
+        }).when(_restClient).performRequest(any(), any(), any(),any());
 		spySchemaService.setRestClient(_restClient);
-		doReturn(esCreateResponse).when(spySchemaService).extractResponse(any());
-		doReturn(new HashSet<>()).when(spySchemaService).upsertScopeRecords(any());
-		doAnswer((Answer<Set<MetricSchemaRecord>>) invocation -> {
-            @SuppressWarnings("unchecked")
-            Set<MetricSchemaRecord> recordsToUpdate = Set.class.cast(invocation.getArguments()[0]);
-            assertTrue(recordsToUpdate.stream().anyMatch(record -> record.getScope().equals("scope1")));
-            assertEquals(1, recordsToUpdate.size());
-            return new HashSet<>();
-        }).when(spySchemaService).updateMetadataRecordMts(any());
+		doAnswer(new Answer() {
+		    int count = 0;
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                count++;
+                if (count == 1) {
+                    return esCreateResponse;
+                } else if (count == 2) {
+                    return updateResponse;
+                } else if (count == 3) {
+                    return scopeCreateResponse;
+                } else {
+                    return scopeUpdateResopnse;
+                }
+            }
+        }).when(spySchemaService).extractResponse(any());
 
 		List<Metric> metrics = new ArrayList<>();
 		Metric m1= new Metric("scope1", "metric1");

@@ -340,7 +340,7 @@ public class InstrumentationService {
 		}
 	}
 
-	private class InstrumentMetricsThread implements Runnable {
+	class InstrumentMetricsThread implements Runnable {
 
 		private static final long INTERVAL_IN_MILLIS = 60000;
 
@@ -360,7 +360,7 @@ public class InstrumentationService {
 			LOGGER.info("Instrument metrics thread execution completed.");
 		}
 
-		private void sleep() {
+		void sleep() {
 			try {
 				LOGGER.info("Sleeping for {}s before pushing instrumented metrics.", INTERVAL_IN_MILLIS / 1000);
 				Thread.sleep(INTERVAL_IN_MILLIS);
@@ -370,7 +370,7 @@ public class InstrumentationService {
 			}
 		}
 
-		private void pushInstrumentedMetrics() {
+		void pushInstrumentedMetrics() {
 
 			boolean consumedNothing = false;
 			if (instrumentedCounterMetrics.get().isEmpty()) {

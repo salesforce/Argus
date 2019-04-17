@@ -118,6 +118,11 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		createScheduledExecutorService(bloomFilterFlushHourToStartAt);
 	}
 
+	void clearBlooms() {
+		createdBloom = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), createdBloomExpectedNumberInsertions, createdBloomErrorRate);
+		modifiedBloom = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), modifiedBloomExpectedNumberInsertions, modifiedBloomErrorRate);
+	}
+
 	@Override
 	public void put(Metric metric) {
 		requireNotDisposed();

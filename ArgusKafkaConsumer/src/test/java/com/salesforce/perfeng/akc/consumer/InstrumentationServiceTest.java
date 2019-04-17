@@ -282,9 +282,8 @@ public class InstrumentationServiceTest {
         String timerName = InstrumentationService.QUOTA_EVALUATE_LATENCY;
         String timerName2 = "testTimer2";
 
-        instrumentationService.instrument();
-
-        Thread.sleep(10000); // this is here to wait for the first putMetrics() invocation
+        InstrumentationService.InstrumentMetricsThread instrumenter = instrumentationService.new InstrumentMetricsThread();
+        instrumenter.pushInstrumentedMetrics();
 
         double[] counts = new double[] {10.0, 11.0};
         for (int i = 0; i < counts.length; i++) {
@@ -302,14 +301,12 @@ public class InstrumentationServiceTest {
             timerSum2 += latencies2[i];
         }
 
-        // wait long enough for putMetrics() to be called for a second time
-        Thread.sleep(61000);
-
-        // call dispose() to invoke putMetrics() one last time
+        // simulate putMetrics() being called a second time
+        instrumenter.pushInstrumentedMetrics();
         instrumentationService.dispose();
 
         ArgumentCaptor<List<Metric>> tsdbMetricsCapture = ArgumentCaptor.forClass(List.class);
-        verify(mockTSDBService, times(3)).putMetrics(tsdbMetricsCapture.capture());
+        verify(mockTSDBService, times(2)).putMetrics(tsdbMetricsCapture.capture());
         List<List<Metric>> tsdbMetricsCapturedValueList = tsdbMetricsCapture.getAllValues();
 
         // first putMetrics() invocation
@@ -356,16 +353,6 @@ public class InstrumentationServiceTest {
             assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(bucketCountMetricName) &&
                     m.getTags().get(bucketLimitTagName).equals(latencyBucketTag)));
         }
-
-        // third putMetrics() invocation due to dispose() being called
-        tsdbMetrics = tsdbMetricsCapturedValueList.get(2);
-        assertEquals(13, tsdbMetrics.size());
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_POSTED)));
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_CONSUMED)));
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_DROPPED)));
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_POSTED)));
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_CONSUMED)));
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_DROPPED)));
 
         // capture beans registered
         ArgumentCaptor<CounterMetric> counterArgumentCaptor = ArgumentCaptor.forClass(CounterMetric.class);

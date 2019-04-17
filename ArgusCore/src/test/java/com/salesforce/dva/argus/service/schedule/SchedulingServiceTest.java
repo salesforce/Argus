@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.dva.argus.service;
+package com.salesforce.dva.argus.service.schedule;
 
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Alert;
@@ -37,15 +37,22 @@ import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.service.AuditService;
+import com.salesforce.dva.argus.service.GlobalInterlockService;
+import com.salesforce.dva.argus.service.HistoryService;
+import com.salesforce.dva.argus.service.MQService;
+import com.salesforce.dva.argus.service.MailService;
+import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.MonitorService;
+import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
-import com.salesforce.dva.argus.service.schedule.DefaultSchedulingService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Persistence;
@@ -53,7 +60,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -67,7 +75,8 @@ import com.salesforce.dva.argus.TestUtils;
 @RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 public class SchedulingServiceTest {
     @Mock Provider<EntityManager> _emProviderMock;
-    @Mock TSDBService _tsdbServiceMock;
+    @Mock
+    TSDBService _tsdbServiceMock;
     @Mock private MetricService _metricServiceMock;
     @Mock private MailService _mailServiceMock;
     @Mock private HistoryService _historyServiceMock;
@@ -116,16 +125,14 @@ public class SchedulingServiceTest {
     }
 
     @Test
-    public void testAlertSchedulingWithGlobalInterlock() throws InterruptedException {
+    public void testAlertSchedulingWithGlobalInterlock() {
 
         // Alert service with mocked tsdb service
         DefaultAlertService alertServiceOriginal = new DefaultAlertService(system.getConfiguration(), mqService, _metricServiceMock, _auditServiceMock,
                 _tsdbServiceMock, _mailServiceMock, _historyServiceMock, _monitorServiceMock, system.getNotifierFactory(),
                 _emProviderMock);
 
-        DefaultAlertService alertService = Mockito.spy(alertServiceOriginal);
-        doNothing().when(alertService).enqueueAlerts(any());
-
+        DefaultAlertService alertService = spy(alertServiceOriginal);
         DefaultSchedulingService schedulingService = new DefaultSchedulingService(alertService,
                                                                                   system.getServiceFactory().getGlobalInterlockService(),
                                                                                   userService,
@@ -135,7 +142,6 @@ public class SchedulingServiceTest {
 
         schedulingService.enableScheduling();
 
-        long schedulingIterations = 1;
         int noOfAlerts = TestUtils.random.nextInt(2) + 9;
         PrincipalUser user = userService.findAdminUser();
 
@@ -154,12 +160,13 @@ public class SchedulingServiceTest {
 
             alertService.updateAlert(alert);
         }
-        schedulingService.startAlertScheduling();
-        // It takes a while for the scheduler to call enqueue
-        Thread.sleep((1000L * 60L * schedulingIterations));
+        DefaultSchedulingService.SchedulingThread schedulingThread = spy(schedulingService.new SchedulingThread("schedule-alerts", GlobalInterlockService.LockType.ALERT_SCHEDULING));
+        // Return null so the inner doSchedule loop stops
+        doReturn(null).when(schedulingThread).refreshMaster(any());
+        schedulingThread.doSchedule();
         schedulingService.stopAlertScheduling();
 
-        verify(alertService, times(noOfAlerts)).enqueueAlerts(any());
+        verify(schedulingThread, times(noOfAlerts)).doScheduleJob(any(), any());
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
