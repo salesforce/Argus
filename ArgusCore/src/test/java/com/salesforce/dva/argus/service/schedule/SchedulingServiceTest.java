@@ -141,6 +141,8 @@ public class SchedulingServiceTest {
                                                                                   system.getConfiguration());
 
         schedulingService.enableScheduling();
+        DefaultSchedulingService.SchedulingThread schedulingThread = spy(schedulingService.new SchedulingThread("schedule-alerts", GlobalInterlockService.LockType.ALERT_SCHEDULING));
+        int originalJobCount = schedulingThread.getEnabledJobs().size();
 
         int noOfAlerts = TestUtils.random.nextInt(2) + 9;
         PrincipalUser user = userService.findAdminUser();
@@ -160,13 +162,12 @@ public class SchedulingServiceTest {
 
             alertService.updateAlert(alert);
         }
-        DefaultSchedulingService.SchedulingThread schedulingThread = spy(schedulingService.new SchedulingThread("schedule-alerts", GlobalInterlockService.LockType.ALERT_SCHEDULING));
         // Return null so the inner doSchedule loop stops
         doReturn(null).when(schedulingThread).refreshMaster(any());
         schedulingThread.doSchedule();
         schedulingService.stopAlertScheduling();
-
-        verify(schedulingThread, times(noOfAlerts)).doScheduleJob(any(), any());
+        // TODO: FIXME: Some other unit test is able to affect the number of enabled alerts, additng originalJobCount here is a workaround
+        verify(schedulingThread, times(originalJobCount + noOfAlerts)).doScheduleJob(any(), any());
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
