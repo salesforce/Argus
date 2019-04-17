@@ -311,7 +311,7 @@ public class InstrumentationServiceTest {
 
         // first putMetrics() invocation
         List<Metric> tsdbMetrics = tsdbMetricsCapturedValueList.get(0);
-        assertEquals(13, tsdbMetrics.size());
+        assertEquals(15, tsdbMetrics.size());
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_POSTED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_CONSUMED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_DROPPED)));
@@ -321,7 +321,7 @@ public class InstrumentationServiceTest {
 
         // second putMetrics() invocation
         tsdbMetrics = tsdbMetricsCapturedValueList.get(1);
-        assertEquals(37, tsdbMetrics.size());
+        assertEquals(39, tsdbMetrics.size());
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(counterName)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_POSTED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_CONSUMED)));
@@ -357,7 +357,7 @@ public class InstrumentationServiceTest {
         // capture beans registered
         ArgumentCaptor<CounterMetric> counterArgumentCaptor = ArgumentCaptor.forClass(CounterMetric.class);
         ArgumentCaptor<ObjectName> nameArgumentCaptor = ArgumentCaptor.forClass(ObjectName.class);
-        verify(mBeanServer, times(37)).registerMBean(counterArgumentCaptor.capture(), nameArgumentCaptor.capture());
+        verify(mBeanServer, times(39)).registerMBean(counterArgumentCaptor.capture(), nameArgumentCaptor.capture());
         // convert list of beans registered into a map of bean object name to counter value
         Map<String, Double> nameToValueMap = new HashMap<>();
         for (MetricMXBean mb : counterArgumentCaptor.getAllValues()) {

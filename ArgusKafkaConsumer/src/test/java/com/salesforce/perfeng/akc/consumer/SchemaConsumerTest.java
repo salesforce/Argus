@@ -27,11 +27,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import static com.salesforce.perfeng.akc.consumer.InstrumentationService.HISTOGRAM_SCHEMA_BATCH_COUNT;
+import static com.salesforce.perfeng.akc.consumer.InstrumentationService.HISTOGRAM_SCHEMA_DROPPED;
+import static com.salesforce.perfeng.akc.consumer.InstrumentationService.HISTOGRAM_SCHEMA_POSTED;
+import static com.salesforce.perfeng.akc.consumer.InstrumentationService.SCHEMA_BATCH_COUNT;
+import static com.salesforce.perfeng.akc.consumer.InstrumentationService.SCHEMA_DROPPED;
+import static com.salesforce.perfeng.akc.consumer.InstrumentationService.SCHEMA_POSTED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
@@ -108,6 +118,45 @@ public class SchemaConsumerTest {
         assertEquals(0, argusHistograms.size());
         assertEquals(1, argusMetrics.size());
         assertTrue(argusMetrics.values().iterator().next().getDatapoints().isEmpty());  //this test ensures schema consumer clears a Metric's datapoints
+
+        verify(instrumentationService, times(1)).updateCounter(eq(SCHEMA_BATCH_COUNT), eq(1.0d), any());
+        verify(instrumentationService, times(0)).updateCounter(eq(HISTOGRAM_SCHEMA_BATCH_COUNT), anyDouble(), any());
+        verify(schemaService, times(1)).put(anyList());
+        verify(instrumentationService, times(1)).updateCounter(eq(SCHEMA_POSTED), eq(1.0d), any());
+        verify(instrumentationService, times(0)).updateCounter(eq(SCHEMA_DROPPED), anyDouble(), any());
+    }
+
+    @Test
+    public void processAjnaMetricKafkaRecordsForHistogram() {
+        task.schemaConsumer.metricAvroDecoder = PowerMockito.mock(AjnaWireFormatDecoder.class);
+        task.schemaConsumer.histogramConsumer.histogramAvroDecoder = PowerMockito.mock(AjnaWireFormatDecoder.class);
+
+        when(task.schemaConsumer.metricAvroDecoder.ajnaWireFromBytes(any()))
+                .thenReturn(new AjnaWire(BaseMetricConsumer.HISTOGRAM_SCHEMA_FINGERPRINT, Collections.emptyMap(), Collections.emptyList()));
+
+        com.salesforce.mandm.ajna.Histogram ajnaHistogram = new com.salesforce.mandm.ajna.Histogram("service", "subservice", 1,
+                1L, 1L, ImmutableMap.of("20,30", 10L, "30,300", 2L), null,
+                Lists.newArrayList("metricName"), System.currentTimeMillis(),  LatencyType.NORMAL);
+        when(task.schemaConsumer.histogramConsumer.histogramAvroDecoder.listFromAjnaWire(any(), any())).thenReturn(Lists.newArrayList(ajnaHistogram));
+
+        List<Histogram> argusHistograms = Lists.newArrayList();
+        Map<String, Metric> argusMetrics = Maps.newHashMap();
+        ConsumerRecord<byte[], byte[]> record = new ConsumerRecord<>("topic", 1, 1, null, null);
+
+        task.schemaConsumer.processAjnaMetricKafkaRecords(new ConsumerRecords<>(ImmutableMap.of(new TopicPartition("topic", 1),
+                Lists.newArrayList(record))), argusMetrics, argusHistograms);
+
+        assertEquals(1, argusHistograms.size());
+        assertEquals(0, argusMetrics.size());
+        Histogram argusHistogram = argusHistograms.get(0);
+        assertTrue(argusHistogram.getScope().contains("subservice"));
+        assertEquals(2, argusHistogram.getBuckets().size());
+
+        verify(instrumentationService, times(0)).updateCounter(eq(SCHEMA_BATCH_COUNT), anyDouble(), any());
+        verify(instrumentationService, times(1)).updateCounter(eq(HISTOGRAM_SCHEMA_BATCH_COUNT), eq(1.0d), any());
+        verify(schemaService, times(1)).put(anyList());
+        verify(instrumentationService, times(1)).updateCounter(eq(HISTOGRAM_SCHEMA_POSTED), eq(1.0d), any());
+        verify(instrumentationService, times(0)).updateCounter(eq(HISTOGRAM_SCHEMA_DROPPED), anyDouble(), any());
     }
 
 }

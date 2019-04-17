@@ -126,7 +126,8 @@ public class HistogramConsumerTest {
                 buckets, tags, Lists.newArrayList(metricName), System.currentTimeMillis(), LatencyType.NORMAL);
 
         //happy path
-        Histogram histogram = task.metricConsumer.histogramConsumer.transformToArgusHistogram(ajnaHistogram, Collections.emptyMap(), null, null);
+        Histogram histogram = task.metricConsumer.histogramConsumer.transformToArgusHistogram(ajnaHistogram, Collections.emptyMap(),
+                null, null, null, null);
         assertEquals("service.subservice", histogram.getScope());
         assertEquals(2L, histogram.getOverflow().longValue());
         assertEquals(3L, histogram.getUnderflow().longValue());
@@ -137,7 +138,8 @@ public class HistogramConsumerTest {
 
         //now try again with an invalid timestamp
         ajnaHistogram.setTimestamp(0L);
-        assertNull(task.metricConsumer.histogramConsumer.transformToArgusHistogram(ajnaHistogram, Collections.emptyMap(), null, task.metricConsumer.histogramConsumer::updateHistogramTimestampInvalid));
+        assertNull(task.metricConsumer.histogramConsumer.transformToArgusHistogram(ajnaHistogram, Collections.emptyMap(),
+                null, task.metricConsumer.histogramConsumer::updateHistogramTimestampInvalid, null, null));
     }
 
     @Test

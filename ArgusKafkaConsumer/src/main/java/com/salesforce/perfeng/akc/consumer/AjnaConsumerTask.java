@@ -47,7 +47,7 @@ public class AjnaConsumerTask implements AmurSinkTask<byte[], byte[]> {
         if (ConsumerType.METRICS.equals(consumerType) ){
             metricConsumer.processAjnaMetricKafkaRecords(records, Maps.newHashMap(), Lists.newArrayList());
         } else if (ConsumerType.SCHEMA.equals(consumerType)) {
-            schemaConsumer.processAjnaMetricKafkaRecords(records, Maps.newHashMap(), null);
+            schemaConsumer.processAjnaMetricKafkaRecords(records, Maps.newHashMap(), Lists.newArrayList());
         } else if (ConsumerType.ANNOTATIONS.equals(consumerType)) {
             annotationConsumer.processAjnaAnnotationKafkaRecords(records, Lists.newArrayList());
         } else {
