@@ -96,7 +96,11 @@ public class MetricResources extends AbstractResource {
 			throw wax;
 		}
 		catch(Exception ex) {
-			throw new WebApplicationException(ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
+			if (ex.getCause()!=null && ex.getCause().getMessage()!=null && ex.getCause().getMessage().contains("code=400")) {
+				throw new WebApplicationException(ex.getMessage(), Status.BAD_REQUEST);
+			} else {
+				throw new WebApplicationException(ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
+			}
 		}
 	}
 
