@@ -183,7 +183,9 @@ angular.module('argus.directives.charts.chart', [])
 		}
 
 		// TODO: below functions 'should' be refactored to the chart services.
-		function setupChart(scope, element, attributes, controls) {
+		function setupChart(scope, element, attributes, controls, type) {
+			// save the controls to chart scope
+			scope.controls = controls;
 			// remove/clear any previous chart rendering from DOM
 			var lastEl = element[0].querySelector('[id^=element_chart]');
 			var lastId = lastEl? lastEl.id: null;
@@ -192,7 +194,8 @@ angular.module('argus.directives.charts.chart', [])
 			// if the element has content previously, leave the id unchanged
 			var newChartId = lastId || 'element_' + VIEWELEMENT.chart + chartNameIndex++;
 
-			var chartType = attributes.type ? attributes.type : 'line';
+			//UI configured type > html defined type > default type (line)
+			var chartType = type || attributes.type || 'line';
 			chartType = chartType.toLowerCase();
 			// TODO: make this a constant somewhere else
 			var supportedChartTypes = ['line', 'area', 'scatter', 'stackarea', 'bar', 'stackbar', 'heatmap'];
@@ -273,6 +276,10 @@ angular.module('argus.directives.charts.chart', [])
 						element.on('$destroy', function(){
 							chartNameIndex = 1;
 						});
+						//scope functions
+						scope.resetChartType = function(type){
+							setupChart(scope, element, attributes, scope.controls, type);
+						};
 					}
 				};
 			}

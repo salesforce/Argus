@@ -138,6 +138,37 @@
 				</ul>
 			</div>
 
+			<div class="toolbarMenu topMenu">
+				<!-- <a class="glyphicon glyphicon-stats" title="Change chart type"></a> -->
+				<a title="Change chart type">
+					<span class="oi oi-graph" title="chart type" aria-hidden="true"></span>
+				</a>
+				<ul class="subMenu menuPanel list-group">
+					<li>
+							<!-- ['line', 'area', 'scatter', 'stackarea', 'bar', 'stackbar', 'heatmap'] -->
+						<a ng-click="changeChartType('line')" title="Line chart">Line</a>
+					</li>
+					<li>
+						<a ng-click="changeChartType('area')" title="Area chart">Area</a>
+					</li>
+					<li>
+						<a ng-click="changeChartType('scatter')" title="Scatter chart">Scatter</a>
+					</li>
+					<li>
+						<a ng-click="changeChartType('stackarea')" title="Stack chart">Stack area</a>
+					</li>
+					<li>
+						<a ng-click="changeChartType('bar')" title="Bar chart">Bar</a>
+					</li>
+					<li>
+						<a ng-click="changeChartType('stackbar')" title="Stack bar chart">Stack bar</a>
+					</li>
+					<li>
+						<a ng-click="changeChartType('heatmap')" title="Heap map">Heatmap</a>
+					</li>
+				</ul>
+			</div>
+
 			<div class="toolbarMenu topMenu" show-if-fullscreen=false>
 				<a class="glyphicon glyphicon-cog" title="Display chart options" ng-click="openChartOptions(chartConfig.chartId, chartConfig.title)"></a>
 			</div>
