@@ -13,7 +13,6 @@
  */
 package com.salesforce.dva.argus.service.callback;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.sql.Date;
 import java.text.MessageFormat;
@@ -25,11 +24,8 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Alert;
-import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
-import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.CallbackService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
@@ -38,6 +34,9 @@ import com.salesforce.dva.argus.service.alert.notifier.CallbackNotifier;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
+import com.salesforce.sds.keystore.DynamicKeyStore;
+import com.salesforce.sds.keystore.DynamicKeyStoreBuilder;
+import com.salesforce.sds.pki.utils.BouncyIntegration;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
@@ -47,9 +46,11 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.json.Json;
 import javax.json.JsonBuilderFactory;
@@ -65,12 +66,16 @@ import javax.security.auth.callback.Callback;
  * @author svenkrause
  */
 public class DefaultCallbackService extends DefaultService implements CallbackService {
+
+	static {
+		BouncyIntegration.init();
+	}
+
 	//~ Instance fields ******************************************************************************************************************************
 
-	@SLF4JTypeListener.InjectLogger
-	private Logger _logger;
+	private final Logger _logger = LoggerFactory.getLogger(DefaultCallbackService.class);
 	private final HttpClientPool httpClientPool;
-	private final ObjectMapper _mapper;
+	private DynamicKeyStore ks;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -82,13 +87,23 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 	@Inject
 	public DefaultCallbackService(SystemConfiguration config) {
 		super(config);
-		_mapper = new ObjectMapper();
 
 		int poolSize = Property.POOL_SIZE.getInt(config);
 		TimeUnit timeUnit = Property.POOL_REFRESH_UNIT.getEnum(config, TimeUnit.class);
 		int refresh = Property.POOL_REFRESH_TIME.getInt(config);
 
 		httpClientPool = new HttpClientPool(poolSize, refresh, timeUnit);
+
+		try {
+			ks = new DynamicKeyStoreBuilder().
+					withMonitoredDirectory(config.getValue(SystemConfiguration.Property.PKI_MONITORED_DIRECTORY)).
+					withCADirectory(config.getValue(SystemConfiguration.Property.PKI_CA_DIRECTORY)).
+					withStartThread(true).build();
+			_logger.info("DynamicKeyStore initialized successfully in DefaultCallbackService");
+		} catch (Exception e) {
+			_logger.error("Exception initializing DynamicKeyStore. Callback notifier will NOT support HTTPS. Exception: {}", e.getMessage());
+			ks = null;
+		}
 	}
 
 	@Override
@@ -220,8 +235,7 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 		return builder.build();
 	}
 
-		private HttpEntity getBody(CallbackService.CallbackRequest request)
-	{
+	private HttpEntity getBody(CallbackService.CallbackRequest request) {
 		String body = request.getBody();
 
 		if (body != null) {
@@ -239,8 +253,13 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 
 	private HttpResponse sendNotification(HttpUriRequest request, String notificationMessage) {
 
-		HttpClient httpClient = httpClientPool.borrowObject();
 		try {
+			HttpClient httpClient;
+			if (request.getURI().getScheme().equals("https")) {
+				httpClient = HttpClients.custom().setSSLContext(ks.getSSLContext()).build();
+			} else {
+				httpClient = httpClientPool.borrowObject();
+			}
 			HttpResponse response = httpClient.execute(request);
 			EntityUtils.consume(response.getEntity());
 			return response;
@@ -255,7 +274,6 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 				500,
 				String.format("%s: %s", reason, t.getMessage()));
 	}
-
 
 
 	public enum Property {

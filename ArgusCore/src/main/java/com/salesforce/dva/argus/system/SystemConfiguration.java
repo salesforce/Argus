@@ -228,6 +228,7 @@ public final class SystemConfiguration extends Properties {
         EMAIL_ENABLED("system.property.mail.enabled", "false"),
         GOC_ENABLED("system.property.goc.enabled", "false"),
         GUS_ENABLED("system.property.gus.enabled", "false"),
+        CALLBACK_ENABLED("system.property.callback.enabled", "false"),
 
         EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
 
@@ -300,7 +301,10 @@ public final class SystemConfiguration extends Properties {
         DISCOVERY_SERVICE_IMPL_CLASS("service.binding.discovery", "com.salesforce.dva.argus.service.schema.CachedDiscoveryService"),
         
         // the default value of 5 million datapoints roughly correspond to 500mb of memory
-        MAX_DATAPOINTS_ALLOWED_PER_QUERY("system.property.max.datapoints.query", "5000000");
+        MAX_DATAPOINTS_ALLOWED_PER_QUERY("system.property.max.datapoints.query", "5000000"),
+
+        PKI_MONITORED_DIRECTORY("pki.monitored.directory", "/etc/pki_service/sfdc/argus-client"),
+        PKI_CA_DIRECTORY("pki.ca.directory", "/etc/pki_service/ca");
 
         private final String _name;
         private final String _defaultValue;

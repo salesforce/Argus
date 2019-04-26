@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.cache;
 
 import com.google.inject.Inject;
@@ -72,11 +72,6 @@ public class NoOperationCacheService extends DefaultService implements CacheServ
 
     @Override
     public <V> void put(Map<String, V> entries, int ttl) {
-        // This is a no operation service. This method should do nothing and result in a cache miss.
-    }
-
-    @Override
-    public void clear() {
         // This is a no operation service. This method should do nothing and result in a cache miss.
     }
 

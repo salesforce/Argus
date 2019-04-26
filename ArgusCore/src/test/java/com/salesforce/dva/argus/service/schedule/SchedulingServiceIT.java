@@ -1,4 +1,4 @@
-package com.salesforce.dva.argus.service;
+package com.salesforce.dva.argus.service.schedule;
 
 import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
 import static org.junit.Assert.assertEquals;
@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Properties;
 
 import com.salesforce.dva.argus.IntegrationTest;
+import com.salesforce.dva.argus.service.AlertService;
+import com.salesforce.dva.argus.service.MQService;
+import com.salesforce.dva.argus.service.SchedulingService;
+import com.salesforce.dva.argus.service.UserService;
 import org.junit.Test;
 
 import com.salesforce.dva.argus.AbstractTestIT;

@@ -102,6 +102,16 @@ public class InstrumentationService {
 	//static final String HISTOGRAM_POLL_LATENCY = "";
 	//static final String HISTOGRAM_HANDLEBATCH_LATENCY = "";
 	static final String HISTOGRAM_PROCESS_LATENCY = "histogram.process.latency";
+	static final String HISTOGRAM_SCHEMA_CONSUMED = "histogram.schema.consumed";
+	static final String HISTOGRAM_SCHEMA_POSTED = "histogram.schema.posted";
+	static final String HISTOGRAM_SCHEMA_DROPPED = "histogram.schema.dropped";
+	static final String HISTOGRAM_SCHEMA_DROPPED_TOOLARGE = "histogram.schema.dropped.maxSizeExceeded";
+	static final String HISTOGRAM_SCHEMA_BLOCKED = "histogram.schema.blocked";
+	static final String HISTOGRAM_SCHEMA_TOO_OLD = "histogram.schema.dropped.late.arrival";
+	static final String HISTOGRAM_SCHEMA_TIMESTAMP_INVALID = "histogram.schema.dropped.timestamp.invalid";
+	static final String HISTOGRAM_SCHEMA_BATCH_COUNT = "histogram.schema.batch.count";
+	static final String HISTOGRAM_SCHEMA_PROCESS_LATENCY = "histogram.schema.process.latency";
+
 
 	@VisibleForTesting
 	protected static final List<String> DATAPOINT_METRICS = Arrays.asList(
@@ -110,12 +120,14 @@ public class InstrumentationService {
 			METRIC_DATAPOINTS_DEDUPED,
 			DATAPOINTS_BLOCKED,
 			DATAPOINTS_TOO_OLD,
+			DATAPOINTS_TIMESTAMP_INVALID,
 			DATAPOINTS_DROPPED_TOOLARGE,
 			DATAPOINTS_DROPPED,
 			HISTOGRAM_CONSUMED,
 			HISTOGRAM_POSTED,
 			HISTOGRAM_BLOCKED,
 			HISTOGRAM_TOO_OLD,
+			HISTOGRAM_TIMESTAMP_INVALID,
 			HISTOGRAM_DROPPED_TOOLARGE,
 			HISTOGRAM_DROPPED);
 	private static final List<String> SCHEMA_METRICS = Arrays.asList(
@@ -124,7 +136,15 @@ public class InstrumentationService {
 			SCHEMA_BLOCKED,
 			SCHEMA_DROPPED_TOOLARGE,
 			SCHEMA_TOO_OLD,
-			SCHEMA_DROPPED);
+			SCHEMA_TIMESTAMP_INVALID,
+			SCHEMA_DROPPED,
+			HISTOGRAM_SCHEMA_CONSUMED,
+			HISTOGRAM_SCHEMA_POSTED,
+			HISTOGRAM_SCHEMA_BLOCKED,
+			HISTOGRAM_SCHEMA_DROPPED_TOOLARGE,
+			HISTOGRAM_SCHEMA_TOO_OLD,
+			HISTOGRAM_SCHEMA_TIMESTAMP_INVALID,
+			HISTOGRAM_SCHEMA_DROPPED);
 	private static final List<String> ANNOTATIONS_METRICS = Arrays.asList(
 			ANNOTATIONS_CONSUMED,
 			ANNOTATIONS_POSTED,
@@ -136,11 +156,13 @@ public class InstrumentationService {
 	private static final double[] MID_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS = new double[] {500, 1000, 2000, 5000, 10000, 20000};
 	private static final double[] LOW_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS = new double[] {10, 20, 50, 100, 200, 500};
 	private static final double[] DEFAULT_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS = LOW_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS;
+
 	static final Map<String, double[]> LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS = new ImmutableMap.Builder<String, double[]>()
 			.put(METRIC_OVERALL_LATENCY, MID_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS)
 			.put(METRIC_POLL_LATENCY, MID_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS)
 			.put(METRIC_HANDLEBATCH_LATENCY, MID_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS)
 			.put(METRIC_PROCESS_LATENCY, LOW_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS)
+			.put(HISTOGRAM_PROCESS_LATENCY, LOW_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS)
 			.put(ANNOTATIONS_OVERALL_LATENCY, MID_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS)
 			.put(ANNOTATIONS_POLL_LATENCY, MID_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS)
 			.put(ANNOTATIONS_HANDLEBATCH_LATENCY, MID_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS)
@@ -340,7 +362,7 @@ public class InstrumentationService {
 		}
 	}
 
-	private class InstrumentMetricsThread implements Runnable {
+	class InstrumentMetricsThread implements Runnable {
 
 		private static final long INTERVAL_IN_MILLIS = 60000;
 
@@ -360,7 +382,7 @@ public class InstrumentationService {
 			LOGGER.info("Instrument metrics thread execution completed.");
 		}
 
-		private void sleep() {
+		void sleep() {
 			try {
 				LOGGER.info("Sleeping for {}s before pushing instrumented metrics.", INTERVAL_IN_MILLIS / 1000);
 				Thread.sleep(INTERVAL_IN_MILLIS);
@@ -370,7 +392,7 @@ public class InstrumentationService {
 			}
 		}
 
-		private void pushInstrumentedMetrics() {
+		void pushInstrumentedMetrics() {
 
 			boolean consumedNothing = false;
 			if (instrumentedCounterMetrics.get().isEmpty()) {

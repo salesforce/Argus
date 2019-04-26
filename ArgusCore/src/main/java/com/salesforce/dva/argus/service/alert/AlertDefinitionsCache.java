@@ -67,6 +67,15 @@ public class AlertDefinitionsCache {
 		refresherThread.start();
 	}
 
+	// for unit testing
+	public AlertDefinitionsCache(AlertService alertService, boolean refreshThreadDaemonized) {
+		refresherThread = new AlertDefinitionsCacheRefresherThread(this, alertService);
+		if (refreshThreadDaemonized) {
+			refresherThread.setDaemon(true);
+			refresherThread.start();
+		}
+	}
+
 	public Map<BigInteger, Alert> getAlertsMapById() {
 		return alertsMapById;
 	}

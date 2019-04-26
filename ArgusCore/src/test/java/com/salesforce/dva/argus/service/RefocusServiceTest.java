@@ -26,8 +26,12 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.junit.experimental.categories.Category;
+import com.salesforce.dva.argus.AbstractTestIT;
+import com.salesforce.dva.argus.IntegrationTest;
 
 import org.apache.http.impl.client.*;
+import org.apache.http.HttpStatus;
 
 import java.util.function.Supplier;
 import java.util.Iterator;
@@ -41,6 +45,10 @@ import com.google.inject.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InterruptedIOException;
+
+
 // =====================================================================================================
 // This test is a unit test of the RefocusForwarder class.
 // With correct configuration, it can be pointed at Refocus itself or the Refocus sandbox.
@@ -53,9 +61,11 @@ import org.slf4j.LoggerFactory;
 // use_personal_ssl_certs: Needed when you connect from your desktop.
 //
 // IMPORTANT - you should create the relevant content in the Refocus instance before running these tests.
+// FUTURE - migrate this to an Integration Test and enable
 // ====================================================================================================
 
-@RunWith(org.mockito.runners.MockitoJUnitRunner.class)
+@Ignore("Convert to Integration Test")
+@RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 public class RefocusServiceTest {
 	
 	@Mock private Provider<EntityManager> _emProviderMock;
@@ -201,7 +211,41 @@ public class RefocusServiceTest {
             this.resp_code = resp_code;
             this.gson = gson;
         }
+
+        public void action() throws RuntimeException
+        {
+        }
     }
+
+
+    static class StubIOExceptionResult extends StubResult {
+
+	    public StubIOExceptionResult(int sleep_ms, int resp_code, JsonObject gson)
+        {
+            super(sleep_ms, resp_code, gson);
+        }
+
+        @Override
+        public void action() throws RuntimeException
+        {
+            throw new RuntimeException(new IOException());
+        }
+    }
+
+    static class StubInterruptedIOExceptionResult extends StubResult {
+
+        public StubInterruptedIOExceptionResult(int sleep_ms, int resp_code, JsonObject gson)
+        {
+            super(sleep_ms, resp_code, gson);
+        }
+
+        @Override
+        public void action() throws RuntimeException
+        {
+            throw new RuntimeException(new InterruptedIOException());
+        }
+    }
+
 
     static JsonObject makeUpcertResponse(String status, int jobId) {
         JsonObject response = new JsonObject();
@@ -212,23 +256,23 @@ public class RefocusServiceTest {
 
     static StubResult make200(int sleep_ms, int txId)
     {
-        return new StubResult(sleep_ms, 200, makeUpcertResponse("OK", txId));
+        return new StubResult(sleep_ms, HttpStatus.SC_OK, makeUpcertResponse("OK", txId));
     }
 
     // OK result
     static StubResult make201(int sleep_ms, int txId)
     {
-        return new StubResult(sleep_ms, 201, makeUpcertResponse("OK", txId));
+        return new StubResult(sleep_ms, HttpStatus.SC_CREATED, makeUpcertResponse("OK", txId));
     }
 
     static StubResult make204(int sleep_ms, int txId)
     {
-        return new StubResult(sleep_ms, 204, makeUpcertResponse("OK", txId));
+        return new StubResult(sleep_ms, HttpStatus.SC_NO_CONTENT, makeUpcertResponse("OK", txId));
     }
 
     static StubResult makeTimedOut(int sleep_ms)  // suggest timeouts >= 10000
     {
-        return new StubResult(sleep_ms, 408, new JsonObject());
+        return new StubResult(sleep_ms, HttpStatus.SC_REQUEST_TIMEOUT, new JsonObject());
     }
 
     static StubResult makeTooManyRequests(int sleep_ms)
@@ -239,6 +283,16 @@ public class RefocusServiceTest {
     static StubResult makeWithResponseCode(int sleep_ms, int respCode)
     {
         return new StubResult(sleep_ms, respCode, new JsonObject());
+    }
+
+    static StubResult makeWithIOException(int sleep_ms, int respCode)
+    {
+        return new StubIOExceptionResult(sleep_ms, respCode, new JsonObject());
+    }
+
+    static StubResult makeWithInterruptedIOException(int sleep_ms, int respCode)
+    {
+        return new StubInterruptedIOExceptionResult(sleep_ms, respCode, new JsonObject());
     }
 
     public static void SleepMs(int sleep_ms)
@@ -263,7 +317,7 @@ public class RefocusServiceTest {
             return obj;
         }
 
-        public RefocusForwarder.RefocusResponse get()
+        public RefocusForwarder.RefocusResponse get() throws RuntimeException
         {
             return null;
         }
@@ -286,10 +340,11 @@ public class RefocusServiceTest {
         }
 
         @Override
-	    public RefocusForwarder.RefocusResponse get()
+	    public RefocusForwarder.RefocusResponse get() throws RuntimeException
         {
             StubResult r = this.iterator.hasNext() ? this.iterator.next() : defaultResult;
             SleepMs(r.sleep_ms);
+            r.action();
             RefocusForwarder.RefocusResponse refocus_response = forwarder.makeResponse(r.resp_code, cloneJson(r.gson));
             return refocus_response;
         }
@@ -311,11 +366,12 @@ public class RefocusServiceTest {
         }
 
         @Override
-        public RefocusForwarder.RefocusResponse get()
+        public RefocusForwarder.RefocusResponse get() throws RuntimeException
         {
             StubResult r = this.resultCycle[ this.pos % this.resultCycle.length ];
             this.pos = (this.pos + 1) % this.resultCycle.length;
             SleepMs(r.sleep_ms);
+            r.action();
             RefocusForwarder.RefocusResponse refocus_response = forwarder.makeResponse(r.resp_code, cloneJson(r.gson));
             return refocus_response;
         }
@@ -415,9 +471,9 @@ public class RefocusServiceTest {
 
         if (test_mode == TestMode.UNIT_TEST)
         {
-            timeout = 0; // 10;
+            timeout = 10;
             extra_sleep = 100;
-            check_period_ms = 0; // 20;
+            check_period_ms = 20;
 
             ResultListSupplier responseSupplier = new ResultListSupplier(new ArrayList<StubResult>(),
                     make200(timeout, 1),
@@ -450,9 +506,9 @@ public class RefocusServiceTest {
 
 	    Assume.assumeTrue(test_mode == TestMode.UNIT_TEST);
 
-	    int timeout = 0; // 10;
+	    int timeout = 10;
         int extra_sleep = 100;
-        int check_period_ms = 0; // 20;
+        int check_period_ms = 20;
         RefocusForwarder.Duration d = new RefocusForwarder.Duration();
 
         ResultListSupplier responseSupplier = new ResultListSupplier(
@@ -487,9 +543,9 @@ public class RefocusServiceTest {
 
         Assume.assumeTrue(test_mode == TestMode.UNIT_TEST);
 
-        int timeout = 0; // 10;
+        int timeout = 10;
         int extra_sleep = 100;
-        int check_period_ms = 0; // 20;
+        int check_period_ms = 10;
         RefocusForwarder.Duration d = new RefocusForwarder.Duration();
 
         ResultListSupplier responseSupplier = new ResultListSupplier(
@@ -518,18 +574,88 @@ public class RefocusServiceTest {
     }
 
     @Test
+    public void testRefocusForwarderInterruptedIOException() {
+
+        Assume.assumeTrue(test_mode == TestMode.UNIT_TEST);
+
+        int timeout = 10;
+        int extra_sleep = 100;
+        int check_period_ms = 20;
+        RefocusForwarder.Duration d = new RefocusForwarder.Duration();
+
+        ResultListSupplier responseSupplier = new ResultListSupplier(
+                new ArrayList<StubResult>(),
+                makeWithInterruptedIOException(timeout, -1),
+                refocusForwarder);
+
+        refocusForwarder.setStubSender(responseSupplier);
+
+        startRefocusService();
+        History history = mock(History.class);
+        try
+        {
+            enqueueSamples(2000, history);
+            waitUntilQueuedNotificationsAreProcessed(extra_sleep, 50000, check_period_ms);
+        }
+        catch( InterruptedException e)
+        {}
+        catch( RuntimeException e)
+        {}
+
+        stopRefocusService();
+        _error(MessageFormat.format("Test duration= {0}ms", d.duration()));
+        logForwarderStats();
+        verifyProcessed(0, 2000, 2000);
+    }
+
+    @Test
+    public void testRefocusForwarderIOException() {
+
+        Assume.assumeTrue(test_mode == TestMode.UNIT_TEST);
+
+        int timeout = 10;
+        int extra_sleep = 100;
+        int check_period_ms = 20;
+        RefocusForwarder.Duration d = new RefocusForwarder.Duration();
+
+        ResultListSupplier responseSupplier = new ResultListSupplier(
+                new ArrayList<StubResult>(),
+                makeWithIOException(timeout, -1),
+                refocusForwarder);
+
+        refocusForwarder.setStubSender(responseSupplier);
+
+        startRefocusService();
+        History history = mock(History.class);
+        try
+        {
+            enqueueSamples(2000, history);
+            waitUntilQueuedNotificationsAreProcessed(extra_sleep, 50000, check_period_ms);
+        }
+        catch( InterruptedException e)
+        {}
+        catch( RuntimeException e)
+        {}
+
+        stopRefocusService();
+        _error(MessageFormat.format("Test duration= {0}ms", d.duration()));
+        logForwarderStats();
+        verifyProcessed(0, 2000, 2000);
+    }
+
+    @Test
     public void testRefocusNoAuth() {
 
         Assume.assumeTrue(test_mode == TestMode.UNIT_TEST);
 
-        int timeout= 0; // 10; // 10000;
-        int extra_sleep = 100; // 10000;
-        int check_period_ms = 0; // 20;
+        int timeout= 10;
+        int extra_sleep = 100;
+        int check_period_ms = 20;
         RefocusForwarder.Duration d = new RefocusForwarder.Duration();
 
         ResultListSupplier responseSupplier = new ResultListSupplier(
                     new ArrayList<StubResult>(),
-                    makeWithResponseCode(timeout, 401),
+                    makeWithResponseCode(timeout, HttpStatus.SC_UNAUTHORIZED),
                     refocusForwarder);
 
         refocusForwarder.setStubSender(responseSupplier);
@@ -558,14 +684,14 @@ public class RefocusServiceTest {
 
         Assume.assumeTrue(test_mode == TestMode.UNIT_TEST);
 
-        int timeout= 0; // 10;
+        int timeout= 10;
         int extra_sleep = 100;
-        int check_period_ms = 0; // 20;
+        int check_period_ms = 20;
         RefocusForwarder.Duration d = new RefocusForwarder.Duration();
 
         ResultListSupplier responseSupplier = new ResultListSupplier(
                 new ArrayList<StubResult>(),
-                makeWithResponseCode(timeout, 503),
+                makeWithResponseCode(timeout, HttpStatus.SC_SERVICE_UNAVAILABLE),
                 refocusForwarder);
 
         refocusForwarder.setStubSender(responseSupplier);
@@ -594,10 +720,10 @@ public class RefocusServiceTest {
 
         Assume.assumeTrue(test_mode == TestMode.UNIT_TEST);
 
-        int timeout = 0; // 10;
-        int enqueue_timeout = 0; // 10;
+        int timeout = 10;
+        int enqueue_timeout = 10;
         int extra_sleep = 100;
-        int check_period_ms = 0; // 20;
+        int check_period_ms = 20;
         RefocusForwarder.Duration d = new RefocusForwarder.Duration();
 
 
@@ -605,6 +731,47 @@ public class RefocusServiceTest {
         StubResult [] cycle = {
                 makeTooManyRequests(timeout),
                 makeTooManyRequests(timeout),
+                make200(timeout, 1)
+        };
+        ResultCycleStubSupplier responseSupplier = new ResultCycleStubSupplier( cycle, refocusForwarder);
+        refocusForwarder.setStubSender(responseSupplier);
+
+        int num_notifications = 100000;
+
+        startRefocusService();
+        History history = mock(History.class);
+        try
+        {
+            enqueueSamples(num_notifications, history, 1000, enqueue_timeout);
+            waitUntilQueuedNotificationsAreProcessed(extra_sleep, 50000, check_period_ms);
+        }
+        catch( InterruptedException e)
+        {}
+        catch( RuntimeException e)
+        {}
+
+        stopRefocusService();
+        _error(MessageFormat.format("Test duration= {0}ms", d.duration()));
+        logForwarderStats();
+        verifyProcessed(num_notifications, 0, num_notifications);
+    }
+
+    @Test
+    public void testIntermittentInterruptedIOException() {
+
+        Assume.assumeTrue(test_mode == TestMode.UNIT_TEST);
+
+        int timeout = 10;
+        int enqueue_timeout = 10;
+        int extra_sleep = 100;
+        int check_period_ms = 20;
+        RefocusForwarder.Duration d = new RefocusForwarder.Duration();
+
+
+        // NOTE: This assumes that the #retries == 3
+        StubResult [] cycle = {
+                makeWithInterruptedIOException(timeout, -1),
+                makeWithInterruptedIOException(timeout, -1),
                 make200(timeout, 1)
         };
         ResultCycleStubSupplier responseSupplier = new ResultCycleStubSupplier( cycle, refocusForwarder);
@@ -642,10 +809,10 @@ public class RefocusServiceTest {
 
         if (test_mode == TestMode.UNIT_TEST)
         {
-            timeout = 0; // 10;
-            enqueue_timeout = 0; // 10;
+            timeout = 10;
+            enqueue_timeout = 10;
             extra_sleep = 100;
-            check_period_ms = 0; // 20;
+            check_period_ms = 20;
 
             ResultListSupplier responseSupplier = new ResultListSupplier(
                     new ArrayList<StubResult>(),
@@ -676,7 +843,7 @@ public class RefocusServiceTest {
         verifyProcessed(num_notifications, 0, num_notifications);
     }
 
-
+    // @Ignore
     @Test
     public void testRefocusForwarderSend100kSamples() throws Exception {
 
@@ -688,10 +855,10 @@ public class RefocusServiceTest {
 
         if (test_mode == TestMode.UNIT_TEST)
         {
-            timeout = 0; // 10;
-            enqueue_timeout = 0; // 10;
+            timeout = 10;
+            enqueue_timeout = 10;
             extra_sleep = 100;
-            check_period_ms = 0; // 20;
+            check_period_ms = 20;
 
             ResultListSupplier responseSupplier = new ResultListSupplier(
                     new ArrayList<StubResult>(),
@@ -738,10 +905,10 @@ public class RefocusServiceTest {
 
         if (test_mode == TestMode.UNIT_TEST)
         {
-            timeout = 0; // 10;
-            enqueue_timeout = 0; // 10;
+            timeout = 10;
+            enqueue_timeout = 10;
             extra_sleep = 100;
-            check_period_ms = 0; // 20;
+            check_period_ms = 20;
 
             ResultListSupplier responseSupplier = new ResultListSupplier(
                     new ArrayList<StubResult>(),

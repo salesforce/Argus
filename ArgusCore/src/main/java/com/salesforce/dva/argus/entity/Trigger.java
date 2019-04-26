@@ -398,6 +398,11 @@ public class Trigger extends JPAEntity implements Serializable {
 
         hash = 97 * hash + Objects.hashCode(this.name);
         hash = 97 * hash + Objects.hashCode(this.alert);
+        hash = 97 * hash + Objects.hashCode(this.type);
+        hash = 97 * hash + Objects.hashCode(this.threshold);
+        hash = 97 * hash + Objects.hashCode(this.inertia);
+        hash = 97 * hash + Objects.hashCode(this.secondaryThreshold);
+
         return hash;
     }
 
@@ -412,12 +417,10 @@ public class Trigger extends JPAEntity implements Serializable {
 
         final Trigger other = (Trigger) obj;
 
-        if (!Objects.equals(this.name, other.name)) {
+        if (this.hashCode() != other.hashCode()) {
             return false;
         }
-        if (!Objects.equals(this.alert, other.alert)) {
-            return false;
-        }
+
         return true;
     }
 

@@ -150,7 +150,7 @@ public class GusTransport {
         try {
             this.endpointInfoCache.get(DUMMY_CACHE_KEY);
         } catch (ExecutionException | UncheckedExecutionException | ExecutionError e) {
-            LOGGER.error("Failed to get auth token.", e);
+            LOGGER.error("Failed to get auth token.  Exception: {}", e.getMessage());
             // put default if there is a failure on init
             this.endpointInfoCache.put(DUMMY_CACHE_KEY, defaultEndpointInfo);
         }

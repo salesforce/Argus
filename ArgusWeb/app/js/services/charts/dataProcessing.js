@@ -387,7 +387,17 @@ angular.module('argus.services.charts.dataProcessing', [])
 				}
 			}
 			return chartType;
-		}
+		},
+
+		getChartMarkupByType: function(chartType) {
+			return chartType === 'heatmap'?
+			'<div ngsf-fullscreen>' +
+			'<heatmap chartConfig="chartConfig" series="series" dateConfig="dateConfig"></heatmap>' +
+			'</div>' :
+			'<div ngsf-fullscreen>' +
+			'<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
+			'</div>';
+		},
 	};
 
 	return service;

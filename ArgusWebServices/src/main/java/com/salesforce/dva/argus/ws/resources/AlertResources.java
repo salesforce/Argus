@@ -774,55 +774,7 @@ public class AlertResources extends AbstractResource {
 
 			// Create new alert object.
 			PrincipalUser requestedUser = getRemoteUser(req);
-			Alert clonedAlert = new Alert(requestedUser, requestedUser, newAlertName, oldAlert.getExpression(), oldAlert.getCronEntry());
-
-			Set<Trigger> clonedTriggers = new HashSet<>();
-			List<Notification> clonedNotifications = new ArrayList<>();
-			Map<BigInteger, Trigger> triggersCreatedMapById = new HashMap<>();
-
-			/*For each existing notification, create new cloned notification.
-			 * For each existing trigger in the current notification, create new cloned trigger and add it to cloned notification.
-			 * */
-			for (Notification currentNotification : oldAlert.getNotifications()) {
-				Notification currentNotificationCloned = new Notification(currentNotification.getName(), clonedAlert, currentNotification.getNotifierName(),
-						currentNotification.getSubscriptions(), currentNotification.getCooldownPeriod());
-
-				clonedNotifications.add(currentNotificationCloned);
-
-				copyProperties(currentNotificationCloned, currentNotification);
-				currentNotificationCloned.setAlert(clonedAlert);
-
-				List<Trigger> triggersInCurrentNotification = new ArrayList<>();
-				for (Trigger currentTrigger : currentNotification.getTriggers()) {
-					BigInteger currentTriggerId = currentTrigger.getId();
-					if (!triggersCreatedMapById.containsKey(currentTriggerId)) {
-						Trigger currentTriggerCloned = new Trigger(clonedAlert, currentTrigger.getType(), currentTrigger.getName(), currentTrigger.getThreshold(), currentTrigger.getSecondaryThreshold(), currentTrigger.getInertia());
-						clonedTriggers.add(currentTriggerCloned);
-						copyProperties(currentTriggerCloned, currentTrigger);
-						currentTriggerCloned.setAlert(clonedAlert);
-						triggersCreatedMapById.put(currentTriggerId, currentTriggerCloned);
-					}
-					triggersInCurrentNotification.add(triggersCreatedMapById.get(currentTriggerId));
-				}
-				currentNotificationCloned.setTriggers(triggersInCurrentNotification);
-			}
-
-			/*
-			 * Triggers with no notifications attached
-			 * */
-			for(Trigger currentTrigger: oldAlert.getTriggers()) {
-				Trigger currentTriggerCloned = new Trigger(clonedAlert, currentTrigger.getType(), currentTrigger.getName(), currentTrigger.getThreshold(), currentTrigger.getSecondaryThreshold(), currentTrigger.getInertia());
-				clonedTriggers.add(currentTriggerCloned);
-				copyProperties(currentTriggerCloned, currentTrigger);
-				currentTriggerCloned.setAlert(clonedAlert);
-			}
-
-			clonedAlert.setMissingDataNotificationEnabled(oldAlert.isMissingDataNotificationEnabled());
-			clonedAlert.setShared(oldAlert.isShared());
-			clonedAlert.setTriggers(new ArrayList<>(clonedTriggers));
-			clonedAlert.setNotifications(clonedNotifications);
-			clonedAlert.setModifiedBy(getRemoteUser(req));
-			clonedAlert.setEnabled(oldAlert.isEnabled()); // This should be last
+			Alert clonedAlert = new Alert(oldAlert, newAlertName, requestedUser);
 
 			return AlertDto.transformToDto(alertService.updateAlert(clonedAlert));
 		} catch (Exception ex) {

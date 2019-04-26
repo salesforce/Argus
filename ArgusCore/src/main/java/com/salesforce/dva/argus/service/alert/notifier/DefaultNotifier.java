@@ -143,7 +143,7 @@ public abstract class DefaultNotifier implements Notifier {
 
     private void _dispose() {
         _metricService.dispose();
-        _annotationService.dispose();
+        // _annotationService.dispose();
     }
 
     /**

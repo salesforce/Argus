@@ -53,6 +53,7 @@ import org.apache.http.impl.client.*;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.HttpStatus;
 
 
 import org.apache.commons.lang.StringUtils;
@@ -74,6 +75,8 @@ import java.util.function.Supplier;
 
 import java.io.StringWriter;
 import java.io.PrintWriter;
+import java.io.InterruptedIOException;
+import java.io.IOException;
 
 /**
  * Implementation of notifier interface for notifying Refocus.
@@ -464,33 +467,73 @@ public class RefocusForwarder extends DefaultService implements RefocusService, 
                         JsonObject parsedResponse = null;
                         Duration post_duration = new Duration();
 
-                        // The stub sender is used to instrument the unit test
-                        if (this.stub_sender != null)
+                        try
                         {
-                            response = null; // There is no HTTP response to release
-                            RefocusResponse resp = this.stub_sender.get();
-                            respCode = resp.resp_code;
-                            parsedResponse = resp.result;
-                            if (parsedResponse != null)
+                            // The stub sender is used to instrument the unit test
+                            if (this.stub_sender != null)
                             {
-                                responseBody = resp.result.toString();
+                                try
+                                {
+                                    response = null; // There is no HTTP response to release
+                                    RefocusResponse resp = this.stub_sender.get();
+                                    respCode = resp.resp_code;
+                                    parsedResponse = resp.result;
+                                    if (parsedResponse != null)
+                                    {
+                                        responseBody = resp.result.toString();
+                                    }
+                                }
+                                catch (RuntimeException ex)
+                                {
+                                    Throwable cause = ex.getCause();
+                                    if (cause == null)
+                                    {
+                                        throw new IOException("unknown");
+                                    }
+                                    else if (cause instanceof InterruptedIOException)
+                                    {
+                                        throw (InterruptedIOException) cause;
+                                    }
+                                    else if (cause instanceof IOException)
+                                    {
+                                        throw (IOException) cause;
+                                    }
+                                    else
+                                    {
+                                        throw new IOException("unknown");
+                                    }
+                                }
+                            } else
+                            {
+                                response = httpclient.execute(post);
+                                respCode = response.getStatusLine().getStatusCode();
+                                responseBody = new BasicResponseHandler().handleResponse(response);
+                                parsedResponse = (new JsonParser()).parse(responseBody).getAsJsonObject(); // TODO exceptions?
                             }
-                            post_duration.duration();
-                        } else
-                        {
-                            response = httpclient.execute(post);
-                            post_duration.duration();
-                            respCode = response.getStatusLine().getStatusCode();
-                            responseBody = new BasicResponseHandler().handleResponse(response);
-                            parsedResponse = (new JsonParser()).parse(responseBody).getAsJsonObject(); // TODO exceptions?
                         }
+                        catch (InterruptedIOException ex)
+                        {
+                            respCode = HttpStatus.SC_REQUEST_TIMEOUT;
+                            responseBody = "";
+                            parsedResponse = new JsonObject();
+                        }
+                        catch (IOException ex)
+                        {
+                            respCode = -1;
+                            responseBody = String.format("{ \"respCode\": \"%d\", \"message\": \"%s: %s\" }", respCode, ex.getClass().getName(), ex.getMessage());
+                            parsedResponse = (new JsonParser()).parse(responseBody).getAsJsonObject();
+                        }
+                        finally
+                        {
+                            post_duration.duration();
+                        }
+
                         duration.duration();
 
                         // Check for success
                         // TODO - allow all 2XXs to be success?
-                        if (respCode == 200 || respCode == 201 || respCode == 204)
+                        if (respCode == HttpStatus.SC_OK || respCode == HttpStatus.SC_CREATED || respCode == HttpStatus.SC_NO_CONTENT)
                         {
-
                             String upsertStatus = parsedResponse.get("status").getAsString();
                             refocusJobId = parsedResponse.get("jobId").getAsLong();
 
@@ -502,7 +545,7 @@ public class RefocusForwarder extends DefaultService implements RefocusService, 
                             success = true;
                             break;
 
-                        } else if (respCode == 408)
+                        } else if (respCode == HttpStatus.SC_REQUEST_TIMEOUT)
                         {
                             // Indication that the session timedout, Need to refresh and retry
                             failureMsg = MessageFormat.format("Refocus Forwarder: Failed to forward {0} samples due to session time out.", count);
@@ -525,7 +568,7 @@ public class RefocusForwarder extends DefaultService implements RefocusService, 
                                 }
                             }
 
-                        } else if (respCode == 502 || respCode == 503 || respCode == 504)
+                        } else if (respCode == HttpStatus.SC_BAD_GATEWAY || respCode == HttpStatus.SC_SERVICE_UNAVAILABLE || respCode == HttpStatus.SC_GATEWAY_TIMEOUT)
                         {
                             // Indication that the session timedout, Need to refresh and retry
                             failureMsg = MessageFormat.format("Refocus Forwarder: Failed to forward {0} samples due to http error {1}", count, respCode );

@@ -35,6 +35,10 @@ import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.HistogramBucket;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.system.SystemConfiguration;
@@ -273,4 +277,21 @@ public class TestUtils {
         return result;
     }
 
+    public static Alert generateAlert(String alertName, PrincipalUser user, String expression) {
+        Alert alert = new Alert(user, user, alertName, expression, "* * * * *");
+        return alert;
+    }
+
+    public static Notification generateNotification(String notificationName, Alert alert, List<Trigger> triggers) {
+        Notification notification = new Notification(notificationName, alert, "notifier-name", new ArrayList<String>(), 5000L);
+        notification.setAlert(alert);
+        notification.setTriggers(triggers);
+        return notification;
+    }
+
+    public static Trigger generateTrigger(String triggerName, Alert alert) {
+        Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN, triggerName, 0.95, 5000L);
+        trigger.setAlert(alert);
+        return trigger;
+    }
 }

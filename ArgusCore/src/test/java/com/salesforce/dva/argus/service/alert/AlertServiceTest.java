@@ -50,15 +50,6 @@ import org.junit.BeforeClass;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.Ignore;
-import java.io.File;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyString;
-import org.mockito.stubbing.Answer;
-import static org.mockito.Mockito.mock;
-
-
 
 
 import java.io.IOException;
@@ -80,11 +71,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.system.SystemMain;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 import java.sql.DriverManager;
 import java.sql.SQLNonTransientConnectionException;
 import org.slf4j.LoggerFactory;

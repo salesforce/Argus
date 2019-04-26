@@ -282,9 +282,8 @@ public class InstrumentationServiceTest {
         String timerName = InstrumentationService.QUOTA_EVALUATE_LATENCY;
         String timerName2 = "testTimer2";
 
-        instrumentationService.instrument();
-
-        Thread.sleep(10000); // this is here to wait for the first putMetrics() invocation
+        InstrumentationService.InstrumentMetricsThread instrumenter = instrumentationService.new InstrumentMetricsThread();
+        instrumenter.pushInstrumentedMetrics();
 
         double[] counts = new double[] {10.0, 11.0};
         for (int i = 0; i < counts.length; i++) {
@@ -302,19 +301,17 @@ public class InstrumentationServiceTest {
             timerSum2 += latencies2[i];
         }
 
-        // wait long enough for putMetrics() to be called for a second time
-        Thread.sleep(61000);
-
-        // call dispose() to invoke putMetrics() one last time
+        // simulate putMetrics() being called a second time
+        instrumenter.pushInstrumentedMetrics();
         instrumentationService.dispose();
 
         ArgumentCaptor<List<Metric>> tsdbMetricsCapture = ArgumentCaptor.forClass(List.class);
-        verify(mockTSDBService, times(3)).putMetrics(tsdbMetricsCapture.capture());
+        verify(mockTSDBService, times(2)).putMetrics(tsdbMetricsCapture.capture());
         List<List<Metric>> tsdbMetricsCapturedValueList = tsdbMetricsCapture.getAllValues();
 
         // first putMetrics() invocation
         List<Metric> tsdbMetrics = tsdbMetricsCapturedValueList.get(0);
-        assertEquals(13, tsdbMetrics.size());
+        assertEquals(15, tsdbMetrics.size());
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_POSTED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_CONSUMED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_DROPPED)));
@@ -324,7 +321,7 @@ public class InstrumentationServiceTest {
 
         // second putMetrics() invocation
         tsdbMetrics = tsdbMetricsCapturedValueList.get(1);
-        assertEquals(37, tsdbMetrics.size());
+        assertEquals(39, tsdbMetrics.size());
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(counterName)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_POSTED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_CONSUMED)));
@@ -357,20 +354,10 @@ public class InstrumentationServiceTest {
                     m.getTags().get(bucketLimitTagName).equals(latencyBucketTag)));
         }
 
-        // third putMetrics() invocation due to dispose() being called
-        tsdbMetrics = tsdbMetricsCapturedValueList.get(2);
-        assertEquals(13, tsdbMetrics.size());
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_POSTED)));
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_CONSUMED)));
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_DROPPED)));
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_POSTED)));
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_CONSUMED)));
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_DROPPED)));
-
         // capture beans registered
         ArgumentCaptor<CounterMetric> counterArgumentCaptor = ArgumentCaptor.forClass(CounterMetric.class);
         ArgumentCaptor<ObjectName> nameArgumentCaptor = ArgumentCaptor.forClass(ObjectName.class);
-        verify(mBeanServer, times(37)).registerMBean(counterArgumentCaptor.capture(), nameArgumentCaptor.capture());
+        verify(mBeanServer, times(39)).registerMBean(counterArgumentCaptor.capture(), nameArgumentCaptor.capture());
         // convert list of beans registered into a map of bean object name to counter value
         Map<String, Double> nameToValueMap = new HashMap<>();
         for (MetricMXBean mb : counterArgumentCaptor.getAllValues()) {
