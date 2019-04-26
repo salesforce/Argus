@@ -263,6 +263,10 @@ angular.module('argus.directives.charts.heatmap', [])
 						.style('display', displayProperty)
 						.attr('displayProperty', displayProperty);//this is for recording the display property when circle is outside range
 				}
+				// change chart type
+				$scope.changeChartType = function (type) {
+					$scope.$parent.resetChartType(type);
+				}
 			}],
 			// compile: function (iElement, iAttrs, transclude) {},
 			link: function (scope, element) {

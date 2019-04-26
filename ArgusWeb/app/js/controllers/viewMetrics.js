@@ -8,10 +8,8 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 		var noMorePages = false;
 		$scope.annotationType = 'ALERT';
 		$scope.expression = $routeParams.expression ? $routeParams.expression : null;
-		$scope.includeAnnotations = InputTracker.getDefaultValue('viewMetricsWithAnnotation', true);
-		$scope.$watch('includeAnnotations', function (newValue) {
-			InputTracker.updateDefaultValue('viewMetricsWithAnnotation', true, newValue);
-		});
+		// Do not query annotations by default
+		$scope.includeAnnotations = false;
 		// sub-views: (1) single chart, (2) metric discovery
 		$scope.checkMetricExpression = function() {
 			if ($scope.expression) {
@@ -238,13 +236,13 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 		// }
 
 		// -------------
-
+		
 		$scope.updateChart = function (series, annotationInfo, expressions) {
 			// if the metric expression is not empty
-			var chartMarkUp = '<div ngsf-fullscreen>' +
-			'<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
-			'</div>';
-			var chartType = ChartDataProcessingService.getChartTypeByExpressions(expressions);
+			
+			//User configured chart type has higher priority
+			var chartType =  $scope.chartType || ChartDataProcessingService.getChartTypeByExpressions(expressions);
+			var chartMarkup = ChartDataProcessingService.getChartMarkupByType(chartType);
 
 			if (series && series.length > 0) {
 				var chartScope = $scope.$new(false);
@@ -294,7 +292,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 							annotationCount.tot--;
 							if (annotationCount.tot === 0) {
 								$scope.chartLoaded = true;
-								angular.element('#' + 'container').append($compile(chartMarkUp)(chartScope)
+								angular.element('#' + 'container').append($compile(chartMarkup)(chartScope)
 								);
 							}
 						}, function (error) {
@@ -302,18 +300,23 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 							annotationCount.tot--;
 							if (annotationCount.tot === 0) {
 								$scope.chartLoaded = true;
-								angular.element('#' + 'container').append($compile(chartMarkUp)(chartScope)
+								angular.element('#' + 'container').append($compile(chartMarkup)(chartScope)
 								);
 							}
 						});
 					}
 				} else {
 					$scope.chartLoaded = true;
-					angular.element('#' + 'container').append($compile(chartMarkUp)(chartScope)
+					angular.element('#' + 'container').append($compile(chartMarkup)(chartScope)
 					);
 				}
 			}
 		};
 
-		$scope.getMetricData(null);
+		$scope.resetChartType = function(type){
+			$scope.chartType = type;
+			$scope.getMetricData();
+		};
+
+		$scope.getMetricData();
 	}]);

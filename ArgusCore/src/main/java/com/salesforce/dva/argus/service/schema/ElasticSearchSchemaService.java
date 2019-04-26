@@ -449,89 +449,94 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 	@Override
 	public List<MetricSchemaRecord> get(MetricSchemaRecordQuery query) {
-		requireNotDisposed();
-		SystemAssert.requireArgument(query != null, "MetricSchemaRecordQuery cannot be null.");
-		long size = (long) query.getLimit() * query.getPage();
-		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE,
-				"(limit * page) must be greater than 0 and atmost Integer.MAX_VALUE");
+	    requireNotDisposed();
+	    SystemAssert.requireArgument(query != null, "MetricSchemaRecordQuery cannot be null.");
+	    long size = (long) query.getLimit() * query.getPage();
+	    SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE,
+	            "(limit * page) must be greater than 0 and atmost Integer.MAX_VALUE");
 
 
-		Map<String, String> tags = new HashMap<>();
-		tags.put("type", "REGEXP_WITHOUT_AGGREGATION");
-		long start = System.currentTimeMillis();
-		boolean scroll = false;
-		StringBuilder sb = new StringBuilder().append("/")
-				.append(TAGS_INDEX_NAME)
-				.append("/")
-				.append(TAGS_TYPE_NAME)
-				.append("/")
-				.append("_search");
+	    Map<String, String> tags = new HashMap<>();
+	    tags.put("type", "REGEXP_WITHOUT_AGGREGATION");
+	    long start = System.currentTimeMillis();
+	    boolean scroll = false;
+	    StringBuilder sb = new StringBuilder().append("/")
+	            .append(TAGS_INDEX_NAME)
+	            .append("/")
+	            .append(TAGS_TYPE_NAME)
+	            .append("/")
+	            .append("_search");
 
-		int from = 0, scrollSize;
-		if(query.getLimit() * query.getPage() > 10000) {
-			sb.append("?scroll=").append(KEEP_SCROLL_CONTEXT_OPEN_FOR);
-			scroll = true;
-			int total = query.getLimit() * query.getPage();
-			scrollSize = (int) (total / (total / 10000 + 1));
-		} else {
-			from = query.getLimit() * (query.getPage() - 1);
-			scrollSize = query.getLimit();
-		}
+	    int from = 0, scrollSize;
+	    if(query.getLimit() * query.getPage() > 10000) {
+	        sb.append("?scroll=").append(KEEP_SCROLL_CONTEXT_OPEN_FOR);
+	        scroll = true;
+	        int total = query.getLimit() * query.getPage();
+	        scrollSize = (int) (total / (total / 10000 + 1));
+	    } else {
+	        from = query.getLimit() * (query.getPage() - 1);
+	        scrollSize = query.getLimit();
+	    }
 
-		String requestUrl = sb.toString();
-		String queryJson = _constructTermQuery(query, from, scrollSize);
+	    String requestUrl = sb.toString();
+	    String queryJson = _constructTermQuery(query, from, scrollSize);
 
-		try {
-			_logger.debug("get POST requestUrl {} queryJson {}", requestUrl, queryJson);
-			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson, ContentType.APPLICATION_JSON));
+	    try {
+	        _logger.debug("get POST requestUrl {} queryJson {}", requestUrl, queryJson);
+	        Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson, ContentType.APPLICATION_JSON));
 
-			MetricSchemaRecordList list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
+	        String esResponse = extractResponse(response);
+	        if(esResponse.contains("failures")) {
+	            _logger.warn("ES Response get failures- {}", esResponse);
+	            _monitorService.modifyCounter(MonitorService.Counter.ELASTIC_SEARCH_GET_FAILURES, 1, null);
+	        }
+	        MetricSchemaRecordList list = toEntity(esResponse, new TypeReference<MetricSchemaRecordList>() {});
 
-			if(scroll) {
-				requestUrl = new StringBuilder().append("/").append("_search").append("/").append("scroll").toString();
-				List<MetricSchemaRecord> records = new LinkedList<>(list.getRecords());
+	        if(scroll) {
+	            requestUrl = new StringBuilder().append("/").append("_search").append("/").append("scroll").toString();
+	            List<MetricSchemaRecord> records = new LinkedList<>(list.getRecords());
 
-				while(true) {
-					String scrollID = list.getScrollID();
+	            while(true) {
+	                String scrollID = list.getScrollID();
 
-					Map<String, String> requestBody = new HashMap<>();
-					requestBody.put("scroll_id", scrollID);
-					requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
+	                Map<String, String> requestBody = new HashMap<>();
+	                requestBody.put("scroll_id", scrollID);
+	                requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
 
-					String requestJson = new ObjectMapper().writeValueAsString(requestBody);
-					_logger.debug("get Scroll POST requestUrl {} queryJson {}", requestUrl, queryJson);
-					response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestJson, ContentType.APPLICATION_JSON));
+	                String requestJson = new ObjectMapper().writeValueAsString(requestBody);
+	                _logger.debug("get Scroll POST requestUrl {} queryJson {}", requestUrl, queryJson);
+	                response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestJson, ContentType.APPLICATION_JSON));
 
-					list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
-					records.addAll(list.getRecords());
+	                list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
+	                records.addAll(list.getRecords());
 
-					if(records.size() >= query.getLimit() * query.getPage() || list.getRecords().size() < scrollSize) {
-						break;
-					}
-				}
+	                if(records.size() >= query.getLimit() * query.getPage() || list.getRecords().size() < scrollSize) {
+	                    break;
+	                }
+	            }
 
-				int fromIndex = query.getLimit() * (query.getPage() - 1);
-				if(records.size() <= fromIndex) {
-					_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-					_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
-					return Collections.emptyList();
-				}
+	            int fromIndex = query.getLimit() * (query.getPage() - 1);
+	            if(records.size() <= fromIndex) {
+	                _monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
+	                _monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
+	                return Collections.emptyList();
+	            }
 
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
-				return records.subList(fromIndex, records.size());
+	            _monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
+	            _monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
+	            return records.subList(fromIndex, records.size());
 
-			} else {
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
-				return list.getRecords();
-			}
+	        } else {
+	            _monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
+	            _monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
+	            return list.getRecords();
+	        }
 
-		} catch (UnsupportedEncodingException | JsonProcessingException e) {
-			throw new SystemException("Search failed: " + e);
-		} catch (IOException e) {
-			throw new SystemException("IOException when trying to perform ES request" + e);
-		}
+	    } catch (UnsupportedEncodingException | JsonProcessingException e) {
+	        throw new SystemException("Search failed: " + e);
+	    } catch (IOException e) {
+	        throw new SystemException("IOException when trying to perform ES request" + e);
+	    }
 	}
 
 	@Override
@@ -1254,7 +1259,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	 */
 	protected String extractResponse(Response response) {
 		requireArgument(response != null, "HttpResponse object cannot be null.");
-
 		return doExtractResponse(response.getStatusLine().getStatusCode(), response.getEntity());
 	}
 
