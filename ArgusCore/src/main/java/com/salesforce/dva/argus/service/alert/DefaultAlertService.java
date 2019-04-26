@@ -476,6 +476,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				}
 			}
 
+			boolean alertEvaluated = false;
+			boolean alertFailure = false;
 			try {
 				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 				MetricQueryResult queryResult = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
@@ -499,12 +501,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 						if ((metrics.size() <= 0 && initialMetricSize > 0) || // Skip alert evaluation if all the expanded alert expression contains dc with data lag and initial size was non-zero.
 								(initialMetricSize == 0 && doesDatalagConditionSatisfy(alert, null))) { // or, if the initial size is 0 and data lag is present in atleast one dc.
-							Map<String, String> tags = new HashMap<>();
-							tags.put(USERTAG, alert.getOwner().getUserName());
-							_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
 							continue;
 						}
 					}
+
+					alertEvaluated = true; // if progress is made past this point, we consider the alert evaluated
 
 					if (areDatapointsEmpty(metrics)) {
 						if (alert.isMissingDataNotificationEnabled()) {
@@ -557,25 +558,36 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				long evalLatency = jobEndTime - jobStartTime;
 				history.appendMessageNUpdateHistory("Alert was evaluated successfully.", JobStatus.SUCCESS, evalLatency);
 
-				Map<String, String> tags = new HashMap<>();
-				tags.put(HOSTTAG, HOSTNAME);
-				tags.put(ALERTIDTAG, alert.getId().toString());
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), 1.0/*success*/, tags);
-
 				Map<String, String> tagUser = new HashMap<>();
 				tagUser.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tagUser);
 
-				Map<String, String> tagUser2 = new HashMap<>(tagUser);
-				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tagUser2);
-
 			} catch (MissingDataException mde) {
+				alertFailure = true;
 				handleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, mde, true);
 			} catch (Exception ex) {
+				alertFailure = true;
 				handleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, ex, false);
 			} finally {
 				history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
 				historyList.add(history);
+
+				Map<String, String> tags = new HashMap<>();
+				tags.put(HOSTTAG, HOSTNAME);
+				tags.put(ALERTIDTAG, alert.getId().toString());
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(),
+						alertEvaluated ? 1.0 /*success*/ : -1.0 /*failure*/,
+						tags);
+
+				Map<String, String> tagUser = new HashMap<>();
+				tagUser.put(USERTAG, alert.getOwner().getUserName());
+				_monitorService.modifyCounter(alertEvaluated ? Counter.ALERTS_EVALUATED : Counter.ALERTS_SKIPPED, 1, tagUser);
+
+				if (alertFailure) {
+					Map<String, String> tagUser2 = new HashMap<>();
+					tagUser2.put(USERTAG, alert.getOwner().getUserName());
+					_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tagUser2);
+				}
 			}
 		} // end for
 		return historyList;
@@ -683,8 +695,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			logMessage = MessageFormat.format("Unexpected exception evaluating alert : {0}. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
 			_logger.warn(logMessage);
 		}
-
-		logAlertStatsOnFailure(alert.getId(), alert.getOwner().getUserName());
 	}
 
 	private boolean areDatapointsEmpty(List<Metric> metrics) {
