@@ -206,3 +206,4 @@ public class AlertDefinitionsCacheRefresherThread extends Thread {
         return true;
     }
 }
+
