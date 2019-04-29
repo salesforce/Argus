@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.time.DayOfWeek;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
@@ -47,8 +48,6 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
 	private static final long POLL_INTERVAL_MS = 10 * 60 * 1000L;
-	private static final int DAY_IN_SECONDS = 24 * 60 * 60;
-
 
 	/* Have three separate bloom filters one for metrics schema, one only for scope names schema and one only for scope name and metric name schema.
 	 * Since scopes will continue to repeat more often on subsequent kafka batch reads, we can easily check this from the  bloom filter for scopes only.
@@ -77,6 +76,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private String modifiedBloomFileName;
 	protected final boolean bloomFileWritingEnabled;
 	boolean modifiedBloomClearingEnabled;
+	int modifiedBloomClearPeriodHours;
 
 	protected AbstractSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config);
@@ -87,6 +87,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				Property.BLOOM_FILE_WRITING_ENABLED.getDefaultValue()));
 		modifiedBloomClearingEnabled = Boolean.parseBoolean(config.getValue(Property.MODIFIED_BLOOM_CLEARING_ENABLED.getName(),
 				Property.MODIFIED_BLOOM_CLEARING_ENABLED.getDefaultValue()));
+		modifiedBloomClearPeriodHours = Integer.parseInt(config.getValue(Property.MODIFIED_BLOOM_CLEARING_PERIOD_HOURS.getName(),
+				Property.MODIFIED_BLOOM_CLEARING_PERIOD_HOURS.getDefaultValue()));
 
 		String bfStateBaseDir = config.getValue(Property.BF_STATE_BASE_DIR.getName(),
 				Property.BF_STATE_BASE_DIR.getDefaultValue());
@@ -246,24 +248,28 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	@Override
 	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
 
-	protected int getNumSecondsUntilTargetHour(int targetHour){
-		_logger.info("Initialized bloom filter flushing out, at {} hour of day", targetHour);
-		Calendar calendar = Calendar.getInstance();
-		int hour = calendar.get(Calendar.HOUR_OF_DAY);
-		int secondsPastHour = calendar.get(Calendar.MINUTE) * 60;
-		int hoursUntil = hour < targetHour ? (targetHour - hour) : (targetHour + 24 - hour);
+	protected int getNumSecondsUntilNthHourOfWeek(int nthHour, Calendar fromCalendar) {
+		_logger.info("Initialized bloom filter flushing out, at {} hour of the week", nthHour);
+		// Sunday == 1; Saturday == 7
+		int day = fromCalendar.get(Calendar.DAY_OF_WEEK) - 1;
+		int hour = fromCalendar.get(Calendar.HOUR_OF_DAY);
+		// The current nth hour of the Sunday - Sat week
+		int currNthHour = day * 24 + hour;
+
+		int hoursUntil = currNthHour < nthHour ? (nthHour - currNthHour) : (nthHour + 7*24 - currNthHour);
+		int secondsPastHour = fromCalendar.get(Calendar.MINUTE) * 60;
 		return hoursUntil * 60 * 60 - secondsPastHour;
 	}
 
 	/*
-	 * Have a different flush start hour for schema committers based on hostname, to prevent thundering herd problem.
+	 * Have a different flush start hour to prevent thundering herd problem.
 	 */
 	private int getBloomFilterFlushHourToStartAt() {
 		int bloomFilterFlushHourToStartAt = 0;
 		try {
 			String toHash = InetAddress.getLocalHost().getHostName() + config.getValue(config.ARGUS_INSTANCE_ID, "noid");
 			HashFunction hf = Hashing.murmur3_128();
-			bloomFilterFlushHourToStartAt = Math.abs(hf.newHasher().putString(toHash, Charset.defaultCharset()).hash().asInt() % 24);
+			bloomFilterFlushHourToStartAt = Math.abs(hf.newHasher().putString(toHash, Charset.defaultCharset()).hash().asInt() % modifiedBloomClearPeriodHours);
 		} catch (UnknownHostException e) {
 			_logger.warn("BloomFilter UnknownHostException", e);
 		}
@@ -317,9 +323,9 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	private void createScheduledExecutorService(int targetHourToStartAt){
 		scheduledExecutorService = Executors.newScheduledThreadPool(1);
-		int initialDelayInSeconds = getNumSecondsUntilTargetHour(targetHourToStartAt);
+		int initialDelayInSeconds = getNumSecondsUntilNthHourOfWeek(targetHourToStartAt, Calendar.getInstance());
 		BloomFilterFlushThread bloomFilterFlushThread = new BloomFilterFlushThread();
-		scheduledExecutorService.scheduleAtFixedRate(bloomFilterFlushThread, initialDelayInSeconds, DAY_IN_SECONDS, TimeUnit.SECONDS);
+		scheduledExecutorService.scheduleAtFixedRate(bloomFilterFlushThread, initialDelayInSeconds, modifiedBloomClearPeriodHours * 60 * 60, TimeUnit.SECONDS);
 	}
 
 	private void shutdownScheduledExecutorService(){
@@ -355,7 +361,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		CREATED_BLOOM_ERROR_RATE("service.property.schema.bloomfilter.created.error.rate", "0.00001"),
 		MODIFIED_BLOOM_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.modified.expected.number.insertions", "40"),
 		MODIFIED_BLOOM_ERROR_RATE("service.property.schema.bloomfilter.modified.error.rate", "0.00001"),
-		MODIFIED_BLOOM_CLEARING_ENABLED("service.property.schema.bloomfilter.modified.clearing.enabled", "true");
+		MODIFIED_BLOOM_CLEARING_ENABLED("service.property.schema.bloomfilter.modified.clearing.enabled", "true"),
+		MODIFIED_BLOOM_CLEARING_PERIOD_HOURS("service.property.schema.bloomfilter.modified.clearing.period.hours", String.valueOf(7 * 24));
 
 
 		private final String _name;

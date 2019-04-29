@@ -5,9 +5,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
-import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.service.MonitorService;
 
 
@@ -17,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Before;
-import org.junit.BeforeClass;
+
 import java.util.Properties;
 
 
@@ -264,11 +262,26 @@ public class AbstractSchemaServiceTest {
 
 	@Test
 	public void testNumHoursUntilNextFlushBloomFilter() {
-		Calendar calendar = Calendar.getInstance();
+		// use Wednesday 6 AM this week as start date
+		Calendar wedAtSix = Calendar.getInstance();
+		wedAtSix.set(Calendar.HOUR_OF_DAY, 6);
+		wedAtSix.set(Calendar.DAY_OF_WEEK, 4);
 
-		// Will wait 24 hours before next flush if at same hour boundary
-		int hour = calendar.get(Calendar.HOUR_OF_DAY);
-		int secondsUntil = _esSchemaService.getNumSecondsUntilTargetHour(hour);
-		assertTrue(secondsUntil >= 23 * 60 * 60 && secondsUntil <= 24 * 60 * 60);
+		// Test Sunday, Monday Tuesday, Wednesday of next week @ 4 AM
+		for (int dayIndex = 0; dayIndex < 3; dayIndex++) {
+			int nthHour = dayIndex * 24 + 4;
+			int secondsUntil = _esSchemaService.getNumSecondsUntilNthHourOfWeek(nthHour, wedAtSix);
+			int floorHoursUntil = secondsUntil / 60 / 60;
+			int expectedHours = (4 + dayIndex) * 24 - 2;
+			assertTrue(expectedHours - 1 <= floorHoursUntil && floorHoursUntil <= expectedHours);
+		}
+		// Test Wednesday Thursday, Fri, Sat of this week @ 8 AM
+		for (int dayIndex = 3; dayIndex < 7; dayIndex++) {
+			int nthHour = dayIndex * 24 + 8;
+			int secondsUntil = _esSchemaService.getNumSecondsUntilNthHourOfWeek(nthHour, wedAtSix);
+			int floorHoursUntil = secondsUntil / 60 / 60;
+			int expectedHours = (dayIndex - 3) * 24 + 2;
+			assertTrue(expectedHours - 1 <= floorHoursUntil && floorHoursUntil <= expectedHours);
+		}
 	}
 }
