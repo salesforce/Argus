@@ -64,7 +64,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
-import javax.print.attribute.standard.Severity;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.SocketTimeoutException;
@@ -126,8 +125,19 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param articleNumber
      * @return true if succeed, false if fail
 	 */
-	private boolean sendMessage(History history, Severity severity, String className, String elementName, String eventName, String message,
-								int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric, String productTag, String articleNumber) {
+	private boolean sendMessage(History history,
+								Severity severity,
+								String className,
+								String elementName,
+								String eventName,
+								String message,
+								int severityLevel,
+								boolean srActionable,
+								long lastNotified,
+								Metric triggeredOnMetric,
+								String productTag,
+								String articleNumber,
+								NotificationContext context) {
     	requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
 		requireArgument(eventName != null && !eventName.isEmpty(), "EventName cannot be null or empty.");
 
@@ -270,6 +280,7 @@ public class GOCNotifier extends AuditNotifier {
 			_logger.warn(failureMsg);
 		}
 
+		context.setNotificationRetries(retries);
 		if (StringUtils.isNotBlank(failureMsg)) {
 			history.appendMessageNUpdateHistory(failureMsg, null, 0);
 		}
@@ -347,8 +358,19 @@ public class GOCNotifier extends AuditNotifier {
 		elementName = TemplateReplacer.applyTemplateChanges(context, elementName);
 		eventName = TemplateReplacer.applyTemplateChanges(context, eventName);
 
-		return sendMessage(context.getHistory(), sev, TemplateReplacer.applyTemplateChanges(context, notification.getName()), elementName, eventName, body,
-				context.getNotification().getSeverityLevel(), context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric(), notification.getProductTag(), notification.getArticleNumber());
+		return sendMessage(context.getHistory(),
+				sev,
+				TemplateReplacer.applyTemplateChanges(context, notification.getName()),
+				elementName,
+				eventName,
+				body,
+				context.getNotification().getSeverityLevel(),
+				context.getNotification().getSRActionable(),
+				context.getTriggerFiredTime(),
+				context.getTriggeredMetric(),
+				notification.getProductTag(),
+				notification.getArticleNumber(),
+				context);
 	}
 
 	/**

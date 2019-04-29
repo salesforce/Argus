@@ -98,12 +98,22 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 	//~ Static fields/initializers *******************************************************************************************************************
 
+	private static final String ACTIONTAG = "action";
 	private static final String ALERTIDTAG = "alertId";
+	private static final String RETRIESTAG = "retries";
 	private static final String HOSTTAG = "host";
+	private static final String NOTIFYTARGETTAG = "notifyTarget";
+	private static final String STATUSTAG = "status";
 	private static final String USERTAG = "user";
+
+	private static final String ACTION_CLEARED = "cleared";
+	private static final String ACTION_MISSINGDATA = "missingdata";
+	private static final String ACTION_TRIGGERED = "triggered";
 	private static final String ALERTSCOPE = "argus.alerts";
 	private static final BigInteger DEFAULTALERTID = new BigInteger("0");
 	private static final String DEFAULTUSER = "none";
+	private static final String STATUS_SUCCESS = "succeeded";
+	private static final String STATUS_FAILURE = "failed";
 	private static final Long EVALUATIONDELAY = 1000L * 60;
 	//~ Instance fields ******************************************************************************************************************************
 
@@ -921,8 +931,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
         Map<String, String> tags = new HashMap<>();
-		tags.put("action", "triggered");
-		tags.put("notifyTarget", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put(ACTIONTAG, ACTION_TRIGGERED);
+		tags.put(RETRIESTAG, Integer.toString(context.getNotificationRetries()));
+		tags.put(NOTIFYTARGETTAG, SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		String logMessage = "";
 		
 		boolean rc = true;
@@ -935,7 +946,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		// TODO - log alertId, triggerId, notificationId?
 		if (rc) {
-			tags.put("status", "succeeded");
+			tags.put(STATUSTAG, STATUS_SUCCESS);
 			if (trigger != null)
             {
                 logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
@@ -946,8 +957,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
                 logMessage = MessageFormat.format("Sent notification to {0}",
                         SupportedNotifier.fromClassName(notification.getNotifierName()).name());
             }
-		}else {
-			tags.put("status", "failed");			
+		} else {
+			tags.put(STATUSTAG, STATUS_FAILURE);
 			logMessage = MessageFormat.format("Failed to send notification to {0}",
                     SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		}
@@ -958,7 +969,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags.put(HOSTTAG, HOSTNAME);
 		tags.put("metricId", metric.getIdentifier().hashCode()+"");
 		tags.put("notificationId", notification.getId().intValue()+"");
-		tags.put("notifyTarget", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put(NOTIFYTARGETTAG, SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		// TODO - QUESTION - can trigger.getAlert().getId() differ from alert.getId()?
 		tags.put(ALERTIDTAG, (trigger != null) ? trigger.getAlert().getId().toString() : alert.getId().toString());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), 1.0/*notification sent*/, tags);
@@ -974,8 +985,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		String logMessage ="";
 		Map<String, String> tags = new HashMap<>();
-		tags.put("action", "cleared");
-		tags.put("notifyTarget", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put(ACTIONTAG, ACTION_CLEARED);
+		tags.put(NOTIFYTARGETTAG, SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		
 		boolean rc = true;
 		try {
@@ -985,10 +996,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			rc = false;
 		}
 		if (rc) {
-			tags.put("status", "succeeded");
+			tags.put(STATUSTAG, STATUS_SUCCESS);
  			logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
 		}else {
-			tags.put("status", "failed");
+			tags.put(STATUSTAG, STATUS_FAILURE);
 			logMessage = MessageFormat.format("Failed to send clear notifiction to {0}", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		}
 
@@ -998,7 +1009,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags.put(HOSTTAG, HOSTNAME);
 		tags.put("metricId", metric.getIdentifier().hashCode()+"");
 		tags.put("notificationId", notification.getId().intValue()+"");
-		tags.put("notifyTarget", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		tags.put(NOTIFYTARGETTAG, SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		tags.put(ALERTIDTAG, trigger.getAlert().getId().toString());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), -1.0/*notification cleared*/, tags);
 
@@ -1095,9 +1106,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		boolean rc = _mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
 
 		Map<String, String> tags = new HashMap<>();
-		tags.put("action", "missingdata");
-		tags.put("status", rc ? "succeeded": "failed");
-		tags.put("notifyTarget", SupportedNotifier.EMAIL.name());
+		tags.put(ACTIONTAG, ACTION_MISSINGDATA);
+		tags.put(STATUSTAG, rc ? STATUS_SUCCESS: STATUS_FAILURE);
+		tags.put(NOTIFYTARGETTAG, SupportedNotifier.EMAIL.name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 	}
 
@@ -1522,6 +1533,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		private Metric triggeredMetric;
 		private long alertEnqueueTimestamp;
 		private History history;
+		private int notificationRetries = 0;
 
 		/**
 		 * Creates a new Notification Context object.
@@ -1673,6 +1685,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		public long getAlertEnqueueTimestamp() { return alertEnqueueTimestamp; }
 
 		public void setAlertEnqueueTimestamp(Long alertEnqueueTimestamp) { this.alertEnqueueTimestamp = alertEnqueueTimestamp; }
+
+		public void setNotificationRetries(int notificationRetries) { this.notificationRetries = notificationRetries; }
+
+		/**
+		 *
+		 * @return number of retries to send the notification.
+		 */
+		public int getNotificationRetries() { return notificationRetries; }
 	}
 
 
