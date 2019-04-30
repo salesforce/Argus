@@ -1802,7 +1802,7 @@ public class AlertServiceTest{
 				"ABOVE(-1d:scope:metric:avg:4h-avg, #0.5#, #avg#)",
 				"LIMIT( -21d:-1d:scope:metricA:avg:4h-avg, -1d:scope:metricB:avg:4h-avg,#1#)",
 				"-20m:-0d:scone.*.*.cs19:acs.DELETERequestProcessingTime_95thPercentile{device=*acs2-1*}:avg",
-				"DOWNSAMPLE(-2d:alerts.scheduled:alert-1429851:zimsum, #5m-sum#,#-2d#, #-0m#, #0#)"
+				"DOWNSAMPLE(-2d:argus.alerts:scheduled{alertId=1429851}:zimsum, #5m-sum#,#-2d#, #-0m#, #0#)"
 		));
 		for (String currentExpression: expressionArray) {
                     String alertName = "alertname-" + TestUtils.createRandomName();
