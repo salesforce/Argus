@@ -318,6 +318,8 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         dest.setAggregator(orig.getAggregator());
         dest.setDownsampler(orig.getDownsampler());
         dest.setDownsamplingPeriod(orig.getDownsamplingPeriod());
+        dest.setShowHistogramBuckets((orig.getShowHistogramBuckets()));
+        dest.setPercentile((orig.getPercentile()));
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
