@@ -202,7 +202,8 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
         return query.getStartTimestamp() > System.currentTimeMillis() || query.getEndTimestamp() > System.currentTimeMillis() ||
             (System.currentTimeMillis() - query.getStartTimestamp() < LOWER_START_TIME_LIMIT_IN_MILLIS) ||
             (System.currentTimeMillis() - query.getStartTimestamp() > UPPER_START_TIME_LIMIT_IN_MILLIS) ||
-            (System.currentTimeMillis() - query.getEndTimestamp() > END_TIME_LIMIT_IN_MILLIS) || isQueryHavingTagWildcard(query);
+            (System.currentTimeMillis() - query.getEndTimestamp() > END_TIME_LIMIT_IN_MILLIS) || 
+            isQueryHavingTagWildcard(query) || isQueryHavingHistogram(query);
     }
 
     /**
@@ -559,6 +560,10 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
             }
         }
         return false;
+    }
+    
+    boolean isQueryHavingHistogram(MetricQuery query) {
+        return (query.getShowHistogramBuckets() == true || query.getPercentile() != null);
     }
 
     @Override
