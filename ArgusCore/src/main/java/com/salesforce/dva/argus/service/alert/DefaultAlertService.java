@@ -469,6 +469,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		History history;
 
 		_monitorService.modifyCounter(Counter.ALERTS_EVALUATED_TOTAL, alerts.size(), new HashMap<>());
+		boolean datalagMonitorEnabled = Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED));
 		for (Alert alert : alerts) {
 
 			jobStartTime = System.currentTimeMillis();
@@ -488,8 +489,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 			boolean alertSkipped = false;
 			boolean alertFailure = false;
-			boolean datalagMonitorEnabled = Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED));
-			boolean doesDatalagConditionSatisfy = datalagMonitorEnabled ? doesDatalagConditionSatisfy(alert, null) : false;
+			boolean alertEvaluationStarted = false;
+			boolean doesDatalagExistInAnyDC = datalagMonitorEnabled ? doesDatalagConditionSatisfy(alert, null) : false;
 			try {
 				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 				MetricQueryResult queryResult = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
@@ -512,11 +513,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						metrics.removeIf(m -> shouldMetricBeRemovedForDataLag(alert, m, historyList));
 
 						if ((metrics.size() <= 0 && initialMetricSize > 0) || // Skip alert evaluation if all the expanded alert expression contains dc with data lag and initial size was non-zero.
-								(initialMetricSize == 0 && doesDatalagConditionSatisfy)) { // or, if the initial size is 0 and data lag is present in atleast one dc.
+								(initialMetricSize == 0 && doesDatalagExistInAnyDC)) { // or, if the initial size is 0 and data lag is present in atleast one dc.
 							alertSkipped = true;
 							continue;
 						}
 					}
+
+					alertEvaluationStarted = true;
 
 					if (areDatapointsEmpty(metrics)) {
 						if (alert.isMissingDataNotificationEnabled()) {
@@ -574,13 +577,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tagUser);
 
 			} catch (MissingDataException mde) {
-				if (doesDatalagConditionSatisfy) {
+				if (doesDatalagExistInAnyDC && !alertEvaluationStarted) {
 					alertSkipped = true;
 				}
 				alertFailure = true;
 				handleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, mde, true);
 			} catch (Exception ex) {
-				if (doesDatalagConditionSatisfy) {
+				if (doesDatalagExistInAnyDC && !alertEvaluationStarted) {
 					alertSkipped = true;
 				}
 				alertFailure = true;
