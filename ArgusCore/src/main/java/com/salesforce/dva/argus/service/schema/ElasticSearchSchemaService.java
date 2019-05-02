@@ -486,10 +486,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	        Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson, ContentType.APPLICATION_JSON));
 
 	        String esResponse = extractResponse(response);
-	        if(esResponse.contains("failures")) {
-	            _logger.warn("ES Response get failures- {}", esResponse);
-	            _monitorService.modifyCounter(MonitorService.Counter.ELASTIC_SEARCH_GET_FAILURES, 1, null);
-	        }
+	        logAndMonitorESFailureResponses(esResponse);
 	        MetricSchemaRecordList list = toEntity(esResponse, new TypeReference<MetricSchemaRecordList>() {});
 
 	        if(scroll) {
@@ -1442,7 +1439,20 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		fieldNode.put("type", type);
 		return fieldNode;
 	}
-
+	
+	void logAndMonitorESFailureResponses(String esResponse){
+	    ObjectMapper mapper = new ObjectMapper();
+	    JsonNode tree;
+	    try {
+	        tree = mapper.readTree(esResponse);
+	        if(tree.get("failures") != null) {
+	            _logger.warn("ES Response get failures- {}", esResponse);
+	            _monitorService.modifyCounter(MonitorService.Counter.ELASTIC_SEARCH_GET_FAILURES, 1, null);
+	        }
+	    } catch (IOException e) {
+	        _logger.warn("Failed to parse ES json response {}", e);
+	    }
+	}
 
 	/**
 	 * Enumeration of supported HTTP methods.

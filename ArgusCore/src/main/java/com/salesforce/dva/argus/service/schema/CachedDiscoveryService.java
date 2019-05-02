@@ -140,6 +140,8 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 					_checkIfExceedsLimits(query, matchedQueries);
 					for(int i=0; i<matchedQueries.size(); i++) {
 						MetricQuery q = new MetricQuery(query);
+						q.setShowHistogramBuckets(query.getShowHistogramBuckets());
+						q.setPercentile((query.getPercentile()));
 						_replaceWildcardFieldsFromCachedQuery(matchedQueries.get(i), q);
 						queries.add(q);
 					}
