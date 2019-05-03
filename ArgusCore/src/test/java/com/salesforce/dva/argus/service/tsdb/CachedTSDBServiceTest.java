@@ -1,6 +1,8 @@
 package com.salesforce.dva.argus.service.tsdb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -138,5 +140,21 @@ public class CachedTSDBServiceTest {
 		List<Metric> expected = new ArrayList<>();
 		expected.add(expectedMetric);
 		assertEquals(expected, actual.get(query));
+	}
+	
+	@Test
+	public void testIfQueryHasHistogram() {
+	    long startTime = System.currentTimeMillis()-60*60*1000, endTime = System.currentTimeMillis();
+	    MetricQuery query = new MetricQuery("scope", "metric", new HashMap<>(),
+	            startTime, endTime);
+	    assertFalse(cachedTSDBService.isQueryHavingHistogram(query));
+
+	    query = new MetricQuery("scope", "metric", new HashMap<>(),startTime, endTime);
+	    query.setShowHistogramBuckets(true);
+	    assertTrue(cachedTSDBService.isQueryHavingHistogram(query));
+
+	    query = new MetricQuery("scope", "metric", new HashMap<>(),startTime, endTime);
+	    query.setPercentile(new String[]{"50"});
+	    assertTrue(cachedTSDBService.isQueryHavingHistogram(query));
 	}
 }

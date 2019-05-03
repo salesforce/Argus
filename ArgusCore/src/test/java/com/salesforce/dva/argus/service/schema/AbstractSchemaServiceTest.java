@@ -5,9 +5,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
-import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.service.MonitorService;
 
 
@@ -17,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Before;
-import org.junit.BeforeClass;
+
 import java.util.Properties;
 
 
@@ -39,8 +37,6 @@ public class AbstractSchemaServiceTest {
 
 	private int scopesCreatedCount = 0;
 	private int metricsCreatedCount = 0;
-	private int scopesModifiedCount = 0;
-	private int metricsModifiedCount = 0;
 
     private ElasticSearchSchemaService _esSchemaService;
     private SystemConfiguration systemConfig;
@@ -75,15 +71,11 @@ public class AbstractSchemaServiceTest {
 
 		assertEquals(metricsCreatedCount, metrics.size());
 		assertEquals(scopesCreatedCount, scopeNames.size());
-		assertEquals(metricsModifiedCount, 0);
-		assertEquals(scopesModifiedCount, 0);
 
 		spyService.put(metrics);
 		initCounters();
 		assertEquals(metricsCreatedCount, 0);
 		assertEquals(scopesCreatedCount, 0);
-		assertEquals(metricsModifiedCount, 0);
-		assertEquals(scopesModifiedCount, 0);
 	}
 
 	@Test
@@ -121,8 +113,6 @@ public class AbstractSchemaServiceTest {
 
 		assertEquals(metricsCreatedCount, newMetrics.size());
 		assertEquals(scopesCreatedCount, scopeNames.size());
-		assertEquals(metricsModifiedCount, 0);
-		assertEquals(scopesModifiedCount, 0);
 	}
 
 	@Test
@@ -137,8 +127,6 @@ public class AbstractSchemaServiceTest {
 		// Both metadata and scope are new
 		assertEquals(metricsCreatedCount, 1);
 		assertEquals(scopesCreatedCount, 1);
-		assertEquals(metricsModifiedCount, 0);
-		assertEquals(scopesModifiedCount, 0);
 
 		Map.Entry<String,String> originalTagEntry = metric.getTags().entrySet().iterator().next();
 		String originalTagKey = originalTagEntry.getKey();
@@ -152,8 +140,6 @@ public class AbstractSchemaServiceTest {
 		spyService.put(metrics);
 		assertEquals(metricsCreatedCount, 1);
 		assertEquals(scopesCreatedCount, 0);
-		assertEquals(metricsModifiedCount, 0);
-		assertEquals(scopesModifiedCount, 0);
 
 		// New tagkey should update metric
 		initCounters();
@@ -161,8 +147,6 @@ public class AbstractSchemaServiceTest {
 		spyService.put(metrics);
 		assertEquals(metricsCreatedCount, 1);
 		assertEquals(scopesCreatedCount, 0);
-		assertEquals(metricsModifiedCount, 0);
-		assertEquals(scopesModifiedCount, 0);
 
 		// Same scope:metric:{seentag1=seenvalue1,seentag2=seenvalue2} doesn't need update and shouldn't
 		initCounters();
@@ -170,8 +154,6 @@ public class AbstractSchemaServiceTest {
 		spyService.put(metrics);
 		assertEquals(metricsCreatedCount, 0);
 		assertEquals(scopesCreatedCount, 0);
-		assertEquals(metricsModifiedCount, 0);
-		assertEquals(scopesModifiedCount, 0);
 	}
 
 	@Test
@@ -186,18 +168,13 @@ public class AbstractSchemaServiceTest {
 		Mockito.doAnswer((Answer<Void>) invocation -> {
 			@SuppressWarnings("unchecked")
 			Set<Metric> metricsToCreate = Set.class.cast(invocation.getArguments()[0]);
-			Set<Metric> metricsToUpdate = Set.class.cast(invocation.getArguments()[1]);
-
-			Set<String> scopeNamesToCreate = Set.class.cast(invocation.getArguments()[2]);
-			Set<String> scopeNamesToUpdate = Set.class.cast(invocation.getArguments()[3]);
+			Set<String> scopeNamesToCreate = Set.class.cast(invocation.getArguments()[1]);
 
 			metricsCreatedCount += metricsToCreate.size();
-			metricsModifiedCount += metricsToUpdate.size();
 			scopesCreatedCount += scopeNamesToCreate.size();
-			scopesModifiedCount += scopeNamesToUpdate.size();
 
 			return null;
-		}).when(spyService).implementationSpecificPut(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+		}).when(spyService).implementationSpecificPut(Mockito.any(), Mockito.any(), Mockito.any());
 
 		spyService.put(metrics);
 
@@ -224,51 +201,51 @@ public class AbstractSchemaServiceTest {
 		Mockito.doAnswer((Answer<Void>) invocation -> {
 			@SuppressWarnings("unchecked")
 			Set<Metric> metricsToCreate = Set.class.cast(invocation.getArguments()[0]);
-			Set<Metric> metricsToUpdate = Set.class.cast(invocation.getArguments()[1]);
-
-			Set<String> scopeNamesToCreate = Set.class.cast(invocation.getArguments()[2]);
-			Set<String> scopeNamesToUpdate = Set.class.cast(invocation.getArguments()[3]);
+			Set<String> scopeNamesToCreate = Set.class.cast(invocation.getArguments()[1]);
 
 			metricsCreatedCount += metricsToCreate.size();
-			metricsModifiedCount += metricsToUpdate.size();
 			scopesCreatedCount += scopeNamesToCreate.size();
-			scopesModifiedCount += scopeNamesToUpdate.size();
 
 			// Simulate a successful put, which will add to the corresponding bloomsfilters
 			if (metricsToCreate.size() > 0) {
-				service._addToCreatedBloom(spyService._fracture(metricsToCreate).get(0));
 				service._addToModifiedBloom(spyService._fracture(metricsToCreate).get(0));
 			}
 			if (scopeNamesToCreate.size() > 0) {
-				service._addToCreatedBloom(spyService._fractureScopes(scopeNamesToCreate).get(0));
 				service._addToModifiedBloom(spyService._fractureScopes(scopeNamesToCreate).get(0));
-			}
-			if (metricsToUpdate.size() > 0) {
-				service._addToModifiedBloom(spyService._fracture(metricsToUpdate).get(0));
-			}
-			if (scopeNamesToUpdate.size() > 0) {
-				service._addToModifiedBloom(spyService._fractureScopes(scopeNamesToUpdate).get(0));
 			}
 
 			return null;
-		}).when(spyService).implementationSpecificPut(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+		}).when(spyService).implementationSpecificPut(Mockito.any(), Mockito.any(), Mockito.any());
 		return spyService;
 	}
 
 	private void initCounters() {
 		scopesCreatedCount = 0;
 		metricsCreatedCount = 0;
-		scopesModifiedCount = 0;
-		metricsModifiedCount = 0;
 	}
 
 	@Test
 	public void testNumHoursUntilNextFlushBloomFilter() {
-		Calendar calendar = Calendar.getInstance();
+		// use Wednesday 6 AM this week as start date
+		Calendar wedAtSix = Calendar.getInstance();
+		wedAtSix.set(Calendar.HOUR_OF_DAY, 6);
+		wedAtSix.set(Calendar.DAY_OF_WEEK, 4);
 
-		// Will wait 24 hours before next flush if at same hour boundary
-		int hour = calendar.get(Calendar.HOUR_OF_DAY);
-		int secondsUntil = _esSchemaService.getNumSecondsUntilTargetHour(hour);
-		assertTrue(secondsUntil >= 23 * 60 * 60 && secondsUntil <= 24 * 60 * 60);
+		// Test Sunday, Monday Tuesday, Wednesday of next week @ 4 AM
+		for (int dayIndex = 0; dayIndex < 3; dayIndex++) {
+			int nthHour = dayIndex * 24 + 4;
+			int secondsUntil = _esSchemaService.getNumSecondsUntilNthHourOfWeek(nthHour, wedAtSix);
+			int floorHoursUntil = secondsUntil / 60 / 60;
+			int expectedHours = (4 + dayIndex) * 24 - 2;
+			assertTrue(expectedHours - 1 <= floorHoursUntil && floorHoursUntil <= expectedHours);
+		}
+		// Test Wednesday Thursday, Fri, Sat of this week @ 8 AM
+		for (int dayIndex = 3; dayIndex < 7; dayIndex++) {
+			int nthHour = dayIndex * 24 + 8;
+			int secondsUntil = _esSchemaService.getNumSecondsUntilNthHourOfWeek(nthHour, wedAtSix);
+			int floorHoursUntil = secondsUntil / 60 / 60;
+			int expectedHours = (dayIndex - 3) * 24 + 2;
+			assertTrue(expectedHours - 1 <= floorHoursUntil && floorHoursUntil <= expectedHours);
+		}
 	}
 }

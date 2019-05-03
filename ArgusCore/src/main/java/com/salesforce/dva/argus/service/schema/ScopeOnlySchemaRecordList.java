@@ -32,7 +32,7 @@ import java.util.Set;
  *
  * @author  Dilip Devaraj (ddevaraj@salesforce.com)
  */
-public class ScopeOnlySchemaRecordList {
+public class ScopeOnlySchemaRecordList implements SchemaRecordFinder<ScopeOnlySchemaRecord> {
 	
 	private Map<String, ScopeOnlySchemaRecord> _idToSchemaRecordMap = new HashMap<>();
 	private String _scrollID;
@@ -70,10 +70,11 @@ public class ScopeOnlySchemaRecordList {
 		this._scrollID = scrollID;
 	}
 	
-	ScopeOnlySchemaRecord getRecord(String id) {
+	public ScopeOnlySchemaRecord getRecord(String id) {
 		return _idToSchemaRecordMap.get(id);
 	}
-	
+
+	/*
 	static class CreateSerializer extends JsonSerializer<ScopeOnlySchemaRecordList> {
 
 		@Override
@@ -102,6 +103,23 @@ public class ScopeOnlySchemaRecordList {
 
 			for(Map.Entry<String, ScopeOnlySchemaRecord> entry : list._idToSchemaRecordMap.entrySet()) {
 				SchemaRecordList.addUpdateJson(jgen, entry.getKey());
+			}
+		}
+	} */
+
+	static class IndexSerializer extends JsonSerializer<ScopeOnlySchemaRecordList> {
+
+		@Override
+		public void serialize(ScopeOnlySchemaRecordList list, JsonGenerator jgen, SerializerProvider provider)
+				throws IOException {
+
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.setSerializationInclusion(Include.NON_NULL);
+
+			for(Map.Entry<String, ScopeOnlySchemaRecord> entry : list._idToSchemaRecordMap.entrySet()) {
+
+				String fieldsData = mapper.writeValueAsString(entry.getValue());
+				SchemaRecordList.addIndexJson(jgen, entry.getKey(), fieldsData);
 			}
 		}
 	}

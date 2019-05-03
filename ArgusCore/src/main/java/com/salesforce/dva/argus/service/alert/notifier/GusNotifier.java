@@ -149,7 +149,11 @@ public class GusNotifier extends AuditNotifier {
 		Set<String> to = new HashSet<String>(notification.getSubscriptions());
 		String feed = generateGusFeed(notification, trigger, context, status);
 
-		return postToGus(context.getHistory(),to, feed, _config);
+		return postToGus(context.getHistory(),
+				to,
+				feed,
+				_config,
+				context);
     }
 
 	private String generateGusFeed(Notification notification, Trigger trigger, NotificationContext context, NotificationStatus status) {
@@ -200,13 +204,17 @@ public class GusNotifier extends AuditNotifier {
 		return sb.toString();
 	}
 
-	public boolean postToGus(History history, Set<String> to, String feed, SystemConfiguration _config) {
+	public boolean postToGus(History history,
+							 Set<String> to,
+							 String feed,
+							 SystemConfiguration config,
+							 NotificationContext context) {
 		boolean result = false;
 		String failureMsg = null;
 		int retries = 0;
 
-		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GUS_ENABLED))) {
-		    String postEndpoint = _config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue());
+		if (Boolean.valueOf(config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GUS_ENABLED))) {
+		    String postEndpoint = config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue());
 			// So far works for only one group, will accept a set of string in future.
 			String groupId = to.toArray(new String[to.size()])[0];
 
@@ -284,6 +292,7 @@ public class GusNotifier extends AuditNotifier {
 			history.appendMessageNUpdateHistory(failureMsg, null, 0);
 		}
 
+		context.setNotificationRetries(retries);
 		return result;
 	}
 

@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.schema;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchemaService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
 import com.salesforce.dva.argus.service.schema.WildcardExpansionLimitExceededException;
@@ -56,11 +57,16 @@ import org.junit.BeforeClass;
 import org.junit.AfterClass;
 import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.TestUtils;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
-
+@RunWith(MockitoJUnitRunner.class)
 public class DefaultDiscoveryServiceTest {
 
-    static private SystemMain system;
+    private static SystemMain system;
+    @Mock
+    private MonitorService monitorService;
 
     @BeforeClass
     static public void setUpClass() {
@@ -84,7 +90,7 @@ public class DefaultDiscoveryServiceTest {
         records.add(new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest"));
         records.add(new MetricSchemaRecord(null, "scope1", "metric1", "source", "unittest"));
         when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class))).thenReturn(records);
-        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), null);
+        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), monitorService);
 
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("source", "unittest");
@@ -123,11 +129,11 @@ public class DefaultDiscoveryServiceTest {
 																	     		   .limit(500)
 																	     		   .build();
 
-        when(schemaServiceMock.get(queryForTag1))
-        				.thenReturn(Arrays.asList(new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest0")));
+//        when(schemaServiceMock.get(queryForTag1))
+//        				.thenReturn(Arrays.asList(new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest0")));
         when(schemaServiceMock.get(queryForTag2)).thenReturn(new ArrayList<>());
 
-        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), null);
+        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), monitorService);
 
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("source", "unittest0");
@@ -167,12 +173,12 @@ public class DefaultDiscoveryServiceTest {
 																	     		   .limit(500)
 																	     		   .build();
 
-        when(schemaServiceMock.get(queryForTag1)).thenReturn(Arrays.asList(
-												       new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest0"),
-												       new MetricSchemaRecord(null, "scope1", "metric0", "source", "unittest0")));
-        when(schemaServiceMock.get(queryForTag2)).thenReturn(new ArrayList<>());
+//        when(schemaServiceMock.get(queryForTag1)).thenReturn(Arrays.asList(
+//												       new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest0"),
+//												       new MetricSchemaRecord(null, "scope1", "metric0", "source", "unittest0")));
+//        when(schemaServiceMock.get(queryForTag2)).thenReturn(new ArrayList<>());
 
-        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), null);
+        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), monitorService);
 
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("source", "unittest0");
@@ -221,7 +227,7 @@ public class DefaultDiscoveryServiceTest {
         records.add(new MetricSchemaRecord(null, "scope", "metric29", "source", "unittest"));
 
         when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class))).thenReturn(records);
-        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), null);
+        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), monitorService);
 
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("source", "unittest");
@@ -268,7 +274,7 @@ public class DefaultDiscoveryServiceTest {
         records.add(new MetricSchemaRecord(null, "scope", "metric29", "source", "unittest"));
 
         when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class))).thenReturn(records);
-        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), null);
+        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), monitorService);
 
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("source", "unittest");
@@ -286,7 +292,7 @@ public class DefaultDiscoveryServiceTest {
     	SchemaService schemaServiceMock = mock(SchemaService.class);
         List<MetricSchemaRecord> records = new ArrayList<>();
         when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class))).thenReturn(records);
-        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), null);
+        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), monitorService);
 
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("source", "unittest");
@@ -302,8 +308,8 @@ public class DefaultDiscoveryServiceTest {
 
     	SchemaService schemaServiceMock = mock(SchemaService.class);
         List<MetricSchemaRecord> records = new ArrayList<>();
-        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class))).thenReturn(records);
-        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), null);
+//        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class))).thenReturn(records);
+        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration(), monitorService);
 
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("recordType", "A");
