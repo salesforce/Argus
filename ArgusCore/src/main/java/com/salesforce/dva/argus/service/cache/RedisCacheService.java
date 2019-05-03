@@ -35,17 +35,18 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.DefaultService;
-import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.JedisPool;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,8 +67,8 @@ public class RedisCacheService extends DefaultService implements CacheService {
 
 	private final Logger _logger = LoggerFactory.getLogger(getClass());
 	private final SystemConfiguration _config;
-	private JedisCluster _jedisClusterClient;
-	private MonitorService _monitorService;
+        private JedisCluster _jedisClusterClient;
+
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -77,12 +78,11 @@ public class RedisCacheService extends DefaultService implements CacheService {
 	 * @param  config  The system configuration.  Cannot be null.
 	 */
 	@Inject
-	public RedisCacheService(SystemConfiguration config, CacheRedisClient cacheRedisClient, MonitorService monitorService) {
+	public RedisCacheService(SystemConfiguration config, CacheRedisClient cacheRedisClient) {
 		super(config);
 		_config = config;
-		cacheRedisClient.init(config);
-		_jedisClusterClient = cacheRedisClient.getJedisClusterClient();
-		_monitorService = monitorService;
+                cacheRedisClient.init(config);
+                _jedisClusterClient = cacheRedisClient.getJedisClusterClient();
 	}
 
 	//~ Methods **************************************************************************************************************************************
@@ -90,15 +90,12 @@ public class RedisCacheService extends DefaultService implements CacheService {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <V> V get(String key) {
-		final long start = System.currentTimeMillis();
 		V returnValue = null;
 		try{
 			returnValue = (V) _jedisClusterClient.get(key);
 		}catch (Exception ex) {
 			_logger.error("Exception in cache service: {} ", ex.getMessage());
 		}
-		_monitorService.modifyCounter(Counter.REDISCACHE_GET_LATENCY, System.currentTimeMillis() - start, null);
-		_monitorService.modifyCounter(Counter.REDISCACHE_GET_COUNT, 1, null);
 		return returnValue;
 	}
 
