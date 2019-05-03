@@ -31,7 +31,6 @@
 
 package com.salesforce.dva.argus.service.cache;
 
-import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.system.SystemException;
 import org.junit.Test;
 import java.util.ArrayList;
@@ -69,18 +68,12 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.service.cache.CacheRedisClient;
 import com.salesforce.dva.argus.service.cache.RedisCacheService;
 
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 import redis.clients.jedis.JedisCluster;
 
 
-@RunWith(MockitoJUnitRunner.class)
 public class RedisCacheServiceTest {
 
-    private static SystemConfiguration config = TestUtils.getConfiguration();
-    @Mock
-    private MonitorService monitorService;
+    static SystemConfiguration config = TestUtils.getConfiguration();
 
     @BeforeClass
     static public void setUpClass() {
@@ -100,7 +93,7 @@ public class RedisCacheServiceTest {
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
         when(mockJedisClient.get(keyName)).thenReturn(expectedValue);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
         String actualValue = redisCacheService.get(keyName);
         assertEquals(expectedValue, actualValue);
         actualValue = redisCacheService.get("nonexistant");
@@ -118,7 +111,7 @@ public class RedisCacheServiceTest {
         when(mockJedisClient.get(keyName1)).thenReturn(expectedValue);
         when(mockJedisClient.get(keyName2)).thenReturn(expectedValue);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         Set<String> keySet = new HashSet<>(Arrays.asList(keyName1, keyName2));
         Map<String, String> actualMap = redisCacheService.get(keySet);
@@ -143,7 +136,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
         redisCacheService.put(keyName, expectedValue, 1);
         verify(mockJedisClient, times(1)).set(keyName, expectedValue);
         verify(mockJedisClient, times(1)).expire(keyName, 1);
@@ -156,7 +149,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         Map<String, String> entries = new HashMap<>();
         entries.put("non1", "blah");
@@ -174,7 +167,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         redisCacheService.expire("key1", 10);
         verify(mockJedisClient, times(1)).expire("key1", 10);
@@ -187,7 +180,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         Set<String> keys = new HashSet<>(Arrays.asList("key1", "key2"));
         redisCacheService.expire(keys, 10);
@@ -201,7 +194,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         redisCacheService.exist("key1");
         verify(mockJedisClient, times(1)).exists("key1");
@@ -214,7 +207,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         Set<String> keys = new HashSet<>(Arrays.asList("key1", "key2"));
         redisCacheService.exist(keys);
@@ -227,7 +220,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         redisCacheService.delete("key1");
         verify(mockJedisClient, times(1)).del("key1");
@@ -239,7 +232,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         Set<String> keys = new HashSet<>(Arrays.asList("key1", "key2"));
         redisCacheService.delete(keys);
@@ -252,7 +245,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         redisCacheService.append("key1", "val1");
         verify(mockJedisClient, times(1)).rpush("key1", "val1");
@@ -264,7 +257,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         redisCacheService.getRange("key1", 2, 10);
         verify(mockJedisClient, times(1)).lrange("key1", 2, 10);
@@ -276,7 +269,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         redisCacheService.append("key1", "val1", 10);
         verify(mockJedisClient, times(1)).rpush("key1", "val1");
@@ -289,7 +282,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         Set<String> keys = new HashSet<>(Arrays.asList("key1", "key2"));
         redisCacheService.getRange(keys, 2, 10);
@@ -303,7 +296,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         Properties props = redisCacheService.getServiceProperties();
         Enumeration < ? > enumeration = props.propertyNames();
@@ -331,7 +324,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         redisCacheService.dispose();
         verify(mockJedisClient, times(1)).close();
@@ -343,7 +336,7 @@ public class RedisCacheServiceTest {
         CacheRedisClient mockedCachedRedisClient = mock(CacheRedisClient.class);
         when(mockedCachedRedisClient.getJedisClusterClient()).thenReturn(mockJedisClient);
 
-        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient, monitorService);
+        RedisCacheService redisCacheService = new RedisCacheService(config, mockedCachedRedisClient);
 
         redisCacheService.getByPattern("abc");
         verify(mockJedisClient, times(1)).getClusterNodes();

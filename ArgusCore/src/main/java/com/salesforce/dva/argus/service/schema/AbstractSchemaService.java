@@ -207,7 +207,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
 
 	protected int getNumSecondsUntilNthHourOfWeek(int nthHour, Calendar fromCalendar) {
-		_logger.info("Initialized bloom filter flushing out, at {} hour of the week", nthHour);
+		_logger.info("Initialized bloom filter flushing out once a week, at {} days + {} hours after Sunday 12AM", nthHour / 24, nthHour % 24);
 		// Sunday == 1; Saturday == 7
 		int day = fromCalendar.get(Calendar.DAY_OF_WEEK) - 1;
 		int hour = fromCalendar.get(Calendar.HOUR_OF_DAY);
