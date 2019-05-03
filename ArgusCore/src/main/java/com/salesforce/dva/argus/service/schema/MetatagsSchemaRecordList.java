@@ -32,7 +32,7 @@ import java.util.Set;
  *
  * @author  Kunal Nawale (knawale@salesforce.com)
  */
-public class MetatagsSchemaRecordList {
+public class MetatagsSchemaRecordList implements SchemaRecordFinder<MetatagsRecord> {
 
     private Map<String, MetatagsRecord> _idToSchemaRecordMap = new HashMap<>();
     private String _scrollID;
@@ -69,10 +69,11 @@ public class MetatagsSchemaRecordList {
         this._scrollID = scrollID;
     }
 
-    MetatagsRecord getRecord(String id) {
+    public MetatagsRecord getRecord(String id) {
         return _idToSchemaRecordMap.get(id);
     }
 
+    /*
     static class CreateSerializer extends JsonSerializer<MetatagsSchemaRecordList> {
 
         @Override
@@ -97,6 +98,22 @@ public class MetatagsSchemaRecordList {
 
             for(Map.Entry<String, MetatagsRecord> entry : list._idToSchemaRecordMap.entrySet()) {
                 SchemaRecordList.addUpdateJson(jgen, entry.getKey());
+            }
+        }
+    }*/
+
+    static class IndexSerializer extends JsonSerializer<MetatagsSchemaRecordList> {
+
+        @Override
+        public void serialize(MetatagsSchemaRecordList list, JsonGenerator jgen, SerializerProvider provider)
+                throws IOException {
+
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(Include.NON_NULL);
+
+            for(Map.Entry<String, MetatagsRecord> entry : list._idToSchemaRecordMap.entrySet()) {
+                String fieldsData = mapper.writeValueAsString(entry.getValue().getMetatags());
+                SchemaRecordList.addIndexJson(jgen, entry.getKey(), fieldsData);
             }
         }
     }

@@ -191,11 +191,11 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    protected void implementationSpecificPut(Set<Metric> metricsToCreate, Set<Metric> metricsToUpdate, Set<String> scopesToCreate, Set<String> scopesToUpdate, Set<MetatagsRecord> metatagsToCreate, Set<MetatagsRecord> metatagsToUpdate) {
+    protected void implementationSpecificPut(Set<Metric> metricsToIndex, Set<String> scopesToIndex, Set<MetatagsRecord> metatagsToIndex) {
         requireNotDisposed();
-        SystemAssert.requireArgument(metricsToCreate != null, "Metric list cannot be null.");
+        SystemAssert.requireArgument(metricsToIndex != null, "Metric list cannot be null.");
 
-        for (Metric metric : metricsToCreate) {
+        for (Metric metric : metricsToIndex) {
             if (metric.getTags().isEmpty()) {
                 _putWithoutTag(metric);
             }

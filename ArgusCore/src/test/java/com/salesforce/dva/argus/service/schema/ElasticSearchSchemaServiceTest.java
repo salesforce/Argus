@@ -7,19 +7,16 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.salesforce.dva.argus.entity.KeywordQuery;
-import com.salesforce.dva.argus.entity.MetatagsRecord;
-import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchemaService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.http.HttpEntity;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.junit.After;
@@ -35,13 +32,8 @@ import java.util.Properties;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -49,13 +41,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -221,7 +210,7 @@ public class ElasticSearchSchemaServiceTest {
         _esSchemaService.clearBlooms();
     }
 
-
+    /*
     @Test
     public void testPutCreateUsingMetatagsIndex() throws IOException {
 
@@ -250,7 +239,7 @@ public class ElasticSearchSchemaServiceTest {
         assertFalse(createJson.contains("update"));
         assertTrue(createJson.contains("cts"));
         assertTrue(createJson.contains("mts"));
-    }
+    } */
 
     @Test
     public void testGetWithScroll() throws IOException {
@@ -264,8 +253,8 @@ public class ElasticSearchSchemaServiceTest {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
                 if (callCount == 1) {
-                    StringEntity requestBody = invocationOnMock.getArgument(3, StringEntity.class);
-                    String jsonStr = EntityUtils.toString(requestBody);
+                    Request request = invocationOnMock.getArgument(0, Request.class);
+                    String jsonStr = EntityUtils.toString(request.getEntity());
                     JsonNode tree = mapper.readTree(jsonStr);
                     assertNotNull(tree.get("scroll"));
                     assertNotNull(tree.get("scroll_id"));
@@ -273,7 +262,7 @@ public class ElasticSearchSchemaServiceTest {
                 callCount++;
                 return null;
             }
-        }).when(restClient).performRequest(any(), any(), any(), any(HttpEntity.class));
+        }).when(restClient).performRequest(any(Request.class));
         doAnswer(invoction -> reply).when(service).extractResponse(any());
         MetricSchemaRecordQuery query = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().scope("system*")
                 .metric("*")
@@ -283,7 +272,7 @@ public class ElasticSearchSchemaServiceTest {
                 .limit(10001)
                 .build();
         service.get(query);
-        verify(restClient, times(2)).performRequest(any(), any(), any(), any(HttpEntity.class));
+        verify(restClient, times(2)).performRequest(any(Request.class));
     }
 
 
@@ -306,13 +295,12 @@ public class ElasticSearchSchemaServiceTest {
 
         spyService.getUnique(queryForScope, scopeType);
 
-        ArgumentCaptor<String> requestUrlCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<StringEntity> queryJsonCaptor = ArgumentCaptor.forClass(StringEntity.class);
+        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
 
-        verify(restClient, times(1)).performRequest(any(), requestUrlCaptor.capture(), any(), queryJsonCaptor.capture());
+        verify(restClient, times(1)).performRequest(captor.capture());
 
-        String requestUrl = requestUrlCaptor.getValue();
-        String queryJson = convertToPrettyJson(EntityUtils.toString(queryJsonCaptor.getValue()));
+        String requestUrl = captor.getValue().getEndpoint();
+        String queryJson = convertToPrettyJson(EntityUtils.toString(captor.getValue().getEntity()));
 
         assertEquals(scopeQuery, queryJson);
         assertEquals("/scopenames/scope_type/_search", requestUrl);
@@ -339,13 +327,11 @@ public class ElasticSearchSchemaServiceTest {
 
         spyService.getUnique(queryForMetric, scopeType);
 
-        ArgumentCaptor<String> requestUrlCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<StringEntity> queryJsonCaptor = ArgumentCaptor.forClass(StringEntity.class);
+        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
+        verify(restClient, times(1)).performRequest(captor.capture());
 
-        verify(restClient, times(1)).performRequest(any(), requestUrlCaptor.capture(), any(), queryJsonCaptor.capture());
-
-        String requestUrl = requestUrlCaptor.getValue();
-        String queryJson = convertToPrettyJson(EntityUtils.toString(queryJsonCaptor.getValue()));
+        String requestUrl = captor.getValue().getEndpoint();
+        String queryJson = convertToPrettyJson(EntityUtils.toString(captor.getValue().getEntity()));
 
         assertEquals(metricQueryTagvRegex, queryJson);
         assertEquals("/metadata_index/metadata_type/_search", requestUrl);
@@ -371,13 +357,12 @@ public class ElasticSearchSchemaServiceTest {
 
         spyService.getUnique(queryForMetric, scopeType);
 
-        ArgumentCaptor<String> requestUrlCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<StringEntity> queryJsonCaptor = ArgumentCaptor.forClass(StringEntity.class);
+        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
 
-        verify(restClient, times(1)).performRequest(any(), requestUrlCaptor.capture(), any(), queryJsonCaptor.capture());
+        verify(restClient, times(1)).performRequest(captor.capture());
 
-        String requestUrl = requestUrlCaptor.getValue();
-        String queryJson = convertToPrettyJson(EntityUtils.toString(queryJsonCaptor.getValue()));
+        String requestUrl = captor.getValue().getEndpoint();
+        String queryJson = convertToPrettyJson(EntityUtils.toString(captor.getValue().getEntity()));
 
         assertEquals(metricQueryNamespaceRegex, queryJson);
         assertEquals("/metadata_index/metadata_type/_search", requestUrl);
@@ -409,7 +394,7 @@ public class ElasticSearchSchemaServiceTest {
                 .build();
         service.keywordSearch(query);
         // 1 time for token analysis, 1 for first scroll call, 1 more for /_search/scroll
-        verify(restClient, times(3)).performRequest(any(), any(), any(), any(HttpEntity.class));
+        verify(restClient, times(3)).performRequest(any(Request.class));
     }
 
     @Test
@@ -439,9 +424,10 @@ public class ElasticSearchSchemaServiceTest {
                 .limit(10001)
                 .build();
         service.keywordSearch(query);
-        verify(restClient, times(6)).performRequest(any(), any(), any(), any(HttpEntity.class));
+        verify(restClient, times(6)).performRequest(any(Request.class));
     }
 
+    /*
 	@Test
 	public void testUpsertWhenAllNewDocsShouldNotUpdateMTSField() throws IOException {
 		String esCreateResponse=String.join("\n", "{" +
@@ -641,7 +627,7 @@ public class ElasticSearchSchemaServiceTest {
 		metrics.add(m2);
 		spySchemaService.put(metrics);
 		verify(spySchemaService, times(1)).updateMetadataRecordMts(any());
-	}
+	} */
 
 	@Test
 	public void testConstructTagNotEqualsQuery() throws IOException {
@@ -650,10 +636,10 @@ public class ElasticSearchSchemaServiceTest {
         ObjectMapper mapper = new ObjectMapper();
         RestClient customClient = mock(RestClient.class);
         Answer<Response> requestAnswer = invocation -> {
-            String requestUrl = invocation.getArgument(1, String.class);
+            Request request = invocation.getArgument(0, Request.class);
+            String requestUrl = request.getEndpoint();
             assertTrue(requestUrl.endsWith("_search"));
-            StringEntity requestBodyEntity = invocation.getArgument(3, StringEntity.class);
-            JsonNode root = mapper.readTree(EntityUtils.toString(requestBodyEntity));
+            JsonNode root = mapper.readTree(EntityUtils.toString(request.getEntity()));
             JsonNode nots = root.get("query").get("bool").get("must_not");
             JsonNode filters = root.get("query").get("bool").get("filter");
             assertEquals(3, filters.size());
@@ -662,7 +648,7 @@ public class ElasticSearchSchemaServiceTest {
             invocationCount.incrementAndGet();
             return null;
         };
-        doAnswer(requestAnswer).when(customClient).performRequest(anyString(), anyString(), anyMap(), any(HttpEntity.class));
+        doAnswer(requestAnswer).when(customClient).performRequest(any(Request.class));
 
         ElasticSearchUtils mockedElasticSearchUtils = mock(ElasticSearchUtils.class);
         ElasticSearchSchemaService schemaService = spy(new ElasticSearchSchemaService(systemConfig,
@@ -717,7 +703,7 @@ public class ElasticSearchSchemaServiceTest {
 
     @Test
     public void testMetriccSchemaRecordListMapper() throws Exception {
-        ObjectMapper mapper = ElasticSearchSchemaService._getMetadataObjectMapper(new MetricSchemaRecordList.CreateSerializer());
+        ObjectMapper mapper = ElasticSearchSchemaService._getMetadataObjectMapper(new MetricSchemaRecordList.IndexSerializer());
 
         MetricSchemaRecord record1 = new MetricSchemaRecord("namespace1", "scope1", "metric1", "tagK1", "tagV1", 10);
         //MetricSchemaRecord record2 = new MetricSchemaRecord("namespace2", "scope2", "metric2", "tagK2", "tagV2", 10);
@@ -761,7 +747,7 @@ public class ElasticSearchSchemaServiceTest {
         ElasticSearchSchemaService.doExtractResponse(500, null);
     }
 
-    @Test
+    /* this can be reused if we ever bring back UPDATE
     public void testGetRequestBodyForMtsFieldUpdate() throws IOException {
         ObjectMapper updateMapper = ElasticSearchSchemaService._getMetadataObjectMapper(new MetricSchemaRecordList.UpdateSerializer());
         String expectedRegex = "\\{\"update\":\\{\"_id\":\"a303abc25d534dd8ff97121668e952e6\"\\}\\}\n" +
@@ -777,5 +763,5 @@ public class ElasticSearchSchemaServiceTest {
         String requestBody = updateMapper.writeValueAsString(recordList);
 
         assertTrue(requestBody.matches(expectedRegex));
-    }
+    }*/
 }
