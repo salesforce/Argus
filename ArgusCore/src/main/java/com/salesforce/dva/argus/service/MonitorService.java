@@ -212,7 +212,7 @@ public interface MonitorService extends Service {
         ALERTS_EVALUATION_STARTED("argus.alerts", "evaluation.started", MetricType.COUNTER),
         ALERTS_EVALUATION_DELAYED("argus.alerts", "evaluation.delayed", MetricType.COUNTER),
         ALERTS_FAILED("argus.core", "alerts.failed", MetricType.COUNTER),
-        ALERTS_EVALUATION_LATENCY("argus.core", "alerts.evaluation.latency"),
+        ALERTS_EVALUATION_LATENCY("argus.core", "alerts.evaluation.latency", MetricType.COUNTER),
         ALERTS_UPDATE_LATENCY("argus.core","alerts.update.latency"),
         ALERTS_NEW_LATENCY("argus.core","alerts.new.latency"),
         ALERTS_UPDATED_COUNT("argus.core","alerts.updated", MetricType.COUNTER),
@@ -235,6 +235,16 @@ public interface MonitorService extends Service {
         COMMIT_CLIENT_DATAPOINT_WRITES("argus.core", "commit.client.datapoint.writes", MetricType.COUNTER),
         COMMIT_CLIENT_METRIC_WRITES("argus.core", "commit.client.metric.writes", MetricType.COUNTER),
         SCHEMACOMMIT_CLIENT_METRIC_WRITES("argus.core", "schemacommit.client.metric.writes", MetricType.COUNTER),
+
+        // MORE FINE GRAIN ALERT EVALUATION TIMERS
+        METRICQUERYPROCESSOR_EVALUATETSDBQUERY_LATENCY("argus.core", "metricqueryprocessor.evaluatetsdbquery.latency", MetricType.COUNTER),
+        METRICQUERYPROCESSOR_EVALUATETSDBQUERY_COUNT("argus.core", "metricqueryprocessor.evaluatetsdbquery.count", MetricType.COUNTER),
+        METRICS_GETMETRICS_LATENCY("argus.core", "metrics.getmetrics.latency", MetricType.COUNTER),
+        METRICS_GETMETRICS_COUNT("argus.core", "metrics.getmetrics.count", MetricType.COUNTER),
+        REDISCACHE_GET_LATENCY("argus.core", "rediscache.get.latency", MetricType.COUNTER),
+        REDISCACHE_GET_COUNT("argus.core", "rediscache.get.count", MetricType.COUNTER),
+        ALERTS_EVALUATION_ONLY_LATENCY("argus.core", "alerts.evaluation.nonotification.latency", MetricType.COUNTER),
+        ALERTS_EVALUATION_LATENCY_COUNT("argus.core", "alerts.evaluation.timer.count", MetricType.COUNTER),
 
         SCOPEANDMETRICNAMES_WRITTEN("argus.core", "scopeandmetricnames.written", MetricType.COUNTER),
         SCOPEANDMETRICNAMES_WRITE_LATENCY("argus.core", "scopeandmetricnames.write.latency"),

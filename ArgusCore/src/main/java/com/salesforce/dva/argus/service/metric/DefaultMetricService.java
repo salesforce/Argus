@@ -127,6 +127,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		requireNotDisposed();
 		SystemAssert.requireArgument(MetricReader.isValid(expressions), "Illegal metric expression found: " + expressions);
 
+		final long start = System.currentTimeMillis();
 		MetricReader<Metric> reader = _metricReaderProviderForMetrics.get();
 		MetricQueryResult queryResult = new MetricQueryResult();
 		try {
@@ -143,6 +144,10 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		queryResult.setExpandedTimeSeriesRange(QueryTimeSeriesExpansion.getExpandedTimeSeriesRange(queryResult.getNumTSDBResults()));
 		queryResult.setQueryStartTimeWindow(QueryStartTimeWindow.getWindow(relativeTo - queryResult.getQueryStartTimeMillis()));
 		queryResult.setQueryTimeWindow(QueryTimeWindow.getWindow(queryResult.getQueryTimeRangeInMillis()));
+
+		final long time = System.currentTimeMillis() - start;
+		_monitorService.modifyCounter(Counter.METRICS_GETMETRICS_LATENCY, time, null);
+		_monitorService.modifyCounter(Counter.METRICS_GETMETRICS_COUNT, expressions.size(), null);
 		return queryResult;
 	}
 

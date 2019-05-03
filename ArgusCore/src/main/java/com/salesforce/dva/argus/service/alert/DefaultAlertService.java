@@ -462,7 +462,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		Set<Alert> alerts = new HashSet<>(alertsByNotificationId.values());
 
-		long jobStartTime, jobEndTime;
+		long jobStartTime, evaluateEndTime;
 		Long alertEnqueueTimestamp;
 
 		String logMessage;
@@ -473,6 +473,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		for (Alert alert : alerts) {
 
 			jobStartTime = System.currentTimeMillis();
+			evaluateEndTime = 0;
 			alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 			updateRequestContext(alert);
 
@@ -521,6 +522,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 					alertEvaluationStarted = true;
 
+					evaluateEndTime = System.currentTimeMillis(); // set evaluateEndTime to evaluate start time to override init value (0)
 					if (areDatapointsEmpty(metrics)) {
 						if (alert.isMissingDataNotificationEnabled()) {
 							_sendNotificationForMissingData(alert);
@@ -554,6 +556,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = _evaluateTriggers(triggersToEvaluate,
 								metrics, alert.getExpression(), alertEnqueueTimestamp);
 
+						evaluateEndTime = System.currentTimeMillis();
+
 						for (Notification notification : alert.getNotifications()) {
 							if (notification.getTriggers().isEmpty()) {
 							    _processTriggerlessNotification(alert, history, metrics, notification, alertEnqueueTimestamp);
@@ -568,13 +572,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					}
 				}
 
-				jobEndTime = System.currentTimeMillis();
-				long evalLatency = jobEndTime - jobStartTime;
-				history.appendMessageNUpdateHistory("Alert was evaluated successfully.", JobStatus.SUCCESS, evalLatency);
-
-				Map<String, String> tagUser = new HashMap<>();
-				tagUser.put(USERTAG, alert.getOwner().getUserName());
-				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tagUser);
+				history.appendMessageNUpdateHistory("Alert was evaluated successfully.", JobStatus.SUCCESS, System.currentTimeMillis() - jobStartTime);
 
 			} catch (MissingDataException mde) {
 				if (doesDatalagExistInAnyDC && !alertEvaluationStarted) {
@@ -602,8 +600,16 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 				Map<String, String> tagUser = new HashMap<>();
 				tagUser.put(USERTAG, alert.getOwner().getUserName());
-				_monitorService.modifyCounter(alertSkipped ? Counter.ALERTS_SKIPPED : Counter.ALERTS_EVALUATED, 1, tagUser);
+				_monitorService.modifyCounter(alertSkipped ? Counter.ALERTS_SKIPPED : Counter.ALERTS_EVALUATED, 1, new HashMap(tagUser));
 
+				if (!alertSkipped) {
+					_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, System.currentTimeMillis() - jobStartTime, new HashMap(tagUser));
+					if (evaluateEndTime == 0) {
+						evaluateEndTime = System.currentTimeMillis();
+					}
+					_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_ONLY_LATENCY, evaluateEndTime - jobStartTime, new HashMap(tagUser));
+					_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY_COUNT, 1, tagUser);
+				}
 				if (alertFailure) {
 					Map<String, String> tagUser2 = new HashMap<>();
 					tagUser2.put(USERTAG, alert.getOwner().getUserName());

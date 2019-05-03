@@ -99,6 +99,8 @@ public class MetricQueryProcessor {
     }
 
     private MetricQueryResult evaluateTSDBQuery(TSDBQueryExpression expression)  {
+        final long start = System.currentTimeMillis();
+
         MetricQueryResult queryResult = new MetricQueryResult();
         Long startTimestamp = expression.getStartTimestamp();
         Long endTimestamp = expression.getEndTimestamp();
@@ -149,6 +151,11 @@ public class MetricQueryProcessor {
             queryResult.setNumDiscoveryQueries(1);
         }
         queryResult.setNumTSDBResults(metrics.size());
+
+        final long time = System.currentTimeMillis() - start;
+        _monitorService.modifyCounter(Counter.METRICQUERYPROCESSOR_EVALUATETSDBQUERY_LATENCY, time, null);
+        _monitorService.modifyCounter(Counter.METRICQUERYPROCESSOR_EVALUATETSDBQUERY_COUNT, 1, null);
+
         return queryResult;
     }
 
