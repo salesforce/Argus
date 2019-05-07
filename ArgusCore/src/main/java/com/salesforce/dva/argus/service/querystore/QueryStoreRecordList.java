@@ -43,11 +43,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.salesforce.dva.argus.entity.QueryStoreRecord;
-import com.salesforce.dva.argus.service.schema.SchemaRecordList;
 import net.openhft.hashing.LongHashFunction;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -102,7 +102,7 @@ public class QueryStoreRecordList {
         return _idToQueryStoreRecordMap.get(id);
     }
 
-    public static class CreateSerializer extends JsonSerializer<QueryStoreRecordList> {
+    public static class IndexSerializer extends JsonSerializer<QueryStoreRecordList> {
 
         @Override
         public void serialize(QueryStoreRecordList list, JsonGenerator jgen, SerializerProvider provider)
@@ -113,7 +113,20 @@ public class QueryStoreRecordList {
 
             for(Map.Entry<String, QueryStoreRecord> entry : list._idToQueryStoreRecordMap.entrySet()) {
                 String fieldsData = mapper.writeValueAsString(entry.getValue());
-                SchemaRecordList.addCreateJson(jgen, entry.getKey(), fieldsData);
+                jgen.writeRaw("{ \"index\" : {\"_id\" : \"" + entry.getKey() + "\"}}");
+                jgen.writeRaw(System.lineSeparator());
+                String hostName;
+                try {
+                    hostName = InetAddress.getLocalHost().getHostName();
+                } catch (Exception e)
+                {
+                    hostName = "nohostname";
+                }
+                String sourceHost= "\"sourcehost\":" + "\""+hostName+"\"";
+                long currentTimeMillis = System.currentTimeMillis();
+                String updateTimeStampField = "\"mts\":" + currentTimeMillis;
+                jgen.writeRaw(fieldsData.substring(0, fieldsData.length()-1) + "," +sourceHost+"," + updateTimeStampField + "}");
+                jgen.writeRaw(System.lineSeparator());
             }
         }
     }
