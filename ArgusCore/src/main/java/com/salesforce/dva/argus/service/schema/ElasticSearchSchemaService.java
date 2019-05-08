@@ -256,7 +256,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				Set<MetricSchemaRecord> failedRecords = doBulkIndex(TAGS_INDEX_NAME, TAGS_TYPE_NAME, new MetricSchemaRecordList(records, _idgenHashAlgo), indexMetadataMapper);
 				records.removeAll(failedRecords);
 				_addToModifiedBloom(records);
-				successCount = records.size();
+				successCount += records.size();
 			}
 		}
 
@@ -266,6 +266,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		_logger.info("{} schema records sent to ES and bloomFilter in {} ms.", successCount, timeTaken);
 
 		// Push to scope-only index
+		successCount = 0;
 		start = System.currentTimeMillis();
 		List<Set<ScopeOnlySchemaRecord>> fracturedScopes = _fractureScopes(scopesToIndex);
 		for(Set<ScopeOnlySchemaRecord> records : fracturedScopes) {
@@ -273,7 +274,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				Set<ScopeOnlySchemaRecord> failedRecords = doBulkIndex(SCOPE_INDEX_NAME, SCOPE_TYPE_NAME, new ScopeOnlySchemaRecordList(records, _idgenHashAlgo), indexScopeOnlyMapper);
 				records.removeAll(failedRecords);
 				_addToModifiedBloom(records);
-				successCount = records.size();
+				successCount += records.size();
 			}
 		}
 
@@ -283,6 +284,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		_logger.info("{} scopes sent to ES and bloomFilter in {} ms.", successCount, timeTaken);
 
 		// Push to metatags index
+		successCount = 0;
 		start = System.currentTimeMillis();
 		List<Set<MetatagsRecord>> fracturedMetatags = _fractureMetatags(metatagsToIndex);
 		for(Set<MetatagsRecord> records : fracturedMetatags) {
@@ -290,7 +292,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				Set<MetatagsRecord> failedRecords = doBulkIndex(METATAGS_INDEX_NAME, METATAGS_TYPE_NAME, new MetatagsSchemaRecordList(records, _idgenHashAlgo), indexMetatagsMapper);
 				records.removeAll(failedRecords);
 				_addToModifiedBloom(records);
-				successCount = records.size();
+				successCount += records.size();
 			}
 		}
 
