@@ -32,12 +32,13 @@
 package com.salesforce.dva.argus.service.mail;
 
 import com.google.inject.Inject;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MailService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -66,8 +67,7 @@ public class DefaultMailService extends DefaultService implements MailService {
 
     //~ Instance fields ******************************************************************************************************************************
 
-    @SLF4JTypeListener.InjectLogger
-    private Logger _logger;
+    private final Logger _logger = LoggerFactory.getLogger(DefaultMailService.class);
     private final SystemConfiguration _config;
 
     //~ Constructors *********************************************************************************************************************************
@@ -138,8 +138,9 @@ public class DefaultMailService extends DefaultService implements MailService {
                 _logger.info("Sent email having subject '{}' to {}.", subject, to);
                 return true;
             } catch (Exception ex) {
-                _logger.error("MailService: Failed to send an email notification.", ex);
-                throw new SystemException("Failed to send an email notification.", ex);
+                String logMessage = MessageFormat.format("MailService: Failed to send an email notification to {0} .", to);
+                _logger.error(logMessage, ex);
+                throw new SystemException(logMessage, ex);
             }
         } else {
             _logger.warn("Sending email is disabled.  Not sending email having subject '{}' to {}.", subject, to);

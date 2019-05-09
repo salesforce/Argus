@@ -52,13 +52,14 @@ import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.QueryStoreService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpStatus;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
 import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -77,7 +78,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -120,6 +120,7 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
     /** Query Store index properties */
     private static String QUERY_STORE_INDEX_TEMPLATE_NAME;
     private static String QUERY_STORE_INDEX_TEMPLATE_PATTERN_START;
+    private static String QUERY_STORE_INDEX_NAME;
     private static String QUERY_STORE_TYPE_NAME;
     private final ObjectMapper queryStoreMapper;
     private final int replicationFactorForQueryStoreIndex;
@@ -230,13 +231,15 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
         logger.info("esRestClient set MaxRetryTimeoutsMillis {}", QUERY_STORE_MAX_RETRY_TIMEOUT);
 
         /** Set up querystore index stuff */
-        queryStoreMapper = getQueryStoreObjectMapper(new QueryStoreRecordList.CreateSerializer());
+        queryStoreMapper = getQueryStoreObjectMapper(new QueryStoreRecordList.IndexSerializer());
         QUERY_STORE_TYPE_NAME = config.getValue(Property.QUERY_STORE_ES_INDEX_TYPE.getName(),
                 Property.QUERY_STORE_ES_INDEX_TYPE.getDefaultValue());
         QUERY_STORE_INDEX_TEMPLATE_NAME = config.getValue(Property.QUERY_STORE_ES_INDEX_TEMPLATE_NAME.getName(),
                 Property.QUERY_STORE_ES_INDEX_TEMPLATE_NAME.getDefaultValue());
         QUERY_STORE_INDEX_TEMPLATE_PATTERN_START = config.getValue(Property.QUERY_STORE_ES_INDEX_TEMPLATE_PATTERN_START.getName(),
                 Property.QUERY_STORE_ES_INDEX_TEMPLATE_PATTERN_START.getDefaultValue());
+        QUERY_STORE_INDEX_NAME = config.getValue(Property.QUERY_STORE_ES_INDEX_NAME.getName(),
+                Property.QUERY_STORE_ES_INDEX_NAME.getDefaultValue());
         replicationFactorForQueryStoreIndex = Integer.parseInt(
                 config.getValue(Property.QUERY_STORE_ES_NUM_REPLICAS.getName(), Property.QUERY_STORE_ES_NUM_REPLICAS.getDefaultValue()));
         numShardsForQueryStoreIndex = Integer.parseInt(
@@ -365,8 +368,8 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
 
         int totalCount = 0;
         long start = System.currentTimeMillis();
-        List<Set<QueryStoreRecord>> fracturedToCreateList = fractureQueryStoreRecords(recordsToAdd);
-        for(Set<QueryStoreRecord> records : fracturedToCreateList) {
+        List<Set<QueryStoreRecord>> fracturedQueryStoreRecordList = fractureQueryStoreRecords(recordsToAdd);
+        for(Set<QueryStoreRecord> records : fracturedQueryStoreRecordList) {
             if(!records.isEmpty()) {
                 Set<QueryStoreRecord> failedRecords = upsertQueryStoreRecords(records);
                 records.removeAll(failedRecords);
@@ -410,28 +413,43 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
      */
     protected Set<QueryStoreRecord> upsertQueryStoreRecords(Set<QueryStoreRecord> records) {
 
-        String indexNameToAppend = String.format("-m%s", LocalDateTime.now().getMonthValue());
-        String requestUrl = String.format("/%s%s/%s/_bulk", QUERY_STORE_INDEX_TEMPLATE_PATTERN_START,indexNameToAppend, QUERY_STORE_TYPE_NAME);
+        String requestUrl = String.format("/%s/%s/_bulk", QUERY_STORE_INDEX_NAME, QUERY_STORE_TYPE_NAME);
+        String strResponse;
+        ObjectMapper localObjectMapper = new ObjectMapper();
+        QueryStoreRecordList indexQueryStoreRecordList = new QueryStoreRecordList(records, idgenHashAlgo);
+
+        try {
+            String requestBody = queryStoreMapper.writeValueAsString(indexQueryStoreRecordList);
+            Request request = new Request(HttpMethod.POST.getName(), requestUrl);
+            request.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
+            Response response = esRestClient.performRequest(request);
+            strResponse = extractResponse(response);
+        }
+        catch (IOException e)
+        {
+            throw new SystemException("Failed to insert query store record to ES. ", e);
+        }
 
         try {
             Set<QueryStoreRecord> failedRecords = new HashSet<>();
-            QueryStoreRecordList createQueryStoreRecordList = new QueryStoreRecordList(records, idgenHashAlgo);
-            String requestBody = queryStoreMapper.writeValueAsString(createQueryStoreRecordList);
-            PutResponse putResponse = performESRequest(requestUrl, requestBody);
+            PutResponse putResponse = localObjectMapper.readValue(strResponse, PutResponse.class);
 
-            Pair<List<String>, List<String>> failedOrExistingRecordsResponse = parseFailedResponses(putResponse);
+            if(putResponse.errors) {
+                for(PutResponse.Item item : putResponse.items) {
+                    if (item.index !=null && item.index.status != HttpStatus.SC_CREATED) {
+                        logger.warn("Failed to add record {} to index {}. Reason: {}", indexQueryStoreRecordList.getRecord(item.index._id), QUERY_STORE_INDEX_NAME, localObjectMapper.writeValueAsString(item.index.error));
+                        failedRecords.add(indexQueryStoreRecordList.getRecord(item.index._id));
+                    }
+                }
 
-            List<String> failedIds = failedOrExistingRecordsResponse.getLeft();
-            if (failedIds.size() > 0) {
-                logger.warn("{} records were not written to query store ES", failedIds.size());
+                if (failedRecords.size() != 0) {
+                    logger.warn("{} records were not written to index {}", failedRecords.size(), QUERY_STORE_INDEX_NAME);
+                }
             }
 
-            for(String id : failedIds) {
-                failedRecords.add(createQueryStoreRecordList.getRecord(id));
-            }
             return failedRecords;
         } catch (IOException e) {
-            throw new SystemException("Failed to upsert query store record to ES. ", e);
+            throw new SystemException("Failed to parse response of querystore ES records insertion. The response was: " + strResponse, e);
         }
     }
 
@@ -439,54 +457,6 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
         for (QueryStoreRecord record : records) {
             createdBloom.put(record.toBloomFilterKey());
         }
-    }
-
-    private PutResponse performESRequest(String requestUrl, String requestBody) throws IOException {
-
-        String strResponse = "";
-
-        Response response = esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
-        strResponse = extractResponse(response);
-        PutResponse putResponse = new ObjectMapper().readValue(strResponse, PutResponse.class);
-        return putResponse;
-    }
-
-    /* Method to change the rest client. Used for testing. */
-    protected void setESRestClient(RestClient restClient)
-    {
-        this.esRestClient = restClient;
-    }
-
-    private Pair<List<String>, List<String>> parseFailedResponses(PutResponse putResponse) throws IOException {
-
-        List<String> failedIds = new ArrayList<>();
-        List<String> updateRequiredIds = new ArrayList<>();
-
-        if (putResponse.errors) {
-            for (PutResponse.Item item : putResponse.items) {
-
-                if (item.create != null && item.create.status != HttpStatus.SC_CREATED) {
-
-                    if (item.create.status == HttpStatus.SC_CONFLICT) {
-                        updateRequiredIds.add(item.create._id);
-                    } else {
-                        logger.debug("Failed to create document. Reason: " + new ObjectMapper().writeValueAsString(item.create.error));
-                        failedIds.add(item.create._id);
-                    }
-                }
-
-                if (item.update != null && item.update.status != HttpStatus.SC_OK) {
-
-                    if (item.update.status == HttpStatus.SC_CONFLICT) {
-                        updateRequiredIds.add(item.update._id);
-                    } else {
-                        logger.warn("Failed to update document. Reason: " + new ObjectMapper().writeValueAsString(item.update.error));
-                        failedIds.add(item.update._id);
-                    }
-                }
-            }
-        }
-        return Pair.of(failedIds, updateRequiredIds);
     }
 
     /** Helper to process the response. <br><br>
@@ -546,6 +516,12 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
         return mapper;
     }
 
+    /* Method to change the rest client. Used for testing. */
+    protected void setESRestClient(RestClient restClient)
+    {
+        this.esRestClient = restClient;
+    }
+
     private void createQueryStoreIndexTemplate(String templateName, int replicationFactor, int numShards,
                                                Supplier<ObjectNode> createIndexTemplateMappingsNode) {
         try {
@@ -555,11 +531,11 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
                 rootNode.put("template",templatePattern);
                 rootNode.set("settings", createQueryStoreIndexTemplateSettingsNode(replicationFactor, numShards));
                 rootNode.set("mappings", createIndexTemplateMappingsNode.get());
-
-                String settingsAndMappingsJson = rootNode.toString();
+                String requestBody = rootNode.toString();
                 String requestUrl = new StringBuilder().append("/_template/").append(templateName).toString();
-
-                Response response = esRestClient.performRequest(HttpMethod.PUT.getName(), requestUrl, Collections.emptyMap(), new StringEntity(settingsAndMappingsJson));
+                Request request = new Request(HttpMethod.PUT.getName(), requestUrl);
+                request.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
+                Response response = esRestClient.performRequest(request);
                 extractResponse(response);
         } catch (Exception e) {
             logger.error("Failed to check/create {} index template. It is failed because of the error {}",
@@ -585,12 +561,10 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
         ObjectMapper mapper = new ObjectMapper();
 
         ObjectNode propertiesNode = mapper.createObjectNode();
-        propertiesNode.set(QueryStoreRecordList.QueryStoreRecordType.SCOPE.getName(), createQueryStoreFieldNodeNoAnalyzer(FIELD_TYPE_TEXT));
-        propertiesNode.set(QueryStoreRecordList.QueryStoreRecordType.METRIC.getName(), createQueryStoreFieldNodeNoAnalyzer(FIELD_TYPE_TEXT));
-
+        propertiesNode.set(QueryStoreRecordList.QueryStoreRecordType.SCOPE.getName(), createQueryStoreKeywordFieldNode(FIELD_TYPE_TEXT));
+        propertiesNode.set(QueryStoreRecordList.QueryStoreRecordType.METRIC.getName(), createQueryStoreKeywordFieldNode(FIELD_TYPE_TEXT));
+        propertiesNode.set("sourcehost",createQueryStoreKeywordFieldNode(FIELD_TYPE_TEXT));
         propertiesNode.set("mts", createQueryStoreFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
-        propertiesNode.set("cts", createQueryStoreFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
-
         ObjectNode typeNode = mapper.createObjectNode();
         typeNode.set("properties", propertiesNode);
 
@@ -600,9 +574,20 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
         return mappingsNode;
     }
 
+    private ObjectNode createQueryStoreKeywordFieldNode(String type) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode fieldNode = mapper.createObjectNode();
+        fieldNode.put("type", type);
+        ObjectNode keywordNode = mapper.createObjectNode();
+        keywordNode.put("type", "keyword");
+        ObjectNode fieldsNode = mapper.createObjectNode();
+        fieldsNode.set("raw", keywordNode);
+        fieldNode.set("fields", fieldsNode);
+        return fieldNode;
+    }
+
     private ObjectNode createQueryStoreFieldNodeNoAnalyzer(String type) {
         ObjectMapper mapper = new ObjectMapper();
-
         ObjectNode fieldNode = mapper.createObjectNode();
         fieldNode.put("type", type);
         return fieldNode;
@@ -769,7 +754,9 @@ public class ElasticSearchQueryStoreService extends DefaultService implements Qu
         /** Query store index template name */
         QUERY_STORE_ES_INDEX_TEMPLATE_NAME("service.property.querystore.elasticsearch.indextemplate.name", "argus-querystore-template"),
         /** Query store index template pattern match */
-        QUERY_STORE_ES_INDEX_TEMPLATE_PATTERN_START("service.property.querystore.elasticsearch.indextemplate.patternstart", "argus-querystore");
+        QUERY_STORE_ES_INDEX_TEMPLATE_PATTERN_START("service.property.querystore.elasticsearch.indextemplate.patternstart", "argusqs"),
+        /** Query store index name */
+        QUERY_STORE_ES_INDEX_NAME("service.property.querystore.elasticsearch.index.name", "argusqs-v1");
 
 
         private final String _name;

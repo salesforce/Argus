@@ -107,8 +107,8 @@ public class EmailNotifier extends AuditNotifier {
 
         boolean isSent = _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
         if (!isSent) {
-            context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to send email for triggered notification: {0}.",
-                    context.getNotification().getName()), null, 0);
+            context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to send email for triggered notification: `{0}.` to recipient {1}",
+                    context.getNotification().getName(), to), null, 0);
         }
         return isSent;
     }
@@ -233,8 +233,8 @@ public class EmailNotifier extends AuditNotifier {
 
         boolean isSent = _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
         if (!isSent) {
-            context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to send email for cleared notification: {0}.",
-                    context.getNotification().getName()), null, 0);
+            context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to send email for cleared notification: `{0}.` to recipient {1}",
+                    context.getNotification().getName(), to), null, 0);
 
         }
         return isSent;

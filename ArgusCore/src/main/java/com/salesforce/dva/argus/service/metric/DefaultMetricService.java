@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
@@ -139,6 +140,18 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			}
 		} catch (ParseException ex) {
 			throw new SystemException("Failed to parse the given expression", ex);
+		}
+		// Removing metrics which has no datapoints
+		List<Metric> metrics = queryResult.getMetricsList();
+		if (metrics!=null) {
+			Iterator<Metric> metricIterator = metrics.iterator();
+			while (metricIterator.hasNext()) {
+				Metric metric = metricIterator.next();
+				if (metric.getDatapoints()==null || metric.getDatapoints().size() == 0) {
+					metricIterator.remove();
+				}
+			}
+			queryResult.setMetricsList(metrics);
 		}
 		_monitorService.modifyCounter(Counter.DATAPOINT_READS, _getDatapointsAcrossMetrics(queryResult.getMetricsList()), null);
 		queryResult.setExpandedTimeSeriesRange(QueryTimeSeriesExpansion.getExpandedTimeSeriesRange(queryResult.getNumTSDBResults()));

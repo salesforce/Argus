@@ -29,13 +29,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+
 package com.salesforce.dva.argus.service.querystore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.QueryStoreRecord;
 import com.salesforce.dva.argus.service.MonitorService;
@@ -44,6 +41,7 @@ import com.salesforce.dva.argus.system.SystemException;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -55,7 +53,6 @@ import org.mockito.stubbing.Answer;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -77,8 +74,6 @@ import static org.mockito.Mockito.verify;
 public class ElasticSearchQueryStoreServiceTest {
 
     private RestClient restClient;
-    private static String stringToAppend= String.format("-m%s", LocalDateTime.now().getMonthValue());
-
     private String createSucessReply = String.join("\n",
             "{" +
                     "    \"took\": 55," +
@@ -86,7 +81,7 @@ public class ElasticSearchQueryStoreServiceTest {
                     "    \"items\": [" +
                     "        {" +
                     "            \"create\": {" +
-                    "                \"_index\": \"argus-querystore-m3\"," +
+                    "                \"_index\": \"argusqs-v1\"," +
                     "                \"_type\": \"argus-query_type\"," +
                     "                \"_id\": \"26efe188e63fb16c94bd6ec9bbd98d0f\"," +
                     "                \"_version\": 1," +
@@ -105,6 +100,9 @@ public class ElasticSearchQueryStoreServiceTest {
 
     static private SystemConfiguration systemConfig;
     static private ElasticSearchQueryStoreService _esQueryStoreService;
+    static private String queryStoreIndexName;
+    static private String queryStoreTypeName;
+
 
     @BeforeClass
     public static void setUpClass() {
@@ -112,10 +110,14 @@ public class ElasticSearchQueryStoreServiceTest {
         systemConfig = new SystemConfiguration(config);
         MonitorService mockedMonitor = mock(MonitorService.class);
         _esQueryStoreService = new ElasticSearchQueryStoreService(systemConfig, mockedMonitor);
+        queryStoreIndexName=systemConfig.getValue(ElasticSearchQueryStoreService.Property.QUERY_STORE_ES_INDEX_NAME.getName(),
+                ElasticSearchQueryStoreService.Property.QUERY_STORE_ES_INDEX_NAME.getDefaultValue());
+        queryStoreTypeName=systemConfig.getValue(ElasticSearchQueryStoreService.Property.QUERY_STORE_ES_INDEX_TYPE.getName(),
+                ElasticSearchQueryStoreService.Property.QUERY_STORE_ES_INDEX_TYPE.getDefaultValue());
     }
 
     @Test
-    public void testPutCreateUsingQueryStoreIndex() throws IOException {
+    public void testPutIndexUsingQueryStoreIndex() throws IOException {
 
         List<Metric> metrics = new ArrayList<>();
         Metric myMetric = new Metric("scope1", "metric1");
@@ -131,19 +133,19 @@ public class ElasticSearchQueryStoreServiceTest {
 
         spyService.upsertQueryStoreRecords(records);
 
-        ArgumentCaptor<String> requestUrlCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<StringEntity> createJsonCaptor = ArgumentCaptor.forClass(StringEntity.class);
+        ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
 
-        verify(restClient, times(1)).performRequest(any(), requestUrlCaptor.capture(), any(), createJsonCaptor.capture());
+        verify(restClient, times(1)).performRequest(requestCaptor.capture());
 
-        String requestUrl = requestUrlCaptor.getValue();
-        String createJson = EntityUtils.toString(createJsonCaptor.getValue());
-
-        assertTrue(createJson.contains("create"));
-        assertFalse(createJson.contains("update"));
-        assertTrue(createJson.contains("cts"));
+        Request capturedRequest = requestCaptor.getValue();
+        String createJson = EntityUtils.toString(capturedRequest.getEntity());
+        assertTrue(createJson.contains("index"));
         assertTrue(createJson.contains("mts"));
-        assertEquals("/argus-querystore"+stringToAppend+"/argus-query_type/_bulk", requestUrl);
+        assertTrue(createJson.contains("sourcehost"));
+        assertTrue(createJson.contains("scope"));
+        assertTrue(createJson.contains("metric"));
+        String expectedURL = String.format("/%s/%s/_bulk", queryStoreIndexName, queryStoreTypeName);
+        assertEquals(expectedURL, capturedRequest.getEndpoint());
     }
 
     @Test
@@ -202,7 +204,7 @@ public class ElasticSearchQueryStoreServiceTest {
 
     @Test
     public void testQueryStoreRecordListMapper() throws Exception {
-        ObjectMapper mapper = ElasticSearchQueryStoreService.getQueryStoreObjectMapper(new QueryStoreRecordList.CreateSerializer());
+        ObjectMapper mapper = ElasticSearchQueryStoreService.getQueryStoreObjectMapper(new QueryStoreRecordList.IndexSerializer());
 
         QueryStoreRecord record1 = new QueryStoreRecord("scope1", "metric1");
         QueryStoreRecordList recordList = new QueryStoreRecordList(new HashSet<>(Arrays.asList(record1)), QueryStoreRecordList.HashAlgorithm.fromString("MD5"));
