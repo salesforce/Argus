@@ -123,35 +123,36 @@ import org.slf4j.LoggerFactory;
 			@NamedQuery(
 					name = "Alert.findByNameAndOwner",
 					query =
-					"SELECT a FROM Alert a WHERE a.name = :name AND a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					"SELECT a FROM Alert a WHERE a.name = :name AND a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
 					),
 			@NamedQuery(
 					name = "Alert.findByOwner",
-					query = "SELECT a FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					query = "SELECT a FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
 					),
 			@NamedQuery(
-					name = "Alert.findAll", query = "SELECT a FROM Alert a WHERE a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					name = "Alert.findAll", query = "SELECT a FROM Alert a WHERE a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
 					),
 			@NamedQuery(
 					name = "Alert.findByStatus",
-					query = "SELECT a FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert) order by a.id asc"
+					query = "SELECT a FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) order by a.id asc"
 					),
 			@NamedQuery(
 					name = "Alert.findByRangeAndStatus",
-					query = "SELECT a FROM Alert a where a.id BETWEEN :fromId and :toId AND a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert) order by a.id asc"
+					query = "SELECT a FROM Alert a where a.id BETWEEN :fromId and :toId AND a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) order by a.id asc"
 					),			
 			@NamedQuery(
 					name = "Alert.findIDsByStatus",
-					query = "SELECT a.id FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert) order by a.id asc"
+					query = "SELECT a.id FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) order by a.id asc"
 					),
 			@NamedQuery(
 					name = "Alert.findAlertsModifiedAfterDate",
-					query = "SELECT a FROM Alert a where a.id in (SELECT jpa.id from JPAEntity jpa where TYPE(jpa)= Alert and jpa.modifiedDate >= :modifiedDate) order by a.id asc"
+					query = "SELECT a FROM Alert a where a.id in (SELECT jpa.id from JPAEntity jpa where TYPE(jpa)= Alert and jpa.modifiedDate >= :modifiedDate AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) order by a.id asc"
 					),
 			@NamedQuery(
 					name = "Alert.findByPrefix",
-					query = "SELECT a FROM Alert a where a.name LIKE :name AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
-					), @NamedQuery(name = "Alert.setEnabled", query = "UPDATE Alert a SET a.enabled=true WHERE a = :alert"),
+					query = "SELECT a FROM Alert a where a.name LIKE :name AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
+					),
+			@NamedQuery(name = "Alert.setEnabled", query = "UPDATE Alert a SET a.enabled=true WHERE a = :alert"),
 			@NamedQuery(name = "Alert.setDisabled", query = "UPDATE Alert a SET a.enabled=false WHERE a = :alert"),
 			@NamedQuery(name = "Alert.countByStatus", query = "SELECT count(a) from Alert a where a.enabled= :enabled"),
 			@NamedQuery(
@@ -165,29 +166,29 @@ import org.slf4j.LoggerFactory;
 			// Count alert queries
 			@NamedQuery(
 					name = "Alert.countByOwner",
-					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
 					),
 			@NamedQuery(
 					name = "Alert.countByOwnerWithSearchText",
-					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) "
+					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) "
 							+ "AND (FUNCTION('LOWER', a.name) LIKE :searchtext OR FUNCTION('LOWER', a.owner.userName) LIKE :searchtext)"
 					),
 			@NamedQuery(
 					name = "Alert.countSharedAlerts",
-					query = "SELECT count(a) from Alert a where a.shared = true AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					query = "SELECT count(a) from Alert a where a.shared = true AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
 					),
 			@NamedQuery(
 					name = "Alert.countSharedAlertsWithSearchText",
-					query = "SELECT count(a) FROM Alert a WHERE a.shared = true AND a.id IN (SELECT jpa.id FROM JPAEntity jpa WHERE jpa.deleted = false) "
+					query = "SELECT count(a) FROM Alert a WHERE a.shared = true AND a.id IN (SELECT jpa.id FROM JPAEntity jpa WHERE jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) "
 							+ "AND (FUNCTION('LOWER', a.name) LIKE :searchtext OR FUNCTION('LOWER', a.owner.userName) LIKE :searchtext)"
 					),
 			@NamedQuery(
 					name = "Alert.countPrivateAlertsForPrivilegedUser",
-					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
 					),
 			@NamedQuery(
 					name = "Alert.countPrivateAlertsForPrivilegedUserWithSearchText",
-					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) "
+					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) "
 							+ "AND (FUNCTION('LOWER', a.name) LIKE :searchtext OR FUNCTION('LOWER', a.owner.userName) LIKE :searchtext)"
 					),
 		}
