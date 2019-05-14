@@ -302,6 +302,8 @@ public final class SystemConfiguration extends Properties {
         
         // the default value of 5 million datapoints roughly correspond to 500mb of memory
         MAX_DATAPOINTS_ALLOWED_PER_QUERY("system.property.max.datapoints.query", "5000000"),
+        
+        ENFORCE_DATAPOINTS_LIMIT("system.property.enforce.datapoints.limit", "false"),
 
         PKI_MONITORED_DIRECTORY("pki.monitored.directory", "/etc/pki_service/sfdc/argus-client"),
         PKI_CA_DIRECTORY("pki.ca.directory", "/etc/pki_service/ca");

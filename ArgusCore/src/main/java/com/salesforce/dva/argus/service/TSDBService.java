@@ -54,6 +54,8 @@ import java.util.TreeMap;
 public interface TSDBService extends Service {
 
 	public static final long MILLIS_IN_A_DAY = 86400000L;
+	
+	public static final long METRICS_RETENTION_PERIOD_MILLIS = 400*MILLIS_IN_A_DAY;
 
 	//~ Methods **************************************************************************************************************************************
 

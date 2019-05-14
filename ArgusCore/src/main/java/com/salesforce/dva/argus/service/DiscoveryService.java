@@ -123,7 +123,11 @@ public interface DiscoveryService extends Service {
     }
 
     static int maxTimeseriesAllowed(MetricQuery query, long maxDataPointsPerResponse) {
-        long timeWindowInMillis = query.getEndTimestamp() - query.getStartTimestamp();
+        long timeWindowInMillis = getTimeWindowInMillis(query.getStartTimestamp(), query.getEndTimestamp());
+        // return max datapoints for single second queries
+        if(timeWindowInMillis<=2000L) {
+            return (int)maxDataPointsPerResponse;
+        }
         long downsamplingDivisor = (query.getDownsamplingPeriod() == null || query.getDownsamplingPeriod() <= 0) ? 60000l : query.getDownsamplingPeriod();
         downsamplingDivisor = (timeWindowInMillis > downsamplingDivisor) ? downsamplingDivisor : timeWindowInMillis;
         long samplingPeriod = (downsamplingDivisor>DATAPOINT_SAMPLING_FREQ_IN_MILLIS) ? DATAPOINT_SAMPLING_FREQ_IN_MILLIS : downsamplingDivisor;
@@ -135,6 +139,25 @@ public interface DiscoveryService extends Service {
 
         return (int) (maxDataPointsPerResponse / numDownsampledDPsPerSeries);
     }
+    
+    
+   static long getTimeWindowInMillis(long startTimestamp, long endTimestamp) {
+       // handling case when start or end timestamp is specified in seconds
+       if(startTimestamp*1000<System.currentTimeMillis()) {
+           startTimestamp = startTimestamp*1000;
+       }
+       
+       if(endTimestamp*1000<System.currentTimeMillis()) {
+           endTimestamp = endTimestamp*1000;
+       }
+       
+       long timeWindowInMillis = endTimestamp - startTimestamp;
+       
+       if(timeWindowInMillis>TSDBService.METRICS_RETENTION_PERIOD_MILLIS) {
+           timeWindowInMillis = TSDBService.METRICS_RETENTION_PERIOD_MILLIS;
+       }
+       return timeWindowInMillis; 
+   }
 
     static int numApproxTimeseriesForQuery(MetricQuery mq) {
         int count = 1;
@@ -146,25 +169,26 @@ public interface DiscoveryService extends Service {
         return count;
     }
 
-    static void throwMaximumDatapointsExceededException(MetricQuery query, long maxDataPointsPerQuery, MonitorService monitorService, Logger logger) throws WildcardExpansionLimitExceededException{
-        // We are throwing the exception only when the downsampler is absent, 
-        // as we want to give users some time to adjust their queries which have downsampler in them
-
-        if(query.getDownsamplingPeriod()==null || query.getDownsamplingPeriod()==0) {
-            throw new WildcardExpansionLimitExceededException(MessageFormat.format(EXCEPTION_MESSAGE, maxDataPointsPerQuery)) ;
+    static void throwMaximumDatapointsExceededException(MetricQuery query, long maxDataPointsPerQuery, boolean enforceDatapointLimit, MonitorService monitorService, Logger logger) throws WildcardExpansionLimitExceededException{
+        if((query.getDownsamplingPeriod()!=null && query.getDownsamplingPeriod()!=0) || enforceDatapointLimit) { 
+            if(monitorService!=null) {
+                Map<String, String> tags = new HashMap<>();
+                tags.put("scope", TSDBEntity.replaceUnsupportedChars(query.getScope()));
+                tags.put("metric", TSDBEntity.replaceUnsupportedChars(query.getMetric()));
+                if(RequestContextHolder.getRequestContext()!=null) {
+                    tags.put("user", RequestContextHolder.getRequestContext().getUserName());
+                }else {
+                    tags.put("user", "unknown");
+                }
+                monitorService.modifyCounter(Counter.QUERY_DATAPOINTS_LIMIT_EXCEEDED, 1, tags);
+                logger.error("Maximum datapoints limit execeeded for query - " + query.toString() + ", user - "+tags.get("user"));
+            }
         }
         
-        if(monitorService!=null) {
-            Map<String, String> tags = new HashMap<>();
-            tags.put("scope", TSDBEntity.replaceUnsupportedChars(query.getScope()));
-            tags.put("metric", TSDBEntity.replaceUnsupportedChars(query.getMetric()));
-            if(RequestContextHolder.getRequestContext()!=null) {
-                tags.put("user", RequestContextHolder.getRequestContext().getUserName());
-            }else {
-                tags.put("user", "unknown");
-            }
-            monitorService.modifyCounter(Counter.QUERY_DATAPOINTS_LIMIT_EXCEEDED, 1, tags);
-            logger.error("Maximum datapoints limit execeeded for query - " + query.toString() + ", user - "+tags.get("user"));
+        // We are throwing the exception only when the downsampler is absent, 
+        // as we want to give users some time to adjust their queries which have downsampler in them, unless the enforceDatapointLimit flag is true
+        if(query.getDownsamplingPeriod()==null || query.getDownsamplingPeriod()==0 || enforceDatapointLimit) {
+            throw new WildcardExpansionLimitExceededException(MessageFormat.format(EXCEPTION_MESSAGE, maxDataPointsPerQuery)) ;
         }
     }
 }
