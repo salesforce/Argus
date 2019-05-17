@@ -32,15 +32,16 @@
 package com.salesforce.dva.argus.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.base.Objects;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -58,14 +59,19 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
  * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
  */
 @SuppressWarnings("serial")
-public class Metric extends TSDBEntity implements Serializable {
+public class Metric extends TSDBEntity implements Serializable, Comparable {
+
+	private static final Comparator<Metric> METRIC_COMPARATOR = Comparator
+			.comparing(Metric::getScope)
+			.thenComparing(Metric::getMetric)
+			.thenComparing(m -> m.getTags().hashCode());
 
 	//~ Instance fields ******************************************************************************************************************************
 
 	private String _namespace;
 	private String _displayName;
 	private String _units;
-	private final Map<Long, Double> _datapoints;
+	private final SortedMap<Long, Double> _datapoints;
 	private MetricQuery _query;
         private MetatagsRecord _metatagsRecord = null;
 
@@ -146,7 +152,7 @@ public class Metric extends TSDBEntity implements Serializable {
 	 * @return  The map of time series data points. Will never be null, but may be empty.
 	 */
 	public Map<Long, Double> getDatapoints() {
-		return Collections.unmodifiableMap(_datapoints);
+		return Collections.unmodifiableSortedMap(_datapoints);
 	}
 
 	/**
@@ -380,5 +386,10 @@ public class Metric extends TSDBEntity implements Serializable {
     public void setMetatagsRecord(MetatagsRecord metatagsRec) {
         _metatagsRecord = metatagsRec;
     }
+
+	@Override
+	public int compareTo(Object o) {
+		return METRIC_COMPARATOR.compare(this, (Metric) o);
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

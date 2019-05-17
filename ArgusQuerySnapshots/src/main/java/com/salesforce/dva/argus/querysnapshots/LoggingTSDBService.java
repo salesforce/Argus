@@ -8,6 +8,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +23,14 @@ public class LoggingTSDBService extends DefaultTSDBService {
     @Override
     public Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries) {
         Map<MetricQuery, List<Metric>> results = super.getMetrics(queries);
-        log.putAll(results);
+        // Deep clone everything
+        results.forEach((query, metricList) -> {
+            List<Metric> metricsListClone = new ArrayList<>();
+            for (Metric metric: metricList) {
+                metricsListClone.add(new Metric(metric));
+            }
+            log.put(new MetricQuery(query), metricsListClone);
+        });
         return results;
     }
 }

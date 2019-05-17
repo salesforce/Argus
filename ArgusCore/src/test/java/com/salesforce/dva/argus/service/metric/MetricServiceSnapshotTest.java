@@ -4,14 +4,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.TestUtils;
 import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.entity.TSDBEntity;
 import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.QueryStoreService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+import com.salesforce.dva.argus.system.SystemMain;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
@@ -19,21 +22,19 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Comparator;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
-
-import org.junit.BeforeClass;
-import org.junit.AfterClass;
-import com.salesforce.dva.argus.system.SystemMain;
-import com.salesforce.dva.argus.TestUtils;
 
 public class MetricServiceSnapshotTest {
     final String RELATIVE_TO_TIMESTAMP_KEY = "RELATIVE_TO_TIMESTAMP_KEY";
@@ -101,14 +102,19 @@ public class MetricServiceSnapshotTest {
 
             doAnswer((Answer<List<MetricQuery>>) invocationOnMock -> {
                 MetricQuery query = invocationOnMock.getArgument(0, MetricQuery.class);
-                return discoveryMocks.get(query);
+                List<MetricQuery> results = discoveryMocks.get(query);
+                // Return deep clone
+                return results.stream().map(resultQuery -> new MetricQuery(resultQuery)).collect(Collectors.toList());
             }).when(discoveryService).getMatchingQueries(any());
 
             doAnswer((Answer<Map<MetricQuery, List<Metric>>>) invocationOnMock -> {
                 List<MetricQuery> queries = invocationOnMock.getArgument(0, List.class);
                 Map<MetricQuery, List<Metric>> results = new LinkedHashMap<>();
                 for (MetricQuery query: queries) {
-                    results.put(query, tsdbMocks.get(query));
+                    // Put deep clone of this query-result pair
+                    List<Metric> resultMetrics = tsdbMocks.get(query);
+                    List<Metric> resultClone =  resultMetrics.stream().map(resultMetric -> new Metric(resultMetric)).collect(Collectors.toList());
+                    results.put(new MetricQuery(query), resultClone);
                 }
                 return results;
             }).when(tsdbService).getMetrics(any());
@@ -127,11 +133,15 @@ public class MetricServiceSnapshotTest {
         }
         Metric magicMetric = exprToResult.remove(RELATIVE_TO_TIMESTAMP_KEY).get(0);
         long relativeTo = Long.valueOf(magicMetric.getScope());
-        exprToResult.forEach((expression, expectedResult) -> {
-            List<Metric> actualResult = metricService.getMetrics(expression, relativeTo).getMetricsList();
-            expectedResult.sort(Comparator.comparing(TSDBEntity::getScope).thenComparing(TSDBEntity::getMetric));
-            actualResult.sort(Comparator.comparing(TSDBEntity::getScope).thenComparing(TSDBEntity::getMetric));
-            assertEquals(expectedResult, actualResult);
+        exprToResult.forEach((expression, expectedMetrics) -> {
+            Collections.sort(expectedMetrics);
+            List<Metric> actualMetrics = metricService.getMetrics(expression, relativeTo).getMetricsList();
+            Collections.sort(actualMetrics);
+            List<Map<Long, Double>> expectedDatapoints = expectedMetrics.stream().map(m -> m.getDatapoints()).collect(Collectors.toList());
+            List<Map<Long, Double>> actualDatapoints = actualMetrics.stream().map(m -> m.getDatapoints()).collect(Collectors.toList());
+
+            assertEquals("Expression " + expression + " should return the same scope,metrics,tags when ES and TSDB are mocked", expectedMetrics, actualMetrics);
+            assertEquals("Expression " + expression + " should return the same datapoints when ES and TSDB are mocked", expectedDatapoints, actualDatapoints);
         });
     }
 }

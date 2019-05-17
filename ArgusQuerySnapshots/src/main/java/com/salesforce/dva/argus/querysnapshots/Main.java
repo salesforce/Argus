@@ -88,6 +88,7 @@ public class Main {
         DiscoveryService discoveryService = new LoggingDiscoveryService(
                 system.getServiceFactory().getSchemaService(),
                 system.getConfiguration(),
+                system.getServiceFactory().getMonitorService(),
                 discoveryLog);
         LoggingTSDBService tsdbService = new LoggingTSDBService(
                 system.getConfiguration(),
@@ -96,7 +97,9 @@ public class Main {
         MetricQueryProcessor processor = new MetricQueryProcessor(
                 tsdbService,
                 discoveryService,
-                new TransformFactory(tsdbService));
+                system.getServiceFactory().getMonitorService(),
+                new TransformFactory(tsdbService),
+                system.getServiceFactory().getQueryStoreService());
 
         Provider metricsProvider = (Provider<MetricReader<Metric>>) () -> new MetricReader<>(tsdbService, discoveryService, new TransformFactory(tsdbService));
         Provider queryProvider = (Provider<MetricReader<MetricQuery>>) () -> new MetricReader<>(tsdbService, discoveryService, new TransformFactory(tsdbService));
