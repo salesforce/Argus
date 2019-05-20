@@ -139,9 +139,8 @@ public class MetricServiceSnapshotTest {
             Collections.sort(actualMetrics);
             List<Map<Long, Double>> expectedDatapoints = expectedMetrics.stream().map(m -> m.getDatapoints()).collect(Collectors.toList());
             List<Map<Long, Double>> actualDatapoints = actualMetrics.stream().map(m -> m.getDatapoints()).collect(Collectors.toList());
-
-            assertEquals("Expression " + expression + " should return the same scope,metrics,tags when ES and TSDB are mocked", expectedMetrics, actualMetrics);
-            assertEquals("Expression " + expression + " should return the same datapoints when ES and TSDB are mocked", expectedDatapoints, actualDatapoints);
+            assertEquals("Expression should return the same scope,metrics,tags when ES and TSDB are mocked " + expression, expectedMetrics, actualMetrics);
+            assertEquals("Expression should return the same datapoints when ES and TSDB are mocked " + expression, expectedDatapoints, actualDatapoints);
         });
     }
 }

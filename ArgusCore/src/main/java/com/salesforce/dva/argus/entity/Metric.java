@@ -59,12 +59,12 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
  * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
  */
 @SuppressWarnings("serial")
-public class Metric extends TSDBEntity implements Serializable, Comparable {
+public class Metric extends TSDBEntity implements Serializable, Comparable<Metric> {
 
 	private static final Comparator<Metric> METRIC_COMPARATOR = Comparator
-			.comparing(Metric::getScope)
-			.thenComparing(Metric::getMetric)
-			.thenComparing(m -> m.getTags().hashCode());
+			.comparing((Metric m) -> m.getScope().toLowerCase())
+			.thenComparing(m -> m.getMetric().toLowerCase())
+			.thenComparing(m -> m.getTags().toString().toLowerCase());
 
 	//~ Instance fields ******************************************************************************************************************************
 
@@ -73,7 +73,7 @@ public class Metric extends TSDBEntity implements Serializable, Comparable {
 	private String _units;
 	private final SortedMap<Long, Double> _datapoints;
 	private MetricQuery _query;
-        private MetatagsRecord _metatagsRecord = null;
+	private MetatagsRecord _metatagsRecord = null;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -388,8 +388,8 @@ public class Metric extends TSDBEntity implements Serializable, Comparable {
     }
 
 	@Override
-	public int compareTo(Object o) {
-		return METRIC_COMPARATOR.compare(this, (Metric) o);
+	public int compareTo(Metric m) {
+		return METRIC_COMPARATOR.compare(this, m);
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
