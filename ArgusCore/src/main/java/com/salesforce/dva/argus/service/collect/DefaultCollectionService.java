@@ -60,6 +60,7 @@ import com.salesforce.dva.argus.entity.HistogramBucket;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.TSDBEntity;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.CollectionService;
 import com.salesforce.dva.argus.service.MQService;
@@ -94,6 +95,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
     Provider<EntityManager> emf;
     private final MQService _mqService;
     private final TSDBService _tsdbService;
+    private final AnnotationStorageService _annotationStorageService;
     private final SchemaService _schemaService;
     private final WardenService _wardenService;
     private final MonitorService _monitorService;
@@ -104,22 +106,24 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
     /**
      * Creates a new DefaultCollectionService object.
      *
-     * @param  mqService         The MQ service implementation with which to queue and dequeue submitted metrics and annotations
-     * @param  tsdbService       The TSDB service implementation with which to write metrics and annotations into storage.
-     * @param  auditService      The audit service instance to use. Cannot be null.
-     * @param  configuration     The system configuration instance to use. Cannot be null.
-     * @param  schemaService     The schema service instance to use. Cannot be null.
-     * @param  wardenService     The warden service instance to use. Cannot be null.
-     * @param  monitorService    The monitor service instance to use. Cannot be null.
-     * @param  namespaceService  The namespace service instance to use.  Cannot be null.
+     * @param  mqService                  The MQ service implementation with which to queue and dequeue submitted metrics and annotations
+     * @param  tsdbService                The TSDB service implementation with which to write metrics and annotations into storage.
+     * @param  auditService               The audit service instance to use. Cannot be null.
+     * @param  annotationStorageService   The audit service instance to use. Cannot be null.
+     * @param  configuration              The system configuration instance to use. Cannot be null.
+     * @param  schemaService              The schema service instance to use. Cannot be null.
+     * @param  wardenService              The warden service instance to use. Cannot be null.
+     * @param  monitorService             The monitor service instance to use. Cannot be null.
+     * @param  namespaceService           The namespace service instance to use.  Cannot be null.
      */
     @Inject
-    DefaultCollectionService(MQService mqService, TSDBService tsdbService, AuditService auditService, 
-            SystemConfiguration configuration, SchemaService schemaService, WardenService wardenService,
+    DefaultCollectionService(MQService mqService, TSDBService tsdbService, AuditService auditService,
+            AnnotationStorageService annotationStorageService, SystemConfiguration configuration, SchemaService schemaService, WardenService wardenService,
             MonitorService monitorService, NamespaceService namespaceService) {
         super(auditService, configuration);
         _mqService = mqService;
         _tsdbService = tsdbService;
+        _annotationStorageService = annotationStorageService;
         _schemaService = schemaService;
         _wardenService = wardenService;
         _monitorService = monitorService;
@@ -253,7 +257,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
         List<Annotation> dequeued = _mqService.dequeue(ANNOTATION.getQueueName(), Annotation.class, timeout, annotationCount);
 
         if (!dequeued.isEmpty()) {
-            _tsdbService.putAnnotations(dequeued);
+            _annotationStorageService.putAnnotations(dequeued);
             _logger.debug("Committed {} annotations.", dequeued.size());
         }
         return dequeued.size();

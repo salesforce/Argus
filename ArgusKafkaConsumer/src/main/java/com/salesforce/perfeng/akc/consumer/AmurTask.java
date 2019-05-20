@@ -1,6 +1,7 @@
 package com.salesforce.perfeng.akc.consumer;
 
 import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.quota.IBlacklistService;
 
@@ -22,6 +23,7 @@ public interface AmurTask {
      */
     void init(TSDBService tsdbservice,
                      SchemaService schemaService,
+                     AnnotationStorageService annotationStorageService,
                      InstrumentationService instrumentationService,
                      IBlacklistService blacklistService);
 

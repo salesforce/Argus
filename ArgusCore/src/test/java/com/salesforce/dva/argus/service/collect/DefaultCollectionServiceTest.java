@@ -7,6 +7,7 @@ import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MQService;
 import com.salesforce.dva.argus.service.MonitorService;
@@ -54,6 +55,7 @@ public class DefaultCollectionServiceTest {
     @Mock MQService mqService;
     @Mock TSDBService tsdbService;
     @Mock AuditService auditService;
+    @Mock AnnotationStorageService annotationStorageService;
     @Mock SchemaService schemaService;
     @Mock WardenService wardenService;
     @Mock MonitorService monitorService;
@@ -74,6 +76,7 @@ public class DefaultCollectionServiceTest {
         collectionService = new DefaultCollectionService(mqService,
                                                          tsdbService,
                                                          auditService,
+                                                         annotationStorageService,
                                                          systemConfig,
                                                          schemaService,
                                                          wardenService,

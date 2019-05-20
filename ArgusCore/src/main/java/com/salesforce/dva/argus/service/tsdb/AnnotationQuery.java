@@ -92,7 +92,7 @@ public class AnnotationQuery {
 
     /** Creates a new AnnotationQuery object. */
     protected AnnotationQuery() {
-        _tags = new HashMap<>();
+        _tags = new TreeMap<>();
     }
 
     /**

@@ -294,6 +294,9 @@ public final class SystemConfiguration extends Properties {
         TSDB_SERVICE_IMPL_CLASS("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
         TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","placeholder_cachedtsdb.properties"),
 
+        ANNOTATION_STORAGE_SERVICE_IMPL_CLASS("service.binding.annotation.storage", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
+        ANNOTATION_STORAGE_SERVICE_PROPERTY_FILE("service.config.annotation.storage","placeholder_annotation.storage.properties"),
+        
         WARDEN_SERVICE_IMPL_CLASS("service.binding.warden", "com.salesforce.dva.argus.service.warden.DefaultWardenService"),
         WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "placeholder_warden.properties"),
 

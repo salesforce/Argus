@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.mandm.ajna.AjnaWire;
 import com.salesforce.mandm.avro.util.AjnaWireFormatDecoder;
@@ -38,6 +39,7 @@ public class AnnotationConsumerTest {
 
     private TSDBService tsdbService = PowerMockito.mock(TSDBService.class);
     private SchemaService schemaService = PowerMockito.mock(SchemaService.class);
+    private AnnotationStorageService annotationStorageService = PowerMockito.mock(AnnotationStorageService.class);
     private InstrumentationService instrumentationService = PowerMockito.mock(InstrumentationService.class);
     private IBlacklistService blacklistService = PowerMockito.mock(IBlacklistService.class);
     private AjnaConsumerTask task;
@@ -81,6 +83,7 @@ public class AnnotationConsumerTest {
         task = new AjnaConsumerTask();
         task.init(tsdbService,
                 schemaService,
+                annotationStorageService,
                 instrumentationService,
                 blacklistService);
     }

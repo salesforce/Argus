@@ -3,6 +3,7 @@ package com.salesforce.perfeng.akc.consumer;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.mandm.ajna.Annotation;
@@ -68,6 +69,7 @@ public class AjnaConsumerTaskTest {
     private AjnaConsumerTask task;
     private TSDBService mockTsdbService = PowerMockito.mock(TSDBService.class);
     private SchemaService mockSchemaService = PowerMockito.mock(SchemaService.class);
+    private AnnotationStorageService mockAnnotationStorageService = PowerMockito.mock(AnnotationStorageService.class);
     private InstrumentationService mockInstrumentationService = PowerMockito.mock(InstrumentationService.class);
     private IQuotaService mockQuotaService = PowerMockito.mock(IQuotaService.class);
     private IQuotaInfoProvider mockQuotaInfoProvider = PowerMockito.mock(IQuotaInfoProvider.class);
@@ -352,6 +354,7 @@ public class AjnaConsumerTaskTest {
     public void testTransformToArgusMetricRejectsOldMetrics() {
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
         Metric ajnaMetric = new Metric();
@@ -376,6 +379,7 @@ public class AjnaConsumerTaskTest {
         task = new AjnaConsumerTask();
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
         assertNotNull(task.metricConsumer.transformToArgusMetric(ajnaMetric,
@@ -421,6 +425,7 @@ public class AjnaConsumerTaskTest {
 
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -468,6 +473,7 @@ public class AjnaConsumerTaskTest {
     public void testIsTimestampInvalidOrOld() {
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
         Metric ajnaMetric = new Metric();
@@ -524,6 +530,7 @@ public class AjnaConsumerTaskTest {
         Metric ajnaMetric = createAjnaMetric();
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
         task.metricConsumer.sendQuotaCounters(ajnaMetric);
@@ -557,6 +564,7 @@ public class AjnaConsumerTaskTest {
     public void testExtractAjnaMetricsAvroFailure() {
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -582,6 +590,7 @@ public class AjnaConsumerTaskTest {
     public void testExtractAjnaMetrics() {
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -610,6 +619,7 @@ public class AjnaConsumerTaskTest {
     public void testProcessArgusMetrics() {
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -638,6 +648,7 @@ public class AjnaConsumerTaskTest {
     public void testProcessArgusMetricSchemas() {
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -668,6 +679,7 @@ public class AjnaConsumerTaskTest {
 
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -722,6 +734,7 @@ public class AjnaConsumerTaskTest {
 
         metricTask.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -820,6 +833,7 @@ public class AjnaConsumerTaskTest {
 
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -880,6 +894,7 @@ public class AjnaConsumerTaskTest {
 
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -917,6 +932,7 @@ public class AjnaConsumerTaskTest {
 
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -944,6 +960,7 @@ public class AjnaConsumerTaskTest {
 
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -972,6 +989,7 @@ public class AjnaConsumerTaskTest {
 
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -996,6 +1014,7 @@ public class AjnaConsumerTaskTest {
 
         metricTask.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -1024,6 +1043,7 @@ public class AjnaConsumerTaskTest {
 
         metricTask.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -1039,6 +1059,7 @@ public class AjnaConsumerTaskTest {
 
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
         String service = "argus.unittest";
@@ -1088,6 +1109,7 @@ public class AjnaConsumerTaskTest {
 
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -1141,6 +1163,7 @@ public class AjnaConsumerTaskTest {
 
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
 
@@ -1179,6 +1202,7 @@ public class AjnaConsumerTaskTest {
         when(mockBlacklistService.isBlacklistedTag("longtag")).thenReturn(false);
         task.init(mockTsdbService,
                 mockSchemaService,
+                mockAnnotationStorageService,
                 mockInstrumentationService,
                 mockBlacklistService);
         String service = "argus.unittest";

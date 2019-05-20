@@ -277,7 +277,9 @@ public interface MonitorService extends Service {
         DATALAG_PER_DC_TIME_LAG("argus.core", "datalag.seconds"),
         QUERY_DATAPOINTS_LIMIT_EXCEEDED("argus.core", "query.datapoints.limit.exceeded"),
         
-        ELASTIC_SEARCH_GET_FAILURES("argus.core", "elastic.search.get.failures", MetricType.COUNTER);
+        ELASTIC_SEARCH_GET_FAILURES("argus.core", "elastic.search.get.failures", MetricType.COUNTER),
+        
+        ANNOTATION_RECORDS_WRITE_FAILURES("argus.core", "annotation.records.write.failures", MetricType.COUNTER);
         
         private final String _scope;
         private final String _metric;

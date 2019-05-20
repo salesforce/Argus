@@ -36,6 +36,7 @@ import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -252,7 +253,7 @@ public class Annotation extends TSDBEntity implements Serializable {
      *
      * @param  timestamp  THe time stamp for the annotation. Cannot be null.
      */
-    private void setTimestamp(Long timestamp) {
+    public void setTimestamp(Long timestamp) {
         requireArgument(timestamp != null, "Timestamp cannot be null.");
         _timestamp = timestamp;
     }
@@ -296,6 +297,11 @@ public class Annotation extends TSDBEntity implements Serializable {
         String format = "timestamp=>{0,number,#}, scope=>{1}, metric=>{2}, tags=>{3}, type=>{4}, source=>{5}, sourceId=>{6}, fields=>{7}";
 
         return MessageFormat.format(format, params);
+    }
+    
+    public static String getIdentifierFieldsAsString(Annotation annotation) {
+        return new StringBuilder(annotation.getScope()).append(":").append(annotation.getMetric()).append(":")
+                .append(annotation.getTags().toString()).append(":").append(annotation.getType()).append(":").append(annotation.getTimestamp()).toString();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

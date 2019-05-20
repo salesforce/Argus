@@ -11,6 +11,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
@@ -32,8 +33,10 @@ import com.salesforce.dva.argus.system.SystemException;
 public class ElasticSearchUtils {
 
     private static Logger _logger = LoggerFactory.getLogger(ElasticSearchUtils.class);
+    private static ObjectMapper mapper = new ObjectMapper();
 
     private static final int INDEX_MAX_RESULT_WINDOW = 10000;
+    private static final int  ANNOTATION_INDEX_MAX_RESULT_WINDOW = 10000;
 
 
     public ElasticSearchUtils() {
@@ -50,11 +53,10 @@ public class ElasticSearchUtils {
 
             if(!indexExists) {
                 _logger.info("Index [" + indexName + "] does not exist. Will create one.");
-                ObjectMapper mapper = new ObjectMapper();
 
                 ObjectNode rootNode = mapper.createObjectNode();
-                rootNode.put("settings", _createSettingsNode(replicationFactor, numShards));
-                rootNode.put("mappings", createMappingsNode.get());
+                rootNode.set("settings", _createSettingsNode(replicationFactor, numShards));
+                rootNode.set("mappings", createMappingsNode.get());
 
                 String settingsAndMappingsJson = rootNode.toString();
                 String requestUrl = new StringBuilder().append("/").append(indexName).toString();
@@ -70,23 +72,73 @@ public class ElasticSearchUtils {
                           indexName, e);
         }
     }
+    
+    public void createIndexTemplate(RestClient esRestClient,
+                                    String templateName,
+                                    String templatePattern,
+                                    int replicationFactor,
+                                    int numShards,
+                                    Supplier<ObjectNode> createIndexTemplateMappingsNode) {
+        try {
+            ObjectNode rootNode = mapper.createObjectNode();
+            rootNode.put("template",templatePattern + "*");
+            rootNode.set("settings", createAnnotationIndexTemplateSettingsNode(replicationFactor, numShards));
+            rootNode.set("mappings", createIndexTemplateMappingsNode.get());
 
-    private ObjectNode _createSettingsNode(int replicationFactor, int numShards) {
-        ObjectMapper mapper = new ObjectMapper();
+            String settingsAndMappingsJson = rootNode.toString();
+            String requestUrl = new StringBuilder().append("/_template/").append(templateName).toString();
 
-        ObjectNode metadataAnalyzer = mapper.createObjectNode();
-        metadataAnalyzer.put("tokenizer", "metadata_tokenizer");
-        metadataAnalyzer.put("filter", mapper.createArrayNode().add("lowercase"));
+            Request request = new Request(HttpMethod.PUT.getName(), requestUrl);
+            request.setEntity(new StringEntity(settingsAndMappingsJson, ContentType.APPLICATION_JSON));
+            Response response = esRestClient.performRequest(request);
+            extractResponse(response);
+        } catch (Exception e) {
+            _logger.error("Failed to check/create {} index template. Failure due to {}", templateName, e);
+        }
+    }
+    
+    private ObjectNode createAnnotationIndexTemplateSettingsNode(int replicationFactor, int numShards) {
+        ObjectNode annotationAnalyzer = mapper.createObjectNode();
+        annotationAnalyzer.put("tokenizer", "annotation_tokenizer");
+        annotationAnalyzer.set("filter", mapper.createArrayNode().add("lowercase"));
 
         ObjectNode analyzerNode = mapper.createObjectNode();
-        analyzerNode.put("metadata_analyzer", metadataAnalyzer);
+        analyzerNode.set("annotation_analyzer", annotationAnalyzer);
 
         ObjectNode tokenizerNode = mapper.createObjectNode();
-        tokenizerNode.put("metadata_tokenizer", mapper.createObjectNode().put("type", "pattern").put("pattern", "([^\\p{L}\\d]+)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"));
+        tokenizerNode.set("annotation_tokenizer", mapper.createObjectNode().put("type", "pattern").put("pattern", "([^\\p{L}\\d]+)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"));
 
         ObjectNode analysisNode = mapper.createObjectNode();
-        analysisNode.put("analyzer", analyzerNode);
-        analysisNode.put("tokenizer", tokenizerNode);
+        analysisNode.set("analyzer", analyzerNode);
+        analysisNode.set("tokenizer", tokenizerNode);
+
+
+        ObjectNode indexNode = mapper.createObjectNode();
+        indexNode.put("max_result_window", ANNOTATION_INDEX_MAX_RESULT_WINDOW);
+        indexNode.put("number_of_replicas", replicationFactor);
+        indexNode.put("number_of_shards", numShards);
+
+        ObjectNode settingsNode = mapper.createObjectNode();
+        settingsNode.set("analysis", analysisNode);
+        settingsNode.set("index", indexNode);
+
+        return settingsNode;
+    }
+
+    private ObjectNode _createSettingsNode(int replicationFactor, int numShards) {
+        ObjectNode metadataAnalyzer = mapper.createObjectNode();
+        metadataAnalyzer.put("tokenizer", "metadata_tokenizer");
+        metadataAnalyzer.set("filter", mapper.createArrayNode().add("lowercase"));
+
+        ObjectNode analyzerNode = mapper.createObjectNode();
+        analyzerNode.set("metadata_analyzer", metadataAnalyzer);
+
+        ObjectNode tokenizerNode = mapper.createObjectNode();
+        tokenizerNode.set("metadata_tokenizer", mapper.createObjectNode().put("type", "pattern").put("pattern", "([^\\p{L}\\d]+)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"));
+
+        ObjectNode analysisNode = mapper.createObjectNode();
+        analysisNode.set("analyzer", analyzerNode);
+        analysisNode.set("tokenizer", tokenizerNode);
 
         ObjectNode indexNode = mapper.createObjectNode();
         indexNode.put("max_result_window", INDEX_MAX_RESULT_WINDOW);
@@ -94,8 +146,8 @@ public class ElasticSearchUtils {
         indexNode.put("number_of_shards", numShards);
 
         ObjectNode settingsNode = mapper.createObjectNode();
-        settingsNode.put("analysis", analysisNode);
-        settingsNode.put("index", indexNode);
+        settingsNode.set("analysis", analysisNode);
+        settingsNode.set("index", indexNode);
 
         return settingsNode;
     }
@@ -167,5 +219,4 @@ public class ElasticSearchUtils {
             this.name = name;
         }
     }
-
 }

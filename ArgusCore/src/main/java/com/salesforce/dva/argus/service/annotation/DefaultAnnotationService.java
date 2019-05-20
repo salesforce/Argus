@@ -38,6 +38,8 @@ import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
+import com.salesforce.dva.argus.service.NamedBinding;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
@@ -68,7 +70,7 @@ public class DefaultAnnotationService extends DefaultService implements Annotati
     //~ Instance fields ******************************************************************************************************************************
 
     private Logger _logger = LoggerFactory.getLogger(getClass());
-    private final TSDBService _tsdbService;
+    private final AnnotationStorageService _annotationStorageService;
     private final MonitorService _monitorService;
 
     //~ Constructors *********************************************************************************************************************************
@@ -76,14 +78,14 @@ public class DefaultAnnotationService extends DefaultService implements Annotati
     /**
      * Creates a new DefaultAnnotationService object.
      *
-     * @param  tsdbService     The TSDB service used to perform annotation operations. Cannot be null.
-     * @param  monitorService  The monitor service instance to use. Cannot be null.
+     * @param  annotationStorageService     The storage service used to perform annotation operations. Cannot be null.
+     * @param  monitorService               The monitor service instance to use. Cannot be null.
      */
     @Inject
-    DefaultAnnotationService(TSDBService tsdbService, MonitorService monitorService, SystemConfiguration config) {
+    DefaultAnnotationService(AnnotationStorageService annotationStorageService, MonitorService monitorService, SystemConfiguration config) {
     	super(config);
-        requireArgument(tsdbService != null, "The TSDB service cannot be null.");
-        _tsdbService = tsdbService;
+        requireArgument(annotationStorageService != null, "The annotation storage service cannot be null.");
+        _annotationStorageService = annotationStorageService;
         _monitorService = monitorService;
     }
 
@@ -94,7 +96,7 @@ public class DefaultAnnotationService extends DefaultService implements Annotati
         requireNotDisposed();
         requireArgument(AnnotationReader.isValid(expression), "Invalid annotation expression: " + expression);
 
-        AnnotationReader<Annotation> reader = new AnnotationReader<Annotation>(_tsdbService);
+        AnnotationReader<Annotation> reader = new AnnotationReader<Annotation>(_annotationStorageService);
         List<Annotation> annotations = new LinkedList<>();
 
         try {
@@ -113,7 +115,7 @@ public class DefaultAnnotationService extends DefaultService implements Annotati
         requireNotDisposed();
         requireArgument(AnnotationReader.isValid(expression), "Invalid annotation expression: " + expression);
 
-        AnnotationReader<AnnotationQuery> reader = new AnnotationReader<AnnotationQuery>(_tsdbService);
+        AnnotationReader<AnnotationQuery> reader = new AnnotationReader<AnnotationQuery>(_annotationStorageService);
         List<AnnotationQuery> queries = new LinkedList<>();
 
         try {
@@ -159,7 +161,7 @@ public class DefaultAnnotationService extends DefaultService implements Annotati
         }
         _monitorService.modifyCounter(Counter.ANNOTATION_WRITES, putAnnotationList.size(), null);
         if (!putAnnotationList.isEmpty()) {
-            _tsdbService.putAnnotations(putAnnotationList);
+            _annotationStorageService.putAnnotations(putAnnotationList);
         }
     }
 

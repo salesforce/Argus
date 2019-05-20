@@ -103,7 +103,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private static ObjectMapper genericObjectMapper = new ObjectMapper();
 
 
-        @Inject
+    @Inject
 	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService, ElasticSearchUtils esUtils) {
                 super(config, monitorService);
 
