@@ -229,6 +229,7 @@ public final class SystemConfiguration extends Properties {
         GOC_ENABLED("system.property.goc.enabled", "false"),
         GUS_ENABLED("system.property.gus.enabled", "false"),
         CALLBACK_ENABLED("system.property.callback.enabled", "false"),
+        PAGERDUTY_ENABLED("system.property.pagerduty.enabled", "false"),
 
         EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
 

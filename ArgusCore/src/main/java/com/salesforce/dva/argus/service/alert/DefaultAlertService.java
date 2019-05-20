@@ -1558,6 +1558,26 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		/** Creates a new NotificationContext object. */
 		protected NotificationContext() { }
 
+		public Notification getAlertNotification() {
+			final String notificationName = notification.getName();
+			for (Notification alertNotification : alert.getNotifications()) {
+				if (alertNotification.getName().equalsIgnoreCase(notificationName)) {
+					return alertNotification;
+				}
+			}
+			return null;
+		}
+
+		public Trigger getAlertTrigger() {
+			final String triggerName = trigger.getName();
+			for (Trigger alertTrigger : alert.getTriggers()) {
+				if (alertTrigger.getName().equalsIgnoreCase(triggerName)) {
+					return alertTrigger;
+				}
+			}
+			return null;
+		}
+
 		/**
 		 * returns the alert id.
 		 *
