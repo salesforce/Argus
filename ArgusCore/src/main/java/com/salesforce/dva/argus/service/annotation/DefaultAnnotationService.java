@@ -98,11 +98,12 @@ public class DefaultAnnotationService extends DefaultService implements Annotati
         List<Annotation> annotations = new LinkedList<>();
 
         try {
-            _logger.debug("Retrieving annotations using {}.", expression);
+            _logger.info("Retrieving annotations using {}.", expression);
             annotations.addAll(reader.parse(expression, Annotation.class));
         } catch (ParseException ex) {
             throw new SystemException("Failed to parse the given expression", ex);
         }
+        _logger.info("Number of annotations read={}", annotations.size());
         _monitorService.modifyCounter(Counter.ANNOTATION_READS, annotations.size(), null);
         return annotations;
     }
