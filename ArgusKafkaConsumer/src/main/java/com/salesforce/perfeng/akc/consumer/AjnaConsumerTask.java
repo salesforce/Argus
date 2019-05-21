@@ -3,6 +3,7 @@ package com.salesforce.perfeng.akc.consumer;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.mandm.avro.AvroSchemaFactory;
 import com.salesforce.perfeng.akc.AKCConfiguration;
@@ -23,6 +24,7 @@ public class AjnaConsumerTask implements AmurSinkTask<byte[], byte[]> {
     @Override
     public void init(TSDBService tsdbService,
                      SchemaService schemaService,
+                     AnnotationStorageService annotationStorageService,
                      InstrumentationService instrumentationService,
                      IBlacklistService blacklistService) {
         consumerType = ConsumerType.valueOf(AKCConfiguration.getParameter(AKCConfiguration.Parameter.CONSUMER_TYPE));
@@ -31,7 +33,7 @@ public class AjnaConsumerTask implements AmurSinkTask<byte[], byte[]> {
         AvroSchemaFactory.getInstance().setSchemaLookupVip(AKCConfiguration.getParameter(AKCConfiguration.Parameter.SCHEMA_LOOKUP_SERVER),
                 Integer.parseInt(AKCConfiguration.getParameter(AKCConfiguration.Parameter.SCHEMA_LOOKUP_TIMEOUT_MS)));
 
-        this.annotationConsumer = new AnnotationConsumer(tsdbService, instrumentationService, blacklistService);
+        this.annotationConsumer = new AnnotationConsumer(annotationStorageService, instrumentationService, blacklistService);
         this.schemaConsumer = new SchemaConsumer(schemaService, instrumentationService, blacklistService);
         this.metricConsumer = new MetricConsumer(tsdbService, instrumentationService, blacklistService);
     }

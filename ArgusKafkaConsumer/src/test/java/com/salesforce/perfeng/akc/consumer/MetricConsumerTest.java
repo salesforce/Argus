@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.mandm.ajna.AjnaWire;
 import com.salesforce.mandm.ajna.LatencyType;
@@ -44,6 +45,7 @@ public class MetricConsumerTest {
 
     private TSDBService tsdbService = PowerMockito.mock(TSDBService.class);
     private SchemaService schemaService = PowerMockito.mock(SchemaService.class);
+    private AnnotationStorageService annotationStorageService = PowerMockito.mock(AnnotationStorageService.class);
     private InstrumentationService instrumentationService = PowerMockito.mock(InstrumentationService.class);
     private IBlacklistService blacklistService = PowerMockito.mock(IBlacklistService.class);
     private AjnaConsumerTask task;
@@ -87,6 +89,7 @@ public class MetricConsumerTest {
         task = new AjnaConsumerTask();
         task.init(tsdbService,
                 schemaService,
+                annotationStorageService,
                 instrumentationService,
                 blacklistService
         );

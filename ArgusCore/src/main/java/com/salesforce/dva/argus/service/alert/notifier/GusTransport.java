@@ -8,6 +8,7 @@ import com.google.common.util.concurrent.ExecutionError;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.salesforce.dva.argus.service.ArgusTransport;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.client.config.RequestConfig;
@@ -52,12 +53,8 @@ public class GusTransport {
     private static final long HTTP_CONNECTION_MANAGER_TIMEOUT_MILLIS = 2000L;
     private static final String UTF_8 = "UTF-8";
     private static final long MIN_SESSION_REFRESH_THRESHOLD_MILLIS = 5 * 60 * 1000; // Wait 5min b/w refresh attempts
-    private static final int CONNECTION_TIMEOUT_MILLIS = 10000;
-    private static final int READ_TIMEOUT_MILLIS = 10000;
     private static final String DUMMY_CACHE_KEY = "endpoint"; // dummy key since we are only caching 1 value
 
-    private final PoolingHttpClientConnectionManager connectionManager;
-    private final CloseableHttpClient httpClient;
     /*
      * Using a single entry cache to hold the current EndpointInfo and manage refreshes. Since the CacheLoader ignores
      * the key, there will only ever be 1 value. Therefore, a dummy key is used. If a dummy key is not used, every new
@@ -68,15 +65,12 @@ public class GusTransport {
      * If LoadingCache.refresh() fails, the old value will continue to get used.
      */
     private final LoadingCache<String, EndpointInfo> endpointInfoCache;
+    private final ArgusTransport transport;
 
     public GusTransport(Optional<String> proxyHost, Optional<Integer> proxyPort, String authEndpoint,
                         String authClientId, String authClientSecret, String authUsername, String authPassword,
                         EndpointInfo defaultEndpointInfo, long tokenCacheRefreshPeriodMillis,
                         int connectionPoolMaxSize, int connectionPoolMaxPerRoute) {
-        requireArgument(!proxyHost.isPresent() || StringUtils.isNotBlank(proxyHost.get()),
-                String.format("proxyHost must not be blank if present", proxyHost.isPresent() ? proxyHost.get() : "null"));
-        requireArgument(!proxyPort.isPresent() || proxyPort.get() > 0,
-                String.format("proxyPort(%s) must > 0 if present", proxyPort.isPresent() ? proxyPort.get().toString() : "null"));
         requireArgument(StringUtils.isNotBlank(authEndpoint),
                 String.format("authEndpoint(%s) must not be blank", authEndpoint));
         requireArgument(StringUtils.isNotBlank(authClientId),
@@ -94,51 +88,8 @@ public class GusTransport {
                 String.format("defaultEndpointInfo.token(%s) must not be blank", defaultEndpointInfo.getToken()));
         requireArgument(tokenCacheRefreshPeriodMillis > 0,
                 String.format("cacheRefreshPeriodMillis(%d) must be > 0", tokenCacheRefreshPeriodMillis));
-        requireArgument(connectionPoolMaxSize > 0,
-                String.format("connectionPoolMaxSize(%d) must be > 0", connectionPoolMaxSize));
-        requireArgument(connectionPoolMaxPerRoute > 0,
-                String.format("connectionPoolMaxPerRoute(%d) must be > 0", connectionPoolMaxPerRoute));
 
-        SSLContext sslContext = null;
-        try {
-            sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, null, null);
-        } catch (NoSuchAlgorithmException | KeyManagementException e) {
-            LOGGER.error("Failed to init SSLContext", e);
-        }
-        RegistryBuilder<ConnectionSocketFactory> rb = RegistryBuilder.<ConnectionSocketFactory>create()
-                .register("http", PlainConnectionSocketFactory.getSocketFactory());
-        if (sslContext != null) {
-            rb.register("https", new SSLConnectionSocketFactory(sslContext));
-        }
-        Registry<ConnectionSocketFactory> r = rb.build();
-        this.connectionManager = new PoolingHttpClientConnectionManager(r);
-        connectionManager.setMaxTotal(connectionPoolMaxSize);
-        connectionManager.setDefaultMaxPerRoute(connectionPoolMaxPerRoute);
-        LOGGER.info(String.format("Creating connection manager with maxPoolSize=%d, maxPerRoute=%d",
-                connectionPoolMaxSize,
-                connectionPoolMaxPerRoute));
-
-        RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(CONNECTION_TIMEOUT_MILLIS)
-                .setConnectionRequestTimeout(CONNECTION_TIMEOUT_MILLIS)
-                .setSocketTimeout(READ_TIMEOUT_MILLIS)
-                .build();
-
-        HttpClientBuilder builder = HttpClients.custom()
-                .setDefaultRequestConfig(requestConfig)
-                .setConnectionManager(connectionManager);
-        if (sslContext != null) {
-            builder = builder
-                    .setSSLContext(sslContext)
-                    .setSSLHostnameVerifier(new NoopHostnameVerifier());
-        }
-        if (proxyHost.isPresent() && proxyHost.get().length() > 0 && proxyPort.isPresent()) {
-            HttpHost proxy = new HttpHost(proxyHost.get(), proxyPort.get().intValue());
-            DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
-            builder = builder.setRoutePlanner(routePlanner);
-        }
-        this.httpClient = builder.build();
+        this.transport = new ArgusTransport(proxyHost, proxyPort, connectionPoolMaxSize, connectionPoolMaxPerRoute);
 
         EndpointInfoSupplier supplier = new EndpointInfoSupplier(authEndpoint, authClientId,
                 authClientSecret, authUsername, authPassword);
@@ -166,19 +117,22 @@ public class GusTransport {
     public GusTransport(String proxyHost, String proxyPort, String authEndpoint,
                         String authClientId, String authClientSecret, String authUsername, String authPassword,
                         EndpointInfo defaultEndpointInfo, int connectionPoolMaxSize, int connectionPoolMaxPerRoute) {
-        this(validateProxyHostAndPortStrings(proxyHost, proxyPort) ? Optional.of(proxyHost) : Optional.empty(),
-                validateProxyHostAndPortStrings(proxyHost, proxyPort) ? Optional.of(Integer.parseInt(proxyPort)) : Optional.empty(),
+        this(ArgusTransport.validateProxyHostAndPortStrings(proxyHost, proxyPort) ? Optional.of(proxyHost) : Optional.empty(),
+                ArgusTransport.validateProxyHostAndPortStrings(proxyHost, proxyPort) ? Optional.of(Integer.parseInt(proxyPort)) : Optional.empty(),
                 authEndpoint, authClientId, authClientSecret, authUsername, authPassword, defaultEndpointInfo,
                 connectionPoolMaxSize, connectionPoolMaxPerRoute);
     }
 
-    private static boolean validateProxyHostAndPortStrings(String proxyHost, String proxyPort) {
-        requireArgument(StringUtils.isBlank(proxyPort) || StringUtils.isNumeric(proxyPort),
-                "proxyPort must be numeric if present");
-        return StringUtils.isNotBlank(proxyHost) && StringUtils.isNotBlank(proxyPort) && StringUtils.isNumeric(proxyPort);
-    }
-
     //~ Methods **************************************************************************************************************************************
+
+    /**
+     * Get HttpClient.
+     *
+     * @return  HttpClient
+     */
+    public CloseableHttpClient getHttpClient() {
+        return transport.getHttpClient();
+    }
 
     public EndpointInfo getEndpointInfo() throws GetAuthenticationTokenFailureException {
         try {
@@ -205,15 +159,6 @@ public class GusTransport {
             endpointInfoCache.refresh(DUMMY_CACHE_KEY);
         }
         return getEndpointInfo();
-    }
-
-    /**
-     * Get HttpClient.
-     *
-     * @return  HttpClient
-     */
-    public CloseableHttpClient getHttpClient() {
-        return httpClient;
     }
 
     /**
@@ -246,7 +191,7 @@ public class GusTransport {
                         .addParameter("username", authUsername)
                         .addParameter("password", authPassword);
 
-                response = httpClient.execute(rb.build());
+                response = transport.getHttpClient().execute(rb.build());
                 int respCode = response.getStatusLine().getStatusCode();
                 String responseBodyAsString = EntityUtils.toString(response.getEntity());
 

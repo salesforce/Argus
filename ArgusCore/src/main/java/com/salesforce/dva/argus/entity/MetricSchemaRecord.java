@@ -48,7 +48,7 @@ public class MetricSchemaRecord extends AbstractSchemaRecord {
     public static final String RETENTION_DISCOVERY = "_retention_discovery_";
     public static final String EXPIRATION_TS = "ets";   //expiration timestamp
 
-    public static final int DEFAULT_RETENTION_DISCOVERY_DAYS = 45;
+    public static final int DEFAULT_RETENTION_DISCOVERY_DAYS = 52;
     public static final int MAX_RETENTION_DISCOVERY_DAYS = 120;
 
     //~ Instance fields ******************************************************************************************************************************

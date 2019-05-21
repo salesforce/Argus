@@ -16,6 +16,7 @@ import org.apache.kafka.common.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.TSDBService;
 import java.io.Serializable;
 import java.time.Instant;
@@ -65,6 +66,7 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
     private InstrumentationService instrumentationService;
     private TSDBService tsdbService;
     private SchemaService schemaService;
+    private AnnotationStorageService annotationStorageService;
     private long consumptionStartTime;
     private long consumptionStopTime;
     private Map<TopicPartition,Long> stopOffsets = new HashMap<>();
@@ -199,12 +201,14 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
         this.amurSinkTask = (AmurSinkTask) Utils.newInstance(this.amurTaskClass);
         this.tsdbService = this.system.getServiceFactory().getTSDBService();
         this.schemaService = this.system.getServiceFactory().getSchemaService();
+        this.annotationStorageService = this.system.getServiceFactory().getAnnotationStorageService();
         this.instrumentationService = InstrumentationService.getInstance(tsdbService);
 
         if (null != amurSinkTask) {
             threadLocalKafkaMetrics.set(consumer.metrics());//must be before amurSinkTask.init()
             this.amurSinkTask.init(tsdbService,
                                    schemaService,
+                                   annotationStorageService,
                                    instrumentationService,
                                     QuotaUtilFactory.getBlacklistService());
             Pattern p = getRegexPattern();

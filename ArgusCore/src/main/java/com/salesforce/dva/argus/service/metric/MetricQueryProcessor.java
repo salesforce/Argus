@@ -1,6 +1,8 @@
 package com.salesforce.dva.argus.service.metric;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,6 +145,7 @@ public class MetricQueryProcessor {
         for(List<Metric> m : metricsMap.values()) {
             metrics.addAll(m);
         }
+        Collections.sort(metrics);
         queryResult.setMetricsList(metrics);
         queryResult.setQueryTimeRangeInMillis(endTimestamp-startTimestamp);
         queryResult.setQueryStartTimeMillis(startTimestamp);
@@ -192,6 +195,8 @@ public class MetricQueryProcessor {
         tags.put("host", HOSTNAME);
         tags.put("transform", function.getName());
         _monitorService.modifyCounter(Counter.TRANSFORMS_EVALUATED, 1, tags);
-        return ((constants == null || constants.isEmpty()) ? transform.transform(currentQueryContext, result) : transform.transform(currentQueryContext, result, constants));
+        List<Metric> metrics = ((constants == null || constants.isEmpty()) ? transform.transform(currentQueryContext, result) : transform.transform(currentQueryContext, result, constants));
+        Collections.sort(metrics);
+        return metrics;
     }
 }

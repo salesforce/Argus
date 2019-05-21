@@ -17,18 +17,18 @@
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>nexus</id>
-            <url>https://nexus.soma.salesforce.com/nexus/content/groups/public</url>
-        </repository>
-    </repositories>
+    <!--<repositories>-->
+        <!--<repository>-->
+            <!--<id>nexus</id>-->
+            <!--<url>https://nexus.soma.salesforce.com/nexus/content/groups/public</url>-->
+        <!--</repository>-->
+    <!--</repositories>-->
 
     <dependencies>
         <dependency>
             <groupId>com.salesforce.argus</groupId>
             <artifactId>argus-core</artifactId>
-            <version>3.7.1</version>
+            <version>4.75-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

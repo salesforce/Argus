@@ -119,7 +119,7 @@ public class AuditNotifier extends DefaultNotifier {
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.TRIGGERED), SystemConfiguration.getHostname(), context.getAlert());
 
 		Audit res = _auditService.createAudit(audit);
-		
+
 		// the previous call does not return any status, nor throw exception
 		if (null != res) {
 			return true;

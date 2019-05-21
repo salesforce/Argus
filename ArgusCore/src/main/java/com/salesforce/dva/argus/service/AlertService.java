@@ -465,7 +465,9 @@ public interface AlertService extends Service {
 			/** Indicates a notification for a triggering condition. */
 			TRIGGERED,
 			/** Indicates a notification for when a triggering condition is cleared. */
-			CLEARED;
+			CLEARED,
+			/** Indicates a notification was sent out. Used by refocus notifiers */
+			NOTIFIED;
 		}
 
 		/**

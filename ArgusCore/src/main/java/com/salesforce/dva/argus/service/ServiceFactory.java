@@ -46,6 +46,8 @@ public final class ServiceFactory {
     @Inject
     Provider<TSDBService> _tsdbServiceProvider;
     @Inject
+    Provider<AnnotationStorageService> _annotationStorageServiceProvider;
+    @Inject
     Provider<CollectionService> _collectionServiceProvider;
     @Inject
     Provider<MQService> _mqServiceProvider;
@@ -108,6 +110,15 @@ public final class ServiceFactory {
      */
     public synchronized TSDBService getTSDBService() {
         return _tsdbServiceProvider.get();
+    }
+    
+    /**
+     * Returns an instance of the annotation storage service.
+     *
+     * @return  An instance of the annotation storage service.
+     */
+    public synchronized AnnotationStorageService getAnnotationStorageService() {
+        return _annotationStorageServiceProvider.get();
     }
 
     /**

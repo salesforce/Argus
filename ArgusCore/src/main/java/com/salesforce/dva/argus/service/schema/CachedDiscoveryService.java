@@ -45,6 +45,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 	private static final int EXPIRY_TIME_SECS = 3600;
 	private final long UPPER_LIMIT_TIME_GET_QUERIES_IN_MILLIS;
     private final long _maxDataPointsPerQuery;
+    private final boolean _enforceDatapointsLimit;
 	
 	//~ Instance fields ******************************************************************************************************************************
 
@@ -69,6 +70,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
         _discoveryService = discoveryService;
         _executorService = Executors.newCachedThreadPool();
         _maxDataPointsPerQuery = Long.valueOf(config.getValue(SystemConfiguration.Property.MAX_DATAPOINTS_ALLOWED_PER_QUERY));
+        _enforceDatapointsLimit = Boolean.valueOf(config.getValue(SystemConfiguration.Property.ENFORCE_DATAPOINTS_LIMIT));
         this._monitorService = monitorService;
     }
 
@@ -204,7 +206,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 		}
 		
 		if(numOfExpandedTimeseries > noOfTimeseriesAllowed) {
-		    DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _monitorService, _logger);
+		    DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _enforceDatapointsLimit, _monitorService, _logger);
 		}
 	}
 

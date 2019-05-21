@@ -229,6 +229,7 @@ public final class SystemConfiguration extends Properties {
         GOC_ENABLED("system.property.goc.enabled", "false"),
         GUS_ENABLED("system.property.gus.enabled", "false"),
         CALLBACK_ENABLED("system.property.callback.enabled", "false"),
+        PAGERDUTY_ENABLED("system.property.pagerduty.enabled", "false"),
 
         EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
 
@@ -293,6 +294,9 @@ public final class SystemConfiguration extends Properties {
         TSDB_SERVICE_IMPL_CLASS("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
         TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","placeholder_cachedtsdb.properties"),
 
+        ANNOTATION_STORAGE_SERVICE_IMPL_CLASS("service.binding.annotation.storage", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
+        ANNOTATION_STORAGE_SERVICE_PROPERTY_FILE("service.config.annotation.storage","placeholder_annotation.storage.properties"),
+        
         WARDEN_SERVICE_IMPL_CLASS("service.binding.warden", "com.salesforce.dva.argus.service.warden.DefaultWardenService"),
         WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "placeholder_warden.properties"),
 
@@ -302,6 +306,8 @@ public final class SystemConfiguration extends Properties {
         
         // the default value of 5 million datapoints roughly correspond to 500mb of memory
         MAX_DATAPOINTS_ALLOWED_PER_QUERY("system.property.max.datapoints.query", "5000000"),
+        
+        ENFORCE_DATAPOINTS_LIMIT("system.property.enforce.datapoints.limit", "false"),
 
         PKI_MONITORED_DIRECTORY("pki.monitored.directory", "/etc/pki_service/sfdc/argus-client"),
         PKI_CA_DIRECTORY("pki.ca.directory", "/etc/pki_service/ca");

@@ -107,6 +107,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private static final String USERTAG = "user";
 
 	private static final String ACTION_CLEARED = "cleared";
+	private static final String ACTION_NOTIFIED = "notified";
 	private static final String ACTION_MISSINGDATA = "missingdata";
 	private static final String ACTION_TRIGGERED = "triggered";
 	private static final String ALERTSCOPE = "argus.alerts";
@@ -593,27 +594,33 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 				Map<String, String> tags = new HashMap<>();
 				tags.put(HOSTTAG, HOSTNAME);
-				tags.put(ALERTIDTAG, alert.getId().toString());
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(),
-						alertSkipped ? -1.0 /*failure*/ : 1.0 /*success*/,
-						tags);
-
-				Map<String, String> tagUser = new HashMap<>();
-				tagUser.put(USERTAG, alert.getOwner().getUserName());
-				_monitorService.modifyCounter(alertSkipped ? Counter.ALERTS_SKIPPED : Counter.ALERTS_EVALUATED, 1, new HashMap(tagUser));
+				tags.put(USERTAG, alert.getOwner().getUserName());
 
 				if (!alertSkipped) {
-					_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, System.currentTimeMillis() - jobStartTime, new HashMap(tagUser));
+					_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, System.currentTimeMillis() - jobStartTime, tags);
 					if (evaluateEndTime == 0) {
 						evaluateEndTime = System.currentTimeMillis();
 					}
-					_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_ONLY_LATENCY, evaluateEndTime - jobStartTime, new HashMap(tagUser));
-					_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY_COUNT, 1, tagUser);
+					_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_ONLY_LATENCY, evaluateEndTime - jobStartTime, tags);
+					_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY_COUNT, 1, tags);
 				}
+
+				_monitorService.modifyCounter(alertSkipped ? Counter.ALERTS_SKIPPED : Counter.ALERTS_EVALUATED, 1, tags);
+
 				if (alertFailure) {
-					Map<String, String> tagUser2 = new HashMap<>();
-					tagUser2.put(USERTAG, alert.getOwner().getUserName());
-					_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tagUser2);
+					_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
+				}
+
+				tags.put(ALERTIDTAG, alert.getId().toString());
+
+				if(alertSkipped) {
+					publishAlertTrackingMetric(Counter.ALERTS_SKIPPED.getMetric(), 1.0, tags);
+				} else {
+					publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), 1.0, tags);
+				}
+
+				if (alertFailure) {
+					publishAlertTrackingMetric(Counter.ALERTS_FAILED.getMetric(), 1.0, tags);
 				}
 			}
 		} // end for
@@ -749,8 +756,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
                                            SupportedNotifier.REFOCUS_BOOLEAN.getName().equals(notification.getNotifierName());
         boolean isValueRefocusNotifier   = SupportedNotifier.REFOCUS_VALUE.getName().equals(notification.getNotifierName());
 
-        if (isValueRefocusNotifier)
-        {
+        if (isValueRefocusNotifier) {
             // Future - For now just ignore RefocusValueNotifiers attached to Triggers.
             String logMessage = MessageFormat.format("RefocusValueNotifiers must not be associated with triggers. Name: {0}", notification.getName());
             _logger.info(logMessage);
@@ -767,13 +773,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					history.appendMessageNUpdateHistory(logMessage, null, 0);
 
 					if (isBooleanRefocusNotifier) {
-						sendNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m), alertEnqueueTimestamp);
+						sendRefocusNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m), alertEnqueueTimestamp);
 						continue;
 					}
 
 					if(!notification.onCooldown(trigger, m)) {
 						_updateNotificationSetActiveStatus(trigger, m, history, notification);
-						sendNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m), alertEnqueueTimestamp);
+						sendTriggeredNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m), alertEnqueueTimestamp);
 					} else {
 						logMessage = MessageFormat.format("The notification {0} is on cooldown until {1}.", notification.getName(), getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, m)));
 						history.appendMessageNUpdateHistory(logMessage, null, 0);
@@ -783,7 +789,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					history.appendMessageNUpdateHistory(logMessage, null, 0);
 
 					if (isBooleanRefocusNotifier) {
-						sendClearNotification(trigger, m, history, notification, alert, alertEnqueueTimestamp);
+						sendRefocusNotification(trigger, m, history, notification, alert, System.currentTimeMillis(), alertEnqueueTimestamp);
 						continue;
 					}
 
@@ -812,20 +818,16 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
             _logger.info(logMessage);
             history.appendMessageNUpdateHistory(logMessage, null, 0);
         }
-        else
-        {
-
+        else {
             // Refocus Notifiers: every evaluation needs to send notification
             // Future - file work item for Refocus -> each metric (evaluated expression) will be directed to all of the S+A in the notifier.
             // future - Work item will request expansion of the S+A based on some part of the metric expression.
             // FOR NOW - Users should auther Alerts with RefocusValueNotifiers to have only a single expression.
-            for (Metric m : metrics)
-            {
+            for (Metric m : metrics) {
                 Long latestDataPoint = getLatestDatapointTime(m, alert.getExpression(), alertEnqueueTimestamp);
 
-                if (latestDataPoint != null)
-                {
-                    sendNotification(null, m, history, notification, alert, latestDataPoint, alertEnqueueTimestamp);
+                if (latestDataPoint != null) {
+					sendRefocusNotification(null, m, history, notification, alert, latestDataPoint, alertEnqueueTimestamp);
                 }
             }
         }
@@ -842,8 +844,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
         boolean isValueRefocusNotifier   = SupportedNotifier.REFOCUS_VALUE.getName().equals(notification.getNotifierName());
 
         // IMPORTANT - Verify that missing data should result in no notification to Refocus for valueNotifier
-        if (isValueRefocusNotifier)
-        {
+        if (isValueRefocusNotifier) {
             // Future - For now just ignore RefocusValueNotifiers attached to NoData Scenarios.  Later we trigger, but require that the subscriptions for refocusValue have a value supplied too! S|A|Value
             String logMessage = MessageFormat.format("RefocusValueNotifiers must not be associated with no-data triggers. Name: {0}", notification.getName());
             _logger.info(logMessage);
@@ -859,13 +860,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					history.appendMessageNUpdateHistory(logMessage, null, 0);
 
 					if(isRefocusNotifier) {
-						sendNotification(trigger, m, history, notification, alert, System.currentTimeMillis(), alertEnqueueTimestamp);
+						sendRefocusNotification(trigger, m, history, notification, alert, System.currentTimeMillis(), alertEnqueueTimestamp);
 						continue;
 					}
 
 					if (!notification.onCooldown(trigger, m)) {
 						_updateNotificationSetActiveStatus(trigger, m, history, notification);
-						sendNotification(trigger, m, history, notification, alert, System.currentTimeMillis(), alertEnqueueTimestamp);
+						sendTriggeredNotification(trigger, m, history, notification, alert, System.currentTimeMillis(), alertEnqueueTimestamp);
 					} else {
 						logMessage = MessageFormat.format("The notification {0} is on cooldown until {1}.", notification.getName(), getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, m)));
 						history.appendMessageNUpdateHistory(logMessage, null, 0);
@@ -876,9 +877,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					history.appendMessageNUpdateHistory(logMessage, null, 0);
 
 					if(isRefocusNotifier) {
-						sendClearNotification(trigger, m, history, notification, alert, alertEnqueueTimestamp);
+						sendRefocusNotification(trigger, m, history, notification, alert, System.currentTimeMillis(), alertEnqueueTimestamp);
 						continue;
 					}
+
 					if (notification.isActiveForTriggerAndMetric(trigger, m)) {
 						// This is case when the notification was active for the given trigger, metric combination
 						// and the metric did not violate triggering condition on current evaluation. Hence we must clear it.
@@ -933,29 +935,49 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return triggerFiredTimesAndMetricsByTrigger;
 	}
 
-
-	public void sendNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert,
-			Long triggerFiredTime, Long alertEnqueueTime) {
-
-	    /* NOTE - For triggerless Notifications (i.e. the RefocusValueNotifier), trigger is null, and the
-	       passed in triggerFiredTime is the most recent value in the metric. */
+	/* used by the refocus notifiers */
+	public void sendRefocusNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert, Long triggerFiredTime, Long alertEnqueueTime) {
+				/* NOTE - For trigger-less Notifications (i.e. the RefocusValueNotifier), trigger is null, the
+	    passed in triggerFiredTime is the most recent value in the metric. */
 		double triggerValue = 0.0;
-		if(trigger == null || !trigger.getType().equals(TriggerType.NO_DATA)){
+		if (trigger == null || !trigger.getType().equals(TriggerType.NO_DATA)) {
 			triggerValue = metric.getDatapoints().get(triggerFiredTime);
 		}
-		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, triggerValue, metric, history);
+		sendNotification(trigger, metric, history, notification, alert, triggerFiredTime, alertEnqueueTime, ACTION_NOTIFIED, triggerValue);
+	}
+
+	// TODO - Ideally sendClearNotification sends the triggerValue that caused notification to clear.
+	public void sendClearNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert, Long alertEnqueueTime) {
+		sendNotification(trigger, metric, history, notification, alert, System.currentTimeMillis(), alertEnqueueTime, ACTION_CLEARED, 0.0);
+	}
+
+	public void sendTriggeredNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert,
+										  Long triggerFiredTime, Long alertEnqueueTime) {
+		double triggerValue = 0.0;
+		if (!trigger.getType().equals(TriggerType.NO_DATA)) {
+			triggerValue = metric.getDatapoints().get(triggerFiredTime);
+		}
+		sendNotification(trigger, metric, history, notification, alert, triggerFiredTime, alertEnqueueTime, ACTION_TRIGGERED, triggerValue);
+	}
+
+	public void sendNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert,
+								 Long triggerFiredTime, Long alertEnqueueTime, String action, double triggerValue) {
+		NotificationContext context = new NotificationContext(alert, trigger, notification,
+				triggerFiredTime, triggerValue, metric, history);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
-        Map<String, String> tags = new HashMap<>();
+		String alertId = (trigger != null) ? trigger.getAlert().getId().toString() : alert.getId().toString();
+		String notifierTarget = SupportedNotifier.fromClassName(notification.getNotifierName()).name();
+
+		Map<String, String> tags = new HashMap<>();
 		tags.put(USERTAG, alert.getOwner().getUserName());
-		tags.put(ALERTIDTAG, (trigger != null) ? trigger.getAlert().getId().toString() : alert.getId().toString());
-		tags.put(ACTIONTAG, ACTION_TRIGGERED);
+		tags.put(ACTIONTAG, action);
 		tags.put(RETRIESTAG, Integer.toString(context.getNotificationRetries()));
-		tags.put(NOTIFYTARGETTAG, SupportedNotifier.fromClassName(notification.getNotifierName()).name());
-		String logMessage = "";
-		
-		boolean rc = true;
+		tags.put(NOTIFYTARGETTAG, notifierTarget);
+		String logMessage;
+
+		boolean rc;
 		try {
 			rc = notifier.sendNotification(context);
 		} catch (Exception e) {
@@ -963,80 +985,27 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			rc = false;
 		}
 
-		// TODO - log alertId, triggerId, notificationId?
+		// TODO - log triggerId, notificationId?
 		if (rc) {
 			tags.put(STATUSTAG, STATUS_SUCCESS);
-			if (trigger != null)
-            {
-                logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
-                        getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
-            }
-            else
-            {
-                logMessage = MessageFormat.format("Sent notification to {0}",
-                        SupportedNotifier.fromClassName(notification.getNotifierName()).name());
-            }
+			logMessage = MessageFormat.format("Sent alert ({0}) notification with action: {1} of type: {2}",
+					alertId, action, notifierTarget);
+			if (trigger != null && action == ACTION_TRIGGERED) {
+				logMessage += MessageFormat.format(" and updated the cooldown: {0}", getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
+			}
 		} else {
 			tags.put(STATUSTAG, STATUS_FAILURE);
-			logMessage = MessageFormat.format("Failed to send notification to {0}",
-                    SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+			logMessage = MessageFormat.format("Failed to send notification with action: {0} to {1} for alert {2}",
+					action, notifierTarget, alertId);
 		}
 
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 
-		tags = new HashMap<>();
 		tags.put(HOSTTAG, HOSTNAME);
-		tags.put(STATUSTAG, rc ? STATUS_SUCCESS: STATUS_FAILURE);
-		tags.put(USERTAG, alert.getOwner().getUserName());
-		tags.put(ACTIONTAG, ACTION_TRIGGERED);
-		tags.put(NOTIFYTARGETTAG, SupportedNotifier.fromClassName(notification.getNotifierName()).name());
-		// TODO - QUESTION - can trigger.getAlert().getId() differ from alert.getId()?
-		tags.put(ALERTIDTAG, (trigger != null) ? trigger.getAlert().getId().toString() : alert.getId().toString());
-		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), 1.0/*notification sent*/, tags);
-
-		_logger.debug(logMessage);
-		history.appendMessageNUpdateHistory(logMessage, null, 0);
-	}
-
-	public void sendClearNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert, Long alertEnqueueTime) {
-		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), 0.0, metric, history);
-		context.setAlertEnqueueTimestamp(alertEnqueueTime);
-		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
-
-		String logMessage ="";
-		Map<String, String> tags = new HashMap<>();
-		tags.put(USERTAG, alert.getOwner().getUserName());
-		tags.put(ALERTIDTAG, trigger.getAlert().getId().toString());
-		tags.put(ACTIONTAG, ACTION_CLEARED);
-		tags.put(NOTIFYTARGETTAG, SupportedNotifier.fromClassName(notification.getNotifierName()).name());
-
-		boolean rc = true;
-		try {
-			rc = notifier.clearNotification(context);
-		} catch (Exception e) {
-			_logger.error("clearNotification() hit exception", e);
-			rc = false;
-		}
-		if (rc) {
-			tags.put(STATUSTAG, STATUS_SUCCESS);
-			logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
-		} else {
-			tags.put(STATUSTAG, STATUS_FAILURE);
-			logMessage = MessageFormat.format("Failed to send clear notifiction to {0}", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
-		}
-
-		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
-		
-		tags = new HashMap<>();
-		tags.put(HOSTTAG, HOSTNAME);
-		tags.put(NOTIFYTARGETTAG, SupportedNotifier.fromClassName(notification.getNotifierName()).name());
-		tags.put(ALERTIDTAG, trigger.getAlert().getId().toString());
-		tags.put(STATUSTAG, rc ? STATUS_SUCCESS: STATUS_FAILURE);
-		tags.put(ACTIONTAG, ACTION_CLEARED);
-		tags.put(USERTAG, alert.getOwner().getUserName());
+		tags.put(ALERTIDTAG, alertId);
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), 1.0, tags);
 
-		_logger.info(logMessage);
+		_logger.debug(logMessage);
 		history.appendMessageNUpdateHistory(logMessage, null, 0);
 	}
 
@@ -1588,6 +1557,26 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		/** Creates a new NotificationContext object. */
 		protected NotificationContext() { }
+
+		public Notification getAlertNotification() {
+			final String notificationName = notification.getName();
+			for (Notification alertNotification : alert.getNotifications()) {
+				if (alertNotification.getName().equalsIgnoreCase(notificationName)) {
+					return alertNotification;
+				}
+			}
+			return null;
+		}
+
+		public Trigger getAlertTrigger() {
+			final String triggerName = trigger.getName();
+			for (Trigger alertTrigger : alert.getTriggers()) {
+				if (alertTrigger.getName().equalsIgnoreCase(triggerName)) {
+					return alertTrigger;
+				}
+			}
+			return null;
+		}
 
 		/**
 		 * returns the alert id.

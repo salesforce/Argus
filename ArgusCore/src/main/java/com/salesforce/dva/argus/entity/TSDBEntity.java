@@ -36,6 +36,7 @@ import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -60,7 +61,7 @@ public abstract class TSDBEntity implements Serializable {
     private String _uid;
     private String _scope;
     private String _metric;
-    private final Map<String, String> _tags = new HashMap<>(0);
+    private final Map<String, String> _tags = new TreeMap<>();
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -140,7 +141,7 @@ public abstract class TSDBEntity implements Serializable {
      * @return  The tags for a metric. Will never be null but may be empty.
      */
     public Map<String, String> getTags() {
-        Map<String, String> result = new HashMap<>();
+        Map<String, String> result = new TreeMap<>();
 
         for (Map.Entry<String, String> entry : _tags.entrySet()) {
             String key = entry.getKey();

@@ -138,6 +138,7 @@ public final class SystemMain extends SystemService {
             _dispose(_serviceFactory.getTSDBService());
             _dispose(_serviceFactory.getCacheService());
             _dispose(_serviceFactory.getHistoryService());
+            _dispose(_serviceFactory.getAnnotationStorageService());
             // TODO - dispose of RefocusService.  QUESTION - where is alertservice disposed?
             _persistService.stop();
             _log.info("{} stopped.", getName());

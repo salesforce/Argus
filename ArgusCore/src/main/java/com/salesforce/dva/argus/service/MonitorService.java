@@ -222,8 +222,10 @@ public interface MonitorService extends Service {
         NOTIFICATIONS_SENT("argus.core", "notifications.sent", MetricType.COUNTER),
         GOC_NOTIFICATIONS_FAILED("argus.core", "notifications.failed.goc", MetricType.COUNTER),
         GUS_NOTIFICATIONS_FAILED("argus.core", "notifications.failed.gus", MetricType.COUNTER),
+        PAGERDUTY_NOTIFICATIONS_FAILED("argus.core", "notifications.failed.pagerduty", MetricType.COUNTER),
         GOC_NOTIFICATIONS_RETRIES("argus.core", "notifications.retries.goc", MetricType.COUNTER),
         GUS_NOTIFICATIONS_RETRIES("argus.core", "notifications.retries.gus", MetricType.COUNTER),
+        PAGERDUTY_NOTIFICATIONS_RETRIES("argus.core", "notifications.retries.pagerduty", MetricType.COUNTER),
         TRIGGERS_VIOLATED("argus.core", "triggers.violated", MetricType.COUNTER),
         ALERTS_MAX("argus.core", "alerts.max",MetricType.COUNTER),
         ALERT_EVALUATION_KPI("argus.core", "alert.evaluation.kpi", MetricType.COUNTER),
@@ -275,7 +277,9 @@ public interface MonitorService extends Service {
         DATALAG_PER_DC_TIME_LAG("argus.core", "datalag.seconds"),
         QUERY_DATAPOINTS_LIMIT_EXCEEDED("argus.core", "query.datapoints.limit.exceeded"),
         
-        ELASTIC_SEARCH_GET_FAILURES("argus.core", "elastic.search.get.failures", MetricType.COUNTER);
+        ELASTIC_SEARCH_GET_FAILURES("argus.core", "elastic.search.get.failures", MetricType.COUNTER),
+        
+        ANNOTATION_RECORDS_WRITE_FAILURES("argus.core", "annotation.records.write.failures", MetricType.COUNTER);
         
         private final String _scope;
         private final String _metric;

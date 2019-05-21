@@ -126,7 +126,8 @@ public class DefaultAlertServiceTest {
 
         int triggerMinValue = 50, inertiaPeriod = 1000 * 60 * 5;
         int cooldownPeriod = 1000 * 5;
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
+        final AtomicInteger notifyCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
 
         Metric metric = _createMetric(TestUtils.createRandomName(), TestUtils.createRandomName(), triggerMinValue, inertiaPeriod);
@@ -144,12 +145,12 @@ public class DefaultAlertServiceTest {
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
 
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, notifyCount,
         Arrays.asList(metric), alert, notification, false);
 
         spyAlertService.executeScheduledAlerts(1, 1000);
 
-        assertEquals(1, notificationCount.get());
+        assertEquals(1, triggeredCount.get());
     }
 
     @Test
@@ -157,7 +158,8 @@ public class DefaultAlertServiceTest {
         ServiceFactory sFactory = system.getServiceFactory();
         UserService userService = sFactory.getUserService();
 
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
 
         Metric metric = new Metric("scope", "metric");
@@ -181,12 +183,12 @@ public class DefaultAlertServiceTest {
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
 
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount,
                 Arrays.asList(metric), alert, notification, false);
 
         spyAlertService.executeScheduledAlerts(1, 1000);
 
-        assertEquals(2, notificationCount.get());
+        assertEquals(2, triggeredCount.get());
     }
 
     @Test
@@ -194,7 +196,8 @@ public class DefaultAlertServiceTest {
         ServiceFactory sFactory = system.getServiceFactory();
         UserService userService = sFactory.getUserService();
 
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
 
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
@@ -209,12 +212,12 @@ public class DefaultAlertServiceTest {
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
 
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount,
                 Arrays.asList(), alert, notification, false);
 
         spyAlertService.executeScheduledAlerts(1, 1000);
 
-        assertEquals(1, notificationCount.get());
+        assertEquals(1, triggeredCount.get());
     }
 
     @Test
@@ -222,7 +225,8 @@ public class DefaultAlertServiceTest {
         ServiceFactory sFactory = system.getServiceFactory();
         UserService userService = sFactory.getUserService();
 
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
 
         Metric metric = new Metric("scope", "metric");
@@ -245,7 +249,7 @@ public class DefaultAlertServiceTest {
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
 
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount,
                 Arrays.asList(metric), alert, notification, false);
 
         //This will set the notification on cooldown for the given metric and trigger.
@@ -253,14 +257,16 @@ public class DefaultAlertServiceTest {
         //This evaluation should not send notification. Hence notificationCount count would still be 1.
         spyAlertService.executeScheduledAlerts(1, 1000);
 
-        assertEquals(1, notificationCount.get());
+        assertEquals(1, triggeredCount.get());
         assertEquals(1, notification.getCooldownExpirationMap().size());
     }
 
     @Test
     public void testExecuteScheduledAlerts_ForMoreThanOneTimeSeries() {
         UserService userService = system.getServiceFactory().getUserService();
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
 
         Metric metric1 = new Metric("scope1", "metric");
@@ -289,18 +295,20 @@ public class DefaultAlertServiceTest {
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
 
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount,
                 Arrays.asList(metric1, metric2), alert, notification, false);
 
         spyAlertService.executeScheduledAlerts(10, 1000);
 
-        assertEquals(1, notificationCount.get());
+        assertEquals(1, triggeredCount.get());
     }
 
     @Test
     public void testExecuteScheduledAlerts_ClearNotification() {
         UserService userService = system.getServiceFactory().getUserService();
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
 
         Metric metric = new Metric("scope", "metric");
@@ -321,14 +329,14 @@ public class DefaultAlertServiceTest {
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount,
                 Arrays.asList(metric), alert, notification, false);
 
         spyAlertService.executeScheduledAlerts(10, 1000);
-        assertEquals(1, notificationCount.get());
+        assertEquals(1, triggeredCount.get());
         //assertEquals(true, notification.isActiveForTriggerAndMetric(trigger, metric));
 
-        notificationCount.set(0);
+        triggeredCount.set(0);
         clearCount.set(0);
 
         dps = new HashMap<Long, String>();
@@ -337,11 +345,11 @@ public class DefaultAlertServiceTest {
         dps.put(6000L, "3");
         metric.setDatapoints(_convertDatapoints(dps));
 
-        spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric),
+        spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount, Arrays.asList(metric),
                 alert, notification, false);
 
         spyAlertService.executeScheduledAlerts(10, 1000);
-        assertEquals(0, notificationCount.get());
+        assertEquals(0, triggeredCount.get());
         assertEquals(1, clearCount.get());
         //assertEquals(false, notification.isActiveForTriggerAndMetric(trigger, metric));
 
@@ -352,7 +360,8 @@ public class DefaultAlertServiceTest {
         ServiceFactory sFactory = system.getServiceFactory();
         UserService userService = sFactory.getUserService();
 
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
 
         Metric metric = new Metric("scope", "metric");
@@ -375,7 +384,7 @@ public class DefaultAlertServiceTest {
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
 
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount,
                 Arrays.asList(metric), alert, notification, false);
 
         //This will set the notification on cooldown for the given metric and trigger.
@@ -385,14 +394,16 @@ public class DefaultAlertServiceTest {
 
         assertEquals(false, notification.isActiveForTriggerAndMetric(trigger, metric)); // refocus notification is stateless
 
-        assertEquals(2, notificationCount.get()); //notification was sent out even on cool down for refocus
+        assertEquals(2, refocusCount.get()); //notification was sent out even on cool down for refocus
         assertEquals(0, notification.getCooldownExpirationMap().size()); //refocuse notifier does not record/persist cooldown info
     }
 
     @Test
     public void testExecuteScheduledAlerts_ClearNotificationWithRefocusNotifier() {
         UserService userService = system.getServiceFactory().getUserService();
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
 
         Metric metric = new Metric("scope", "metric");
@@ -414,14 +425,14 @@ public class DefaultAlertServiceTest {
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
 
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount,
                 Arrays.asList(metric), alert, notification, false);
 
         spyAlertService.executeScheduledAlerts(10, 1000);
-        assertEquals(1, notificationCount.get());
+        assertEquals(1, refocusCount.get());
         assertEquals(false, notification.isActiveForTriggerAndMetric(trigger, metric)); // refocus notification is stateless
 
-        notificationCount.set(0);
+        triggeredCount.set(0);
         clearCount.set(0);
 
         dps = new HashMap<Long, String>();
@@ -430,12 +441,12 @@ public class DefaultAlertServiceTest {
         dps.put(6000L, "3");
         metric.setDatapoints(_convertDatapoints(dps));
 
-        spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric),
+        spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount, Arrays.asList(metric),
                 alert, notification, false);
 
         spyAlertService.executeScheduledAlerts(10, 1000);
-        assertEquals(0, notificationCount.get());
-        assertEquals(1, clearCount.get());
+        assertEquals(0, triggeredCount.get());
+        assertEquals(0, clearCount.get());
         assertEquals(false, notification.isActiveForTriggerAndMetric(trigger, metric)); // refocus notification is stateless
 
     }
@@ -444,7 +455,9 @@ public class DefaultAlertServiceTest {
     @Test
     public void testExecuteScheduledAlerts_AlertWithMultipleMetricsNotificationSentForEach() {
         UserService userService = system.getServiceFactory().getUserService();
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
 
         Metric metric1 = new Metric("scope1", "metric");
@@ -473,12 +486,12 @@ public class DefaultAlertServiceTest {
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
 
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount,
                 Arrays.asList(metric1, metric2), alert, notification, false);
 
         spyAlertService.executeScheduledAlerts(10, 1000);
 
-        assertEquals(2, notificationCount.get());
+        assertEquals(2, triggeredCount.get());
         assertEquals(2, notification.getCooldownExpirationMap().size());
         assertEquals(2, notification.getActiveStatusMap().size());
     }
@@ -496,7 +509,9 @@ public class DefaultAlertServiceTest {
     @Test
     public void testExecuteScheduledAlerts_Scenario1() {
         UserService userService = system.getServiceFactory().getUserService();
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
 
         Metric metric1 = new Metric("scope1", "metric");
@@ -525,15 +540,15 @@ public class DefaultAlertServiceTest {
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
 
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount,
                 Arrays.asList(metric1, metric2), alert, notification, false);
         spyAlertService.executeScheduledAlerts(10, 1000);
 
-        assertEquals(1, notificationCount.get());
+        assertEquals(1, triggeredCount.get());
         assertEquals(1, notification.getCooldownExpirationMap().size());
         assertEquals(1, notification.getActiveStatusMap().size());
 
-        notificationCount.set(0);
+        triggeredCount.set(0);
         clearCount.set(0);
 
         metric1 = new Metric("scope1", "metric");
@@ -550,11 +565,11 @@ public class DefaultAlertServiceTest {
         dps2.put(6000L, "31");
         metric2.setDatapoints(_convertDatapoints(dps2));
 
-        spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric1, metric2),
+        spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount, Arrays.asList(metric1, metric2),
                 alert, notification, false);
         spyAlertService.executeScheduledAlerts(10, 1000);
 
-        assertEquals(1, notificationCount.get());
+        assertEquals(1, triggeredCount.get());
         assertEquals(1, clearCount.get());
         assertEquals(2, notification.getCooldownExpirationMap().size());
         assertEquals(1, _getActiveSize(notification.getActiveStatusMap()));
@@ -795,8 +810,10 @@ public class DefaultAlertServiceTest {
 
         int triggerMinValue = 50, inertiaPeriod = 1000;
         int cooldownPeriod = 1000 * 5;
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
 
         Metric metric = new Metric("scope", "metric");
         Map<Long, Double> datapoints = new HashMap<>();
@@ -815,12 +832,12 @@ public class DefaultAlertServiceTest {
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
 
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount,
                 Arrays.asList(metric), alert, notification, true);
 
         spyAlertService.executeScheduledAlerts(1, 1000);
 
-        assertEquals(0, notificationCount.get());
+        assertEquals(0, triggeredCount.get());
         enableDatalag(false);
     }
 
@@ -831,8 +848,10 @@ public class DefaultAlertServiceTest {
 
         int triggerMinValue = 50, inertiaPeriod = 1000;
         int cooldownPeriod = 1000 * 5;
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
 
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:whiteListedScope:metric:avg", "* * * * *");
         _setAlertId(alert, "100001");
@@ -847,12 +866,12 @@ public class DefaultAlertServiceTest {
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
 
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount,
                 Arrays.asList(), alert, notification, true);
 
         spyAlertService.executeScheduledAlerts(1, 1000);
 
-        assertEquals(1, notificationCount.get());
+        assertEquals(1, triggeredCount.get());
         enableDatalag(false);
     }
 
@@ -863,8 +882,10 @@ public class DefaultAlertServiceTest {
 
         int triggerMinValue = 50, inertiaPeriod = 1000;
         int cooldownPeriod = 1000 * 5;
-        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        final AtomicInteger triggeredCount = new AtomicInteger(0);
         final AtomicInteger clearCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
 
         Alert alert = new Alert(userService.findDefaultUser(), userService.findDefaultUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
         _setAlertId(alert, "100001");
@@ -879,12 +900,12 @@ public class DefaultAlertServiceTest {
         notification.setTriggers(alert.getTriggers());
         alert.setEnabled(true);
 
-        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(triggeredCount, clearCount, refocusCount,
                 Arrays.asList(), alert, notification, true);
 
         spyAlertService.executeScheduledAlerts(1, 1000);
 
-        assertEquals(1, notificationCount.get());
+        assertEquals(1, triggeredCount.get());
         enableDatalag(false);
     }
 
@@ -900,7 +921,7 @@ public class DefaultAlertServiceTest {
         assertEquals(userService.findAdminUser().getUserName() + "-alert", RequestContextHolder.getRequestContext().getUserName());
     }
 
-    private DefaultAlertService _initializeSpyAlertServiceWithStubs(final AtomicInteger notificationCount, final AtomicInteger clearCount,
+    private DefaultAlertService _initializeSpyAlertServiceWithStubs(final AtomicInteger triggeredCount, final AtomicInteger clearCount, final AtomicInteger refocusCount,
                                                                     List<Metric> metrics, Alert alert, Notification notification, boolean isDataLagging) {
         DefaultAlertService spyAlertService = spy(alertService);
         EntityManager em = Persistence.createEntityManagerFactory("argus-pu").createEntityManager();
@@ -959,10 +980,10 @@ public class DefaultAlertServiceTest {
 
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
-                notificationCount.incrementAndGet();
+                triggeredCount.incrementAndGet();
                 return null;
             }
-        }).when(spyAlertService).sendNotification(any(Trigger.class),
+        }).when(spyAlertService).sendTriggeredNotification(any(Trigger.class),
                                                             any(Metric.class),
                                                             any(History.class),
                                                             any(Notification.class),
@@ -983,6 +1004,21 @@ public class DefaultAlertServiceTest {
                                                             any(Notification.class),
                                                             any(Alert.class),
                                                             anyLong());
+
+        doAnswer(new Answer<Void>() {
+
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                refocusCount.incrementAndGet();
+                return null;
+            }
+        }).when(spyAlertService).sendRefocusNotification(any(Trigger.class),
+                any(Metric.class),
+                any(History.class),
+                any(Notification.class),
+                any(Alert.class),
+                anyLong(),
+                anyLong());
 
         return spyAlertService;
     }

@@ -12,8 +12,9 @@ public class DiscoveryUtilsTest {
     @Test
     public void testGetMaxTimeSeriesAllowed() {
         MetricQuery query = new MetricQuery("test","test",null,0L,0L);
-        query.setStartTimestamp(0L);
-        query.setEndTimestamp(60000l);
+        long relTime = System.currentTimeMillis()-10*60000;
+        query.setStartTimestamp(relTime+0L);
+        query.setEndTimestamp(relTime+60000l);
         query.setDownsamplingPeriod(60000l);
         assertEquals((long)DiscoveryService.maxTimeseriesAllowed(query, MAX_DATAPOINTS_PER_RESPONSE), MAX_DATAPOINTS_PER_RESPONSE);
 
@@ -26,12 +27,18 @@ public class DiscoveryUtilsTest {
         query.setDownsamplingPeriod(120000l);
         assertEquals((long)DiscoveryService.maxTimeseriesAllowed(query, MAX_DATAPOINTS_PER_RESPONSE), MAX_DATAPOINTS_PER_RESPONSE);
 
-        query.setStartTimestamp(0L);
-        query.setEndTimestamp(480000l);
+        query.setStartTimestamp(relTime+0L);
+        query.setEndTimestamp(relTime+480000l);
         query.setDownsamplingPeriod(60000l);
         assertEquals((long)DiscoveryService.maxTimeseriesAllowed(query, MAX_DATAPOINTS_PER_RESPONSE), MAX_DATAPOINTS_PER_RESPONSE/8);
 
         query.setDownsamplingPeriod(2*60000l);
         assertEquals((long)DiscoveryService.maxTimeseriesAllowed(query, MAX_DATAPOINTS_PER_RESPONSE), MAX_DATAPOINTS_PER_RESPONSE/4);
+        
+        long relTimeInSeconds = relTime/1000;
+        query.setStartTimestamp(relTimeInSeconds+0L);
+        query.setEndTimestamp(relTimeInSeconds+60l);
+        query.setDownsamplingPeriod(60000l);
+        assertEquals((long)DiscoveryService.maxTimeseriesAllowed(query, MAX_DATAPOINTS_PER_RESPONSE), MAX_DATAPOINTS_PER_RESPONSE);
     }
 }

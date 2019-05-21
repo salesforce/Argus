@@ -68,6 +68,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
     private final Logger _logger = LoggerFactory.getLogger(DefaultDiscoveryService.class);
     private final SchemaService _schemaService;
     private final long _maxDataPointsPerQuery;
+    private final boolean _enforceDatapointsLimit;
     private final MonitorService _monitorService;
 
     //~ Constructors *********************************************************************************************************************************
@@ -83,6 +84,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         super(config);
         this._schemaService = schemaService;
         this._maxDataPointsPerQuery = Long.valueOf(config.getValue(SystemConfiguration.Property.MAX_DATAPOINTS_ALLOWED_PER_QUERY));
+        this._enforceDatapointsLimit = Boolean.valueOf(config.getValue(SystemConfiguration.Property.ENFORCE_DATAPOINTS_LIMIT));
         this._monitorService = monitorService;
     }
 
@@ -150,7 +152,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
             int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query, _maxDataPointsPerQuery);
             
             if(noOfTimeseriesAllowed == 0) {
-                DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _monitorService, _logger);
+                DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _enforceDatapointsLimit, _monitorService, _logger);
             }
             
             Map<String, MetricQuery> queries = new HashMap<>();
@@ -172,7 +174,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 
                         if (!queries.containsKey(identifier)) {
                             if (queries.size() == noOfTimeseriesAllowed) {
-                                DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _monitorService, _logger);
+                                DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _enforceDatapointsLimit, _monitorService, _logger);
                             }
 
                             MetricQuery mq = new MetricQuery(record.getScope(), record.getMetric(), null, 0L, 1L);
@@ -224,7 +226,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 
                         for (MetricSchemaRecord record : records) {
                             if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
-                                DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _monitorService, _logger);
+                                DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _enforceDatapointsLimit, _monitorService, _logger);
                             }
                             
                             String identifier = _getIdentifier(record);

@@ -1,7 +1,7 @@
 package com.salesforce.perfeng.akc.consumer;
 
 import com.salesforce.dva.argus.entity.Annotation;
-import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.mandm.avro.SchemaField;
 import com.salesforce.mandm.avro.util.AjnaWireFormatDecoder;
 import com.salesforce.mandm.avro.util.AvroUtils;
@@ -32,12 +32,12 @@ class AnnotationConsumer extends BaseConsumer {
     static final String ANNOTATION_SCHEMA_FINGERPRINT = AvroUtils.getSchemaFingerprint(com.salesforce.mandm.ajna.Annotation.getClassSchema());
 
     AjnaWireFormatDecoder<com.salesforce.mandm.ajna.Annotation> annotationAvroDecoder;
-    private TSDBService tsdbService;
+    private AnnotationStorageService annotationStorageService;
 
-    AnnotationConsumer(TSDBService tsdbService, InstrumentationService instrumentationService, IBlacklistService blacklistService) {
+    AnnotationConsumer(AnnotationStorageService annotationStorageService, InstrumentationService instrumentationService, IBlacklistService blacklistService) {
         super(instrumentationService, blacklistService);
         annotationAvroDecoder = new AjnaWireFormatDecoder<>();
-        this.tsdbService = tsdbService;
+        this.annotationStorageService = annotationStorageService;
     }
 
     void processAjnaAnnotationKafkaRecords(ConsumerRecords<byte[], byte[]> records, List<Annotation> argusAnnotations) {
@@ -82,11 +82,11 @@ class AnnotationConsumer extends BaseConsumer {
         int size = annotations.size();
         double start = System.currentTimeMillis();
         try {
-            tsdbService.putAnnotations(annotations);
+            annotationStorageService.putAnnotations(annotations);
             instrumentationService.updateCounter(ANNOTATIONS_POSTED, size, null);
         } catch (Exception ex) {
             logger.warn("Retrying annotation commit due to exception " + ex);
-            if (retryWithExponentialBackoff(annotations, tsdbService::putAnnotations)) {
+            if (retryWithExponentialBackoff(annotations, annotationStorageService::putAnnotations)) {
                 instrumentationService.updateCounter(ANNOTATIONS_POSTED, size, null);
             } else {
                 instrumentationService.updateCounter(ANNOTATIONS_DROPPED, size, null);
@@ -138,6 +138,4 @@ class AnnotationConsumer extends BaseConsumer {
     static boolean isAnnotationSizeSafe(Annotation a) {
         return a == null || a.computeSizeBytes() <= MAX_ANNOTATION_SIZE_BYTES;
     }
-
-
 }
