@@ -321,7 +321,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
      *          
      *          metric(otsdb) = metric(argus)&lt;DELIMITER&gt;scope(argus)
      * 
-     * @param metric    The metric
+     * @param histogram    The histogram
      * @return OpenTSDB metric name constructed from scope, metric.
      */
     public static String constructTSDBMetricName(Histogram histogram) {
