@@ -99,6 +99,8 @@ public final class ServiceFactory {
     Provider<RefocusService> _refocusServiceProvider;
     @Inject
     Provider<QueryStoreService> _queryStoreServiceProvider;
+    @Inject
+    Provider<ImageService> _imageServiceProvider;
 
 
     //~ Methods **************************************************************************************************************************************
@@ -353,6 +355,15 @@ public final class ServiceFactory {
      */
     public synchronized QueryStoreService getQueryStoreService() {
         return _queryStoreServiceProvider.get();
+    }
+
+    /**
+     * Returns an instance of the Image service.
+     *
+     * @return  An instance of the Image service.
+     */
+    public synchronized ImageService getImageService() {
+        return _imageServiceProvider.get();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

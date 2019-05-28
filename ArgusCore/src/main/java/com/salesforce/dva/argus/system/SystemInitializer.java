@@ -237,6 +237,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.AUTH_SERVICE_IMPL_CLASS, AuthService.class);
         bindConcreteClass(Property.SCHEMA_SERVICE_IMPL_CLASS, SchemaService.class);
         bindConcreteClass(Property.QUERYSTORE_SERVICE_IMPL_CLASS, QueryStoreService.class);
+        bindConcreteClass(Property.IMAGE_SERVICE_IMPL_CLASS, ImageService.class);
         bindConcreteClass(Property.HISTORY_SERVICE_IMPL_CLASS, HistoryService.class);
         bindConcreteClass(Property.AUDIT_SERVICE_IMPL_CLASS, AuditService.class);
         bindConcreteClass(Property.CALLBACK_SERVICE_IMPL_CLASS, CallbackService.class);
@@ -301,6 +302,7 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.AUTH_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.SCHEMA_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.QUERYSTORE_SERVICE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.IMAGE_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.HISTORY_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.TSDB_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE));
