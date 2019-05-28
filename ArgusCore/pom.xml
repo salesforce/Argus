@@ -283,7 +283,7 @@
                     <artifactId>slf4j-log4j12</artifactId>
                 </exclusion>
             </exclusions>
-            <version>3.4.10</version>
+            <version>3.4.14</version>
         </dependency>
         <dependency>
             <groupId>net.sf.jopt-simple</groupId>
