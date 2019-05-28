@@ -260,8 +260,7 @@ public class Histogram extends TSDBEntity implements Serializable {
     public String getIdentifier() {
 
         String tags = "";
-        Map<String, String> sortedTags = new TreeMap<>();
-        sortedTags.putAll(getTags());
+        Map<String, String> sortedTags = getTags();
         if(!sortedTags.isEmpty()) {
             StringBuilder tagListBuffer = new StringBuilder("{");
             for (String tagKey : sortedTags.keySet()) {
