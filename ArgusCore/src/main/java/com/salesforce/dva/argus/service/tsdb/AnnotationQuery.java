@@ -148,9 +148,9 @@ public class AnnotationQuery {
     }
 
     /**
-     * Returns the tags associated with the query.
+     * Returns the sorted tags associated with the query.
      *
-     * @return  The tags associated with the query. Will never return null, but may be empty.
+     * @return  The sorted tags associated with the query. Will never return null, but may be empty.
      */
     public Map<String, String> getTags() {
         return _tags;

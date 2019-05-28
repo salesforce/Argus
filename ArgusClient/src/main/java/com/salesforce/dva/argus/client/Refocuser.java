@@ -36,7 +36,7 @@ import com.salesforce.dva.argus.service.RefocusService;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.text.MessageFormat;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -55,7 +55,6 @@ class Refocuser implements Runnable {
 
     private final RefocusService service;
     private final int timeout;
-    private final AtomicInteger jobCounter;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -64,12 +63,10 @@ class Refocuser implements Runnable {
      *
      * @param  service     The Refocus service to use.
      * @param  timeout     The timeout in milliseconds for a single alert evaluation. Must be a positive number.
-     * @param  jobCounter  The job counter. Cannot be null.
      */
-    Refocuser(RefocusService service, int timeout, AtomicInteger jobCounter) {
+    Refocuser(RefocusService service, int timeout) {
         this.service = service;
         this.timeout = timeout;
-        this.jobCounter = jobCounter; // TODO - needed?
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -79,14 +76,9 @@ class Refocuser implements Runnable {
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                int forwarded = service.forwardNotifications();
-
-                if (forwarded > 0)
-                {
-                    jobCounter.set( service.getNotificationsDelivered() + service.getNotificationsDiscarded());
-                }
-
+                service.forwardNotifications();
                 Thread.sleep(POLL_INTERVAL_MS); // TODO - needed?
+
             } catch (InterruptedException ex) {
                 LOGGER.info("Execution was interrupted.");
                 Thread.currentThread().interrupt();

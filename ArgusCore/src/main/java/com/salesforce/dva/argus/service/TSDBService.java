@@ -105,7 +105,7 @@ public interface TSDBService extends AnnotationStorageService {
 
 		for(Metric m : metrics) {
 
-			Map<String, String> tags = new TreeMap<>(m.getTags());
+			Map<String, String> tags = m.getTags();
 
 			StringBuilder sb = new StringBuilder();
 			for(Map.Entry<String, String> entry : tags.entrySet()) {
@@ -120,7 +120,6 @@ public interface TSDBService extends AnnotationStorageService {
 			}
 
 			groupedMetricsMap.get(sb.toString()).add(m);
-
 		}
 
 		return groupedMetricsMap;

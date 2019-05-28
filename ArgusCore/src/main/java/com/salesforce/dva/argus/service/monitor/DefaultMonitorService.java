@@ -61,6 +61,7 @@ import com.salesforce.dva.argus.system.SystemException;
 import com.sun.management.OperatingSystemMXBean;
 import com.sun.management.UnixOperatingSystemMXBean;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanRegistrationException;
@@ -109,8 +110,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 	//~ Instance fields ******************************************************************************************************************************
 
-	@SLF4JTypeListener.InjectLogger
-	private Logger _logger;
+	private final Logger _logger = LoggerFactory.getLogger(DefaultMonitorService.class);
 	private TSDBService _tsdbService;
 	private final UserService _userService;
 	private final AlertService _alertService;

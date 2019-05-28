@@ -52,7 +52,7 @@ class ClientServiceFactory {
         switch (clientType) {
             case ALERT:
                 return collect(startAlertClientService(system, jobCounter),
-                               startRefocusClientService(system, jobCounter));
+                               startRefocusClientService(system));
             case COMMIT_SCHEMA:
 
                 /* Alpha feature, not currently supported. */
@@ -97,11 +97,11 @@ class ClientServiceFactory {
         return service;
     }
 
-    private static ExecutorService startRefocusClientService(SystemMain system, AtomicInteger jobCounter) {
+    private static ExecutorService startRefocusClientService(SystemMain system) {
         int configuredCount = Integer.valueOf(system.getConfiguration().getValue(SystemConfiguration.Property.REFOCUS_CLIENT_THREADS));
         int configuredTimeout = Integer.valueOf(system.getConfiguration().getValue(SystemConfiguration.Property.REFOCUS_CLIENT_CONNECT_TIMEOUT));
-        int threadPoolCount = Math.max(configuredCount, 1); // IMPORTANT - TODO - why any other value than 1? // revisit this
-                                                            // No need for >1 thread until threads added for executing the HTTP requests.
+        int threadPoolCount = Math.max(configuredCount, 1); // TODO - why any other value than 1?
+                                                            // todo - No need for tpc>1 thread until threads added for executing the HTTP requests.
         int timeout = Math.max(10000, configuredTimeout);
         ExecutorService service = Executors.newFixedThreadPool(threadPoolCount, new ThreadFactory() {
 
@@ -114,7 +114,7 @@ class ClientServiceFactory {
         });
         system.getServiceFactory().getMonitorService().startRecordingCounters();
         for (int i = 0; i < threadPoolCount; i++) {
-            service.submit(new Refocuser(system.getServiceFactory().getRefocusService(), timeout, jobCounter));
+            service.submit(new Refocuser(system.getServiceFactory().getRefocusService(), timeout));
         }
         return service;
     }

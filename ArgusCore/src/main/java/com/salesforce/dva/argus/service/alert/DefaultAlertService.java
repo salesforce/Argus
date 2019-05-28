@@ -695,11 +695,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		String logMessage;
 		jobEndTime = System.currentTimeMillis();
 		if(isDataMissing) {
-			logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to missing data exception. Full stack trace of exception - {1}",
-					alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
+			logMessage = MessageFormat.format("Failed to evaluate alert : `{0}` due to missing data exception. Exception message - {1}",
+					alert.getId().intValue(), ExceptionUtils.getMessage(ex));
 		} else {
-			logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Full stack trace of exception - {1}",
-					alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
+			logMessage = MessageFormat.format("Failed to evaluate alert : `{0}`. Exception message - {1}",
+					alert.getId().intValue(), ExceptionUtils.getMessage(ex));
 		}
 		_logger.warn(logMessage);
 
@@ -726,7 +726,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		}
 		catch (Exception e) {
-			logMessage = MessageFormat.format("Unexpected exception evaluating alert : {0}. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
+			logMessage = MessageFormat.format("Unexpected exception evaluating alert : `{0}`. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
 			_logger.warn(logMessage);
 		}
 	}
@@ -758,7 +758,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
         if (isValueRefocusNotifier) {
             // Future - For now just ignore RefocusValueNotifiers attached to Triggers.
-            String logMessage = MessageFormat.format("RefocusValueNotifiers must not be associated with triggers. Name: {0}", notification.getName());
+            String logMessage = MessageFormat.format("RefocusValueNotifiers must not be associated with triggers. Name: `{0}`", notification.getName());
             _logger.info(logMessage);
             history.appendMessageNUpdateHistory(logMessage, null, 0);
             return;
@@ -769,7 +769,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 			for(Metric m : metrics) {
 				if(triggerFiredTimesForMetrics!=null && triggerFiredTimesForMetrics.containsKey(m)) {
-					String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is fired.", trigger.getName(), m.getIdentifier());
+					String logMessage = MessageFormat.format("The trigger `{0}` was evaluated against metric `{1}` and it is fired.", trigger.getName(), m.getIdentifier());
 					history.appendMessageNUpdateHistory(logMessage, null, 0);
 
 					if (isBooleanRefocusNotifier) {
@@ -781,11 +781,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						_updateNotificationSetActiveStatus(trigger, m, history, notification);
 						sendTriggeredNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m), alertEnqueueTimestamp);
 					} else {
-						logMessage = MessageFormat.format("The notification {0} is on cooldown until {1}.", notification.getName(), getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, m)));
+						logMessage = MessageFormat.format("The notification `{0}` is on cooldown until {1}.", notification.getName(), getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, m)));
 						history.appendMessageNUpdateHistory(logMessage, null, 0);
 					}
 				} else {
-					String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is not fired.", trigger.getName(), m.getIdentifier());
+					String logMessage = MessageFormat.format("The trigger `{0}` was evaluated against metric `{1}` and it is not fired.", trigger.getName(), m.getIdentifier());
 					history.appendMessageNUpdateHistory(logMessage, null, 0);
 
 					if (isBooleanRefocusNotifier) {
@@ -814,8 +814,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
         if (!isRefocusValueNotifier)
         {
-            String logMessage = MessageFormat.format("The notification {0} has no triggers.", notification.getName());
-            _logger.info(logMessage);
+            String logMessage = MessageFormat.format("The notification `{0}` has no triggers.", notification.getName());
+            _logger.debug(logMessage);
             history.appendMessageNUpdateHistory(logMessage, null, 0);
         }
         else {
@@ -846,7 +846,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
         // IMPORTANT - Verify that missing data should result in no notification to Refocus for valueNotifier
         if (isValueRefocusNotifier) {
             // Future - For now just ignore RefocusValueNotifiers attached to NoData Scenarios.  Later we trigger, but require that the subscriptions for refocusValue have a value supplied too! S|A|Value
-            String logMessage = MessageFormat.format("RefocusValueNotifiers must not be associated with no-data triggers. Name: {0}", notification.getName());
+            String logMessage = MessageFormat.format("RefocusValueNotifiers must not be associated with no-data triggers. Name: `{0}`", notification.getName());
             _logger.info(logMessage);
             history.appendMessageNUpdateHistory(logMessage, null, 0);
             return;
@@ -856,7 +856,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			if(triggers.contains(trigger)) {
 				Metric m = new Metric("unknown","unknown");
 				if(isDataMissing) {
-					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is fired as data for the metric expression {1} does not exist", trigger.getName(), alert.getExpression());
+					String logMessage = MessageFormat.format("The trigger `{0}` was evaluated and it is fired as data for the metric expression `{1}` does not exist", trigger.getName(), alert.getExpression());
 					history.appendMessageNUpdateHistory(logMessage, null, 0);
 
 					if(isRefocusNotifier) {
@@ -868,12 +868,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						_updateNotificationSetActiveStatus(trigger, m, history, notification);
 						sendTriggeredNotification(trigger, m, history, notification, alert, System.currentTimeMillis(), alertEnqueueTimestamp);
 					} else {
-						logMessage = MessageFormat.format("The notification {0} is on cooldown until {1}.", notification.getName(), getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, m)));
+						logMessage = MessageFormat.format("The notification `{0}` is on cooldown until `{1}`.", notification.getName(), getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, m)));
 						history.appendMessageNUpdateHistory(logMessage, null, 0);
 					}
 
 				} else {  // Data is not missing
-					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is not fired as data exists for the expression {1}", trigger.getName(), alert.getExpression());
+					String logMessage = MessageFormat.format("The trigger `{0}` was evaluated and it is not fired as data exists for the expression `{1}`", trigger.getName(), alert.getExpression());
 					history.appendMessageNUpdateHistory(logMessage, null, 0);
 
 					if(isRefocusNotifier) {
@@ -899,11 +899,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 */
 	private boolean _shouldEvaluateAlert(Alert alert, BigInteger alertId) {
 		if (alert == null) {
-			_logger.warn(MessageFormat.format("Could not find alert ID {0}", alertId));
+			_logger.warn(MessageFormat.format("Could not find alert ID `{0}`", alertId));
 			return false;
 		}
 		if(!alert.isEnabled()) {
-			_logger.warn(MessageFormat.format("Alert {0} has been disabled. Will not evaluate.", alert.getId().intValue()));
+			_logger.warn(MessageFormat.format("Alert `{0}` has been disabled. Will not evaluate.", alert.getId().intValue()));
 			return false;
 		}
 
@@ -988,14 +988,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		// TODO - log triggerId, notificationId?
 		if (rc) {
 			tags.put(STATUSTAG, STATUS_SUCCESS);
-			logMessage = MessageFormat.format("Sent alert ({0}) notification with action: {1} of type: {2}",
+			logMessage = MessageFormat.format("Sent alert `{0}` notification with action: `{1}` of type: `{2}`",
 					alertId, action, notifierTarget);
 			if (trigger != null && action == ACTION_TRIGGERED) {
-				logMessage += MessageFormat.format(" and updated the cooldown: {0}", getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
+				logMessage += MessageFormat.format(" and updated the cooldown: `{0}`", getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
 			}
 		} else {
 			tags.put(STATUSTAG, STATUS_FAILURE);
-			logMessage = MessageFormat.format("Failed to send notification with action: {0} to {1} for alert {2}",
+			logMessage = MessageFormat.format("Failed to send notification with action: `{0}` to `{1}` for alert `{2}`",
 					action, notifierTarget, alertId);
 		}
 
