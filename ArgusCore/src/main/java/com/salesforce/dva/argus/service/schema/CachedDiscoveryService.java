@@ -257,7 +257,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 		try {
 			Map<String, String> sortedTags = Collections.emptyMap();
 			if(query.getTags() != null && !query.getTags().isEmpty()) {
-				sortedTags = new TreeMap<>(query.getTags());
+				sortedTags = query.getTags();
 			}
 			
 			String key = MessageFormat.format("{0}:{1}'{'{2}'}'", query.getScope(), query.getMetric(), MAPPER.writeValueAsString(sortedTags));

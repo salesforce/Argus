@@ -34,7 +34,6 @@ package com.salesforce.dva.argus.entity;
 import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -136,9 +135,9 @@ public abstract class TSDBEntity implements Serializable {
     }
 
     /**
-     * Returns an unmodifiable collection of tags associated with the metric.
+     * Returns an unmodifiable collection of sorted tags associated with the metric.
      *
-     * @return  The tags for a metric. Will never be null but may be empty.
+     * @return  The sorted tags for a metric. Will never be null but may be empty.
      */
     public Map<String, String> getTags() {
         Map<String, String> result = new TreeMap<>();
