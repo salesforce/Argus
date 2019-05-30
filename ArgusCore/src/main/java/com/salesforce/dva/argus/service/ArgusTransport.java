@@ -1,8 +1,10 @@
 package com.salesforce.dva.argus.service;
 
-import com.salesforce.dva.argus.service.alert.notifier.GusTransport;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -10,6 +12,7 @@ import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
@@ -34,14 +37,18 @@ public class ArgusTransport {
 
     public ArgusTransport(Optional<String> proxyHost,
                           Optional<Integer> proxyPort,
+                          Optional<String> proxyUsername,
+                          Optional<String> proxyPassword,
                           int connectionPoolMaxSize,
                           int connectionPoolMaxPerRoute) {
-        this.httpClient = buildHttpClient(proxyHost, proxyPort, connectionPoolMaxSize, connectionPoolMaxPerRoute);
+        this.httpClient = buildHttpClient(proxyHost, proxyPort, proxyUsername, proxyPassword, connectionPoolMaxSize, connectionPoolMaxPerRoute);
     }
 
-    public ArgusTransport(String proxyHost, String proxyPort, int connectionPoolMaxSize, int connectionPoolMaxPerRoute) {
+    public ArgusTransport(String proxyHost, String proxyPort, String proxyUsername, String proxyPassword, int connectionPoolMaxSize, int connectionPoolMaxPerRoute) {
         this(validateProxyHostAndPortStrings(proxyHost, proxyPort) ? Optional.of(proxyHost) : Optional.empty(),
                 validateProxyHostAndPortStrings(proxyHost, proxyPort) ? Optional.of(Integer.parseInt(proxyPort)) : Optional.empty(),
+                validateProxyUsernameAndPassword(proxyUsername, proxyPort) ? Optional.of(proxyUsername) : Optional.empty(),
+                validateProxyUsernameAndPassword(proxyPassword, proxyPort) ? Optional.of(proxyPassword) : Optional.empty(),
                 connectionPoolMaxSize, connectionPoolMaxPerRoute);
     }
 
@@ -49,6 +56,10 @@ public class ArgusTransport {
         requireArgument(StringUtils.isBlank(proxyPort) || StringUtils.isNumeric(proxyPort),
                 "proxyPort must be numeric if present");
         return StringUtils.isNotBlank(proxyHost) && StringUtils.isNotBlank(proxyPort) && StringUtils.isNumeric(proxyPort);
+    }
+
+    public static boolean validateProxyUsernameAndPassword(String proxyUsername, String proxyPassword) {
+        return StringUtils.isNotBlank(proxyUsername) && StringUtils.isNotBlank(proxyPassword);
     }
 
     /**
@@ -96,6 +107,8 @@ public class ArgusTransport {
 
     protected static CloseableHttpClient buildHttpClient(Optional<String> proxyHost,
                                                   Optional<Integer> proxyPort,
+                                                  Optional<String> proxyUsername,
+                                                  Optional<String> proxyPassword,
                                                   int connectionPoolMaxSize,
                                                   int connectionPoolMaxPerRoute) {
         requireArgument(!proxyHost.isPresent() || StringUtils.isNotBlank(proxyHost.get()),
@@ -124,7 +137,15 @@ public class ArgusTransport {
             HttpHost proxy = new HttpHost(proxyHost.get(), proxyPort.get().intValue());
             DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxy);
             builder = builder.setRoutePlanner(routePlanner);
+
+            if(proxyUsername.isPresent() && proxyUsername.get().length() > 0 && proxyPassword.isPresent() && proxyPassword.get().length() > 0){
+                CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+                credentialsProvider.setCredentials(new AuthScope(proxy), new UsernamePasswordCredentials(proxyUsername.get(), proxyPassword.get()));
+
+                builder.setDefaultCredentialsProvider(credentialsProvider);
+            }
         }
+
         return builder.build();
     }
 

@@ -312,6 +312,8 @@ public class GusNotifier extends AuditNotifier {
 				if (gusTransport == null) {
 					gusTransport = new GusTransport(_config.getValue(Property.GUS_PROXY_HOST.getName(), null), // no default since this is optional
 							_config.getValue(Property.GUS_PROXY_PORT.getName(), null), // no default since this is optional
+							_config.getValue(Property.GUS_PROXY_USERNAME.getName(), null),  // no default since this is optional
+							_config.getValue(Property.GUS_PROXY_PASSWORD.getName(), null),  // no default since this is optional
 							_config.getValue(Property.GUS_ENDPOINT.getName(), Property.GUS_ENDPOINT.getDefaultValue()),
 							_config.getValue(Property.GUS_CLIENT_ID.getName(), Property.GUS_CLIENT_ID.getDefaultValue()),
 							_config.getValue(Property.GUS_CLIENT_SECRET.getName(), Property.GUS_CLIENT_SECRET.getDefaultValue()),
@@ -343,6 +345,10 @@ public class GusNotifier extends AuditNotifier {
 		GUS_PROXY_HOST("notifier.property.proxy.host", ""),
 		/** The GUS port. */
 		GUS_PROXY_PORT("notifier.property.proxy.port", ""),
+		/** The GUS proxy username. */
+		GUS_PROXY_USERNAME("notifier.property.proxy.username", ""),
+		/** The GUS proxy password. */
+		GUS_PROXY_PASSWORD("notifier.property.proxy.password", ""),
         /** The connection pool size for connecting to Gus */
         GUS_CONNECTION_POOL_MAX_SIZE("notifier.property.gus.connectionpool.maxsize", "55"),
 		/** The connection pool max per route for connecting to Gus */

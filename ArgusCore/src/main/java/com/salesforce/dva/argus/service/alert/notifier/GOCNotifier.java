@@ -448,6 +448,8 @@ public class GOCNotifier extends AuditNotifier {
 				if (gusTransport == null) {
 					gusTransport = new GusTransport(_config.getValue(Property.GOC_PROXY_HOST.getName(), null), // no default since this is optional
 							_config.getValue(Property.GOC_PROXY_PORT.getName(), null), // no default since this is optional
+							_config.getValue(Property.GOC_PROXY_USERNAME.getName(), null), // no default since this is optional
+							_config.getValue(Property.GOC_PROXY_PASSWORD.getName(), null), // no default since this is optional
 							_config.getValue(Property.GOC_ENDPOINT.getName(), Property.GOC_ENDPOINT.getDefaultValue()) + "/services/oauth2/token",
 							_config.getValue(Property.GOC_CLIENT_ID.getName(), Property.GOC_CLIENT_ID.getDefaultValue()),
 							_config.getValue(Property.GOC_CLIENT_SECRET.getName(), Property.GOC_CLIENT_SECRET.getDefaultValue()),
@@ -497,6 +499,10 @@ public class GOCNotifier extends AuditNotifier {
 		GOC_PROXY_HOST("notifier.property.proxy.host", ""),
 		/** The GOC port. */
 		GOC_PROXY_PORT("notifier.property.proxy.port", ""),
+		/** The GOC proxy username. */
+		GOC_PROXY_USERNAME("notifier.property.proxy.username", ""),
+		/** The GOC proxy password. */
+		GOC_PROXY_PASSWORD("notifier.property.proxy.password", ""),
 		/** The GOC client ID. */
 		GOC_CLIENT_ID("notifier.property.goc.client.id", "default_client_id"),
 		/** The GOC client secret. */

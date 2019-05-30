@@ -143,9 +143,16 @@ public class PagerDutyNotifier extends AuditNotifier {
 
         String proxyHostString = config.getValue(Property.PAGERDUTY_PROXY_HOST.getName(), Property.PAGERDUTY_PROXY_HOST.getDefaultValue());
         String proxyPortString = config.getValue(Property.PAGERDUTY_PROXY_PORT.getName(), Property.PAGERDUTY_PROXY_PORT.getDefaultValue());
+        String proxyUsernameString = config.getValue(Property.PAGERDUTY_PROXY_USERNAME.getName(), Property.PAGERDUTY_PROXY_USERNAME.getDefaultValue());
+        String proxyPasswordString = config.getValue(Property.PAGERDUTY_PROXY_PASSWORD.getName(), Property.PAGERDUTY_PROXY_PASSWORD.getDefaultValue());
+
         boolean isValidProxy = ArgusTransport.validateProxyHostAndPortStrings(proxyHostString, proxyPortString);
+        boolean isValidProxyCredentials = ArgusTransport.validateProxyUsernameAndPassword(proxyUsernameString, proxyPasswordString);
+
         this.transport = new ArgusTransport(isValidProxy ? Optional.of(proxyHostString) : Optional.empty(),
                 isValidProxy ? Optional.of(Integer.parseInt(proxyPortString)) : Optional.empty(),
+                isValidProxyCredentials ? Optional.of(proxyUsernameString) : Optional.empty(),
+                isValidProxyCredentials ? Optional.of(proxyPasswordString) : Optional.empty(),
                 Integer.parseInt(config.getValue(Property.PAGERDUTY_CONNECTION_POOL_MAX_SIZE.getName(), Property.PAGERDUTY_CONNECTION_POOL_MAX_SIZE.getDefaultValue())),
                 Integer.parseInt(config.getValue(Property.PAGERDUTY_CONNECTION_POOL_MAX_PER_ROUTE.getName(), Property.PAGERDUTY_CONNECTION_POOL_MAX_PER_ROUTE.getDefaultValue())));
         this.httpResponseCode429RetryDelayTime = httpResponseCode429RetryDelayTime;
@@ -436,6 +443,14 @@ public class PagerDutyNotifier extends AuditNotifier {
          * The PagerDuty port.
          */
         PAGERDUTY_PROXY_PORT("notifier.property.pagerduty.proxy.port", ""),
+        /**
+         * The GOC proxy username.
+         */
+        PAGERDUTY_PROXY_USERNAME("notifier.property.pagerduty.proxy.username", ""),
+        /**
+         *  The GOC proxy password.
+         */
+        PAGERDUTY_PROXY_PASSWORD("notifier.property.pagerduty.proxy.password", ""),
         /**
          * The PagerDuty connection max attempts to post notification.
          */

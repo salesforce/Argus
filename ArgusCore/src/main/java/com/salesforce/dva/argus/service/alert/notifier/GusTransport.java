@@ -10,30 +10,15 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.salesforce.dva.argus.service.ArgusTransport;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpHost;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.RequestBuilder;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -67,10 +52,10 @@ public class GusTransport {
     private final LoadingCache<String, EndpointInfo> endpointInfoCache;
     private final ArgusTransport transport;
 
-    public GusTransport(Optional<String> proxyHost, Optional<Integer> proxyPort, String authEndpoint,
-                        String authClientId, String authClientSecret, String authUsername, String authPassword,
-                        EndpointInfo defaultEndpointInfo, long tokenCacheRefreshPeriodMillis,
-                        int connectionPoolMaxSize, int connectionPoolMaxPerRoute) {
+    public GusTransport(Optional<String> proxyHost, Optional<Integer> proxyPort, Optional<String> proxyUsername,
+                        Optional<String> proxyPassword, String authEndpoint, String authClientId, String authClientSecret,
+                        String authUsername, String authPassword, EndpointInfo defaultEndpointInfo,
+                        long tokenCacheRefreshPeriodMillis, int connectionPoolMaxSize, int connectionPoolMaxPerRoute) {
         requireArgument(StringUtils.isNotBlank(authEndpoint),
                 String.format("authEndpoint(%s) must not be blank", authEndpoint));
         requireArgument(StringUtils.isNotBlank(authClientId),
@@ -89,11 +74,11 @@ public class GusTransport {
         requireArgument(tokenCacheRefreshPeriodMillis > 0,
                 String.format("cacheRefreshPeriodMillis(%d) must be > 0", tokenCacheRefreshPeriodMillis));
 
-        this.transport = new ArgusTransport(proxyHost, proxyPort, connectionPoolMaxSize, connectionPoolMaxPerRoute);
+        this.transport = new ArgusTransport(proxyHost, proxyPort, proxyUsername, proxyPassword, connectionPoolMaxSize, connectionPoolMaxPerRoute);
 
         EndpointInfoSupplier supplier = new EndpointInfoSupplier(authEndpoint, authClientId,
                 authClientSecret, authUsername, authPassword);
-        this.endpointInfoCache = CacheBuilder.<String, EndpointInfo>newBuilder()
+        this.endpointInfoCache = CacheBuilder.newBuilder()
                 .refreshAfterWrite(tokenCacheRefreshPeriodMillis, TimeUnit.MILLISECONDS)
                 .initialCapacity(1)
                 .build(CacheLoader.from(supplier));
@@ -107,18 +92,20 @@ public class GusTransport {
         }
     }
 
-    public GusTransport(Optional<String> proxyHost, Optional<Integer> proxyPort, String authEndpoint,
+    public GusTransport(Optional<String> proxyHost, Optional<Integer> proxyPort, Optional<String> proxyUsername, Optional<String> proxyPassword, String authEndpoint,
                         String authClientId, String authClientSecret, String authUsername, String authPassword,
                         EndpointInfo defaultEndpointInfo, int connectionPoolMaxSize, int connectionPoolMaxPerRoute) {
-        this(proxyHost, proxyPort, authEndpoint, authClientId, authClientSecret, authUsername, authPassword,
+        this(proxyHost, proxyPort, proxyUsername, proxyPassword, authEndpoint, authClientId, authClientSecret, authUsername, authPassword,
                 defaultEndpointInfo, MIN_SESSION_REFRESH_THRESHOLD_MILLIS, connectionPoolMaxSize, connectionPoolMaxPerRoute);
     }
 
-    public GusTransport(String proxyHost, String proxyPort, String authEndpoint,
+    public GusTransport(String proxyHost, String proxyPort, String proxyUsername, String proxyPassword, String authEndpoint,
                         String authClientId, String authClientSecret, String authUsername, String authPassword,
                         EndpointInfo defaultEndpointInfo, int connectionPoolMaxSize, int connectionPoolMaxPerRoute) {
         this(ArgusTransport.validateProxyHostAndPortStrings(proxyHost, proxyPort) ? Optional.of(proxyHost) : Optional.empty(),
                 ArgusTransport.validateProxyHostAndPortStrings(proxyHost, proxyPort) ? Optional.of(Integer.parseInt(proxyPort)) : Optional.empty(),
+                ArgusTransport.validateProxyUsernameAndPassword(proxyUsername, proxyPassword) ? Optional.of(proxyUsername) : Optional.empty(),
+                ArgusTransport.validateProxyUsernameAndPassword(proxyUsername, proxyPassword) ? Optional.of(proxyPassword) : Optional.empty(),
                 authEndpoint, authClientId, authClientSecret, authUsername, authPassword, defaultEndpointInfo,
                 connectionPoolMaxSize, connectionPoolMaxPerRoute);
     }
