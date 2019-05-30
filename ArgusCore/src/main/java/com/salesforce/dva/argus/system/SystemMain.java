@@ -221,7 +221,7 @@ public final class SystemMain extends SystemService {
                     _mergeProperties(service.getServiceProperties());
                 } catch (Throwable e) {
                     _log.error(e.getMessage(), e);
-                    requireState(false, "Failed to load service properties for service factory method " + method.getName());
+                    requireState(false, "Failed to load service properties for service factory method; see previous logger error: " + method.getName());
                 }
             }
         }
@@ -248,7 +248,8 @@ public final class SystemMain extends SystemService {
                     method.setAccessible(accessible);
                     _mergeProperties(notifier.getNotifierProperties());
                 } catch (Exception e) {
-                    requireState(false, "Failed to load notifier properties for notifier factory method " + method.getName());
+                    _log.error(e.getMessage(), e);
+                    requireState(false, "Failed to load notifier properties for notifier factory method; See previous logger error: " + method.getName());
                 }
             }
         }
