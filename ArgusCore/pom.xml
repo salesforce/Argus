@@ -479,6 +479,11 @@
             <artifactId>jfreechart</artifactId>
             <version>1.5.0</version>
         </dependency>
+        <dependency>
+          <groupId>io.prometheus.jmx</groupId>
+          <artifactId>jmx_prometheus_javaagent</artifactId>
+          <version>${jmx.prometheus.version}</version>
+        </dependency>
         <!-- BEGINSFDC specific dependencies -->
         <dependency>
             <groupId>com.salesforce.servicelibs</groupId>
