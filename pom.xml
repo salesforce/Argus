@@ -117,6 +117,7 @@
         <httpclient.version>4.5.3</httpclient.version>
         <junit.version>4.12</junit.version>
         <jacoco-maven-plugin.version>0.7.9</jacoco-maven-plugin.version>
+        <jmx.prometheus.version>0.11.0</jmx.prometheus.version>
     </properties>
      <!-- Add repositories here instead of maintaining in maven-settings.xml
          Please add <server> information in ~/.m2/settings.xml -->

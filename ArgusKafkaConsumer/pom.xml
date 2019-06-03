@@ -175,7 +175,7 @@
     </dependencies>
 
     <build>
-      <plugins>
+        <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -200,6 +200,7 @@
                                 <excludes>
                                     <exclude>com.sfdc-bouncycastle:bc-fips</exclude>
                                     <exclude>com.sfdc-bouncycastle:bctls-fips</exclude>
+                                    <exclude>io.prometheus.jmx:jmx_prometheus_javaagent</exclude>
                                 </excludes>
                             </artifactSet>
                             <transformers>
@@ -216,6 +217,34 @@
                                     <resource>META-INF/spring.schemas</resource>
                                 </transformer>
                             </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>io.prometheus.jmx</groupId>
+                                    <artifactId>jmx_prometheus_javaagent</artifactId>
+                                    <version>${jmx.prometheus.version}</version>
+                                    <type>jar</type>
+                                    <classifier>sources</classifier>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                    <destFileName>jmx_prometheus_javaagent-${jmx.prometheus.version}.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                            <!-- other configurations here -->
                         </configuration>
                     </execution>
                 </executions>
