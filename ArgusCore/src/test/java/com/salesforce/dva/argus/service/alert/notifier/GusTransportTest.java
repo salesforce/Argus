@@ -1,6 +1,7 @@
 package com.salesforce.dva.argus.service.alert.notifier;
 
 import com.salesforce.dva.argus.service.alert.notifier.GusTransport.EndpointInfo;
+import com.salesforce.dva.argus.util.Option;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
@@ -41,6 +42,8 @@ import static org.powermock.api.mockito.PowerMockito.when;
 public class GusTransportTest {
     private static final String PROXY_HOST = "test_proxy_host";
     private static final int PROXY_PORT = 9090;
+    private static final String PROXY_USERNAME = "";
+    private static final String PROXY_PASSWORD = "";
     private static final String AUTH_ENDPOINT = "https://test_auth_ep.com";
     private static final String AUTH_CLIENT_ID = "test_auth_client_id";
     private static final String AUTH_CLIENT_SECRET = "test_auth_client_secret";
@@ -107,7 +110,7 @@ public class GusTransportTest {
 
     @Test
     public void constructor_testEmptyProxyHost() throws Exception {
-        gusTransport = createGusTransportHappyCase(Optional.empty(), Optional.of(PROXY_PORT));
+        gusTransport = createGusTransportHappyCase(Optional.empty(), Optional.of(PROXY_PORT), Optional.of(PROXY_USERNAME), Optional.of(PROXY_PASSWORD));
 
         verify(httpClientBuilder, never()).setRoutePlanner(any());
     }
@@ -121,7 +124,7 @@ public class GusTransportTest {
 
     @Test
     public void constructor_testEmptyProxyPort() throws Exception {
-        gusTransport = createGusTransportHappyCase(Optional.of(PROXY_HOST), Optional.empty());
+        gusTransport = createGusTransportHappyCase(Optional.of(PROXY_HOST), Optional.empty(), Optional.of(PROXY_USERNAME), Optional.of(PROXY_PASSWORD));
 
         verify(httpClientBuilder, never()).setRoutePlanner(any());
     }
@@ -130,6 +133,8 @@ public class GusTransportTest {
     public void constructor_testProxyPortStringNonNumeric() throws Exception {
         gusTransport = new GusTransport(PROXY_HOST,
                 "ABC",
+                PROXY_USERNAME,
+                PROXY_PASSWORD,
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -142,18 +147,20 @@ public class GusTransportTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void constructor_testProxyHostBlank() throws Exception {
-        gusTransport = createGusTransport(Optional.of("  "), Optional.of(PROXY_PORT));
+        gusTransport = createGusTransport(Optional.of("  "), Optional.of(PROXY_PORT), Optional.of(PROXY_USERNAME), Optional.of(PROXY_PASSWORD));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void constructor_testProxyPortLessThan0() throws Exception {
-        gusTransport = createGusTransport(Optional.of(PROXY_HOST), Optional.of(-1));
+        gusTransport = createGusTransport(Optional.of(PROXY_HOST), Optional.of(-1), Optional.of(PROXY_USERNAME), Optional.of(PROXY_PASSWORD));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void constructor_testAuthEndpointBlank() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 "",
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -168,6 +175,8 @@ public class GusTransportTest {
     public void constructor_testAuthEndpointNull() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 null,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -182,6 +191,8 @@ public class GusTransportTest {
     public void constructor_testAuthClientIdBlank() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 " ",
                 AUTH_CLIENT_SECRET,
@@ -196,6 +207,8 @@ public class GusTransportTest {
     public void constructor_testAuthClientIdNull() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 null,
                 AUTH_CLIENT_SECRET,
@@ -210,6 +223,8 @@ public class GusTransportTest {
     public void constructor_testAuthClientSecretBlank() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 " ",
@@ -224,6 +239,8 @@ public class GusTransportTest {
     public void constructor_testAuthClientSecretNull() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 null,
@@ -238,6 +255,8 @@ public class GusTransportTest {
     public void constructor_testAuthUsernameBlank() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -252,6 +271,8 @@ public class GusTransportTest {
     public void constructor_testAuthUsernameNull() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -266,6 +287,8 @@ public class GusTransportTest {
     public void constructor_testAuthPasswordBlank() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -280,6 +303,8 @@ public class GusTransportTest {
     public void constructor_testAuthPasswordNull() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -294,6 +319,8 @@ public class GusTransportTest {
     public void constructor_testDefaultEndpointNull() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -308,6 +335,8 @@ public class GusTransportTest {
     public void constructor_testDefaultEndpointEndpointBlank() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -322,6 +351,8 @@ public class GusTransportTest {
     public void constructor_testDefaultEndpointEndpointNull() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -336,6 +367,8 @@ public class GusTransportTest {
     public void constructor_testDefaultEndpointTokenBlank() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -350,6 +383,8 @@ public class GusTransportTest {
     public void constructor_testDefaultEndpointTokenNull() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -364,6 +399,8 @@ public class GusTransportTest {
     public void constructor_testInvalidConnectionPoolSize() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -378,6 +415,8 @@ public class GusTransportTest {
     public void constructor_testInvalidConnectionPoolMaxPerRoute() throws Exception {
         gusTransport = new GusTransport(Optional.of(PROXY_HOST),
                 Optional.of(PROXY_PORT),
+                Optional.of(PROXY_USERNAME),
+                Optional.of(PROXY_PASSWORD),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -477,11 +516,11 @@ public class GusTransportTest {
     }
 
     private GusTransport createGusTransportHappyCase() throws Exception {
-        return createGusTransportHappyCase(Optional.of(PROXY_HOST), Optional.of(PROXY_PORT));
+        return createGusTransportHappyCase(Optional.of(PROXY_HOST), Optional.of(PROXY_PORT), Optional.of(PROXY_USERNAME), Optional.of(PROXY_PASSWORD));
     }
 
     private GusTransport createGusTransport() throws Exception {
-        return createGusTransport(Optional.of(PROXY_HOST), Optional.of(PROXY_PORT));
+        return createGusTransport(Optional.of(PROXY_HOST), Optional.of(PROXY_PORT), Optional.of(PROXY_USERNAME), Optional.of(PROXY_PASSWORD));
     }
 
     private void mockCacheInitExpectations() throws Exception {
@@ -504,6 +543,8 @@ public class GusTransportTest {
                 StringUtils.isNumeric(proxyPortString) ? Optional.of(Integer.parseInt(proxyPortString)) : Optional.empty());
         return new GusTransport(proxyHostString,
                 proxyPortString,
+                PROXY_USERNAME,
+                PROXY_PASSWORD,
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,
@@ -514,9 +555,9 @@ public class GusTransportTest {
                 CONNECTION_POOL_MAX_PER_ROUTE);
     }
 
-    private GusTransport createGusTransportHappyCase(Optional<String> proxyHost, Optional<Integer> proxyPort) throws Exception {
+    private GusTransport createGusTransportHappyCase(Optional<String> proxyHost, Optional<Integer> proxyPort, Optional<String> proxyUsername, Optional<String> proxyPassword) throws Exception {
         mockCacheInitExpectationsHappyCase();
-        return createGusTransport(proxyHost, proxyPort);
+        return createGusTransport(proxyHost, proxyPort, proxyUsername, proxyPassword);
     }
 
     private void mockHttpClientExpectations(Optional<String> proxyHost, Optional<Integer> proxyPort) throws Exception {
@@ -532,12 +573,14 @@ public class GusTransportTest {
         when(httpClientBuilder.build()).thenReturn(httpClient);
     }
 
-    private GusTransport createGusTransport(Optional<String> proxyHost, Optional<Integer> proxyPort) throws Exception {
+    private GusTransport createGusTransport(Optional<String> proxyHost, Optional<Integer> proxyPort, Optional<String> proxyUsername, Optional<String> proxyPassword) throws Exception {
         mockHttpClientExpectations(proxyHost, proxyPort);
 
         // create new GusTransport
         return new GusTransport(proxyHost,
                 proxyPort,
+                proxyUsername,
+                proxyPassword,
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,
                 AUTH_CLIENT_SECRET,

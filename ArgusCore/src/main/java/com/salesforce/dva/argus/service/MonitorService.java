@@ -189,6 +189,7 @@ public interface MonitorService extends Service {
         THREADS("argus.jvm", "thread.used"),
         PEAK_THREADS("argus.jvm", "thread.peak"),
         DAEMON_THREADS("argus.jvm", "thread.daemon"),
+        MBEANSERVER_MBEAN_TOTAL("argus.jvm", "mbeanserver.mbean.total", MetricType.COUNTER),
         METRIC_WRITES("argus.core", "metric.writes", MetricType.COUNTER),
         ANNOTATION_WRITES("argus.core", "annotation.writes", MetricType.COUNTER),
         ANNOTATION_DROPS_MAXSIZEEXCEEDED("argus.core", "annotation.drops.maxSizeExceeded", MetricType.COUNTER),

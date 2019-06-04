@@ -283,6 +283,9 @@ public final class SystemConfiguration extends Properties {
         QUERYSTORE_SERVICE_IMPL_CLASS("service.binding.querystore", "com.salesforce.dva.argus.service.querystore.NoOperationQueryStoreService"),
         QUERYSTORE_SERVICE_PROPERTY_FILE("service.config.querystore","placeholder_querystore.properties"),
 
+        IMAGE_SERVICE_IMPL_CLASS("service.binding.imageservice", "com.salesforce.dva.argus.service.image.NoOperationImageService"),
+        IMAGE_SERVICE_PROPERTY_FILE("service.config.imageservice","placeholder_imageservice.properties"),
+
         HISTORY_SERVICE_IMPL_CLASS("service.binding.history", "com.salesforce.dva.argus.service.history.HBaseHistoryService"),
         HISTORY_SERVICE_PROPERTY_FILE("service.config.history","placeholder_history.properties"),
 

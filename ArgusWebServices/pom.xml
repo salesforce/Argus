@@ -84,6 +84,28 @@
                             <classifier>test-resources</classifier>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>copy</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>io.prometheus.jmx</groupId>
+                                    <artifactId>jmx_prometheus_javaagent</artifactId>
+                                    <version>${jmx.prometheus.version}</version>
+                                    <type>jar</type>
+                                    <classifier>sources</classifier>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                    <destFileName>jmx_prometheus_javaagent-${jmx.prometheus.version}.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                            <!-- other configurations here -->
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>

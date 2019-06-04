@@ -579,6 +579,12 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 				case DAEMON_THREADS:
 					value = (double) ManagementFactory.getThreadMXBean().getDaemonThreadCount();
 					break;
+				case MBEANSERVER_MBEAN_TOTAL:
+					value = _mbeanServer.getMBeanCount().doubleValue();
+					Metric metric = _constructCounterKey(counter.getMetric(), Collections.<String, String>emptyMap());
+					metric.setUnits(units);
+					_metrics.computeIfAbsent(metric, k -> _getCounterMXBeanInstance(k, counter)).setValue(value);
+					continue;
 				default:
 					throw new IllegalArgumentException("Unexpected Counter: This should never happen");
 				} // end switch

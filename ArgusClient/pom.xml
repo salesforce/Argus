@@ -85,6 +85,28 @@
                             <classifier>test-resources</classifier>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>copy</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>io.prometheus.jmx</groupId>
+                                    <artifactId>jmx_prometheus_javaagent</artifactId>
+                                    <version>${jmx.prometheus.version}</version>
+                                    <type>jar</type>
+                                    <classifier>sources</classifier>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                    <destFileName>jmx_prometheus_javaagent-${jmx.prometheus.version}.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                            <!-- other configurations here -->
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -162,14 +184,14 @@
         <type>zip</type>
         <scope>provided</scope>
       </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.salesforce.argus</groupId>
-            <artifactId>argus-core</artifactId>
-            <version>4.75-SNAPSHOT</version>
-        </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>com.salesforce.argus</groupId>
+        <artifactId>argus-core</artifactId>
+        <version>4.75-SNAPSHOT</version>
+      </dependency>
     </dependencies>
 </project>

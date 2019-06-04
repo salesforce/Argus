@@ -1,5 +1,6 @@
 package com.salesforce.dva.argus.service.alert.notifier;
 
+import org.apache.zookeeper.Op;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,6 +22,8 @@ public class GusTransportIT {
     @Before
     public void setUp() {
         gusTransport = new GusTransport(Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
                 Optional.empty(),
                 AUTH_ENDPOINT,
                 AUTH_CLIENT_ID,

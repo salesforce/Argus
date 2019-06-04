@@ -225,6 +225,23 @@ public class AbstractSchemaServiceTest {
 	}
 
 	@Test
+	public void testNumHoursUntilNextClearBloomFilter() {
+		Calendar calendar = Calendar.getInstance();
+		int hour = calendar.get(Calendar.HOUR_OF_DAY);
+		// Will wait 24 hours before next flush if at same hour boundary
+		int secondsUntil = _esSchemaService.getNumSecondsUntilNthHourOfDay(hour, calendar);
+		assertTrue(secondsUntil >= 23 * 60 * 60 && secondsUntil <= 24 * 60 * 60);
+
+		calendar.set(Calendar.HOUR_OF_DAY, Math.floorMod(hour - 2, 24));
+		secondsUntil = _esSchemaService.getNumSecondsUntilNthHourOfDay(hour, calendar);
+		assertTrue(secondsUntil >= 1 * 60 * 60 && secondsUntil <= 2 * 60 * 60);
+
+		calendar.set(Calendar.HOUR_OF_DAY, Math.floorMod(hour + 2, 24));
+		secondsUntil = _esSchemaService.getNumSecondsUntilNthHourOfDay(hour, calendar);
+		assertTrue(secondsUntil >= 21 * 60 * 60 && secondsUntil < 22 * 60 * 60);
+	}
+
+	@Test
 	public void testNumHoursUntilNextFlushBloomFilter() {
 		// use Wednesday 6 AM this week as start date
 		Calendar wedAtSix = Calendar.getInstance();
