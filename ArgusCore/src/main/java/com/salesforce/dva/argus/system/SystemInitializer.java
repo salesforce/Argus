@@ -43,6 +43,7 @@ import com.google.inject.persist.jpa.JpaPersistModule;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.*;
 import com.salesforce.dva.argus.service.annotation.DefaultAnnotationService;
+import com.salesforce.dva.argus.service.annotation.ElasticSearchAnnotationService;
 import com.salesforce.dva.argus.service.batch.DefaultBatchService;
 import com.salesforce.dva.argus.service.collect.DefaultCollectionService;
 import com.salesforce.dva.argus.service.jpa.DefaultChartService;
@@ -249,7 +250,8 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
         bindConcreteClassWithNamedAnnotation(DefaultDiscoveryService.class, DiscoveryService.class);
         bindConcreteClassWithNamedAnnotation(DefaultUserService.class, UserService.class);
-
+        bindConcreteClassWithNamedAnnotation(ElasticSearchAnnotationService.class, AnnotationStorageService.class);
+        
         // static binding
         bindConcreteClass(CachedTSDBService.class, TSDBService.class);
         bindConcreteClass(CachedUserService.class, UserService.class);

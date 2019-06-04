@@ -230,6 +230,7 @@ public class DefaultTSDBService extends AbstractTSDBService{
                         }
                     }
                 }
+                _logger.info("TSDB annotation query completed in {} ms", System.currentTimeMillis() - start);
                 instrumentQueryLatency(_monitorService, query, start, "annotations");
             }
         } catch(IOException ex) {
