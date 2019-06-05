@@ -53,6 +53,7 @@ import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -182,6 +183,34 @@ public class ElasticSearchAnnotationServiceTest {
         esAnnotationService = new ElasticSearchAnnotationService(systemConfig, mockedMonitor, mockedElasticSearchUtils);
     }
 
+    @Before
+    public void setUp() {
+        ElasticSearchUtils.ANNOTATION_INDEX_MAX_RESULT_WINDOW = 10000;
+    }
+    
+    @Test
+    public void testConvertTimestampToMillis(){
+        AnnotationQuery annotationQuery = new AnnotationQuery("scope1", "metric1", null, "unittest", 1557809359073L, 1557809599073L);
+        esAnnotationService.convertTimestampToMillis(annotationQuery);
+        assertEquals(1557809359073L, annotationQuery.getStartTimestamp().longValue());
+        assertEquals(1557809599073L, annotationQuery.getEndTimestamp().longValue());
+        
+        annotationQuery = new AnnotationQuery("scope1", "metric1", null, "unittest", 1557809359L, 1557809599L);
+        esAnnotationService.convertTimestampToMillis(annotationQuery);
+        assertEquals(1557809359000L, annotationQuery.getStartTimestamp().longValue());
+        assertEquals(1557809599000L, annotationQuery.getEndTimestamp().longValue());
+
+        annotationQuery = new AnnotationQuery("scope1", "metric1", null, "unittest", 1557809359123L, 1557809599L);
+        esAnnotationService.convertTimestampToMillis(annotationQuery);
+        assertEquals(1557809359123L, annotationQuery.getStartTimestamp().longValue());
+        assertEquals(1557809599000L, annotationQuery.getEndTimestamp().longValue());
+
+        annotationQuery = new AnnotationQuery("scope1", "metric1", null, "unittest", 1557809359L, 1557809599456L);
+        esAnnotationService.convertTimestampToMillis(annotationQuery);
+        assertEquals(1557809359000L, annotationQuery.getStartTimestamp().longValue());
+        assertEquals(1557809599456L, annotationQuery.getEndTimestamp().longValue());
+    }
+    
     @Test
     public void testAnnotationRecordListMapper() throws IOException {
         mapper = ElasticSearchAnnotationService.getAnnotationObjectMapper(new AnnotationRecordList.IndexSerializer());
@@ -253,6 +282,16 @@ public class ElasticSearchAnnotationServiceTest {
         assertEquals(expectedURL, capturedRequest.getEndpoint());
     }
 
+    @Test (expected = RuntimeException.class)
+    public void testGetAnnotationsExceedingLimit(){
+        ElasticSearchUtils.ANNOTATION_INDEX_MAX_RESULT_WINDOW = 1;
+        AnnotationQuery annotationQuery = new AnnotationQuery("scope1", "metric1", null, "unittest", 1557809359073L, 1557809599073L);
+        List<AnnotationQuery> queries = new ArrayList<>();
+        queries.add(annotationQuery);
+        ElasticSearchAnnotationService spyService = _initializeSpyService(esAnnotationService, getReply, getReply);
+        spyService.getAnnotations(queries);
+    }
+    
     @Test
     public void testDoExtractResponse() throws Exception {
         final String message = "this is a test";
@@ -295,6 +334,13 @@ public class ElasticSearchAnnotationServiceTest {
         Annotation annotation = new Annotation("source", "16ab4b56311", "transactionId", "scope1", "metric1", 1557809559073L);
         annotation.setTags(annotationQueryTags);
         assertEquals(AnnotationRecordList.getHashedSearchIdentifier(annotation), ElasticSearchAnnotationService.getHashedSearchIdentifier(annotationQuery));
+
+        // change order of tags in annotation query
+        Map<String, String> annotationQueryTags2 = new HashMap<>();
+        annotationQueryTags2.put("podName","pod1");
+        annotationQueryTags2.put("device","device1");
+        AnnotationQuery annotationQuery2 = new AnnotationQuery("scope1", "metric1", annotationQueryTags2, "transactionId", 1557809359073L, 1557809599073L);
+        assertEquals(AnnotationRecordList.getHashedSearchIdentifier(annotation), ElasticSearchAnnotationService.getHashedSearchIdentifier(annotationQuery2));
     }
 
     private ElasticSearchAnnotationService _initializeSpyService(ElasticSearchAnnotationService service,
