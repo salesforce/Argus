@@ -36,7 +36,7 @@ public class ElasticSearchUtils {
     private static ObjectMapper mapper = new ObjectMapper();
 
     private static final int INDEX_MAX_RESULT_WINDOW = 10000;
-    private static final int  ANNOTATION_INDEX_MAX_RESULT_WINDOW = 10000;
+    public static int  ANNOTATION_INDEX_MAX_RESULT_WINDOW = 10000;
 
 
     public ElasticSearchUtils() {

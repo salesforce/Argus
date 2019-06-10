@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -76,6 +77,9 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
     private final int numShardsForAnnotationIndex;
     private final ObjectMapper annotationMapper;
     public static String ANNOTATION_INDEX_TEMPLATE_PATTERN_START;
+    
+    private static final String EXCEPTION_MESSAGE = "Your query returns {0} or more annotations."
+            + " Please modify your query by reducing the time window.";
     
     @Inject
     ElasticSearchAnnotationService(SystemConfiguration config, MonitorService monitorService, ElasticSearchUtils esUtils) {
@@ -167,7 +171,7 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         /** Connection count for ES REST client. */
         ANNOTATION_ES_CONNECTION_COUNT("service.property.annotation.elasticsearch.connection.count", "10"),
         /** The hashing algorithm to use for generating document id. */
-        ANNOTATION_ES_IDGEN_HASH_ALGO("service.property.annotation.elasticsearch.idgen.hash.algo", "XXHASH"),
+        ANNOTATION_ES_IDGEN_HASH_ALGO("service.property.annotation.elasticsearch.idgen.hash.algo", "MD5"),
         /** Replication factor */
         ANNOTATION_ES_NUM_REPLICAS("service.property.annotation.elasticsearch.num.replicas", "1"),
         /** Shard count */
@@ -536,7 +540,7 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         requireNotDisposed();
         requireArgument(queries != null, "Annotation queries cannot be null.");
         List<Annotation> annotations = new ArrayList<>();
-        int from = 0, scrollSize = 10000;
+        int from = 0, scrollSize = ElasticSearchUtils.ANNOTATION_INDEX_MAX_RESULT_WINDOW;
 
         String requestUrl = String.format("/%s-*/_search", ANNOTATION_INDEX_TEMPLATE_PATTERN_START);
         try{
@@ -551,6 +555,11 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
                 String str = extractResponse(response);
                 AnnotationRecordList list = toEntity(str, new TypeReference<AnnotationRecordList>() {});
                 annotations.addAll(list.getRecords());
+                
+                if(annotations.size() == scrollSize) {
+                    logger.error("Maximum annotations limit execeeded for query- " + query.toString());
+                    throw new RuntimeException(MessageFormat.format(EXCEPTION_MESSAGE, scrollSize));
+                }
             }
         } catch(IOException ex) {
             throw new SystemException(ex);
@@ -570,7 +579,7 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         return rootNode.toString();
     }
 
-    private void convertTimestampToMillis(AnnotationQuery query) {
+    protected void convertTimestampToMillis(AnnotationQuery query) {
         long queryStart = query.getStartTimestamp();
         long queryEnd = query.getEndTimestamp();
         if (queryStart < 100000000000L) query.setStartTimestamp(queryStart * 1000);
