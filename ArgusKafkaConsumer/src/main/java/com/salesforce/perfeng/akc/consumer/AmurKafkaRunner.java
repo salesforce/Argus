@@ -20,21 +20,22 @@ import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.TSDBService;
 import java.io.Serializable;
 import java.time.Instant;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Collection;
-import java.util.Date;
 import java.util.TimeZone;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import static com.salesforce.perfeng.akc.consumer.InstrumentationService.METRIC_CONSUMER_LAG;
 
 
 public class AmurKafkaRunner<K extends Serializable, V extends Serializable> implements Runnable {
@@ -224,8 +225,8 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
                 @Override
                 public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
 
+                    partitionsSubscribed.addAll(partitions);
                     if (isCustomCatchupConsumer()) {
-                        partitionsSubscribed.addAll(partitions);
                         getCustomStopOffsets(partitionsSubscribed);
                         Map<TopicPartition, Long> earliestOffsetsAtBroker = consumer.beginningOffsets(partitions);
                         Map<TopicPartition, Long> latestOffsetAtBroker = consumer.endOffsets(partitions);
@@ -266,7 +267,12 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
                     instrumentationService.updateTimer(HANDLEBATCH_LATENCY_METRIC_NAMES.get(consumerType),
                             System.currentTimeMillis() - t1,
                             null);
+
+                    computeAndPushLagOffsetPerPartitionPerTopic();
                     this.consumer.commitSync();
+
+
+
                     if(isCustomCatchupConsumer()) {
                         for (TopicPartition tp : partitionsSubscribed) {
 
@@ -320,6 +326,23 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
             logger.error("Unknown task class passed, exiting");
             System.exit(2);
         }
+    }
+
+    private void computeAndPushLagOffsetPerPartitionPerTopic() {
+
+        if (ConsumerType.METRICS != this.consumerType) { // Only compute and push for metrics consumer type.
+            return;
+        }
+
+        Map<TopicPartition, Long> latestOffsetAtBroker = consumer.endOffsets(partitionsSubscribed);
+        latestOffsetAtBroker.forEach((tp, latestOffset) -> {
+            Long currentLag = latestOffset - consumer.position(tp);
+            Map<String,String> tags = new HashMap<>();
+            tags.put("topic", tp.topic());
+            tags.put("partition", String.valueOf(tp.partition()));
+            instrumentationService.setCounterValue(METRIC_CONSUMER_LAG, (double) currentLag, tags);
+            logger.debug("Topic: {}, Partition: {} has lag of {}", tp.topic(), tp.partition(), currentLag);
+        });
     }
 
     private Pattern getRegexPattern() {
