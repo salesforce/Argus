@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.service;
 
+import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 
@@ -154,21 +155,22 @@ public interface MetricService extends Service {
      * @return  The corresponding list of metric query objects.  Will never return null.
      */
     List<MetricQuery> getQueries(List<String> expression, long relativeTo);
-    
-    /**
-     * Returns List of DCs from the expression.
-     * @param   expression  	The list of metric expressions to evaluate.  Cannot be null, but may be empty.  All entries must be a valid metric expression.
-     *
-     * @return  The list of DCs from the expression.
-     */
-    List<String> getDCFromExpression(String expression);
 
     /**
-     * Returns DC from the scope, if present.
-     * @param   scope  	The list of metric expressions to evaluate.  Cannot be null, but may be empty.  All entries must be a valid metric expression.
+     * Returns list of DC from the metric query list, if present.
+     * @param   mQList  The list of MetricQuery expressions to evaluate.  Cannot be null, but may be empty.  All entries must be a valid metric expression.
      *
-     * @return  The list of DCs from the expression.
+     * @return  The DC list.
      */
-    String getDCFromScope(String scope);
+    List<String> extractDCFromMetricQuery(List<MetricQuery> mQList);
+
+    /**
+     * Returns DC from the metric query, if present.
+     * @param   m  The Metric to evaluate.  Cannot be null, but may be empty.  All entries must be a valid metric expression.
+     *
+     * @return  The DC.
+     */
+    String extractDCFromMetric(Metric m);
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

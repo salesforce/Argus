@@ -31,44 +31,21 @@
 
 package com.salesforce.dva.argus.service.alert;
 
-import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
-import static java.math.BigInteger.ZERO;
-
-import java.io.Serializable;
-import java.math.BigInteger;
-import java.text.MessageFormat;
-import java.util.Map.Entry;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.persistence.EntityManager;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.salesforce.dva.argus.entity.*;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.persist.Transactional;
+import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.History.JobStatus;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.MetricSchemaRecord;
+import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.AuditService;
@@ -83,11 +60,39 @@ import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.MonitoringUtils;
 import com.salesforce.dva.argus.util.RequestContext;
 import com.salesforce.dva.argus.util.RequestContextHolder;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.persistence.EntityManager;
+import java.io.Serializable;
+import java.math.BigInteger;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import static java.math.BigInteger.ZERO;
 
 /**
  * Default implementation of the alert service.
@@ -491,13 +496,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			boolean alertSkipped = false;
 			boolean alertFailure = false;
 			boolean alertEvaluationStarted = false;
-			boolean doesDatalagExistInAnyDC = datalagMonitorEnabled ? doesDatalagConditionSatisfy(alert, null) : false;
+			boolean doesDatalagExistInAnyDC = false;
+
 			try {
 				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 				MetricQueryResult queryResult = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
 				MonitoringUtils.updateAlertMetricQueryPerfCounters(_monitorService, queryResult, alert.getOwner().getUserName());
-				List<Metric> metrics = queryResult.getMetricsList();
+				List<Metric> metrics = new ArrayList<>(queryResult.getMetricsList());
 				int initialMetricSize = metrics.size();
+				doesDatalagExistInAnyDC = datalagMonitorEnabled && doesDatalagExistsInAtLeastOneDC(queryResult, alert);
 
 				/* It works only for alerts with regex based expressions
 				TODO: Fix for expressions that do not go through discovery service ( i.e, non regex based expressions )
@@ -511,10 +518,23 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					_sendOrphanAlertNotification(alert);
 				} else {
 					if (datalagMonitorEnabled) {
-						metrics.removeIf(m -> shouldMetricBeRemovedForDataLag(alert, m, historyList));
+						/* Two Cases: 1. Contains transform, 2. Doesn't contain transform.
+						 * If contain transform, disable if at least 1 dc is lagging.
+						 * else disable per expanded expression specific lag.
+						 * TODO: If transforms are independent, should we disable entirely or expression specific.
+						*/
+						if( queryResult.containsTransform() || initialMetricSize == 0) { // Skip alert evaluation if the initial time series returned by metric service is null or if expression contains transforms and data lag exists in at least one dc.
+							if ( doesDatalagExistInAnyDC ) {
+								logMessage = MessageFormat.format("Skipping Alert {0} Evaluation as data was lagging in at least one dc for expression: {1}", alert.getId().intValue(), alert.getExpression());
+								updateDatalagHistory(alert, historyList, logMessage);
+								alertSkipped = true;
+								continue;
+							}
+						} else { // expanded alert expression doesn't contain any transforms.
+							metrics.removeIf(m -> shouldMetricBeRemovedForDataLag(alert, m, historyList));
+						}
 
-						if ((metrics.size() <= 0 && initialMetricSize > 0) || // Skip alert evaluation if all the expanded alert expression contains dc with data lag and initial size was non-zero.
-								(initialMetricSize == 0 && doesDatalagExistInAnyDC)) { // or, if the initial size is 0 and data lag is present in atleast one dc.
+						if (initialMetricSize > 0 && metrics.size() == 0) { // Skip alert evaluation if all the expanded alert expression contains dc with data lag and initial size was non-zero.
 							alertSkipped = true;
 							continue;
 						}
@@ -625,22 +645,45 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		RequestContextHolder.setRequestContext(new RequestContext(alert.getOwner().getUserName() + "-alert"));
 	}
 
+	private boolean doesDatalagExistsInAtLeastOneDC(MetricQueryResult queryResult, Alert alert) {
+
+		boolean isLagPresentInAtLeastOneDC = false;
+
+		List<MetricQuery> mQInboundList = queryResult.getInboundMetricQueries();
+		List<String> dcList = _metricService.extractDCFromMetricQuery(mQInboundList);
+
+		if(dcList == null || dcList.size() == 0) {
+			isLagPresentInAtLeastOneDC = doesDatalagConditionSatisfy(alert, null);
+		}
+
+		for (String currentDC: dcList) {
+			isLagPresentInAtLeastOneDC |= doesDatalagConditionSatisfy(alert, currentDC);
+		}
+
+		_logger.info(MessageFormat.format("AlertId: {0}, Expression:{1}, DC detected: {2}, lagPresent:{3}", alert.getId(), alert.getExpression(), dcList, isLagPresentInAtLeastOneDC));
+		return isLagPresentInAtLeastOneDC;
+	}
+
 	private boolean doesDatalagConditionSatisfy(Alert alert, String currentDC) {
 		return _monitorService.isDataLagging(currentDC) &&
 				(_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isPatternPresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns)) &&
 				(_whiteListedUserRegexPatterns.isEmpty() || !AlertUtils.isPatternPresentInWhiteList(alert.getOwner().getUserName(), _whiteListedUserRegexPatterns));
 	}
 
+	private void updateDatalagHistory(Alert alert, List<History> historyList, String historyMessage) {
+		_logger.info(historyMessage);
+		History history = new History(History.addDateToMessage(JobStatus.SKIPPED.getDescription()), HOSTNAME, alert.getId(), JobStatus.SKIPPED);
+		history.appendMessageNUpdateHistory(historyMessage, null, 0);
+		history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
+		historyList.add(history);
+	}
+
 	private boolean shouldMetricBeRemovedForDataLag(Alert alert, Metric m, List<History> historyList) {
 		try {
-			String currentDC = _metricService.getDCFromScope(m.getScope());
+			String currentDC = _metricService.extractDCFromMetric(m);
 			if (doesDatalagConditionSatisfy(alert, currentDC)) {
 				String logMessage = MessageFormat.format("Skipping evaluation of the alert expression with scope: {0} in alert with id: {1} due metric data was lagging in DC: {2}", m.getScope(), alert.getId().intValue(), currentDC);
-				_logger.info(logMessage);
-				History history = new History(History.addDateToMessage(JobStatus.SKIPPED.getDescription()), HOSTNAME, alert.getId(), JobStatus.SKIPPED);
-				history.appendMessageNUpdateHistory(logMessage, null, 0);
-				history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
-				historyList.add(history);
+				updateDatalagHistory(alert, historyList, logMessage);
 				return true;
 			}
 			return false;

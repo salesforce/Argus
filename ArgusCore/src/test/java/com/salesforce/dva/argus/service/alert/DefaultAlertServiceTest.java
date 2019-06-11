@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -31,13 +32,14 @@ import com.salesforce.dva.argus.service.*;
 import com.salesforce.dva.argus.service.alert.notifier.RefocusNotifier;
 import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 
+import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.RequestContextHolder;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -788,8 +790,7 @@ public class DefaultAlertServiceTest {
     }
 
     @Test
-    @Ignore
-    public void testExecuteScheduledAlerts_DuringDatalagPresent() {
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithNoDataTriggerWithSkippedEvaluation() {
         ServiceFactory sFactory = system.getServiceFactory();
         UserService userService = sFactory.getUserService();
 
@@ -816,16 +817,246 @@ public class DefaultAlertServiceTest {
         alert.setEnabled(true);
 
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(), alert, notification, true);
+
+        MetricQueryResult queryResult = new MetricQueryResult();
+        queryResult.addInboundMetricQuery(new MetricQuery("scope", "metric", null, 0L, 5000L));
+        when(_metricServiceMock.extractDCFromMetricQuery(anyList())).thenReturn(new ArrayList<>(Arrays.asList("DC1")));
+
+        when(_metricServiceMock.getMetrics(anyString(), anyLong())).thenReturn(queryResult);
+
+        spyAlertService.executeScheduledAlerts(1, 1000);
+
+        assertEquals(0, notificationCount.get());
+        enableDatalagMonitoring(false);
+    }
+
+
+    @Test
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithSuccessfulEvaluation() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        int triggerMinValue = 10, inertiaPeriod = 1;
+        int cooldownPeriod = 1000 * 5;
+
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+        final AtomicInteger clearCount = new AtomicInteger(0);
+        final AtomicInteger refocusCount = new AtomicInteger(0);
+
+        Metric metric = new Metric("scope", "metric");
+        Map<Long, String> dps1 = new HashMap<Long, String>();
+        dps1.put(1000L, "11");
+        dps1.put(2000L, "20");
+        dps1.put(3000L, "30");
+        metric.setDatapoints(_convertDatapoints(dps1));
+
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", triggerMinValue, inertiaPeriod);
+        _setTriggerId(trigger, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+                cooldownPeriod);
+        _setNotificationId(notification, "100003");
+
+        alert.setTriggers(Arrays.asList(trigger));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric), alert, notification, false);
+
+        enableDatalagMonitoring(true);
+
+        spyAlertService.executeScheduledAlerts(1, 1000);
+
+        assertEquals(1, notificationCount.get());
+
+        enableDatalagMonitoring(false);
+    }
+
+    @Test
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithSkippedEvaluation() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        int triggerMinValue = 10, inertiaPeriod = 1;
+        int cooldownPeriod = 1000 * 5;
+        final AtomicInteger clearCount = new AtomicInteger(0);
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        Metric metric = new Metric("scope", "metric");
+        Map<Long, String> dps1 = new HashMap<Long, String>();
+        dps1.put(1000L, "11");
+        dps1.put(2000L, "20");
+        dps1.put(3000L, "30");
+        metric.setDatapoints(_convertDatapoints(dps1));
+
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", triggerMinValue, inertiaPeriod);
+        _setTriggerId(trigger, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+                cooldownPeriod);
+        _setNotificationId(notification, "100003");
+
+        alert.setTriggers(Arrays.asList(trigger));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(metric), alert, notification, true);
 
         spyAlertService.executeScheduledAlerts(1, 1000);
 
         assertEquals(0, notificationCount.get());
-        enableDatalag(false);
+        enableDatalagMonitoring(false);
     }
 
     @Test
-    public void testExecuteScheduledAlerts_DuringDatalagPresentWithWhiteListedScope() {
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithDcDetectionFailedWithSkippedEvaluation() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        int triggerMinValue = 10, inertiaPeriod = 1;
+        int cooldownPeriod = 1000 * 5;
+        final AtomicInteger clearCount = new AtomicInteger(0);
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        Metric metric = new Metric("scope", "metric");
+        Map<Long, String> dps1 = new HashMap<Long, String>();
+        dps1.put(1000L, "11");
+        dps1.put(2000L, "20");
+        dps1.put(3000L, "30");
+        metric.setDatapoints(_convertDatapoints(dps1));
+
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", triggerMinValue, inertiaPeriod);
+        _setTriggerId(trigger, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+                cooldownPeriod);
+        _setNotificationId(notification, "100003");
+
+        alert.setTriggers(Arrays.asList(trigger));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric), alert, notification, true);
+
+        when(_metricServiceMock.extractDCFromMetricQuery(anyList())).thenReturn(new ArrayList<>());
+
+        spyAlertService.executeScheduledAlerts(1, 1000);
+
+        assertEquals(0, notificationCount.get());
+        enableDatalagMonitoring(false);
+    }
+
+    @Test
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithTransformsWithSkippedEvaluation() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        int triggerMinValue = 10, inertiaPeriod = 1;
+        int cooldownPeriod = 1000 * 5;
+
+        final AtomicInteger clearCount = new AtomicInteger(0);
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        Metric metric = new Metric("scope", "metric");
+        Map<Long, String> dps1 = new HashMap<Long, String>();
+        dps1.put(1000L, "11");
+        dps1.put(2000L, "20");
+        dps1.put(3000L, "30");
+        metric.setDatapoints(_convertDatapoints(dps1));
+
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "COUNT(-1h:scope:metric:avg, -1h:scope:metric:avg, -1h:scope:metric:avg)", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", triggerMinValue, inertiaPeriod);
+        _setTriggerId(trigger, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+                cooldownPeriod);
+        _setNotificationId(notification, "100003");
+
+        alert.setTriggers(Arrays.asList(trigger));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric), alert, notification, true);
+
+        MetricQueryResult queryResult = new MetricQueryResult();
+        queryResult.setMetricsList(new ArrayList<Metric>(Arrays.asList(metric)));
+        queryResult.addTransform(TransformFactory.Function.COUNT);
+        queryResult.addInboundMetricQuery(new MetricQuery("COUNT", "metric", null, 0L, 5000L));
+        when(_metricServiceMock.getMetrics(anyString(), anyLong())).thenReturn(queryResult);
+        when(_metricServiceMock.extractDCFromMetricQuery(anyList())).thenReturn(new ArrayList<>(Arrays.asList("DC1", "DC2", "DC3")));
+
+        enableDatalagMonitoring(true);
+
+        spyAlertService.executeScheduledAlerts(1, 1000);
+
+        assertEquals(0, notificationCount.get());
+        enableDatalagMonitoring(false);
+    }
+
+    @Test
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithTransformsWithSuccessfulEvaluation() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        int triggerMinValue = 10, inertiaPeriod = 1;
+        int cooldownPeriod = 1000 * 5;
+
+        final AtomicInteger clearCount = new AtomicInteger(0);
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        Metric metric = new Metric("scope", "metric");
+        Map<Long, String> dps1 = new HashMap<Long, String>();
+        dps1.put(1000L, "11");
+        dps1.put(2000L, "20");
+        dps1.put(3000L, "30");
+        metric.setDatapoints(_convertDatapoints(dps1));
+
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "COUNT(-1h:scope:metric:avg, -1h:scope:metric:avg, -1h:scope:metric:avg)", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", triggerMinValue, inertiaPeriod);
+        _setTriggerId(trigger, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+                cooldownPeriod);
+        _setNotificationId(notification, "100003");
+
+        alert.setTriggers(Arrays.asList(trigger));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric), alert, notification, false);
+
+        MetricQueryResult queryResult = new MetricQueryResult();
+        queryResult.setMetricsList(new ArrayList<Metric>(Arrays.asList(metric)));
+        queryResult.addTransform(TransformFactory.Function.COUNT);
+        queryResult.addInboundMetricQuery(new MetricQuery("COUNT", "metric", null, 0L, 5000L));
+        when(_metricServiceMock.getMetrics(anyString(), anyLong())).thenReturn(queryResult);
+        when(_metricServiceMock.extractDCFromMetricQuery(anyList())).thenReturn(new ArrayList<>(Arrays.asList("DC1", "DC2", "DC3")));
+
+        enableDatalagMonitoring(true);
+
+        spyAlertService.executeScheduledAlerts(1, 1000);
+
+        assertEquals(1, notificationCount.get());
+        enableDatalagMonitoring(false);
+    }
+
+    @Test
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithWhiteListedScopeWithNoDataWithSuccessfulEvaluation() {
         ServiceFactory sFactory = system.getServiceFactory();
         UserService userService = sFactory.getUserService();
 
@@ -853,11 +1084,11 @@ public class DefaultAlertServiceTest {
         spyAlertService.executeScheduledAlerts(1, 1000);
 
         assertEquals(1, notificationCount.get());
-        enableDatalag(false);
+        enableDatalagMonitoring(false);
     }
 
     @Test
-    public void testExecuteScheduledAlerts_DuringDatalagPresentWithWhiteListedUser() {
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithWhiteListedUserWithNoDataWithSuccessfulEvaluation() {
         ServiceFactory sFactory = system.getServiceFactory();
         UserService userService = sFactory.getUserService();
 
@@ -885,7 +1116,134 @@ public class DefaultAlertServiceTest {
         spyAlertService.executeScheduledAlerts(1, 1000);
 
         assertEquals(1, notificationCount.get());
-        enableDatalag(false);
+        enableDatalagMonitoring(false);
+    }
+
+    @Test
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithWhiteListedScopeWithMetricDataWithSuccessfulEvaluation() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        int triggerMinValue = 10, inertiaPeriod = 1;
+        int cooldownPeriod = 1000 * 5;
+
+        final AtomicInteger clearCount = new AtomicInteger(0);
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        Metric metric = new Metric("scope", "metric");
+        Map<Long, String> dps1 = new HashMap<Long, String>();
+        dps1.put(1000L, "11");
+        dps1.put(2000L, "20");
+        dps1.put(3000L, "30");
+        metric.setDatapoints(_convertDatapoints(dps1));
+
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:whiteListedScope:metric:avg", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", triggerMinValue, inertiaPeriod);
+        _setTriggerId(trigger, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+                cooldownPeriod);
+        _setNotificationId(notification, "100003");
+
+        alert.setTriggers(Arrays.asList(trigger));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric), alert, notification, true);
+
+        spyAlertService.executeScheduledAlerts(1, 1000);
+
+        assertEquals(1, notificationCount.get());
+        enableDatalagMonitoring(false);
+    }
+
+    @Test
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithWhiteListedUserWithMetricDataWithSuccessfulEvaluation() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        int triggerMinValue = 10, inertiaPeriod = 1;
+        int cooldownPeriod = 1000 * 5;
+
+        final AtomicInteger clearCount = new AtomicInteger(0);
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        Metric metric = new Metric("scope", "metric");
+        Map<Long, String> dps1 = new HashMap<Long, String>();
+        dps1.put(1000L, "11");
+        dps1.put(2000L, "20");
+        dps1.put(3000L, "30");
+        metric.setDatapoints(_convertDatapoints(dps1));
+
+        Alert alert = new Alert(userService.findDefaultUser(), userService.findDefaultUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger = new Trigger(alert, TriggerType.NO_DATA, "testTrigger", triggerMinValue, inertiaPeriod);
+        _setTriggerId(trigger, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+                cooldownPeriod);
+        _setNotificationId(notification, "100003");
+
+        alert.setTriggers(Arrays.asList(trigger));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric), alert, notification, true);
+
+        spyAlertService.executeScheduledAlerts(1, 1000);
+
+        assertEquals(1, notificationCount.get());
+        enableDatalagMonitoring(false);
+    }
+
+    @Test
+    public void testExecuteScheduledAlerts_DuringDatalagPresentWithWhiteListedScopeWithTransformSuccessfulEvaluation() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        int triggerMinValue = 10, inertiaPeriod = 1;
+        int cooldownPeriod = 1000 * 5;
+
+        final AtomicInteger clearCount = new AtomicInteger(0);
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        Metric metric = new Metric("scope", "metric");
+        Map<Long, String> dps1 = new HashMap<Long, String>();
+        dps1.put(1000L, "11");
+        dps1.put(2000L, "20");
+        dps1.put(3000L, "30");
+        metric.setDatapoints(_convertDatapoints(dps1));
+
+        Alert alert = new Alert(userService.findDefaultUser(), userService.findDefaultUser(), "testAlert", "COUNT(-1h:whitelistedScope:metric1:avg,-1h:scope:metric2:avg,-1h:scope:metric3:avg)", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", triggerMinValue, inertiaPeriod);
+        _setTriggerId(trigger, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+                cooldownPeriod);
+        _setNotificationId(notification, "100003");
+
+        alert.setTriggers(Arrays.asList(trigger));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric), alert, notification, true);
+
+        MetricQueryResult queryResult = new MetricQueryResult();
+        queryResult.setMetricsList(new ArrayList<Metric>(Arrays.asList(metric)));
+        queryResult.addTransform(TransformFactory.Function.COUNT);
+        queryResult.addInboundMetricQuery(new MetricQuery("COUNT", "metric", null, 0L, 5000L));
+        when(_metricServiceMock.getMetrics(anyString(), anyLong())).thenReturn(queryResult);
+        when(_metricServiceMock.extractDCFromMetricQuery(anyList())).thenReturn(new ArrayList<>(Arrays.asList("DC1", "DC2", "DC3")));
+
+        spyAlertService.executeScheduledAlerts(1, 1000);
+
+        assertEquals(1, notificationCount.get());
+        enableDatalagMonitoring(false);
     }
 
     @Test
@@ -932,9 +1290,9 @@ public class DefaultAlertServiceTest {
         MetricQueryResult queryResult = new MetricQueryResult();
         queryResult.setMetricsList(metrics);
         when(_metricServiceMock.getMetrics(anyString(), anyLong())).thenReturn(queryResult);
-        when(_monitorServiceMock.isDataLagging(anyString())).thenReturn(isDataLagging);
+        when(_monitorServiceMock.isDataLagging(any())).thenReturn(isDataLagging);
 
-        enableDatalag(isDataLagging);
+        enableDatalagMonitoring(isDataLagging);
 
         doAnswer(new Answer<Notification>() {
 
@@ -987,7 +1345,7 @@ public class DefaultAlertServiceTest {
         return spyAlertService;
     }
 
-    private void enableDatalag(boolean isDataLagging) {
+    private void enableDatalagMonitoring(boolean isDataLagging) {
         Field testField = null;  // Checks superclasses.
         try {
             Whitebox.setInternalState(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED, "_defaultValue", Boolean.toString(isDataLagging));
