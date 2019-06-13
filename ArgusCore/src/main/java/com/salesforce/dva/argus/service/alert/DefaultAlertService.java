@@ -1396,6 +1396,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			return _notifierFactory.getWardenPostingNotifier();
 		case GUS:
 			return _notifierFactory.getGusNotifier();
+		case PAGERDUTY:
+			return _notifierFactory.getPagerDutyNotifier();
 		case REFOCUS:
 			return _notifierFactory.getRefocusNotifier();
 		case REFOCUS_BOOLEAN:
