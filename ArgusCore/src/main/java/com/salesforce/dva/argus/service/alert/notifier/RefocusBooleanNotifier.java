@@ -31,11 +31,9 @@
 
 package com.salesforce.dva.argus.service.alert.notifier;
 
-import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.History;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
@@ -43,6 +41,7 @@ import com.salesforce.dva.argus.service.RefocusService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
 import java.util.List;
@@ -57,9 +56,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
  */
 public class RefocusBooleanNotifier extends AuditNotifier {
 
-	@SLF4JTypeListener.InjectLogger
-	private Logger _logger;
-
+	private Logger _logger = LoggerFactory.getLogger(RefocusBooleanNotifier.class);
 	private RefocusService _refocusService;
 
 
@@ -99,7 +96,7 @@ public class RefocusBooleanNotifier extends AuditNotifier {
 
 		if(isTriggerActive) {
 			super.sendAdditionalNotification(context);
-		}else {
+		} else {
 			super.clearAdditionalNotification(context);
 		}
 

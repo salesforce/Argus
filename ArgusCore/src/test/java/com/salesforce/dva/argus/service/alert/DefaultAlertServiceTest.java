@@ -1326,7 +1326,8 @@ public class DefaultAlertServiceTest {
                                                             any(Notification.class),
                                                             any(Alert.class),
                                                             anyLong(),
-                                                            anyLong());
+                                                            anyLong(),
+                                                            anyString());
 
         doAnswer(new Answer<Void>() {
 
@@ -1340,7 +1341,8 @@ public class DefaultAlertServiceTest {
                                                             any(History.class),
                                                             any(Notification.class),
                                                             any(Alert.class),
-                                                            anyLong());
+                                                            anyLong(),
+                                                            anyString());
 
         return spyAlertService;
     }
