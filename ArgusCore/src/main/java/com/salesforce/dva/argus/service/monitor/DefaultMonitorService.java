@@ -43,7 +43,6 @@ import com.salesforce.dva.argus.entity.ServiceManagementRecord;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord.Service;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.DashboardService;
 import com.salesforce.dva.argus.service.MailService;
