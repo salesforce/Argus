@@ -112,9 +112,6 @@ public class InstrumentationService {
 	static final String HISTOGRAM_SCHEMA_BATCH_COUNT = "histogram.schema.batch.count";
 	static final String HISTOGRAM_SCHEMA_PROCESS_LATENCY = "histogram.schema.process.latency";
 
-	//Lag offset metric names
-	static final String METRIC_CONSUMER_LAG = "metric.consumer.lag";
-
 
 	@VisibleForTesting
 	protected static final List<String> DATAPOINT_METRICS = Arrays.asList(
@@ -248,13 +245,6 @@ public class InstrumentationService {
 			instrumentMetricsThread.start();
 			LOGGER.info("Singleton instrument metrics thread started for ConsumerType " + AKCConfiguration.getParameter(AKCConfiguration.Parameter.CONSUMER_TYPE));
 		}
-	}
-
-	public void setCounterValue(String metric, Double value, Map<String, String> tags) {
-		requireArgument(metric != null && !metric.isEmpty(), "Metric to instrument cannot be null or empty.");
-
-		Metric key = constructMetric(metric, tags, false);
-		instrumentedCounterMetrics.get().computeIfAbsent(key, k -> getCounterMXBeanInstance(k)).setValue(value);
 	}
 
 	public void updateCounter(String metric, double delta, Map<String, String> tags) {

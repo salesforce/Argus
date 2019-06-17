@@ -270,8 +270,6 @@ public class QueryUtilsTest {
         assertTrue(scopes.contains(new String("argus.core1")));
         assertTrue(scopes.contains(new String("argus.core2")));
         assertTrue(scopes.contains(new String("argus.core3")));
-        scopes = QueryUtils.getScopesFromExpression("DIVIDE(SUM(-1h:system.*.NONE:alerts.scheduled:zimsum:1m-sum, -1h:argus.core2:alerts.evaluated:zimsum:1m-sum), -1h:argus.core3:alerts.scheduled:zimsum:1m-sum)");
-        assertEquals(scopes.size(),3);
     }
 
     @Test

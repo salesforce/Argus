@@ -1,53 +1,52 @@
 package com.salesforce.dva.argus.util;
 
-import com.google.inject.Provider;
-import com.salesforce.dva.argus.TestUtils;
-import com.salesforce.dva.argus.entity.Alert;
-import com.salesforce.dva.argus.entity.History;
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.entity.Notification;
-import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.entity.Trigger;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.math.BigInteger;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.regex.Pattern;
+
+import com.salesforce.dva.argus.entity.*;
 import com.salesforce.dva.argus.service.AlertService;
+import com.google.inject.Provider;
 import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.metric.DefaultMetricService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+
+
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
-import com.salesforce.dva.argus.system.SystemMain;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
 import org.quartz.TriggerBuilder;
-import org.slf4j.LoggerFactory;
-
-import java.math.BigInteger;
+import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.system.SystemMain;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 import java.sql.DriverManager;
 import java.sql.SQLNonTransientConnectionException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
+import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 
 public class AlertUtilsTest {
@@ -238,7 +237,7 @@ public class AlertUtilsTest {
 		DefaultMetricService _mServiceMock = new DefaultMetricService(system.getServiceFactory().getMonitorService(),null, null,queryprovider, system.getConfiguration());
 
 		for(Map.Entry<String, List<String>> currentSuite: testSuite.entrySet()) {
-			List<String> actualOutput = _mServiceMock.extractDCFromMetricQuery(_mServiceMock.getQueries(currentSuite.getKey()));
+			List<String> actualOutput = _mServiceMock.getDCFromExpression(currentSuite.getKey());
 			Collections.sort(actualOutput);
 			assertEquals(currentSuite.getValue(), actualOutput);
 		}

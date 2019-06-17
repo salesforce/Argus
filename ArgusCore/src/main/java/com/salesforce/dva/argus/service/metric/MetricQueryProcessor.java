@@ -1,12 +1,19 @@
 package com.salesforce.dva.argus.service.metric;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.QueryStoreService;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.TSDBService.QueryStartTimeWindow;
 import com.salesforce.dva.argus.service.TSDBService.QueryTimeSeriesExpansion;
 import com.salesforce.dva.argus.service.TSDBService.QueryTimeWindow;
@@ -20,12 +27,6 @@ import com.salesforce.dva.argus.util.QueryContext;
 import com.salesforce.dva.argus.util.TSDBQueryExpression;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /*
  * This class has methods which are used to evaluate the metric query expression once it is parsed
@@ -72,8 +73,6 @@ public class MetricQueryProcessor {
             mergeQueryResults(queryResult, evaluateTSDBQuery(context.getExpression()));
         }
 
-
-
         if(context.getTransform()!=null) {
             boolean constantsOnly = false;
             // fill transform needs to know whether its generating a constant line or its filling gaps in some computed metrics
@@ -81,7 +80,6 @@ public class MetricQueryProcessor {
                 constantsOnly = true;
             }
             queryResult.setMetricsList(evaluateTransform(context.getTransform(), queryResult.getMetricsList(), context.getConstants(), relativeTo, constantsOnly, context));
-            queryResult.addTransform(context.getTransform());
         }
         queryResult.setExpandedTimeSeriesRange(QueryTimeSeriesExpansion.getExpandedTimeSeriesRange(queryResult.getNumTSDBResults()));
         queryResult.setQueryTimeWindow(QueryTimeWindow.getWindow(queryResult.getQueryTimeRangeInMillis()));
@@ -94,8 +92,6 @@ public class MetricQueryProcessor {
         parentResult.setNumTSDBResults(parentResult.getNumTSDBResults() + childResult.getNumTSDBResults());
         parentResult.setNumDiscoveryQueries(parentResult.getNumDiscoveryQueries() + childResult.getNumDiscoveryQueries());
         parentResult.setNumDiscoveryResults(parentResult.getNumDiscoveryResults() + childResult.getNumDiscoveryResults());
-        parentResult.addInboundMetricQueries(childResult.getInboundMetricQueries());
-        parentResult.addTransforms(childResult.getTransforms());
         if(childResult.getQueryTimeRangeInMillis() > parentResult.getQueryTimeRangeInMillis()) {
             parentResult.setQueryTimeRangeInMillis(childResult.getQueryTimeRangeInMillis());
         }
@@ -132,17 +128,11 @@ public class MetricQueryProcessor {
 
         List<MetricQuery> queries = _discoveryService.getMatchingQueries(query);
 
-        if (queries.size() == 0) { // No metrics inflow to argus in last DEFAULT_RETENTION_DISCOVERY_DAYS days. Save the raw query processed within inBoundMetricQuery.
-            queryResult.addInboundMetricQuery(query);
-        }
-
         // Stores all the user queries
         List<Metric> metricsQueried = new ArrayList<>();
         for (MetricQuery metricQuery:queries) {
             metricsQueried.add(new Metric(metricQuery.getScope(),metricQuery.getMetric()));
-            queryResult.addInboundMetricQuery(metricQuery);
         }
-
         try {
             _queryStoreService.putArgusWsQueries(metricsQueried);
         }
@@ -168,7 +158,6 @@ public class MetricQueryProcessor {
         final long time = System.currentTimeMillis() - start;
         _monitorService.modifyCounter(Counter.METRICQUERYPROCESSOR_EVALUATETSDBQUERY_LATENCY, time, null);
         _monitorService.modifyCounter(Counter.METRICQUERYPROCESSOR_EVALUATETSDBQUERY_COUNT, 1, null);
-
 
         return queryResult;
     }

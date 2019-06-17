@@ -45,20 +45,22 @@ import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+
 import com.salesforce.dva.argus.util.QueryContextHolder;
+
+import com.salesforce.dva.argus.util.QueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -77,7 +79,6 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 	private final Provider<MetricReader<MetricQuery>> _metricReaderProviderForQueries;
 	private final SystemConfiguration _configuration;
 	private MetricQueryProcessor _queryProcessor;
-	private String dcListRegex;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -100,7 +101,6 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		_metricReaderProviderForQueries = queryprovider;
 		_configuration = config;
 		_queryProcessor = queryProcessor;
-		dcListRegex = _configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DC_LIST).replaceAll(",", "|");
 	}
 
 	//~ Methods **************************************************************************************************************************************
@@ -221,53 +221,69 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		return dataPointsSize;
 	}
 
-	private String getMatchedDCAgainstRegex(String scope, String regex) {
-
-		if(scope == null || scope.isEmpty()) {
-			_logger.warn("Can't retrieve DC from empty scope.");
-			return null;
-		}
-
+	private List<String> getMatchedDCAgainstRegex(List<String> scopes, String regex) {
+		Set<String> DC = new HashSet<String>();
 		Matcher m;
-		m = Pattern.compile(regex).matcher(scope);
-		while (m.find()) {
-			String dc = m.group().substring(1, m.group().length() - 1).toUpperCase();
-			_logger.info(MessageFormat.format("Retrieved DC: {0} from scope: {1}", dc, scope));
-			return dc;
+		for(String currentScope: scopes) {
+			m = Pattern.compile(regex).matcher(currentScope);
+			while (m.find()) DC.add(m.group().substring(1, m.group().length() - 1).toUpperCase());
 		}
-		return null;
+		_logger.debug(MessageFormat.format("Got {0} lists of DC from scope {1} using regex {2}", DC, scopes, regex));
+		return new ArrayList<>(DC);
 	}
 
-	@Override
-	public List<String> extractDCFromMetricQuery(List<MetricQuery> mQList) {
-		Set<String> dcList = new HashSet<>();
+	private String getMatchedDCAgainstRegex(String scope, String regex) {
+		List<String> scopes = new ArrayList<>();
+		scopes.add(scope);
+		List<String> dcList = getMatchedDCAgainstRegex(scopes, regex);
+		if(dcList.size() > 0) return dcList.get(0);
+		else return null;
+	}
 
-		for (MetricQuery mQ: mQList) {
-			String currentDC = getDCFromScope(mQ.getScope()); //TODO: If the dc gets transferred to tags, we need to update this.
-			if (currentDC != null) {
-				dcList.add(currentDC);
+	public List<String> getDCFromExpression(String expression) {
+
+		Set<String> finalDCList = new HashSet<>();
+		String dcList = _configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DC_LIST).replaceAll(",","|");
+		String defaultDC = _configuration.getValue(SystemConfiguration.Property.DC_DEFAULT);
+
+		ArrayList<String> patterns = new ArrayList<>(Arrays.asList( "\\.(?i)(" + dcList + ")\\.",
+				":argus\\."));
+		List<String> scopes = QueryUtils.getScopesFromExpression(expression);
+
+		if (expression == null || expression.isEmpty()) {
+			_logger.error("Expression either null or empty. Cannot retrive DC from the expression. Returning default value " + defaultDC);
+			finalDCList.add(defaultDC);
+		} else {
+			//Two cases: 1. DC can be extracted from scope (don't call discovery service) 2. DC cannot be identified, call discovery service.
+			List<String> currentDCList = getMatchedDCAgainstRegex(scopes, patterns.get(0));
+			if (currentDCList.size() > 0) {//Case 1
+				finalDCList = new HashSet<>(currentDCList);
+			} else { //Case 2
+				// Get all the expanded queries from MetricService and identify all different DCs.
+				List<MetricQuery> queries = getQueries(expression);
+				for(MetricQuery currentQuery: queries) {
+					finalDCList.add(getDCFromScope(currentQuery.getScope()));
+				}
+			}
+
+			// Default Case.
+			if(getMatchedDCAgainstRegex(scopes, patterns.get(1)).size() > 0) {
+				finalDCList.add(defaultDC);
 			}
 		}
-
-		_logger.info("DCs detected: {}", dcList);
-		return new ArrayList<>(dcList);
-	}
-
-	@Override
-	public String extractDCFromMetric(Metric m) {
-		return getDCFromScope(m.getScope()); //TODO: If the dc gets transferred to tags, we need to update this.
-	}
-
-	private String getDCFromScope(String scope) {
-
-		if(scope == null || scope.isEmpty()) {
-			_logger.warn("Can't retrieve DC from empty scope.");
-			return null;
+		if (finalDCList.size() == 0) {
+			_logger.info(MessageFormat.format("Unable to identify DC from expression: {0}. Returning default value: {1}", expression, defaultDC));
+			finalDCList.add(defaultDC);
 		}
+		return new ArrayList<>(finalDCList);
+	}
 
+	public String getDCFromScope(String scope) {
+		String dcList = _configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DC_LIST).replaceAll(",", "|");
+		String pattern = "\\.(?i)(" + dcList + ")\\.";
+		String defaultDC = _configuration.getValue(SystemConfiguration.Property.DC_DEFAULT);
 		try {
-			String dc = getMatchedDCAgainstRegex(scope, "\\.(?i)(" + dcListRegex + ")\\.");
-
+			String dc = getMatchedDCAgainstRegex(scope, pattern);
 			if (dc != null) {
 				return dc;
 			} else {
@@ -275,8 +291,8 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 				return null;
 			}
 		} catch (Exception ex) {
-			_logger.error("Unable to retrieve DC from scope. Exception: {0}", ex);
-			return null;
+			_logger.error("Unable to retrieve DC from expression scope. Returning default DC. Exception: {}", ex);
+			return defaultDC;
 		}
 	}
 }

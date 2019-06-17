@@ -1,21 +1,16 @@
 package com.salesforce.dva.argus.service.metric;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
-import com.salesforce.dva.argus.service.tsdb.MetricQuery;
-import org.glassfish.grizzly.utils.ArraySet;
 
 /*
  * This class encapsulates the results of the metric query evaluation that are returned to the caller
  */
 public class MetricQueryResult {
 
-	private List<Metric> metrics = new ArrayList<>();
+	private List<Metric> metrics = new ArrayList<Metric>();
 	
 	// Returns the number of time series that current query has expanded to.
 	private String expandedTimeSeriesRange = "unknown";
@@ -35,10 +30,6 @@ public class MetricQueryResult {
 	private Integer numTSDBResults = 0;
 	
 	private Long queryStartTimeMillis = System.currentTimeMillis();
-
-	private Set<TransformFactory.Function> transforms = new HashSet<>();
-
-	private Set<MetricQuery> inboundMetricQueries = new HashSet<>();
 
 	public List<Metric> getMetricsList() {
 		return metrics;
@@ -111,23 +102,4 @@ public class MetricQueryResult {
 	public void setQueryStartTimeMillis(Long queryStartTimeMillis) {
 		this.queryStartTimeMillis = queryStartTimeMillis;
 	}
-
-	public boolean containsTransform() { return (transforms.size() > 0); }
-
-	public void addTransform(TransformFactory.Function transform) { this.transforms.add(transform); }
-
-	public List<TransformFactory.Function> getTransforms() { return new ArrayList<>(this.transforms); }
-
-	public void addTransforms(List<TransformFactory.Function> transforms) { this.transforms.addAll(transforms); }
-
-	public void removeTransform(TransformFactory.Function transform) { this.transforms.remove(transform); }
-
-
-	public List<MetricQuery> getInboundMetricQueries() { return new ArrayList<>(inboundMetricQueries); }
-
-	public void removeMetricQueries(MetricQuery metricQuery) { this.inboundMetricQueries.remove(metricQuery); }
-
-	public void addInboundMetricQuery(MetricQuery metricQuery) { this.inboundMetricQueries.add(metricQuery); }
-
-	public void addInboundMetricQueries(List<MetricQuery> metricQuery) { this.inboundMetricQueries.addAll(metricQuery); }
 }

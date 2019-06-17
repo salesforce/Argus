@@ -383,7 +383,6 @@ public interface AlertService extends Service {
 		WARDENPOSTING(WardenPostingNotifier.class.getName()),
 		GUS(GusNotifier.class.getName()),
 		CALLBACK(CallbackNotifier.class.getName()),
-		PAGERDUTY(PagerDutyNotifier.class.getName()),
 		REFOCUS(RefocusNotifier.class.getName()),
         REFOCUS_BOOLEAN(RefocusBooleanNotifier.class.getName()),
 		REFOCUS_VALUE(RefocusValueNotifier.class.getName());

@@ -1,34 +1,15 @@
 package com.salesforce.perfeng.akc.consumer;
 
 import com.salesforce.dva.argus.system.SystemMain;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
-import org.powermock.reflect.Whitebox;
 
-import static com.salesforce.perfeng.akc.consumer.InstrumentationService.METRIC_CONSUMER_LAG;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
-@RunWith(MockitoJUnitRunner.class)
 public class AmurKafkaRunnerTest  {
     private ConsumerType consumerType = ConsumerType.METRICS;
 
@@ -40,10 +21,6 @@ public class AmurKafkaRunnerTest  {
     @Rule
     public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
-    @Mock
-    private KafkaConsumer<String, String> mockConsumer;
-    private InstrumentationService mockInstrumentationService;
-
     @Test
     public void testAmurTaskAssignableExits() {
         exit.expectSystemExitWithStatus(2);
@@ -54,7 +31,7 @@ public class AmurKafkaRunnerTest  {
         mandatoryKafkaProps.put("group.id", "blah");
         mandatoryKafkaProps.put("bootstrap.servers", "blah");
         mandatoryKafkaProps.put("key.deserializer",
-                                "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+                                "org.apache.kafka.common.serialization.ByteArrayDeserialize1r");
         mandatoryKafkaProps.put("value.deserializer",
                                 "org.apache.kafka.common.serialization.ByteArrayDeserializer");
 
@@ -79,7 +56,7 @@ public class AmurKafkaRunnerTest  {
         mandatoryKafkaProps.put("group.id", "blah");
         mandatoryKafkaProps.put("bootstrap.servers", "blah");
         mandatoryKafkaProps.put("key.deserializer",
-                                "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+                                "org.apache.kafka.common.serialization.ByteArrayDeserialize1r");
         mandatoryKafkaProps.put("value.deserializer",
                                 "org.apache.kafka.common.serialization.ByteArrayDeserializer");
 
@@ -126,7 +103,7 @@ public class AmurKafkaRunnerTest  {
         mandatoryKafkaProps.put("topics", "blah");
         mandatoryKafkaProps.put("bootstrap.servers", "blah");
         mandatoryKafkaProps.put("key.deserializer",
-                                "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+                                "org.apache.kafka.common.serialization.ByteArrayDeserialize1r");
         mandatoryKafkaProps.put("value.deserializer",
                                 "org.apache.kafka.common.serialization.ByteArrayDeserializer");
 
@@ -151,7 +128,7 @@ public class AmurKafkaRunnerTest  {
         mandatoryKafkaProps.put("group.id", "blah");
         mandatoryKafkaProps.put("bootstrap.servers", "blah");
         mandatoryKafkaProps.put("key.deserializer",
-                "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+                "org.apache.kafka.common.serialization.ByteArrayDeserialize1r");
         mandatoryKafkaProps.put("value.deserializer",
                 "org.apache.kafka.common.serialization.ByteArrayDeserializer");
 
@@ -166,7 +143,6 @@ public class AmurKafkaRunnerTest  {
                 new AtomicInteger(0),
                 AjnaConsumerTask.class);
     }
-
     @Test(expected = NumberFormatException.class)
     public void testCatchupConsumerInvalidEpoch() {
         Properties props = new Properties();
@@ -178,7 +154,7 @@ public class AmurKafkaRunnerTest  {
         mandatoryKafkaProps.put("group.id", "blah");
         mandatoryKafkaProps.put("bootstrap.servers", "blah");
         mandatoryKafkaProps.put("key.deserializer",
-                "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+                "org.apache.kafka.common.serialization.ByteArrayDeserialize1r");
         mandatoryKafkaProps.put("value.deserializer",
                 "org.apache.kafka.common.serialization.ByteArrayDeserializer");
 
@@ -205,7 +181,7 @@ public class AmurKafkaRunnerTest  {
         mandatoryKafkaProps.put("group.id", "blah");
         mandatoryKafkaProps.put("bootstrap.servers", "blah");
         mandatoryKafkaProps.put("key.deserializer",
-                "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+                "org.apache.kafka.common.serialization.ByteArrayDeserialize1r");
         mandatoryKafkaProps.put("value.deserializer",
                 "org.apache.kafka.common.serialization.ByteArrayDeserializer");
 
@@ -232,7 +208,7 @@ public class AmurKafkaRunnerTest  {
         mandatoryKafkaProps.put("group.id", "blah");
         mandatoryKafkaProps.put("bootstrap.servers", "blah");
         mandatoryKafkaProps.put("key.deserializer",
-                "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+                "org.apache.kafka.common.serialization.ByteArrayDeserialize1r");
         mandatoryKafkaProps.put("value.deserializer",
                 "org.apache.kafka.common.serialization.ByteArrayDeserializer");
 
@@ -259,7 +235,7 @@ public class AmurKafkaRunnerTest  {
         mandatoryKafkaProps.put("group.id", "blah");
         mandatoryKafkaProps.put("bootstrap.servers", "blah");
         mandatoryKafkaProps.put("key.deserializer",
-                "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+                "org.apache.kafka.common.serialization.ByteArrayDeserialize1r");
         mandatoryKafkaProps.put("value.deserializer",
                 "org.apache.kafka.common.serialization.ByteArrayDeserializer");
 
@@ -286,7 +262,7 @@ public class AmurKafkaRunnerTest  {
         mandatoryKafkaProps.put("group.id", "blah");
         mandatoryKafkaProps.put("bootstrap.servers", "blah");
         mandatoryKafkaProps.put("key.deserializer",
-                "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+                "org.apache.kafka.common.serialization.ByteArrayDeserialize1r");
         mandatoryKafkaProps.put("value.deserializer",
                 "org.apache.kafka.common.serialization.ByteArrayDeserializer");
 
@@ -300,79 +276,5 @@ public class AmurKafkaRunnerTest  {
                 system,
                 new AtomicInteger(0),
                 AjnaConsumerTask.class);
-    }
-
-    @Test
-    public void testOffsetComputationPerTopic() {
-
-        Properties props = new Properties();
-        Map<String, String> mandatoryKafkaProps = new HashMap<>();
-        mandatoryKafkaProps.put("custom.offset.set", "custom");
-        mandatoryKafkaProps.put("custom.stop.time.epoch.ms", "2808780816");
-        mandatoryKafkaProps.put("custom.start.time.epoch.ms", "1546218000");
-        mandatoryKafkaProps.put("topics", "blah");
-        mandatoryKafkaProps.put("group.id", "blah");
-        mandatoryKafkaProps.put("bootstrap.servers", "blah");
-        mandatoryKafkaProps.put("key.deserializer",
-                "org.apache.kafka.common.serialization.ByteArrayDeserializer");
-        mandatoryKafkaProps.put("value.deserializer",
-                "org.apache.kafka.common.serialization.ByteArrayDeserializer");
-
-        for (Map.Entry<String, String> entry : mandatoryKafkaProps.entrySet()) {
-            props.setProperty(entry.getKey(), entry.getValue());
-        }
-
-        SystemMain system = SystemMain.getInstance();
-        AmurKafkaRunner akr = new AmurKafkaRunner(consumerType,
-                props,
-                system,
-                new AtomicInteger(0),
-                AjnaConsumerTask.class);
-
-        // Creates 5 partition for 2 topics and computes the current offset by index % 3 and latest offset as index.
-        /* Topic        Partition -> (produced, consumed)
-        * "testTopicEven" -> { 0 -> (1, 0)
-        *                      2 -> (3, 2)
-        *                      4 -> (5, 1)
-        *                      6 -> (7, 0)
-        *                      8 -> (9, 2)
-        *                    }
-        * "testTopicOdd"  -> { 1 -> (2, 1)
-        *                      3 -> (4, 0)
-        *                      5 -> (6, 2)
-        *                      7 -> (8, 1)
-        *                      9 -> (10, 0)
-        *                    }
-        *
-        */
-        Map<TopicPartition, Long> mockLatestOffset = new HashMap<>();
-        Map<TopicPartition, Long> expectedOffset = new HashMap<>();
-        Set<TopicPartition> partitionSubscribed = new HashSet<>();
-        for(int i = 0; i < 10; i++) {
-            String topic = "testTopicEven";
-            if(i % 2 == 1) {
-                topic = "testTopicOdd";
-            }
-            TopicPartition tp = new TopicPartition(topic, i);
-            mockLatestOffset.put(tp, (long) (i + 1));
-            when(mockConsumer.position(tp)).thenReturn((long) (i % 3));
-            partitionSubscribed.add(tp);
-            expectedOffset.put(tp, (long) (i + 1 - i % 3));
-        }
-
-        mockInstrumentationService = mock(InstrumentationService.class);
-        when(mockConsumer.endOffsets(anyCollection())).thenReturn(mockLatestOffset);
-        Map<String,String> tags = new HashMap<>();
-        doNothing().when(mockInstrumentationService).setCounterValue(anyString(), anyDouble(), anyMap());
-
-        Whitebox.setInternalState(akr, "consumer", mockConsumer);
-        Whitebox.setInternalState(akr, "instrumentationService", mockInstrumentationService);
-
-        try {
-            Whitebox.invokeMethod(akr, "computeAndPushLagOffsetPerPartitionPerTopic");
-        } catch (Exception e) {
-            fail();
-        }
-
     }
 }

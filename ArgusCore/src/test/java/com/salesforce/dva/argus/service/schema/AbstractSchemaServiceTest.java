@@ -230,15 +230,15 @@ public class AbstractSchemaServiceTest {
 		int hour = calendar.get(Calendar.HOUR_OF_DAY);
 		// Will wait 24 hours before next flush if at same hour boundary
 		int secondsUntil = _esSchemaService.getNumSecondsUntilNthHourOfDay(hour, calendar);
-		assertTrue("secondsUntil should be between 23 hours and 24 hours but was " + secondsUntil,secondsUntil >= 23 * 60 * 60 && secondsUntil <= 24 * 60 * 60);
+		assertTrue(secondsUntil >= 23 * 60 * 60 && secondsUntil <= 24 * 60 * 60);
 
 		calendar.set(Calendar.HOUR_OF_DAY, Math.floorMod(hour - 2, 24));
 		secondsUntil = _esSchemaService.getNumSecondsUntilNthHourOfDay(hour, calendar);
-		assertTrue("secondsUntil should be between 1 hours and 2 hours but was " + secondsUntil,secondsUntil >= 1 * 60 * 60 && secondsUntil <= 2 * 60 * 60);
+		assertTrue(secondsUntil >= 1 * 60 * 60 && secondsUntil <= 2 * 60 * 60);
 
 		calendar.set(Calendar.HOUR_OF_DAY, Math.floorMod(hour + 2, 24));
 		secondsUntil = _esSchemaService.getNumSecondsUntilNthHourOfDay(hour, calendar);
-		assertTrue("secondsUntil should be between 21 hours and 22 hours but was " + secondsUntil, secondsUntil >= 21 * 60 * 60 && secondsUntil <= 22 * 60 * 60);
+		assertTrue(secondsUntil >= 21 * 60 * 60 && secondsUntil < 22 * 60 * 60);
 	}
 
 	@Test
@@ -254,7 +254,7 @@ public class AbstractSchemaServiceTest {
 			int secondsUntil = _esSchemaService.getNumSecondsUntilNthHourOfWeek(nthHour, wedAtSix);
 			int floorHoursUntil = secondsUntil / 60 / 60;
 			int expectedHours = (4 + dayIndex) * 24 - 2;
-			assertTrue("hoursUntil should be between " + (expectedHours - 1) + " and " + expectedHours, expectedHours - 1 <= floorHoursUntil && floorHoursUntil <= expectedHours);
+			assertTrue(expectedHours - 1 <= floorHoursUntil && floorHoursUntil <= expectedHours);
 		}
 		// Test Wednesday Thursday, Fri, Sat of this week @ 8 AM
 		for (int dayIndex = 3; dayIndex < 7; dayIndex++) {
@@ -262,7 +262,7 @@ public class AbstractSchemaServiceTest {
 			int secondsUntil = _esSchemaService.getNumSecondsUntilNthHourOfWeek(nthHour, wedAtSix);
 			int floorHoursUntil = secondsUntil / 60 / 60;
 			int expectedHours = (dayIndex - 3) * 24 + 2;
-			assertTrue("hoursUntil should be between " + (expectedHours - 1) + " and " + expectedHours, expectedHours - 1 <= floorHoursUntil && floorHoursUntil <= expectedHours);
+			assertTrue(expectedHours - 1 <= floorHoursUntil && floorHoursUntil <= expectedHours);
 		}
 	}
 }

@@ -5,12 +5,12 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.service.metric.ParseException;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
 
 
 public class QueryUtils {
@@ -76,11 +76,8 @@ public class QueryUtils {
         while(!bfsQueue.isEmpty()) {
             QueryContext currContext = bfsQueue.poll();
             if(currContext.getExpression()!=null) {
-                TSDBQueryExpression expression = currContext.getExpression();
-                String currentScope = expression.getScope();
-                scopes.add(currentScope); //TODO: If the dc gets transferred to tags, we need to update this.
+                scopes.add(currContext.getExpression().getScope());
             }
-
             if(currContext.getChildContexts()!=null) {
                 bfsQueue.addAll(currContext.getChildContexts());
             }
