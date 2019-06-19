@@ -232,7 +232,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		m = Pattern.compile(regex).matcher(scope);
 		while (m.find()) {
 			String dc = m.group().substring(1, m.group().length() - 1).toUpperCase();
-			_logger.info(MessageFormat.format("Retrieved DC: {0} from scope: {1}", dc, scope));
+			_logger.debug(MessageFormat.format("Retrieved DC: {0} from scope: {1}", dc, scope));
 			return dc;
 		}
 		return null;
@@ -249,7 +249,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			}
 		}
 
-		_logger.info("DCs detected: {}", dcList);
+		_logger.debug("DCs detected: {}", dcList);
 		return new ArrayList<>(dcList);
 	}
 
