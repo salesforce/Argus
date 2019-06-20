@@ -51,86 +51,86 @@ import com.salesforce.dva.argus.util.Cron;
 
 public class AlertDefinitionsCache {
 
-	private static final Logger _logger = LoggerFactory.getLogger(AlertDefinitionsCache.class);
-	
-	private AlertDefinitionsCacheRefresherThread refresherThread;
+    private static final Logger _logger = LoggerFactory.getLogger(AlertDefinitionsCache.class);
 
-	private static Map<BigInteger/*alertId*/, Alert> alertsMapById = new ConcurrentHashMap<BigInteger, Alert>();
+    private AlertDefinitionsCacheRefresherThread refresherThread;
 
-	private static Map<String/*cronEntry*/, List<BigInteger/*alertId*/>> alertsMapByCronEntry = new ConcurrentHashMap<String, List<BigInteger>>();
-	
-	private boolean alertsCacheInitialized = false;
+    private static Map<BigInteger/*alertId*/, Alert> alertsMapById = new ConcurrentHashMap<BigInteger, Alert>();
 
-	public AlertDefinitionsCache(AlertService alertService) {
-		refresherThread = new AlertDefinitionsCacheRefresherThread(this, alertService);
-		refresherThread.setDaemon(true);
-		refresherThread.start();
-	}
+    private static Map<String/*cronEntry*/, List<BigInteger/*alertId*/>> alertsMapByCronEntry = new ConcurrentHashMap<String, List<BigInteger>>();
 
-	// for unit testing
-	public AlertDefinitionsCache(AlertService alertService, boolean refreshThreadDaemonized) {
-		refresherThread = new AlertDefinitionsCacheRefresherThread(this, alertService);
-		if (refreshThreadDaemonized) {
-			refresherThread.setDaemon(true);
-			refresherThread.start();
-		}
-	}
+    private boolean alertsCacheInitialized = false;
 
-	public Map<BigInteger, Alert> getAlertsMapById() {
-		return alertsMapById;
-	}
+    public AlertDefinitionsCache(AlertService alertService) {
+        refresherThread = new AlertDefinitionsCacheRefresherThread(this, alertService);
+        refresherThread.setDaemon(true);
+        refresherThread.start();
+    }
 
-	public void setAlertsMapById(Map<BigInteger, Alert> alertsMapById) {
-		this.alertsMapById = alertsMapById;
-	}
+    // for unit testing
+    public AlertDefinitionsCache(AlertService alertService, boolean refreshThreadDaemonized) {
+        refresherThread = new AlertDefinitionsCacheRefresherThread(this, alertService);
+        if (refreshThreadDaemonized) {
+            refresherThread.setDaemon(true);
+            refresherThread.start();
+        }
+    }
 
-	public Map<String, List<BigInteger>> getAlertsMapByCronEntry() {
-		return alertsMapByCronEntry;
-	}
+    public Map<BigInteger, Alert> getAlertsMapById() {
+        return alertsMapById;
+    }
 
-	public void setAlertsMapByCronEntry(Map<String, List<BigInteger>> alertsMapByCronEntry) {
-		this.alertsMapByCronEntry = alertsMapByCronEntry;
-	}
-	
-	public boolean isAlertsCacheInitialized() {
-		return alertsCacheInitialized;
-	}
+    public void setAlertsMapById(Map<BigInteger, Alert> alertsMapById) {
+        this.alertsMapById = alertsMapById;
+    }
 
-	public void setAlertsCacheInitialized(boolean alertsCacheInitialized) {
-		this.alertsCacheInitialized = alertsCacheInitialized;
-	}
+    public Map<String, List<BigInteger>> getAlertsMapByCronEntry() {
+        return alertsMapByCronEntry;
+    }
 
-	public static List<Alert> getEnabledAlertsForMinute(long minuteStartTimeMillis){
-		List<Alert> enabledAlerts = new ArrayList<Alert>();
-		List<BigInteger> enabledAlertIds = new ArrayList<BigInteger>();
+    public void setAlertsMapByCronEntry(Map<String, List<BigInteger>> alertsMapByCronEntry) {
+        this.alertsMapByCronEntry = alertsMapByCronEntry;
+    }
 
-		for(String cronEntry : alertsMapByCronEntry.keySet()) {
-			try {
+    public boolean isAlertsCacheInitialized() {
+        return alertsCacheInitialized;
+    }
 
-				Date minuteStartTime = new Date(minuteStartTimeMillis);
-				String quartzCronEntry = Cron.convertToQuartzCronEntry(cronEntry);
-				Date previousMinuteLastSecondTime = new Date(minuteStartTimeMillis - 1000);
+    public void setAlertsCacheInitialized(boolean alertsCacheInitialized) {
+        this.alertsCacheInitialized = alertsCacheInitialized;
+    }
 
-				// CronTrigger getFireTimeAfter only works for current and future time. For checking from a previous point of time
-				// we need to change startAtTime.
-				// https://stackoverflow.com/questions/7029196/quartz-crontrigger-getting-next-fire-time
-				CronTrigger cronTrigger = TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(quartzCronEntry)).startAt(previousMinuteLastSecondTime).build();
-				Date nextFireTime = cronTrigger.getFireTimeAfter(previousMinuteLastSecondTime);
-				if(nextFireTime.equals(minuteStartTime)) {
-					enabledAlertIds.addAll(alertsMapByCronEntry.get(cronEntry));
-				}
-			}catch(Exception e) {
-                _logger.error("Exception occured when trying to parse cron entry - " + cronEntry + " Exception - "+ ExceptionUtils.getFullStackTrace(e));
-			}
-		}
-		Collections.sort(enabledAlertIds);
-		for(BigInteger alertId : enabledAlertIds) {
-			Alert a = alertsMapById.get(alertId);
-			if(a!=null) {
-			    enabledAlerts.add(alertsMapById.get(alertId));
-			}
-		}
-		return enabledAlerts;
-	}
+    public static List<Alert> getEnabledAlertsForMinute(long minuteStartTimeMillis) {
+        List<Alert> enabledAlerts = new ArrayList<Alert>();
+        List<BigInteger> enabledAlertIds = new ArrayList<BigInteger>();
+
+        for (String cronEntry : alertsMapByCronEntry.keySet()) {
+            try {
+
+                Date minuteStartTime = new Date(minuteStartTimeMillis);
+                String quartzCronEntry = Cron.convertToQuartzCronEntry(cronEntry);
+                Date previousMinuteLastSecondTime = new Date(minuteStartTimeMillis - 1000);
+
+                // CronTrigger getFireTimeAfter only works for current and future time. For checking from a previous point of time
+                // we need to change startAtTime.
+                // https://stackoverflow.com/questions/7029196/quartz-crontrigger-getting-next-fire-time
+                CronTrigger cronTrigger = TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(quartzCronEntry)).startAt(previousMinuteLastSecondTime).build();
+                Date nextFireTime = cronTrigger.getFireTimeAfter(previousMinuteLastSecondTime);
+                if (nextFireTime.equals(minuteStartTime)) {
+                    enabledAlertIds.addAll(alertsMapByCronEntry.get(cronEntry));
+                }
+            } catch (Exception e) {
+                _logger.error("Exception occured when trying to parse cron entry - " + cronEntry + " Exception - " + ExceptionUtils.getFullStackTrace(e));
+            }
+        }
+        Collections.sort(enabledAlertIds);
+        for (BigInteger alertId : enabledAlertIds) {
+            Alert a = alertsMapById.get(alertId);
+            if (a != null) {
+                enabledAlerts.add(alertsMapById.get(alertId));
+            }
+        }
+        return enabledAlerts;
+    }
 
 }
