@@ -76,6 +76,11 @@ public class AlertDefinitionsCache {
         }
     }
 
+    // for unit testing
+    public AlertDefinitionsCache(AlertDefinitionsCacheRefresherThread refresherThread) {
+        this.refresherThread = refresherThread;
+    }
+
     public Map<BigInteger, Alert> getAlertsMapById() {
         return alertsMapById;
     }
