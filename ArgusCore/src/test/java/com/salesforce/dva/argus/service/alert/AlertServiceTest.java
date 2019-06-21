@@ -46,7 +46,13 @@ import com.salesforce.dva.argus.service.ManagementService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
 import com.salesforce.dva.argus.system.SystemMain;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.MethodRule;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
@@ -81,12 +87,12 @@ public class AlertServiceTest{
 			"DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
 
 
-    private static SystemMain system;
-    private static PrincipalUser admin;
-    private static AlertService alertService;
-    private static UserService userService;
-    private static MQService mqService;
-    private static ManagementService managementService;
+    private  SystemMain system;
+    private  PrincipalUser admin;
+    private  AlertService alertService;
+    private  UserService userService;
+    private  MQService mqService;
+    private  ManagementService managementService;
     final Logger logger = LoggerFactory.getLogger(getClass());
     private EntityManager em;
 
@@ -124,6 +130,7 @@ public class AlertServiceTest{
 			alertService = system.getServiceFactory().getAlertService();
 			mqService = system.getServiceFactory().getMQService();
 			managementService = system.getServiceFactory().getManagementService();
+			alertService.findAllAlerts(false).forEach(a -> alertService.deleteAlert(a));
             try {
                 Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
                 DriverManager.getConnection("jdbc:derby:memory:argus;create=true").close();
@@ -141,7 +148,6 @@ public class AlertServiceTest{
     @After
     public void tearDown() {
 		alertService.findAllAlerts(false).forEach(a -> alertService.deleteAlert(a));
-
 		if (system != null) {
 			system.stop();
 		}

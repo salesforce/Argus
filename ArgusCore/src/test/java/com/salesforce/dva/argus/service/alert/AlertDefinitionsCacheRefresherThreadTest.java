@@ -13,6 +13,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +33,10 @@ public class AlertDefinitionsCacheRefresherThreadTest {
     private static final String EXPRESSION =
             "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
 
-    private static SystemMain system;
-    private static PrincipalUser admin;
-    private static AlertService alertService;
-    private static UserService userService;
+    private  SystemMain system;
+    private  PrincipalUser admin;
+    private  AlertService alertService;
+    private  UserService userService;
 
     private static ch.qos.logback.classic.Logger apacheLogger;
     private static ch.qos.logback.classic.Logger myClassLogger;
@@ -51,10 +52,6 @@ public class AlertDefinitionsCacheRefresherThreadTest {
 
     @AfterClass
     static public void tearDownClass() {
-        if (system != null) {
-            system.getServiceFactory().getManagementService().cleanupRecords();
-            system.stop();
-        }
     }
 
     @Before
@@ -64,6 +61,7 @@ public class AlertDefinitionsCacheRefresherThreadTest {
         userService = system.getServiceFactory().getUserService();
         admin = userService.findAdminUser();
         alertService = system.getServiceFactory().getAlertService();
+        alertService.findAllAlerts(false).forEach(a -> alertService.deleteAlert(a));
 
         try {
             Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
@@ -77,7 +75,12 @@ public class AlertDefinitionsCacheRefresherThreadTest {
 
     @After
     public void tearDown() {
-        alertService.findAllAlerts(false).forEach(a -> alertService.deleteAlert(a));
+		alertService.findAllAlerts(false).forEach(a -> alertService.deleteAlert(a));
+    	if (system != null) {
+			system.getServiceFactory().getManagementService().cleanupRecords();
+			system.stop();
+		}
+
         try {
             DriverManager.getConnection("jdbc:derby:memory:argus;shutdown=true").close();
         } catch (SQLNonTransientConnectionException ex) {
@@ -115,7 +118,9 @@ public class AlertDefinitionsCacheRefresherThreadTest {
     }
 
     @Ignore
+    @Test
     public void testRefreshCache() {
+        SystemMain system = TestUtils.getInstance();
         AlertDefinitionsCache cache = new AlertDefinitionsCache(alertService, false);
         AlertDefinitionsCacheRefresherThread refresherThread = new AlertDefinitionsCacheRefresherThread(cache, alertService);
 
