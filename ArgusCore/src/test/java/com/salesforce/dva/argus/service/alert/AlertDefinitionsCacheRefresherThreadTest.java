@@ -9,12 +9,11 @@ import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.system.SystemMain;
 
-import org.junit.Before;
 import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
-
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
@@ -33,10 +32,10 @@ public class AlertDefinitionsCacheRefresherThreadTest {
     private static final String EXPRESSION =
             "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
 
-    private SystemMain system;
-    private PrincipalUser admin;
-    private AlertService alertService;
-    private UserService userService;
+    private static SystemMain system;
+    private static PrincipalUser admin;
+    private static AlertService alertService;
+    private static UserService userService;
 
     private static ch.qos.logback.classic.Logger apacheLogger;
     private static ch.qos.logback.classic.Logger myClassLogger;
@@ -47,6 +46,15 @@ public class AlertDefinitionsCacheRefresherThreadTest {
         myClassLogger.setLevel(ch.qos.logback.classic.Level.OFF);
         apacheLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache");
         apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
     }
 
     @Before
@@ -56,9 +64,11 @@ public class AlertDefinitionsCacheRefresherThreadTest {
         userService = system.getServiceFactory().getUserService();
         admin = userService.findAdminUser();
         alertService = system.getServiceFactory().getAlertService();
+
         try {
             Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
             DriverManager.getConnection("jdbc:derby:memory:argus;create=true").close();
+
         } catch (Exception ex) {
             LoggerFactory.getLogger(AlertServiceTest.class).error("Exception in setUp:{}", ex.getMessage());
             fail("Exception during database startup.");
@@ -67,11 +77,7 @@ public class AlertDefinitionsCacheRefresherThreadTest {
 
     @After
     public void tearDown() {
-        if (system != null) {
-            system.getServiceFactory().getManagementService().cleanupRecords();
-            system.stop();
-        }
-
+        alertService.findAllAlerts(false).forEach(a -> alertService.deleteAlert(a));
         try {
             DriverManager.getConnection("jdbc:derby:memory:argus;shutdown=true").close();
         } catch (SQLNonTransientConnectionException ex) {
@@ -81,7 +87,6 @@ public class AlertDefinitionsCacheRefresherThreadTest {
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
-        System.gc();
     }
 
     @Test

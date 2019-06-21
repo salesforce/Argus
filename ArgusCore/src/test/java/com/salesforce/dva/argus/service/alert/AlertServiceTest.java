@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.alert;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.salesforce.dva.argus.TestUtils;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
@@ -44,16 +45,18 @@ import com.salesforce.dva.argus.service.MQService;
 import com.salesforce.dva.argus.service.ManagementService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.AfterClass;
-import org.junit.Test;
-import org.junit.Ignore;
+import com.salesforce.dva.argus.system.SystemMain;
+import org.junit.*;
+import org.junit.rules.MethodRule;
+import org.junit.rules.TestWatchman;
+import org.junit.runners.model.FrameworkMethod;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-
+import javax.persistence.EntityManager;
 import java.io.IOException;
-import java.math.BigInteger;
+import java.sql.DriverManager;
+import java.sql.SQLNonTransientConnectionException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -70,34 +73,22 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
-import com.salesforce.dva.argus.system.SystemMain;
-import java.sql.DriverManager;
-import java.sql.SQLNonTransientConnectionException;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-
-import org.junit.rules.MethodRule;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.Rule;
-
-import com.salesforce.dva.argus.TestUtils;
-
-@Ignore
 public class AlertServiceTest{
 
 	private static final String EXPRESSION =
 			"DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
 
 
-    private SystemMain system;
-    private PrincipalUser admin;
-    private AlertService alertService;
-    private UserService userService;
-    private MQService mqService;
-    private ManagementService managementService;
+    private static SystemMain system;
+    private static PrincipalUser admin;
+    private static AlertService alertService;
+    private static UserService userService;
+    private static MQService mqService;
+    private static ManagementService managementService;
     final Logger logger = LoggerFactory.getLogger(getClass());
+    private EntityManager em;
 
 
     private static ch.qos.logback.classic.Logger apacheLogger;
@@ -116,6 +107,7 @@ public class AlertServiceTest{
         myClassLogger.setLevel(ch.qos.logback.classic.Level.INFO);
         apacheLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache");
         apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+
     }
 
     @AfterClass
@@ -125,43 +117,78 @@ public class AlertServiceTest{
 
 	@Before
 	public void setup() {
+			system = TestUtils.getInstance();
+			system.start();
+			userService = system.getServiceFactory().getUserService();
+			admin = userService.findAdminUser();
+			alertService = system.getServiceFactory().getAlertService();
+			mqService = system.getServiceFactory().getMQService();
+			managementService = system.getServiceFactory().getManagementService();
             try {
                 Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
                 DriverManager.getConnection("jdbc:derby:memory:argus;create=true").close();
+                em = mock(EntityManager.class);
+
             } catch (Exception ex) {
                 LoggerFactory.getLogger(getClass()).error("Exception in setUp:{}", ex.getMessage());
                 fail("Exception during database startup.");
             }
 
-            system = TestUtils.getInstance();
-            system.start();
-            userService = system.getServiceFactory().getUserService();
-            admin = userService.findAdminUser();
-            alertService = system.getServiceFactory().getAlertService();
-            mqService = system.getServiceFactory().getMQService();
-            managementService = system.getServiceFactory().getManagementService();
+
+
 	}
 
     @After
     public void tearDown() {
-        if (system != null) {
-            system.stop();
-        }
-        try {
-            DriverManager.getConnection("jdbc:derby:memory:argus;shutdown=true").close();
-        } catch (SQLNonTransientConnectionException ex) {
-            if (ex.getErrorCode() >= 50000 || ex.getErrorCode() < 40000) {
-                throw new RuntimeException(ex);
-            }
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+		alertService.findAllAlerts(false).forEach(a -> alertService.deleteAlert(a));
+
+		if (system != null) {
+			system.stop();
+		}
+
+		try {
+			DriverManager.getConnection("jdbc:derby:memory:argus;shutdown=true").close();
+		} catch (SQLNonTransientConnectionException ex) {
+			if (ex.getErrorCode() >= 50000 || ex.getErrorCode() < 40000) {
+				throw new RuntimeException(ex);
+			}
+		} catch (Exception ex) {
+			throw new RuntimeException(ex);
+		}
     }
+
+    // Should be used to mock EntityManager
+//    void mockQuery(String nameQuery, Long outputValue) {
+//		TypedQuery<Long> mockedQuery = mock(TypedQuery.class);
+//		when(mockedQuery.setHint(anyString(), any())).thenReturn(mockedQuery);
+//		when(mockedQuery.getSingleResult()).thenReturn(outputValue);
+//		when(em.createNamedQuery(nameQuery, Long.class)).thenReturn(mockedQuery);
+//		when(em.createNamedQuery(anyString())).thenReturn(mockedQuery);
+//	}
+//
+//	void mockQuery(String nameQuery, List<Alert> outputValue) {
+//		TypedQuery<Alert> mockedQuery = mock(TypedQuery.class);
+//		CriteriaBuilder cb = mock(CriteriaBuilder.class);
+//		CriteriaQuery<Tuple> cq = mock(CriteriaQuery.class);
+//		TypedQuery<Tuple> mockedQuery2 = mock(TypedQuery.class);
+//
+//		when(mockedQuery.setHint(anyString(), any())).thenReturn(mockedQuery);
+//		when(mockedQuery.getResultList()).thenReturn(outputValue);
+//		when(mockedQuery2.setHint(anyString(), any())).thenReturn(mockedQuery2);
+//		//when(mockedQuery2.getResultList()).thenReturn(outputValue);
+//
+//		when(cb.createTupleQuery()).thenReturn(cq);
+//
+//		when(em.getCriteriaBuilder()).thenReturn(cb);
+//		when(em.createQuery(cq)).thenReturn(mockedQuery2);
+//		when(em.createNamedQuery(nameQuery, Alert.class)).thenReturn(mockedQuery);
+//		when(em.createNamedQuery(anyString())).thenReturn(mockedQuery);
+//	}
 
 
 	@Test
 	public void testUpdateAlert() {
-            String alertName = "alertname-" + TestUtils.createRandomName();
+        String alertName = "alertname-" + TestUtils.createRandomName();
 		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), alertName, EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", expected, "notifier-name", new ArrayList<String>(), 5000L);
 		Trigger trigger = new Trigger(expected, TriggerType.GREATER_THAN, "trigger-name", 0.95, 60000);
@@ -292,6 +319,8 @@ public class AlertServiceTest{
 		List<Alert> actualAlerts = alertService.findAlertsByOwner(user, true);
 
 		assertEquals(actualAlerts.size(), expectedAlerts.size());
+		//mockQuery("Alert.findByOwner", expectedAlerts);
+		//assertEquals(expectedAlerts, Alert.findByOwnerMeta(em, user));
 
 		Set<Alert> actualSet = new HashSet<>();
 
@@ -540,10 +569,13 @@ public class AlertServiceTest{
 		int cnt = alertService.countAlerts(context);
 
 		assertEquals(cnt, expectedAlerts.size());
+		//mockQuery("Alert.countByOwner", Long.valueOf(expectedAlerts.size()));
+		//assertEquals(expectedAlerts.size(), Alert.countByOwner(em, user, null));
 	}
 
 	@Test
 	public void testCountAlertsByOwnerWithSearchText() {
+    	String namedQuery = "Alert.countByOwnerWithSearchText";
 		String userName = TestUtils.createRandomName();
 		int alertsCount = TestUtils.random.nextInt(20) + 1;
 		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
@@ -569,13 +601,17 @@ public class AlertServiceTest{
 		// Filter on user name
 		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText(userName).build();
 		int cnt = alertService.countAlerts(context);
-
 		assertEquals(cnt, expectedAlerts.size());
+		//mockQuery(namedQuery, Long.valueOf(expectedAlerts.size()));
+		//assertEquals(expectedAlerts.size(), Alert.countByOwner(em, user, userName));
+
 
 		// Count alerts have "even" in its name
 		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("even").build();
 		cnt = alertService.countAlerts(context);
 		assertEquals(cnt, expectedEvenAlerts.size());
+		//mockQuery(namedQuery, Long.valueOf(expectedEvenAlerts.size()));
+		//assertEquals(expectedEvenAlerts.size(), Alert.countByOwner(em, user, "even"));
 
 		// Count alerts have "even" in its name case insensitive
 		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("EvEn").build();
@@ -591,6 +627,8 @@ public class AlertServiceTest{
 		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("OdD").build();
 		cnt = alertService.countAlerts(context);
 		assertEquals(cnt, expectedOddAlerts.size());
+		//mockQuery(namedQuery, Long.valueOf(expectedOddAlerts.size()));
+		//assertEquals(expectedOddAlerts.size(), Alert.countByOwner(em, user, "OdD"));
 
 		// Invalid alert name
 		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("invalid_alert_name").build();
@@ -627,6 +665,9 @@ public class AlertServiceTest{
 
 		List<Alert> actualAlerts = alertService.findAllAlerts(false);
 
+		//mockQuery("Alert.findAll", expectedAlerts);
+		//assertEquals(expectedAlerts, Alert.findAll(em));
+
 		assertEquals(actualAlerts.size(), expectedAlerts.size());
 
 		Set<Alert> actualSet = new HashSet<>();
@@ -654,6 +695,8 @@ public class AlertServiceTest{
 		List<Alert> actualAlerts = alertService.findAllAlerts(true);
 
 		assertEquals(actualAlerts.size(), expectedAlerts.size());
+		//mockQuery("Alert.findAll", expectedAlerts);
+		//assertEquals(expectedAlerts, Alert.findAllMeta(em));
 
 		Set<Alert> actualSet = new HashSet<>();
 
@@ -674,13 +717,15 @@ public class AlertServiceTest{
 		List<Alert> insertedAlerts = new ArrayList<>();
 
 		for (int i = 0; i < alertsCount; i++) {
-			insertedAlerts.add(alertService.updateAlert(new Alert(user, user, "alert_" + i, EXPRESSION, "* * * * *")));
+			Alert a = alertService.updateAlert(new Alert(user, user, "alert_" + i, EXPRESSION, "* * * * *"));
+			insertedAlerts.add(a);
 		}
+
 		List<Alert> expectedAlerts = insertedAlerts.subList(0, 20);
 
-		List<Alert> actualAlerts = alertService.findAlertsByRangeAndStatus(new BigInteger("100002"), new BigInteger("100021"), false);
+		List<Alert> actualAlerts = alertService.findAlertsByRangeAndStatus(insertedAlerts.get(0).getId(), insertedAlerts.get(19).getId(), false);
 
-		assertEquals(actualAlerts.size(), 20);
+		assertEquals(20, actualAlerts.size());
 
 		Set<Alert> actualSet = new HashSet<>();
 
@@ -952,15 +997,15 @@ public class AlertServiceTest{
 		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert2", EXPRESSION, "* * * * *"));
 		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, "alert3", EXPRESSION, "* * * * *"));
 
-
 		alert1.setShared(true);
 		alert1.setMissingDataNotificationEnabled(true);
 		alertService.updateAlert(alert1);
 		alert2.setShared(true);
-		alert1.setMissingDataNotificationEnabled(false);
+		alert2.setMissingDataNotificationEnabled(false);
 		alertService.updateAlert(alert2);
 		alert3.setShared(false);
 		alertService.updateAlert(alert3);
+
 
 		Set<String> sharedAlerts = new HashSet<>();
 		sharedAlerts.add("alert1");
@@ -970,7 +1015,7 @@ public class AlertServiceTest{
 		List<Alert> page = alertService.findSharedAlertsPaged(1, 0, null, null, null);
 		assertEquals(1, page.size());
 		assertTrue(sharedAlerts.contains(page.get(0).getName()));
-		assertEquals(page.get(0).isMissingDataNotificationEnabled(), true);
+		assertEquals(true, page.get(0).isMissingDataNotificationEnabled());
 
 		// Second page
 		page = alertService.findSharedAlertsPaged(1, 1, null, null, null);
@@ -1580,11 +1625,15 @@ public class AlertServiceTest{
 
 		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).build();
 		assertEquals(2, alertService.countAlerts(context));
+		//mockQuery("Alert.countPrivateAlertsForPrivilegedUser",2L);
+		//assertEquals(2, Alert.countPrivateAlertsForPrivilegedUser(em, admin, context.getSearchText()));
+
 	}
 
 	@Test
 	public void testCountPrivateAlertsForPrivilegedUserWithSearchText() {
 
+    	String namedQuery = "Alert.countPrivateAlertsForPrivilegedUserWithSearchText";
 		// By default user is not privileged
             String userName1 = TestUtils.createRandomName();
             String userName2 = TestUtils.createRandomName();
@@ -1611,26 +1660,38 @@ public class AlertServiceTest{
 		// count by alert name
 		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText("alert").build();
 		assertEquals(2, alertService.countAlerts(context));
+		//mockQuery(namedQuery,2L);
+		//assertEquals(2, Alert.countPrivateAlertsForPrivilegedUser(em, admin, context.getSearchText()));
 
 		// count by alert name case insensitive
 		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText("AlErT").build();
 		assertEquals(2, alertService.countAlerts(context));
+		//mockQuery(namedQuery,2L);
+		//assertEquals(2, Alert.countPrivateAlertsForPrivilegedUser(em, admin, context.getSearchText()));
 
 		// count by alert name
 		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText(alertName1).build();
 		assertEquals(1, alertService.countAlerts(context));
+		//mockQuery(namedQuery,1L);
+		//assertEquals(1, Alert.countPrivateAlertsForPrivilegedUser(em, admin, context.getSearchText()));
 
 		// count by owner name
 		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText(userName2).build();
 		assertEquals(1, alertService.countAlerts(context));
+		//mockQuery(namedQuery,1L);
+		//assertEquals(1, Alert.countPrivateAlertsForPrivilegedUser(em, admin, context.getSearchText()));
 
 		// count by owner name case insensitive
 		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText(userName2.toUpperCase()).build();
 		assertEquals(1, alertService.countAlerts(context));
+		//mockQuery(namedQuery,1L);
+		//assertEquals(1, Alert.countPrivateAlertsForPrivilegedUser(em, admin, context.getSearchText()));
 
 		// count by invalid name
 		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText("invalid_name").build();
 		assertEquals(0, alertService.countAlerts(context));
+		//mockQuery(namedQuery,0L);
+		//assertEquals(0, Alert.countPrivateAlertsForPrivilegedUser(em, admin, context.getSearchText()));
 	}
 
 	@Test
