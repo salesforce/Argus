@@ -11,7 +11,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalTime;
+import java.time.Instant;
 import java.util.Properties;
 
 public class AKCConfiguration {
@@ -153,7 +153,8 @@ public class AKCConfiguration {
          * Setting expects an epoch timestamp. (eg. 1547361278000)
          * Will only take effect when auto.offset.reset is set to "custom"
          */
-        CUSTOM_STOP_TIME_EPOCH_MS("custom.stop.time.epoch.ms", LocalTime.now().toString()),
+        CUSTOM_STOP_TIME_EPOCH_MS("custom.stop.time.epoch.ms", Long.toString(Instant.now().toEpochMilli())),
+
 
         /** A comma separated list of regexes that can be used to filter out unwanted tags from Ajna metrics.*/
         AJNA_TAGS_BLACKLIST("ajna.tags.blacklist", ""),
