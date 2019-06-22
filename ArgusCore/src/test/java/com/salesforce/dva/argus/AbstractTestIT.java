@@ -261,12 +261,13 @@ public abstract class AbstractTestIT {
             system.getServiceFactory().getManagementService().cleanupRecords();
             system.stop();
         }
-        tearDownEmbeddedKafka();
         try {
+            tearDownEmbeddedKafka();
             zkTestServer.close();
             DriverManager.getConnection("jdbc:derby:memory:argus;shutdown=true").close();
         } catch (SQLNonTransientConnectionException ex) {
             if (ex.getErrorCode() >= 50000 || ex.getErrorCode() < 40000) {
+                System.out.println("RunEx:"+ex);
                 throw new RuntimeException(ex);
             }
         } catch (Exception ex) {

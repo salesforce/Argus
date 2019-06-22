@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.AbstractTestIT;
+import org.junit.Ignore;
 import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 
 public class MQServiceTest extends AbstractTestIT {
 
