@@ -311,17 +311,18 @@ public class InstrumentationServiceTest {
 
         // first putMetrics() invocation
         List<Metric> tsdbMetrics = tsdbMetricsCapturedValueList.get(0);
-        assertEquals(15, tsdbMetrics.size());
+        assertEquals(16, tsdbMetrics.size());
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_POSTED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_CONSUMED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_DROPPED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_POSTED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_CONSUMED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_DROPPED)));
+        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.METRIC_CONSUMER_LAG)));
 
         // second putMetrics() invocation
         tsdbMetrics = tsdbMetricsCapturedValueList.get(1);
-        assertEquals(39, tsdbMetrics.size());
+        assertEquals(40, tsdbMetrics.size());
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(counterName)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_POSTED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_CONSUMED)));
@@ -329,6 +330,7 @@ public class InstrumentationServiceTest {
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_POSTED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_CONSUMED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_DROPPED)));
+        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.METRIC_CONSUMER_LAG)));
 
         for (String timerMetricName : Arrays.asList(timerName, timerName2)) {
             assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(timerMetricName + ".sum")));
@@ -357,7 +359,7 @@ public class InstrumentationServiceTest {
         // capture beans registered
         ArgumentCaptor<CounterMetric> counterArgumentCaptor = ArgumentCaptor.forClass(CounterMetric.class);
         ArgumentCaptor<ObjectName> nameArgumentCaptor = ArgumentCaptor.forClass(ObjectName.class);
-        verify(mBeanServer, times(39)).registerMBean(counterArgumentCaptor.capture(), nameArgumentCaptor.capture());
+        verify(mBeanServer, times(40)).registerMBean(counterArgumentCaptor.capture(), nameArgumentCaptor.capture());
         // convert list of beans registered into a map of bean object name to counter value
         Map<String, Double> nameToValueMap = new HashMap<>();
         for (MetricMXBean mb : counterArgumentCaptor.getAllValues()) {

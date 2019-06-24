@@ -48,6 +48,7 @@ import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
+import com.salesforce.dva.argus.util.TemplateReplacer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -203,8 +204,11 @@ public class PagerDutyNotifier extends AuditNotifier {
         message.setClient("Argus Alert");
         message.setClientUrl(getAlertUrl(context.getAlert().getId()));
         //message.addLink("Argus alert definition", getAlertUrl(context.getAlert().getId()));
-        message.setSummary("[Argus] Notification for Alert: " + context.getAlert().getName() +
-                " Notification: " + context.getNotification().getName() + " Trigger: " + context.getTrigger().getName());
+        message.setSummary(
+                TemplateReplacer.applyTemplateChanges(context,
+                        "[Argus] Notification for Alert: " + context.getAlert().getName() +
+                        " Notification: " + context.getNotification().getName() +
+                        " Trigger: " + context.getTrigger().getName()));
         String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
         message.setEvaluatedMetricExpression(expression);
         message.addLink("Argus metric expression", getExpressionUrl(expression));
@@ -217,7 +221,7 @@ public class PagerDutyNotifier extends AuditNotifier {
         message.setTriggerDetails(getTriggerDetails(context.getTrigger(), context));
         message.setTriggeringEventValue(Double.toString(context.getTriggerEventValue()));
         if (null != context.getNotification().getCustomText()) {
-            message.setCustomerText(context.getNotification().getCustomText());
+            message.setCustomerText(TemplateReplacer.applyTemplateChanges(context, context.getNotification().getCustomText()));
         }
         if (null != context.getNotification().getMetricsToAnnotate() && !context.getNotification().getMetricsToAnnotate().isEmpty()) {
             message.setMetricsToAnnotate(context.getNotification().getMetricsToAnnotate());

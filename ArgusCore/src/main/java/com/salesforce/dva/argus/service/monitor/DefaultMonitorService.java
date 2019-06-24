@@ -582,7 +582,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 					value = _mbeanServer.getMBeanCount().doubleValue();
 					Metric metric = _constructCounterKey(counter.getMetric(), Collections.<String, String>emptyMap());
 					metric.setUnits(units);
-					_metrics.computeIfAbsent(metric, k -> _getCounterMXBeanInstance(k, counter)).setValue(value);
+					_metrics.computeIfAbsent(metric, k -> _getGaugeMXBeanInstance(k)).setValue(value);
 					continue;
 				default:
 					throw new IllegalArgumentException("Unexpected Counter: This should never happen");
