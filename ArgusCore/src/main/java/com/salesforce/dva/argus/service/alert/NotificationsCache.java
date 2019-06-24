@@ -36,6 +36,7 @@ import java.util.Map;
 
 import javax.persistence.EntityManager;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Provider;
 
 /*
@@ -45,7 +46,7 @@ import com.google.inject.Provider;
  */
 public class NotificationsCache {
 	
-	private NotificationsCacheRefresherThread refresherThread;
+	private final NotificationsCacheRefresherThread refresherThread;
 
 	private Map<BigInteger/*notificationId*/, Map<String/*metricKey*/, Long/*coolDownExpiration*/>> notificationCooldownExpirationMap = new HashMap<BigInteger, Map<String, Long>>();
 
@@ -56,6 +57,17 @@ public class NotificationsCache {
 	public NotificationsCache(Provider<EntityManager> em) {
 		refresherThread = new NotificationsCacheRefresherThread(this, em);
 
+		initCacheAndStartRefresherThread();
+	}
+
+	@VisibleForTesting
+	protected NotificationsCache(NotificationsCacheRefresherThread refresherThread) {
+		this.refresherThread = refresherThread;
+
+		initCacheAndStartRefresherThread();
+	}
+
+	private void initCacheAndStartRefresherThread() {
 		// Run once on main thread to populate the cache
 		refresherThread.runOnce();
 

@@ -117,7 +117,6 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	private final DashboardService _dashboardService;
 	private final MetricService _metricService;
 	private final MailService _mailService;
-	private final GaugeExporter _gaugeExporter;
 	private final Map<Metric, GaugeMetric> _metrics;
 	private final Map<Metric, MetricMXBean> _registeredMetrics;
 	private final PrincipalUser _adminUser;
@@ -144,7 +143,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	@Inject
 	public DefaultMonitorService(TSDBService tsdbService, UserService userService, AlertService alertService,
 			ServiceManagementService serviceManagementService, DashboardService dashboardService, MetricService metricService, MailService mailService, 
-			GaugeExporter gaugeExporter, SystemConfiguration sysConfig) {
+			SystemConfiguration sysConfig) {
 		super(null, sysConfig);
 		requireArgument(tsdbService != null, "TSDB service cannot be null.");
 		requireArgument(userService != null, "User service cannot be null.");
@@ -160,7 +159,6 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		_metricService = metricService;
 		_mailService = mailService;
 		_adminUser = _userService.findAdminUser();
-		_gaugeExporter = gaugeExporter;
 		_mbeanServer = ManagementFactory.getPlatformMBeanServer();
 		_metrics = new ConcurrentHashMap<>();
 		_registeredMetrics = new ConcurrentHashMap<>();

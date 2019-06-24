@@ -750,6 +750,11 @@ public class RefocusForwarder extends DefaultService implements RefocusService, 
             }
             return end - start;
         }
+
+        public long cur_duration() {
+            long now = System.currentTimeMillis();
+            return now - start;
+        }
     }
 
 
