@@ -32,6 +32,7 @@ public class MetricSchemaRecordList implements SchemaRecordFinder<MetricSchemaRe
 	private final static long ONE_DAY_IN_MILLIS = 24L * 3600L * 1000L;
 	private Map<String, MetricSchemaRecord> _idToSchemaRecordMap = new HashMap<>();
 	private String _scrollID;
+	private long totalHits;
 	
 	public MetricSchemaRecordList(Set<MetricSchemaRecord> records, HashAlgorithm algorithm) {
 		for(MetricSchemaRecord record : records) {
@@ -45,12 +46,13 @@ public class MetricSchemaRecordList implements SchemaRecordFinder<MetricSchemaRe
 		}
 	}
 	
-	private MetricSchemaRecordList(List<MetricSchemaRecord> records, String scrollID) {
+	private MetricSchemaRecordList(List<MetricSchemaRecord> records, String scrollID, long totalHits) {
 		int count = 0;
 		for(MetricSchemaRecord record : records) {
 			_idToSchemaRecordMap.put(String.valueOf(count++), record);
 		}
 		setScrollID(scrollID);
+		this.totalHits = totalHits;
 	}
 
 	public List<MetricSchemaRecord> getRecords() {
@@ -72,8 +74,11 @@ public class MetricSchemaRecordList implements SchemaRecordFinder<MetricSchemaRe
 	public MetricSchemaRecord getRecord(String id) {
 		return _idToSchemaRecordMap.get(id);
 	}
-	
-	
+
+	public long getTotalHits() {
+		return totalHits;
+	}
+
 	public enum HashAlgorithm {
 		MD5,
 		XXHASH;
@@ -190,6 +195,7 @@ public class MetricSchemaRecordList implements SchemaRecordFinder<MetricSchemaRe
 			if(rootNode.has("_scroll_id")) {
 				scrollID = rootNode.get("_scroll_id").asText();
 			}
+			long totalHits = rootNode.get("hits").get("total").asLong();
 			JsonNode hits = rootNode.get("hits").get("hits");
 			
 			if(JsonNodeType.ARRAY.equals(hits.getNodeType())) {
@@ -215,7 +221,7 @@ public class MetricSchemaRecordList implements SchemaRecordFinder<MetricSchemaRe
 				}
 			}
 			
-			return new MetricSchemaRecordList(records, scrollID);
+			return new MetricSchemaRecordList(records, scrollID, totalHits);
 		}
 		
 	}

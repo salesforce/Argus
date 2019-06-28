@@ -40,7 +40,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -242,6 +244,94 @@ public class ElasticSearchSchemaServiceTest {
     } */
 
     @Test
+    public void testGetWithLimitZeroSingleRequest() throws IOException {
+        String reply = "{\"took\":166,\"timed_out\":false,\"_shards\":{\"total\":30,\"successful\":30,\"failed\":0},\"hits\":{\"total\":4912,\"max_score\":0,\"hits\":[{\"_index\":\"tags_v1\",\"_type\":\"metadata_type\",\"_id\":\"52263bdece06f6734ed6188afae9311c\",\"_score\":0,\"_source\":{\"scope\":\"system.PRD.SP2.acs-ist20\",\"metric\":\"CpuPerc.cpu.idle\",\"tagk\":\"device\",\"tagv\":\"ist20ice1-acs2-2-prd.eng.sfdc.net\",\"mts\":1561068744947,\"cts\":1561068744947,\"ets\":1565561544947}},{\"_index\":\"tags_v1\",\"_type\":\"metadata_type\",\"_id\":\"a3abe4e1cacc45328a1f06d2126a2af5\",\"_score\":0,\"_source\":{\"scope\":\"system.PRD.SP2.twist38\",\"metric\":\"CpuPerc.cpu.idle\",\"tagk\":\"device\",\"tagv\":\"twist38ice1-db1-1-prd.eng.sfdc.net\",\"mts\":1561068494614,\"cts\":1561068494614,\"ets\":1565561294614}}]}}";
+        ObjectMapper mapper = new ObjectMapper();
+        ElasticSearchSchemaService service = spy(_esSchemaService);
+        restClient =  mock(RestClient.class);
+        service.setRestClient(restClient);
+        doAnswer(invocation -> reply).when(service).extractResponse(any());
+        MetricSchemaRecordQuery query = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().scope("system*")
+                .metric("*")
+                .tagKey("*")
+                .tagValue("*")
+                .namespace("*")
+                .limit(0)
+                .build();
+        service.get(query);
+        verify(restClient, times(1)).performRequest(any(Request.class));
+    }
+
+    @Test
+    public void testGetWithLimitZeroTripleRequest() throws IOException {
+        String firstReply = "{\"took\":166,\"timed_out\":false,\"_shards\":{\"total\":30,\"successful\":30,\"failed\":0},\"hits\":{\"total\":20001,\"max_score\":0,\"hits\":[{\"_index\":\"tags_v1\",\"_type\":\"metadata_type\",\"_id\":\"52263bdece06f6734ed6188afae9311c\",\"_score\":0,\"_source\":{\"scope\":\"system.PRD.SP2.acs-ist20\",\"metric\":\"CpuPerc.cpu.idle\",\"tagk\":\"device\",\"tagv\":\"ist20ice1-acs2-2-prd.eng.sfdc.net\",\"mts\":1561068744947,\"cts\":1561068744947,\"ets\":1565561544947}},{\"_index\":\"tags_v1\",\"_type\":\"metadata_type\",\"_id\":\"a3abe4e1cacc45328a1f06d2126a2af5\",\"_score\":0,\"_source\":{\"scope\":\"system.PRD.SP2.twist38\",\"metric\":\"CpuPerc.cpu.idle\",\"tagk\":\"device\",\"tagv\":\"twist38ice1-db1-1-prd.eng.sfdc.net\",\"mts\":1561068494614,\"cts\":1561068494614,\"ets\":1565561294614}}]}}";
+        String secondReply = "{\"_scroll_id\":\"DnF1ZXJ5VGhlbkZldGNoHgAAAAAhdTEjFnJEQi1zWl9jVG95OVVYLWpkcjJ5S2cAAAAAIXUxIhZyREItc1pfY1RveTlVWC1qZHIyeUtnAAAAAW-10tMWUFFKYzVDeXhUbktLRGFjSENVcHZKdwAAAAFskDgcFmt1T2VDZ0c2UVRxLXY1TXlKRnd0ckEAAAABbJA4HRZrdU9lQ2dHNlFUcS12NU15SkZ3dHJBAAAAACGPEkMWdHUzLWFOSWZRTGU3ek56YzNsaTF6QQAAAAFsBMd-FlRvRnV5alotUk5xbUxxRmwtUXROdncAAAABbATHfxZUb0Z1eWpaLVJOcW1McUZsLVF0TnZ3AAAAACFp_IIWUzQxMXhreFlTR3FWeG5IRnVnSnhpUQAAAAFsGX66FnhENG1NdmFOU2dxVTFfRUZibXhhTVEAAAABd8cv6RZsOEtuREYwZVEyS2U2ZWJzeGZNNlB3AAAAAWw8oPsWWF83dHk2QzdRZ3VzS0p3bldfOHcxUQAAAAFzn27JFm5uSjJUcDZJU2RDbGN6eTVlZmdyWHcAAAABc59uyBZubkoyVHA2SVNkQ2xjenk1ZWZnclh3AAAAACEV3bMWUXJOQ3Z3dURRQ0tydHBrU2hON3FEdwAAAAFvMVndFlJXWTdPdm5PUVlXTnk4Nktqd3B5SGcAAAABbzFZ3hZSV1k3T3ZuT1FZV055ODZLandweUhnAAAAACEBnW4WdGlIUjh5MEtSX0NMaGFpZlRGaWdZZwAAAABF45wcFjllN1ZSSkpNU3Etd1JwVnZ3SXhQZVEAAAABeCNZPhZMcllZZTlwNVN3ZW96VFEzcGxORDdRAAAAAWyQOB4Wa3VPZUNnRzZRVHEtdjVNeUpGd3RyQQAAAAAhTpoyFlB2YU9NcnREUkRtSzVSSGM2ajNnS2cAAAAAIU6aMxZQdmFPTXJ0RFJEbUs1UkhjNmozZ0tnAAAAACE6wJcWN1M1UEZMYWZRQ0tPcnJkSEplaXI1dwAAAAAhOsCYFjdTNVBGTGFmUUNLT3JyZEhKZWlyNXcAAAAAITrAmRY3UzVQRkxhZlFDS09ycmRISmVpcjV3AAAAATbSky0WMHBNYlJUQlFUYTZkNGVoSEo3RURUQQAAAAFuDuwmFkVhRjR1WlJPU09TYkhFaXMwSHEzb1EAAAABbg7sJxZFYUY0dVpST1NPU2JIRWlzMEhxM29RAAAAAW-10tQWUFFKYzVDeXhUbktLRGFjSENVcHZKdw==\",\"took\":116,\"timed_out\":false,\"_shards\":{\"total\":30,\"successful\":30,\"failed\":0},\"hits\":{\"total\":15023,\"max_score\":0,\"hits\":[{\"_index\":\"tags_v1\",\"_type\":\"metadata_type\",\"_id\":\"3c9c78d3cd1abea74db350a0be0739e7\",\"_score\":0,\"_source\":{\"scope\":\"system.PRD.NONE.hdaas\",\"metric\":\"CpuPerc.cpu.idle\",\"tagk\":\"device\",\"tagv\":\"hdaas-dnds1-331-prd.eng.sfdc.net\",\"mts\":1559707972543,\"cts\":1559707972543,\"ets\":1564200772543}},{\"_index\":\"tags_v1\",\"_type\":\"metadata_type\",\"_id\":\"401fa5083eaea30f37aa0d0795ce3fb0\",\"_score\":0,\"_source\":{\"scope\":\"system.PRD.NONE.hdaas\",\"metric\":\"CpuPerc.cpu.idle\",\"tagk\":\"device\",\"tagv\":\"hdaas-dnds54-17-prd.eng.sfdc.net\",\"mts\":1558649134083,\"cts\":1558649134083,\"ets\":1562537134083}}]}}";
+        String thirdReply = "{\"_scroll_id\":\"DnF1ZXJ5VGhlbkZldGNoHgAAAAF4XWLeFlpaSmQ1YURfUnd1eXpMczNWTW5TSlEAAAABeF1i3xZaWkpkNWFEX1J3dXl6THMzVk1uU0pRAAAAAXhdYuAWWlpKZDVhRF9Sd3V5ekxzM1ZNblNKUQAAAAFtJwloFm9RdWllMnJsVEJhWlA2alRJR3d6TFEAAAAAIZCQSBZ0dTMtYU5JZlFMZTd6TnpjM2xpMXpBAAAAAWwGRYQWVG9GdXlqWi1STnFtTHFGbC1RdE52dwAAAAAha3qHFlM0MTF4a3hZU0dxVnhuSEZ1Z0p4aVEAAAAAIWt6iBZTNDExeGt4WVNHcVZ4bkhGdWdKeGlRAAAAAXfo2lUWaFZsQi1hVGVRakNsWXUtc3V3dGZJdwAAAAF36NpUFmhWbEItYVRlUWpDbFl1LXN1d3RmSXcAAAABbBr8uhZ4RDRtTXZhTlNncVUxX0VGYm14YU1RAAAAAWwa_LsWeEQ0bU12YU5TZ3FVMV9FRmJteGFNUQAAAAFsPh8GFlhfN3R5NkM3UWd1c0tKd25XXzh3MVEAAAAAIRdbuBZRck5Ddnd1RFFDS3J0cGtTaE43cUR3AAAAAWyUBksWWGlWZ3ZCWWlRM3VjM3Mxa3BWRGtIQQAAAAAhF1u5FlFyTkN2d3VEUUNLcnRwa1NoTjdxRHcAAAABNmDpNxZSZFNsTl9YS1QxeS0wNUxYbU1TSWdnAAAAAEXlGiQWOWU3VlJKSk1TcS13UnBWdndJeFBlUQAAAAAhAxt5FnRpSFI4eTBLUl9DTGhhaWZURmlnWWcAAAABbPZgbBZIeERJRG5fSVQ0Q3hUYnA1ekR2WU13AAAAAXAGF6AWTHdwTUhCajJUZk9STWIyN0RPVkVEQQAAAAFwBhehFkx3cE1IQmoyVGZPUk1iMjdET1ZFREEAAAABcAYXohZMd3BNSEJqMlRmT1JNYjI3RE9WRURBAAAAACFQGDgWUHZhT01ydERSRG1LNVJIYzZqM2dLZwAAAAE21BEyFjBwTWJSVEJRVGE2ZDRlaEhKN0VEVEEAAAAAITFRGRZDYVMxdEdiQVMzS2liS0FCSEkxcElBAAAAAW4Qai4WRWFGNHVaUk9TT1NiSEVpczBIcTNvUQAAAAAhMVEaFkNhUzF0R2JBUzNLaWJLQUJISTFwSUEAAAABdwSJLRZicGgwSHR3OFRwdTlGeGcwYm51MWNRAAAAAW2p_BIWRU9waVVXdXFUV213SkF6UDRGTzhPQQ==\",\"took\":146,\"timed_out\":false,\"_shards\":{\"total\":30,\"successful\":30,\"failed\":0},\"hits\":{\"total\":15023,\"max_score\":0,\"hits\":[{\"_index\":\"tags_v1\",\"_type\":\"metadata_type\",\"_id\":\"5d0f580b9281a8ab0cf5f71c9bb4f700\",\"_score\":0,\"_source\":{\"scope\":\"system.PRD.NONE.hdaas\",\"metric\":\"CpuPerc.cpu.idle\",\"tagk\":\"device\",\"tagv\":\"hdaas-dnds1-283-prd.eng.sfdc.net\",\"mts\":1561385448995,\"cts\":1561385448995,\"ets\":1565878248995}},{\"_index\":\"tags_v1\",\"_type\":\"metadata_type\",\"_id\":\"4bc0b8c2954343ad4e50ff42c727f45a\",\"_score\":0,\"_source\":{\"scope\":\"system.PRD.SP2.mist33\",\"metric\":\"CpuPerc.cpu.idle\",\"tagk\":\"device\",\"tagv\":\"mist33ice1-search42-3-prd.eng.sfdc.net\",\"mts\":1561385455276,\"cts\":1561385455276,\"ets\":1565878255276}}]}}";
+        ObjectMapper mapper = new ObjectMapper();
+        ElasticSearchSchemaService service = spy(_esSchemaService);
+        restClient =  mock(RestClient.class);
+        service.setRestClient(restClient);
+        doAnswer(new Answer() {
+            int callCount = 0;
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                callCount++;
+                if (callCount == 1) {
+                    Request request = invocationOnMock.getArgument(0, Request.class);
+                    String jsonStr = EntityUtils.toString(request.getEntity());
+                    JsonNode tree = mapper.readTree(jsonStr);
+                    request.getEndpoint().endsWith("_search");
+                    assertNull(tree.get("scroll"));
+                    assertNull(tree.get("scroll_id"));
+                } else if (callCount == 2) {
+                    Request request = invocationOnMock.getArgument(0, Request.class);
+                    String jsonStr = EntityUtils.toString(request.getEntity());
+                    JsonNode tree = mapper.readTree(jsonStr);
+                    request.getEndpoint().contains("_search?scroll=");
+                    assertNull(tree.get("scroll"));
+                    assertNull(tree.get("scroll_id"));
+                } else if (callCount == 3) {
+                    Request request = invocationOnMock.getArgument(0, Request.class);
+                    String jsonStr = EntityUtils.toString(request.getEntity());
+                    JsonNode tree = mapper.readTree(jsonStr);
+                    request.getEndpoint().endsWith("/_search/scroll");
+                    assertNotNull(tree.get("scroll"));
+                    assertNotNull(tree.get("scroll_id"));
+                }
+                return null;
+            }
+        }).when(restClient).performRequest(any(Request.class));
+        doAnswer(new Answer() {
+            int callCount = 0;
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) {
+                callCount++;
+                switch (callCount) {
+                    case 1:
+                        return firstReply;
+                    case 2:
+                        return secondReply;
+                    case 3:
+                        return thirdReply;
+                    default:
+                        fail("There shouldn't be a 4th extractResponse call by this test");
+                        return "";
+                }
+            }
+        }).when(service).extractResponse(any());
+        MetricSchemaRecordQuery query = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().scope("system*")
+                .metric("*")
+                .tagKey("*")
+                .tagValue("*")
+                .namespace("*")
+                .limit(0)
+                .build();
+        service.get(query);
+        verify(restClient, times(3)).performRequest(any(Request.class));
+        verify(service, times(3)).extractResponse(any());
+    }
+
+    @Test
     public void testGetWithScroll() throws IOException {
         String reply = "{\"_scroll_id\":\"DnF1ZXJ5VGhlbkZldGNoMgAAAAENlX7HFjdTNVBGTGFmUUNLT3JyZEhKZWlyNXcAAAABDYdg9xZQUUpjNUN5eFRuS0tEYWNIQ1Vwdkp3AAAAAAN8R34WTHJZWWU5cDVTd2VvelRRM3BsTkQ3UQAAAAAGraWTFnRpSFI4eTBLUl9DTGhhaWZURmlnWWcAAAABCFeY2RY5ZTdWUkpKTVNxLXdScFZ2d0l4UGVRAAAAAQ2HYPgWUFFKYzVDeXhUbktLRGFjSENVcHZKdwAAAAAGraWUFnRpSFI4eTBLUl9DTGhhaWZURmlnWWcAAAABCefkTxZ4RDRtTXZhTlNncVUxX0VGYm14YU1RAAAAAAJYwTcWUmRTbE5fWEtUMXktMDVMWG1NU0lnZwAAAAADfUxpFjBwTWJSVEJRVGE2ZDRlaEhKN0VEVEEAAAABDYNu5RZFYUY0dVpST1NPU2JIRWlzMEhxM29RAAAAAAHPMhIWbDhLbkRGMGVRMktlNmVic3hmTTZQdwAAAAEIC84XFjNnYkNhamRMUWdpRDhJRlpTR3l5c2cAAAAA9Bb5phZSV1k3T3ZuT1FZV055ODZLandweUhnAAAAAAatpZUWdGlIUjh5MEtSX0NMaGFpZlRGaWdZZwAAAAENbfO-FlhfN3R5NkM3UWd1c0tKd25XXzh3MVEAAAAA9Bb5pxZSV1k3T3ZuT1FZV055ODZLandweUhnAAAAAQ2DbuYWRWFGNHVaUk9TT1NiSEVpczBIcTNvUQAAAAAGraWWFnRpSFI4eTBLUl9DTGhhaWZURmlnWWcAAAAArdRfQhZaWkpkNWFEX1J3dXl6THMzVk1uU0pRAAAAAAG3nz8WaFZsQi1hVGVRakNsWXUtc3V3dGZJdwAAAAEINqojFmt1T2VDZ0c2UVRxLXY1TXlKRnd0ckEAAAABCAvOGBYzZ2JDYWpkTFFnaUQ4SUZaU0d5eXNnAAAAAQg2qiQWa3VPZUNnRzZRVHEtdjVNeUpGd3RyQQAAAAEOFh5PFlM0MTF4a3hZU0dxVnhuSEZ1Z0p4aVEAAAAAAc8yExZsOEtuREYwZVEyS2U2ZWJzeGZNNlB3AAAAAQ3CTCoWckRCLXNaX2NUb3k5VVgtamRyMnlLZwAAAAADfUxqFjBwTWJSVEJRVGE2ZDRlaEhKN0VEVEEAAAABCGR0zhZUb0Z1eWpaLVJOcW1McUZsLVF0TnZ3AAAAAQ1t878WWF83dHk2QzdRZ3VzS0p3bldfOHcxUQAAAAENwkwrFnJEQi1zWl9jVG95OVVYLWpkcjJ5S2cAAAABDbrdJRZQdmFPTXJ0RFJEbUs1UkhjNmozZ0tnAAAAAQnn5FAWeEQ0bU12YU5TZ3FVMV9FRmJteGFNUQAAAAENwkwsFnJEQi1zWl9jVG95OVVYLWpkcjJ5S2cAAAABDZEgehZRck5Ddnd1RFFDS3J0cGtTaE43cUR3AAAAAK3UX1UWWlpKZDVhRF9Sd3V5ekxzM1ZNblNKUQAAAAENjv2hFm9RdWllMnJsVEJhWlA2alRJR3d6TFEAAAABDbrdJhZQdmFPTXJ0RFJEbUs1UkhjNmozZ0tnAAAAAQhkdM8WVG9GdXlqWi1STnFtTHFGbC1RdE52dwAAAAACtVXxFkx3cE1IQmoyVGZPUk1iMjdET1ZFREEAAAABDZV-yBY3UzVQRkxhZlFDS09ycmRISmVpcjV3AAAAAAIO8osWbm5KMlRwNklTZENsY3p5NWVmZ3JYdwAAAAENg27nFkVhRjR1WlJPU09TYkhFaXMwSHEzb1EAAAAA87q5RBZicGgwSHR3OFRwdTlGeGcwYm51MWNRAAAAAAIO8owWbm5KMlRwNklTZENsY3p5NWVmZ3JYdwAAAADzurlFFmJwaDBIdHc4VHB1OUZ4ZzBibnUxY1EAAAAAAg7yjRZubkoyVHA2SVNkQ2xjenk1ZWZnclh3AAAAAQhkdNAWVG9GdXlqWi1STnFtTHFGbC1RdE52dwAAAAENh2D5FlBRSmM1Q3l4VG5LS0RhY0hDVXB2SncAAAABDauQZxZDYVMxdEdiQVMzS2liS0FCSEkxcElB\",\"took\":937,\"timed_out\":false,\"_shards\":{\"total\":50,\"successful\":50,\"failed\":0},\"hits\":{\"total\":1,\"max_score\":0,\"hits\":[{\"_index\":\"metadata_index\",\"_type\":\"metadata_type\",\"_id\":\"e199fa2a0f00da90fec8c1eb543442b0\",\"_score\":0,\"_source\":{\"scope\":\"ajna.consumer\",\"metric\":\"datapoints.posted\",\"tagk\":\"uuid\",\"tagv\":\"shared1-argusmetrics1-5-prd.eng.sfdc.net9047\",\"mts\":1555112561350,\"ets\":1559000561350}}]}}";
         ObjectMapper mapper = new ObjectMapper();
@@ -263,7 +353,7 @@ public class ElasticSearchSchemaServiceTest {
                 return null;
             }
         }).when(restClient).performRequest(any(Request.class));
-        doAnswer(invoction -> reply).when(service).extractResponse(any());
+        doAnswer(invocation -> reply).when(service).extractResponse(any());
         MetricSchemaRecordQuery query = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().scope("system*")
                 .metric("*")
                 .tagKey("*")

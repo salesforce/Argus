@@ -277,7 +277,7 @@ public final class SystemConfiguration extends Properties {
         AUTH_SERVICE_IMPL_CLASS("service.binding.auth", "com.salesforce.dva.argus.service.auth.LDAPAuthService"),
         AUTH_SERVICE_PROPERTY_FILE("service.config.auth","placeholder_ldap.properties"),
 
-        SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.AsyncHbaseSchemaService"),
+        SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService"),
         SCHEMA_SERVICE_PROPERTY_FILE("service.config.schema","placeholder_schema.properties"),
 
         QUERYSTORE_SERVICE_IMPL_CLASS("service.binding.querystore", "com.salesforce.dva.argus.service.querystore.NoOperationQueryStoreService"),
