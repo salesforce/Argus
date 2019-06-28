@@ -54,8 +54,8 @@ public class PropagateTransform implements Transform {
 
     private void _propagateMetricTransform(Metric metric, long windowSizeInSeconds, QueryContext queryContext) {
     	
-    	// if the datapoint set is empty or has a single datapoint, return directly
-    	if(metric.getDatapoints().isEmpty() || metric.getDatapoints().size() == 1) {
+    	// if the datapoint set is empty
+    	if(metric.getDatapoints().isEmpty()) {
     		return;
     	}
       	Long[] startAndEndTimestamps = QueryUtils.getStartAndEndTimesWithMaxInterval(queryContext);

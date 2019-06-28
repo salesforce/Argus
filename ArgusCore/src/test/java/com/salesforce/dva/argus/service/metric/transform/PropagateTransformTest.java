@@ -36,6 +36,7 @@ import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.util.QueryContext;
 import com.salesforce.dva.argus.util.QueryUtils;
 
+import com.salesforce.dva.argus.util.TSDBQueryExpression;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -342,7 +343,7 @@ public class PropagateTransformTest {
         Transform propagateTransform = new PropagateTransform();
         Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, 1.0);
+        datapoints.put(200000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -358,11 +359,21 @@ public class PropagateTransformTest {
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, 1.0);
+        expected.put(200000L, 1.0);
+        expected.put(300000L, 1.0);
+        expected.put(400000L, 1.0);
+        expected.put(500000L, 1.0);
+        expected.put(600000L, 1.0);
 
-        List<Metric> result = propagateTransform.transform(null, metrics, constants);
+        QueryContext queryContext = new QueryContext();
+        TSDBQueryExpression expression = new TSDBQueryExpression();
+        expression.setStartTimestamp(200000L);
+        expression.setEndTimestamp(600000L);
+        queryContext.setExpression(expression);
 
-        assertEquals(result.get(0).getDatapoints().size(), 1);
+        List<Metric> result = propagateTransform.transform(queryContext, metrics, constants);
+
+        assertEquals(result.get(0).getDatapoints().size(), 5);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
