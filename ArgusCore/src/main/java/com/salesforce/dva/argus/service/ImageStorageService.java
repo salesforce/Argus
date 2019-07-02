@@ -29,42 +29,33 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.dva.argus.service.image;
-
-import com.google.inject.Inject;
-import com.salesforce.dva.argus.entity.ImageProperties;
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.service.DefaultService;
-import com.salesforce.dva.argus.service.ImageService;
-import com.salesforce.dva.argus.system.SystemConfiguration;
-import org.apache.commons.lang3.tuple.Pair;
+package com.salesforce.dva.argus.service;
 
 import java.util.List;
 
-public class NoOperationImageService extends DefaultService implements ImageService {
+import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 
-    @Inject
-    public NoOperationImageService(SystemConfiguration config) {
-        super(config);
-    }
+/**
+ * Provides methods for inserting or retrieving images from storage.
+ *
+ * @author  Chandravyas Annakula (cannakula@salesforce.com)
+ */
+public interface ImageStorageService extends Service {
 
-    @Override
-    public byte[] generateImage(List<Metric> metrics, ImageProperties properties) {
-        return null;
-    }
+    /**
+     * Writes image data. Any existing data is overwritten.
+     * @param imageId       id of the Image Bytes
+     * @param imageBytes    imageBytes that need to be stored
+     * @param sync          saves image synchronously or asynchronously
+     */
+    void putImage(String imageId,byte[] imageBytes,boolean sync);
 
-    @Override
-    public String storeImage(byte[] imageBytes, boolean sync) {
-        return null;
-    }
-
-    @Override
-    public Pair<String,byte[]> generateAndStoreImage(List<Metric> metrics, ImageProperties properties, boolean sync) {
-        return null;
-    }
-
-    @Override
-    public byte[] getImageById(String imageId) {
-        return null;
-    }
+    /**
+     * Retrieves the image bytes given the imageId
+     *
+     * @param imageId Key of the image
+     * @return Associated image bytes is returned
+     */
+    byte[] getImage(String imageId);
 }

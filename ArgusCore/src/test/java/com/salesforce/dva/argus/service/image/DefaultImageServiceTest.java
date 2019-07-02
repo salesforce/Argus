@@ -31,40 +31,44 @@
 
 package com.salesforce.dva.argus.service.image;
 
-import com.google.inject.Inject;
-import com.salesforce.dva.argus.entity.ImageProperties;
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.service.DefaultService;
-import com.salesforce.dva.argus.service.ImageService;
+import com.salesforce.dva.argus.service.MonitorService;
+import com.salesforce.dva.argus.service.schema.ElasticSearchUtils;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import org.apache.commons.lang3.tuple.Pair;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
 
-import java.util.List;
+import java.util.Properties;
 
-public class NoOperationImageService extends DefaultService implements ImageService {
+import static org.mockito.Mockito.mock;
 
-    @Inject
-    public NoOperationImageService(SystemConfiguration config) {
-        super(config);
+public class DefaultImageServiceTest {
+
+    @Mock
+    private ElasticSearchImageService elasticSearchImageService;
+    private DefaultImageService defaultImageService;
+
+    @Before
+    public void setUp() {
+        Properties config = new Properties();
+        SystemConfiguration systemConfig = new SystemConfiguration(config);
+        MonitorService mockedMonitor = mock(MonitorService.class);
+        ElasticSearchUtils mockedElasticSearchUtils = mock(ElasticSearchUtils.class);
+        elasticSearchImageService = new ElasticSearchImageService(systemConfig, mockedMonitor, mockedElasticSearchUtils);
+        defaultImageService = new DefaultImageService(elasticSearchImageService,systemConfig);
     }
 
-    @Override
-    public byte[] generateImage(List<Metric> metrics, ImageProperties properties) {
-        return null;
+    @Test(expected=IllegalArgumentException.class)
+    public void testNullOREmptyImageId() {
+        defaultImageService.getImageById(null);
+        defaultImageService.getImageById("");
     }
 
-    @Override
-    public String storeImage(byte[] imageBytes, boolean sync) {
-        return null;
+    @Test(expected=IllegalArgumentException.class)
+    public void testStoreNullImageBytes() {
+        defaultImageService.storeImage(null,false);
+        defaultImageService.storeImage("".getBytes(),false);
+
     }
 
-    @Override
-    public Pair<String,byte[]> generateAndStoreImage(List<Metric> metrics, ImageProperties properties, boolean sync) {
-        return null;
-    }
-
-    @Override
-    public byte[] getImageById(String imageId) {
-        return null;
-    }
 }

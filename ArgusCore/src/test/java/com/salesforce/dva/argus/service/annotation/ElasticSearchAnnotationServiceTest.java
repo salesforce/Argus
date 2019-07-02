@@ -70,8 +70,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.service.annotation.AnnotationRecordList;
-import com.salesforce.dva.argus.service.annotation.ElasticSearchAnnotationService;
 import com.salesforce.dva.argus.service.schema.ElasticSearchUtils;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
@@ -185,7 +183,7 @@ public class ElasticSearchAnnotationServiceTest {
 
     @Before
     public void setUp() {
-        ElasticSearchUtils.ANNOTATION_INDEX_MAX_RESULT_WINDOW = 10000;
+        ElasticSearchAnnotationService.annotationIndexMaxResultWindow = 10000;
     }
     
     @Test
@@ -284,7 +282,7 @@ public class ElasticSearchAnnotationServiceTest {
 
     @Test (expected = RuntimeException.class)
     public void testGetAnnotationsExceedingLimit(){
-        ElasticSearchUtils.ANNOTATION_INDEX_MAX_RESULT_WINDOW = 1;
+        ElasticSearchAnnotationService.annotationIndexMaxResultWindow = 1;
         AnnotationQuery annotationQuery = new AnnotationQuery("scope1", "metric1", null, "unittest", 1557809359073L, 1557809599073L);
         List<AnnotationQuery> queries = new ArrayList<>();
         queries.add(annotationQuery);
@@ -303,7 +301,7 @@ public class ElasticSearchAnnotationServiceTest {
             throw e;
         }
 
-        String responseMessage = ElasticSearchAnnotationService.doExtractResponse(200, entity);
+        String responseMessage = ElasticSearchUtils.doExtractResponse(200, entity);
         assertEquals("expect the entity to be equal after extraction", message, responseMessage);
     }
 
@@ -314,14 +312,14 @@ public class ElasticSearchAnnotationServiceTest {
     public void testDoExtractResponse400() {
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("Status code: 400");
-        ElasticSearchAnnotationService.doExtractResponse(400, null);
+        ElasticSearchUtils.doExtractResponse(400, null);
     }
 
     @Test
     public void testDoExtractResponse500() {
         expectedException.expect(SystemException.class);
         expectedException.expectMessage("Status code: 500");
-        ElasticSearchAnnotationService.doExtractResponse(500, null);
+        ElasticSearchUtils.doExtractResponse(500, null);
     }
     
     @Test
