@@ -163,7 +163,7 @@ class MetricConsumer extends BaseMetricConsumer {
 
     void sendQuotaCounters(com.salesforce.mandm.ajna.Metric ajnaMetric) {
         Map<String, String> latestTags = new HashMap<>();
-        String dc = resolveCharSequence(ajnaMetric.getTags()==null?null:ajnaMetric.getTags().get(SchemaField.TAG_KEY_DATACENTER), NONE, cs -> cs.toString().toUpperCase());
+        String dc = resolveCharSequence(ajnaMetric.getTags()==null?null:ajnaMetric.getTags().get(SchemaField.TAG_KEY_DATACENTER), NONE, cs -> replaceUnsupportedChars(cs.toString().toUpperCase()));
         latestTags.put(SchemaField.DC, dc);
         instrumentationService.updateCounter(DATAPOINTS_CONSUMED_LATEST, 1, latestTags, true);
 
