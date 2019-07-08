@@ -3,6 +3,7 @@ package com.salesforce.perfeng.akc.consumer;
 import com.google.common.collect.ImmutableMap;
 import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.perfeng.akc.AKCConfiguration;
+import com.salesforce.perfeng.akc.exceptions.AKCException;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -159,6 +160,10 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
 
         // Get the offsets corresponding to consumptionStartTime from Kafka broker.
         Map<TopicPartition, OffsetAndTimestamp> brokerOffsetMap = consumer.offsetsForTimes(toSearch);
+
+        if(brokerOffsetMap == null)
+            throw new AKCException("No suitable offsets found for the topic with a newer timestamp than start time "+ consumptionStartTime +" for starting a catchup consumer");
+
         brokerOffsetMap.forEach((topicPartition, startTimeOffsets) -> {
             try {
 
@@ -191,6 +196,10 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
 
         // Get the offsets corresponding to consumptionStartTime from Kafka broker.
         Map<TopicPartition, OffsetAndTimestamp> offsetMap = consumer.offsetsForTimes(toSearch);
+
+        if (offsetMap == null)
+            throw new AKCException("No suitable offsets found for the topic for consumption to stop around the stop time "+ consumptionStopTime +" for starting a catchup consumer");
+
         offsetMap.forEach((tp,partitionOffsets) -> {
             stopOffsets.put(tp, partitionOffsets.offset());
         });
@@ -311,7 +320,11 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
                     }
                 } catch (CommitFailedException e) {
                     logger.error("Commit failed, continuing polls: ", e) ;
-                } catch (Exception e) {
+                } catch (AKCException e) {
+                    logger.error("Error in AKC consumer: ", e);
+                    break;
+                }
+                catch (Exception e) {
                     logger.error("Unexpected error during last poll:", e);
                     e.printStackTrace();
                 } finally {
