@@ -69,7 +69,7 @@ public interface SchemaService extends Service {
     void put(List<Metric> metrics);
 
     /**
-     * Returns a list of schema records matched by the given query.
+     * Returns a list of schema records matched by the given query, taking limit and page into account
      *
      * @param   query  The query to evaluate.  Cannot be null.
      *

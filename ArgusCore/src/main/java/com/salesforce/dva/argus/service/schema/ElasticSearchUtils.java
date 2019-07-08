@@ -5,8 +5,12 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.Supplier;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.salesforce.dva.argus.service.image.ElasticSearchImageService;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
@@ -35,9 +39,7 @@ public class ElasticSearchUtils {
     private static Logger _logger = LoggerFactory.getLogger(ElasticSearchUtils.class);
     private static ObjectMapper mapper = new ObjectMapper();
 
-    private static final int INDEX_MAX_RESULT_WINDOW = 10000;
-    public static int  ANNOTATION_INDEX_MAX_RESULT_WINDOW = 10000;
-
+    public static final int INDEX_MAX_RESULT_WINDOW = 10000;
 
     public ElasticSearchUtils() {
     }
@@ -76,13 +78,12 @@ public class ElasticSearchUtils {
     public void createIndexTemplate(RestClient esRestClient,
                                     String templateName,
                                     String templatePattern,
-                                    int replicationFactor,
-                                    int numShards,
+                                    Supplier<ObjectNode> createIndexTemplateSettingsNode,
                                     Supplier<ObjectNode> createIndexTemplateMappingsNode) {
         try {
             ObjectNode rootNode = mapper.createObjectNode();
             rootNode.put("template",templatePattern + "*");
-            rootNode.set("settings", createAnnotationIndexTemplateSettingsNode(replicationFactor, numShards));
+            rootNode.set("settings", createIndexTemplateSettingsNode.get());
             rootNode.set("mappings", createIndexTemplateMappingsNode.get());
 
             String settingsAndMappingsJson = rootNode.toString();
@@ -95,34 +96,6 @@ public class ElasticSearchUtils {
         } catch (Exception e) {
             _logger.error("Failed to check/create {} index template. Failure due to {}", templateName, e);
         }
-    }
-    
-    private ObjectNode createAnnotationIndexTemplateSettingsNode(int replicationFactor, int numShards) {
-        ObjectNode annotationAnalyzer = mapper.createObjectNode();
-        annotationAnalyzer.put("tokenizer", "annotation_tokenizer");
-        annotationAnalyzer.set("filter", mapper.createArrayNode().add("lowercase"));
-
-        ObjectNode analyzerNode = mapper.createObjectNode();
-        analyzerNode.set("annotation_analyzer", annotationAnalyzer);
-
-        ObjectNode tokenizerNode = mapper.createObjectNode();
-        tokenizerNode.set("annotation_tokenizer", mapper.createObjectNode().put("type", "pattern").put("pattern", "([^\\p{L}\\d]+)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"));
-
-        ObjectNode analysisNode = mapper.createObjectNode();
-        analysisNode.set("analyzer", analyzerNode);
-        analysisNode.set("tokenizer", tokenizerNode);
-
-
-        ObjectNode indexNode = mapper.createObjectNode();
-        indexNode.put("max_result_window", ANNOTATION_INDEX_MAX_RESULT_WINDOW);
-        indexNode.put("number_of_replicas", replicationFactor);
-        indexNode.put("number_of_shards", numShards);
-
-        ObjectNode settingsNode = mapper.createObjectNode();
-        settingsNode.set("analysis", analysisNode);
-        settingsNode.set("index", indexNode);
-
-        return settingsNode;
     }
 
     private ObjectNode _createSettingsNode(int replicationFactor, int numShards) {
@@ -152,8 +125,22 @@ public class ElasticSearchUtils {
         return settingsNode;
     }
 
+    /* Helper method to convert JSON String representation to the corresponding Java entity. */
+    public static  <T> T toEntity(String content, TypeReference<T> type, ObjectMapper mapper) {
+        try {
+            return mapper.readValue(content, type);
+        } catch (IOException ex) {
+            throw new SystemException(ex);
+        }
+    }
 
-    static String extractResponse(Response response) {
+    /** Helper to process the response. <br><br>
+     * Throws IllegalArgumentException when the http status code is in the 400 range <br>
+     * Throws SystemException when the http status code is outside of the 200 and 400 range
+     * @param   response ES response
+     * @return  Stringified response
+     */
+    public static String extractResponse(Response response) {
         requireArgument(response != null, "HttpResponse object cannot be null.");
 
         return doExtractResponse(response.getStatusLine().getStatusCode(), response.getEntity());
@@ -166,7 +153,7 @@ public class ElasticSearchUtils {
      * @return
      */
     @VisibleForTesting
-    static String doExtractResponse(int statusCode, HttpEntity entity) {
+    public static String doExtractResponse(int statusCode, HttpEntity entity) {
         String message = null;
 
         if (entity != null) {
@@ -196,7 +183,7 @@ public class ElasticSearchUtils {
      *
      * @author  Bhinav Sura (bhinav.sura@salesforce.com)
      */
-    private enum HttpMethod {
+    public enum HttpMethod {
 
         /** POST operation. */
         POST("POST"),
@@ -219,4 +206,148 @@ public class ElasticSearchUtils {
             this.name = name;
         }
     }
+
+    /**
+     *  Used for constructing Elastic Search Response object
+     */
+    public static class PutResponse {
+        private int took;
+        private boolean errors;
+        private List<Item> items;
+
+        public PutResponse() {}
+
+        public int getTook() {
+            return took;
+        }
+
+        public void setTook(int took) {
+            this.took = took;
+        }
+
+        public boolean isErrors() {
+            return errors;
+        }
+
+        public void setErrors(boolean errors) {
+            this.errors = errors;
+        }
+
+        public List<PutResponse.Item> getItems() {
+            return items;
+        }
+
+        public void setItems(List<PutResponse.Item> items) {
+            this.items = items;
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public static class Item {
+            private PutResponse.CreateItem create;
+            private PutResponse.CreateItem index;
+            private PutResponse.CreateItem update;
+
+            public Item() {}
+
+            public PutResponse.CreateItem getCreate() {
+                return create;
+            }
+
+            public void setCreate(PutResponse.CreateItem create) {
+                this.create = create;
+            }
+
+            public PutResponse.CreateItem getIndex() {
+                return index;
+            }
+
+            public void setIndex(PutResponse.CreateItem index) {
+                this.index = index;
+            }
+
+            public PutResponse.CreateItem getUpdate() {
+                return update;
+            }
+
+            public void setUpdate(PutResponse.CreateItem update) {
+                this.update = update;
+            }
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public static class CreateItem {
+            private String _index;
+            private String _id;
+            private int status;
+            private int _version;
+            private PutResponse.Error error;
+
+            public CreateItem() {}
+
+            public String get_index() {
+                return _index;
+            }
+
+            public void set_index(String _index) {
+                this._index = _index;
+            }
+
+            public String get_id() {
+                return _id;
+            }
+
+            public void set_id(String _id) {
+                this._id = _id;
+            }
+
+            public int get_version() {
+                return _version;
+            }
+
+            public void set_version(int _version) {
+                this._version = _version;
+            }
+
+            public int getStatus() {
+                return status;
+            }
+
+            public void setStatus(int status) {
+                this.status = status;
+            }
+
+            public PutResponse.Error getError() {
+                return error;
+            }
+
+            public void setError(PutResponse.Error error) {
+                this.error = error;
+            }
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        static class Error {
+            private String type;
+            private String reason;
+
+            public Error() {}
+
+            public String getType() {
+                return type;
+            }
+
+            public void setType(String type) {
+                this.type = type;
+            }
+
+            public String getReason() {
+                return reason;
+            }
+
+            public void setReason(String reason) {
+                this.reason = reason;
+            }
+        }
+    }
+
 }

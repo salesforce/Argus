@@ -3,7 +3,7 @@ package com.salesforce.dva.argus.entity;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 public class SchemaQuery {
-	
+
 	protected int limit; 
     protected int page;
     
@@ -16,8 +16,11 @@ public class SchemaQuery {
     	setPage(page);
     }
 
+	/**
+	 * @param limit	Maximum amount of hits to return. Set to 0 for unbounded max / unlimited results.
+	 */
 	public void setLimit(int limit) {
-		SystemAssert.requireArgument(limit > 0, "Limit must be a positive integer.");
+		SystemAssert.requireArgument(limit >= 0, "Limit must be a positive integer or zero for unlimited");
 		this.limit = limit;
 	}
 

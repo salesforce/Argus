@@ -301,7 +301,10 @@ public class MetricSchemaRecordQuery extends SchemaQuery {
 	    	this.tagValue = tagValue;
 	    	return this;
 	    }
-	    
+
+		/**
+		 * @param limit	Maximum amount of hits to return. Set to 0 for unbounded max / unlimited results.
+		 */
 	    public MetricSchemaRecordQueryBuilder limit(int limit) {
 	    	this.limit = limit;
 	    	return this;

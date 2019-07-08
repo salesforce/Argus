@@ -1,5 +1,6 @@
 package com.salesforce.dva.argus.entity;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -11,6 +12,7 @@ import static com.salesforce.dva.argus.TestUtils.generateNotification;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+
 
 public class AlertTest {
 

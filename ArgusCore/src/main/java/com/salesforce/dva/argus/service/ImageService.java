@@ -33,7 +33,7 @@ package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.ImageProperties;
 import com.salesforce.dva.argus.entity.Metric;
-import org.apache.commons.math3.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
@@ -73,9 +73,9 @@ public interface ImageService extends Service {
      * @param metrics    List of metrics for which JPEG image is generated
      * @param properties Properties of the image that need to be generated
      * @param sync       saves image synchronously or asynchronously
-     * @return Pair of Unique Id for image and JPEG image byte array is returned
+     * @return  Pair Object with first argument contains Unique Id for image and second argument contains associated JPEG image byte array
      */
-    Pair<String, byte[]> generateAndStoreImage(List<Metric> metrics, ImageProperties properties, boolean sync);
+    Pair<String,byte[]> generateAndStoreImage(List<Metric> metrics, ImageProperties properties, boolean sync);
 
 
     /**

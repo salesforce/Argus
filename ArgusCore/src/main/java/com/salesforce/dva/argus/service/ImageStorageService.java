@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Salesforce.com, Inc.
+ * Copyright (c) 2016, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,31 +29,33 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.dva.argus.entity;
+package com.salesforce.dva.argus.service;
+
+import java.util.List;
+
+import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 
 /**
- * This is a standard MXBean interface. It will be used to build MXBean
- * to export internal metrix to JMX.
- * 
- * This one provides read-only interface as I want to prevent any one
- * to change the metric through JMX interface
- * 
- * @author taozhang
+ * Provides methods for inserting or retrieving images from storage.
  *
+ * @author  Chandravyas Annakula (cannakula@salesforce.com)
  */
-public interface GaugeMXBean {
+public interface ImageStorageService extends Service {
 
-	/**
-	 * This is expected to return the object name of the bean.  It will
-	 * be used as a key to the JMX-exported internal metric
-	 * @return
-	 */
-	String getObjectName();
-	
-	/**
-	 * This should return gauge value of the internal metrics
-	 * @return
-	 */
-	Double getValue();
+    /**
+     * Writes image data. Any existing data is overwritten.
+     * @param imageId       id of the Image Bytes
+     * @param imageBytes    imageBytes that need to be stored
+     * @param sync          saves image synchronously or asynchronously
+     */
+    void putImage(String imageId,byte[] imageBytes,boolean sync);
 
+    /**
+     * Retrieves the image bytes given the imageId
+     *
+     * @param imageId Key of the image
+     * @return Associated image bytes is returned
+     */
+    byte[] getImage(String imageId);
 }

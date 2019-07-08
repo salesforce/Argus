@@ -31,84 +31,157 @@
 
 package com.salesforce.dva.argus.entity;
 
-import org.apache.commons.lang3.tuple.Triple;
-
+import org.apache.commons.lang.StringUtils;
 import java.awt.Color;
 import java.util.List;
 
 public class ImageProperties {
 
 
-    private int imageWidth;
-    private int imageHeight;
-    private String chartName;
-    private String xAxisName;
-    private String yAxisName;
-    private List<Triple<Long,Long,ImageColors>> shadeXAxisArea;
-    private List<Triple<Long,Long,ImageColors>> shadeYAxisArea;
-    private List<Triple<Long,Long,String>> labelPoints;
+    private static final String DEFAULT_IMAGE_XAXIS_LABEL="Time";
+    private static final String DEFAULT_IMAGE_YAXIS_LABEL="Value";
+    private static final String DEFAULT_IMAGE_CHART_NAME = StringUtils.EMPTY;
+    private static final int DEFAULT_IMAGE_WIDTH = 1100;
+    private static final int DEFAULT_IMAGE_HEIGHT = 550;
+    public static final ImageColors DEFAULT_COLOR = ImageColors.VERY_LIGHT_BLUE;
 
+    private int imageWidth = DEFAULT_IMAGE_WIDTH;
+    private int imageHeight = DEFAULT_IMAGE_HEIGHT;
+    private String chartName = DEFAULT_IMAGE_CHART_NAME;
+    private String xAxisName = DEFAULT_IMAGE_XAXIS_LABEL;
+    private String yAxisName = DEFAULT_IMAGE_YAXIS_LABEL;
+    private List<ImagePoints> shadeXAxisArea;
+    private List<ImagePoints> shadeYAxisArea;
+    private List<ImagePoints> labelPoints;
+
+
+    /**
+     * Gets the Image Width. Default value is 1100
+     * @return  Returns the Image width
+     */
     public int getImageWidth() {
         return imageWidth;
     }
 
+
+    /**
+     * Sets the Image Width of the JPG Image
+     * @param imageWidth    imageWidth value
+     */
     public void setImageWidth(int imageWidth) {
         this.imageWidth = imageWidth;
     }
 
+
+    /**
+     * Gets the Image Height. Default value is 550
+     * @return  Returns the Image Height
+     */
     public int getImageHeight() {
         return imageHeight;
     }
 
+    /**
+     * Sets the Image Height of the JPG Image
+     * @param imageHeight   imageHeight Value
+     */
     public void setImageHeight(int imageHeight) {
         this.imageHeight = imageHeight;
     }
 
+    /**
+     * Gets the Chart Name of the Image.By default the chart name is empty
+     * @return  Returns the chart name
+     */
     public String getChartName() {
         return chartName;
     }
 
+    /**
+     * Sets the Chart Name of the Image.
+     * @param chartName Chart Name value
+     */
     public void setChartName(String chartName) {
         this.chartName = chartName;
     }
 
+    /**
+     * Gets the X-Axis Name of the Image. By default the value is "Time"
+     * @return  Returns the X-Axis Name
+     */
     public String getxAxisName() {
         return xAxisName;
     }
 
+    /**
+     * Sets the X-Axis Name of the Image
+     * @param xAxisName X-Axis Name
+     */
     public void setxAxisName(String xAxisName) {
         this.xAxisName = xAxisName;
     }
 
+    /**
+     * Gets the Y-Axis Name of the Image. By default the value is "Value"
+     * @return  Returns the Y-Axis Name
+     */
     public String getyAxisName() {
         return yAxisName;
     }
 
+    /**
+     * Sets the Y-Axis Name of the Image
+     * @param yAxisName Y-Axis Name
+     */
     public void setyAxisName(String yAxisName) {
         this.yAxisName = yAxisName;
     }
 
-    public List<Triple<Long, Long, ImageColors>> getShadeXAxisArea() {
+    /**
+     * Gets information related to List of ImagePoints that are used to shade the area parallel to X-Axis
+     * @return  List of ImagePoints to Shade X-Axis
+     */
+    public List<ImagePoints> getShadeXAxisArea() {
         return shadeXAxisArea;
     }
 
-    public void setShadeXAxisArea(List<Triple<Long, Long, ImageColors>> shadeXAxisArea) {
+    /**
+     * Set the Information that is required to shade the area parallel to X-Axis.If y1==y2 then straight line will be drawn
+     * @param shadeXAxisArea   List of ImagePoints with each ImagePoints represent y1,y2,label,Color
+     */
+    public void setShadeXAxisArea(List<ImagePoints> shadeXAxisArea) {
         this.shadeXAxisArea = shadeXAxisArea;
     }
 
-    public List<Triple<Long, Long, ImageColors>> getShadeYAxisArea() {
+    /**
+     * Gets information related to List of ImagePoints that are used to shade the area parallel to Y-Axis
+     * @return  List of ImagePoints to Shade Y-Axis
+     */
+    public List<ImagePoints> getShadeYAxisArea() {
         return shadeYAxisArea;
     }
 
-    public void setShadeYAxisArea(List<Triple<Long, Long, ImageColors>> shadeYAxisArea) {
+    /**
+     * Set the Information that is required to shade the area parallel to Y-Axis.If x1==x2 then straight line will be drawn
+     * @param shadeYAxisArea    List of ImagePoints with each ImagePoints represent x1,x2,label,Color
+     */
+    public void setShadeYAxisArea(List<ImagePoints> shadeYAxisArea) {
         this.shadeYAxisArea = shadeYAxisArea;
     }
 
-    public List<Triple<Long, Long, String>> getLabelPoints() {
+    /**
+     * Gets List of ImagePoints to represent labels in XY axis
+     * @return  List of ImagePoints to plot labels
+     */
+    public List<ImagePoints> getLabelPoints() {
         return labelPoints;
     }
 
-    public void setLabelPoints(List<Triple<Long, Long, String>> labelPoints) {
+    /**
+     * Set the information that is required to label points in XY Axis
+     * @param labelPoints   List of ImagePoints with each ImagePoints represent x1,y1,label,Color
+     */
+    public void setLabelPoints(List<ImagePoints> labelPoints) {
         this.labelPoints = labelPoints;
     }
 
@@ -137,7 +210,8 @@ public class ImageProperties {
         VERY_DARK_MAGENTA(new Color(0x80, 0x00, 0x80)),
         DARK_MAGENTA(new Color(0xC0, 0x00, 0xC0)),
         LIGHT_MAGENTA(new Color(0xFF, 0x40, 0xFF)),
-        VERY_LIGHT_MAGENTA(new Color(0xFF, 0x80, 0xFF));
+        VERY_LIGHT_MAGENTA(new Color(0xFF, 0x80, 0xFF)),
+        VERY_LIGHT_PINK(new Color(255, 230, 230));
 
 
         private Color color;

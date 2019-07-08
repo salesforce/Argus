@@ -52,9 +52,12 @@ import org.slf4j.LoggerFactory;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -78,6 +81,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 	private final SystemConfiguration _configuration;
 	private MetricQueryProcessor _queryProcessor;
 	private String dcListRegex;
+	private Double DOUBLE_ZERO=0.0d;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -141,7 +145,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		} catch (ParseException ex) {
 			throw new SystemException("Failed to parse the given expression", ex);
 		}
-		// Removing metrics which has no datapoints
+		// Removing metrics which has no datapoints and handle Default TSDB min value
 		List<Metric> metrics = queryResult.getMetricsList();
 		if (metrics!=null) {
 			Iterator<Metric> metricIterator = metrics.iterator();
@@ -149,10 +153,13 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 				Metric metric = metricIterator.next();
 				if (metric.getDatapoints()==null || metric.getDatapoints().size() == 0) {
 					metricIterator.remove();
+				}else if(metric.getDatapoints().values().contains(Double.MIN_VALUE)) {
+					metric.setDatapoints(setMinValuesToZero(metric.getDatapoints()));
 				}
 			}
 			queryResult.setMetricsList(metrics);
 		}
+		
 		_monitorService.modifyCounter(Counter.DATAPOINT_READS, _getDatapointsAcrossMetrics(queryResult.getMetricsList()), null);
 		queryResult.setExpandedTimeSeriesRange(QueryTimeSeriesExpansion.getExpandedTimeSeriesRange(queryResult.getNumTSDBResults()));
 		queryResult.setQueryStartTimeWindow(QueryStartTimeWindow.getWindow(relativeTo - queryResult.getQueryStartTimeMillis()));
@@ -278,6 +285,18 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			_logger.error("Unable to retrieve DC from scope. Exception: {0}", ex);
 			return null;
 		}
+	}
+	
+	private Map<Long, Double> setMinValuesToZero(Map<Long, Double> datapoints){
+		Map<Long, Double> result = new HashMap<>();
+		for(Entry<Long,Double> entry:datapoints.entrySet()) {
+			if(entry.getValue()==Double.MIN_VALUE) {
+				result.put(entry.getKey(), DOUBLE_ZERO);
+			}else {
+				result.put(entry.getKey(), entry.getValue()); 
+			}
+		}
+		return result;
 	}
 }
 	/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

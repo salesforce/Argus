@@ -10,10 +10,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -36,11 +33,7 @@ import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.RequestContextHolder;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
@@ -101,6 +94,7 @@ public class DefaultAlertServiceTest {
 
     @Before
     public void setup() {
+        em = mock(EntityManager.class);
         alertService = new DefaultAlertService(system.getConfiguration(), _mqServiceMock, _metricServiceMock, _auditServiceMock,
                 _tsdbServiceMock, _mailServiceMock, _historyServiceMock, _monitorServiceMock, system.getNotifierFactory(),
                 _emProviderMock);
@@ -1261,7 +1255,6 @@ public class DefaultAlertServiceTest {
     private DefaultAlertService _initializeSpyAlertServiceWithStubs(final AtomicInteger notificationCount, final AtomicInteger clearCount,
                                                                     List<Metric> metrics, Alert alert, Notification notification, boolean isDataLagging) {
         DefaultAlertService spyAlertService = spy(alertService);
-        EntityManager em = Persistence.createEntityManagerFactory("argus-pu").createEntityManager();
         when(_emProviderMock.get()).thenReturn(em);
 
         Long enqueueTime = System.currentTimeMillis();

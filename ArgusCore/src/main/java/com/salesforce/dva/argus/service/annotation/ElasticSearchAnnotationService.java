@@ -2,7 +2,6 @@ package com.salesforce.dva.argus.service.annotation;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -14,7 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
@@ -28,7 +26,6 @@ import org.elasticsearch.client.RestClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -66,6 +63,7 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
     
     /** Global ES properties */
     private static final int ANNOTATION_MAX_RETRY_TIMEOUT = 300 * 1000;
+    static int annotationIndexMaxResultWindow = 10000;
     private static final String FIELD_TYPE_TEXT = "text";
     private static final String FIELD_TYPE_DATE ="date";
     private RestClient esRestClient;
@@ -152,9 +150,8 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         esUtils.createIndexTemplate(esRestClient,
                 ANNOTATION_INDEX_TEMPLATE_NAME,
                 ANNOTATION_INDEX_TEMPLATE_PATTERN_START,
-                replicationFactorForAnnotationIndex,
-                numShardsForAnnotationIndex,
-                () -> createAnnotationMappingsNode());
+                this::createAnnotationIndexTemplateSettingsNode,
+                this::createAnnotationIndexTemplateMappingsNode);
     }
 
     /**
@@ -219,7 +216,7 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         return fieldNode;
     }
 
-    private ObjectNode createAnnotationMappingsNode() {
+    private ObjectNode createAnnotationIndexTemplateMappingsNode() {
         ObjectNode propertiesNode = genericObjectMapper.createObjectNode();
         propertiesNode.set(AnnotationRecordList.AnnotationRecordType.SCOPE.getName(), createAnnotationFieldNodeAnalyzer(FIELD_TYPE_TEXT));
         propertiesNode.set(AnnotationRecordList.AnnotationRecordType.METRIC.getName(), createAnnotationFieldNodeAnalyzer(FIELD_TYPE_TEXT));
@@ -252,47 +249,41 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         return fieldNode;
     }
 
-    /** Helper to process the response. <br><br>
-     * Throws IllegalArgumentException when the http status code is in the 400 range <br>
-     * Throws SystemException when the http status code is outside of the 200 and 400 range
+    private ObjectNode createAnnotationIndexTemplateSettingsNode() {
+        ObjectNode annotationAnalyzer = genericObjectMapper.createObjectNode();
+        annotationAnalyzer.put("tokenizer", "annotation_tokenizer");
+        annotationAnalyzer.set("filter", genericObjectMapper.createArrayNode().add("lowercase"));
+
+        ObjectNode analyzerNode = genericObjectMapper.createObjectNode();
+        analyzerNode.set("annotation_analyzer", annotationAnalyzer);
+
+        ObjectNode tokenizerNode = genericObjectMapper.createObjectNode();
+        tokenizerNode.set("annotation_tokenizer", genericObjectMapper.createObjectNode().put("type", "pattern").put("pattern", "([^\\p{L}\\d]+)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"));
+
+        ObjectNode analysisNode = genericObjectMapper.createObjectNode();
+        analysisNode.set("analyzer", analyzerNode);
+        analysisNode.set("tokenizer", tokenizerNode);
+
+
+        ObjectNode indexNode = genericObjectMapper.createObjectNode();
+        indexNode.put("max_result_window", annotationIndexMaxResultWindow);
+        indexNode.put("number_of_replicas", replicationFactorForAnnotationIndex);
+        indexNode.put("number_of_shards", numShardsForAnnotationIndex);
+
+        ObjectNode settingsNode = genericObjectMapper.createObjectNode();
+        settingsNode.set("analysis", analysisNode);
+        settingsNode.set("index", indexNode);
+
+        return settingsNode;
+    }
+
+    /** Converting static call to instance method call to make this unit testable
+     * Helper to process the response. <br><br>
      * @param   response ES response
      * @return  Stringified response
      */
-    protected String extractResponse(Response response) {
-        requireArgument(response != null, "HttpResponse object cannot be null.");
-        return doExtractResponse(response.getStatusLine().getStatusCode(), response.getEntity());
-    }
-
-    /**
-     * testable version of {@link ElasticSearchSchemaService#extractResponse(Response)}
-     * @param statusCode
-     * @param entity
-     * @return
-     */
-    @VisibleForTesting
-    static String doExtractResponse(int statusCode, HttpEntity entity) {
-        String message = null;
-
-        if (entity != null) {
-            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                entity.writeTo(baos);
-                message = baos.toString("UTF-8");
-            }
-            catch (IOException ex) {
-                throw new SystemException(ex);
-            }
-        }
-
-        //if the response is in the 400 range, use IllegalArgumentException, which currently translates to a 400 error
-        if (statusCode>= HttpStatus.SC_BAD_REQUEST && statusCode < HttpStatus.SC_INTERNAL_SERVER_ERROR) {
-            throw new IllegalArgumentException("Status code: " + statusCode + " .  Error occurred. " +  message);
-        }
-        //everything else that's not in the 200 range, use SystemException, which translates to a 500 error.
-        if ((statusCode < HttpStatus.SC_OK) || (statusCode >= HttpStatus.SC_MULTIPLE_CHOICES)) {
-            throw new SystemException("Status code: " + statusCode + " .  Error occurred. " +  message);
-        } else {
-            return message;
-        }
+    public String extractResponse(Response response) {
+        return ElasticSearchUtils.extractResponse(response);
     }
     
     @Override
@@ -351,157 +342,14 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         return mapper;
     }
 
-    private PutResponse performESRequest(String requestUrl, String requestBody) throws IOException {
+    private ElasticSearchUtils.PutResponse performESRequest(String requestUrl, String requestBody) throws IOException {
         String strResponse = "";
         Request request = new Request(HttpMethod.POST.getName(), requestUrl);
         request.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
         Response response = esRestClient.performRequest(request);
         strResponse = extractResponse(response);
-        PutResponse putResponse = genericObjectMapper.readValue(strResponse, PutResponse.class);
+        ElasticSearchUtils.PutResponse putResponse = genericObjectMapper.readValue(strResponse, ElasticSearchUtils.PutResponse.class);
         return putResponse;
-    }
-
-    /**
-     *  Used for constructing Elastic Search Response object
-     */
-    static class PutResponse {
-        private int took;
-        private boolean errors;
-        private List<Item> items;
-
-        public PutResponse() {}
-
-        public int getTook() {
-            return took;
-        }
-
-        public void setTook(int took) {
-            this.took = took;
-        }
-
-        public boolean isErrors() {
-            return errors;
-        }
-
-        public void setErrors(boolean errors) {
-            this.errors = errors;
-        }
-
-        public List<Item> getItems() {
-            return items;
-        }
-
-        public void setItems(List<Item> items) {
-            this.items = items;
-        }
-
-        @JsonIgnoreProperties(ignoreUnknown = true)
-        static class Item {
-            private CreateItem create;
-            private CreateItem index;
-            private CreateItem update;
-
-            public Item() {}
-
-            public CreateItem getCreate() {
-                return create;
-            }
-
-            public void setCreate(CreateItem create) {
-                this.create = create;
-            }
-
-            public CreateItem getIndex() {
-                return index;
-            }
-
-            public void setIndex(CreateItem index) {
-                this.index = index;
-            }
-
-            public CreateItem getUpdate() {
-                return update;
-            }
-
-            public void setUpdate(CreateItem update) {
-                this.update = update;
-            }
-        }
-
-        @JsonIgnoreProperties(ignoreUnknown = true)
-        static class CreateItem {
-            private String _index;
-            private String _id;
-            private int status;
-            private int _version;
-            private Error error;
-
-            public CreateItem() {}
-
-            public String get_index() {
-                return _index;
-            }
-
-            public void set_index(String _index) {
-                this._index = _index;
-            }
-
-            public String get_id() {
-                return _id;
-            }
-
-            public void set_id(String _id) {
-                this._id = _id;
-            }
-
-            public int get_version() {
-                return _version;
-            }
-
-            public void set_version(int _version) {
-                this._version = _version;
-            }
-
-            public int getStatus() {
-                return status;
-            }
-
-            public void setStatus(int status) {
-                this.status = status;
-            }
-
-            public Error getError() {
-                return error;
-            }
-
-            public void setError(Error error) {
-                this.error = error;
-            }
-        }
-
-        @JsonIgnoreProperties(ignoreUnknown = true)
-        static class Error {
-            private String type;
-            private String reason;
-
-            public Error() {}
-
-            public String getType() {
-                return type;
-            }
-
-            public void setType(String type) {
-                this.type = type;
-            }
-
-            public String getReason() {
-                return reason;
-            }
-
-            public void setReason(String reason) {
-                this.reason = reason;
-            }
-        }
     }
 
     @Override
@@ -512,15 +360,15 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
             AnnotationRecordList indexAnnotationRecordList = new AnnotationRecordList(annotations, idgenHashAlgo);
             String requestBody = annotationMapper.writeValueAsString(indexAnnotationRecordList);
             Set<Annotation> failedRecords = new HashSet<>();
-            PutResponse putResponse = performESRequest(requestUrl, requestBody);
+            ElasticSearchUtils.PutResponse putResponse = performESRequest(requestUrl, requestBody);
 
-            if(putResponse.errors) {
-                for(PutResponse.Item item : putResponse.items) {
-                    if (item.index != null && item.index.status != HttpStatus.SC_CREATED) {
+            if(putResponse.isErrors()) {
+                for(ElasticSearchUtils.PutResponse.Item item : putResponse.getItems()) {
+                    if (item.getIndex() != null && item.getIndex().getStatus() != HttpStatus.SC_CREATED) {
                         logger.warn("Failed to add record {} to index. Reason: {}",
-                                indexAnnotationRecordList.getRecord(item.index._id),
-                                annotationMapper.writeValueAsString(item.index.error));
-                        failedRecords.add(indexAnnotationRecordList.getRecord(item.index._id));
+                                indexAnnotationRecordList.getRecord(item.getIndex().get_id()),
+                                annotationMapper.writeValueAsString(item.getIndex().getError()));
+                        failedRecords.add(indexAnnotationRecordList.getRecord(item.getIndex().get_id()));
                     }
                 }
             }
@@ -540,7 +388,7 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         requireNotDisposed();
         requireArgument(queries != null, "Annotation queries cannot be null.");
         List<Annotation> annotations = new ArrayList<>();
-        int from = 0, scrollSize = ElasticSearchUtils.ANNOTATION_INDEX_MAX_RESULT_WINDOW;
+        int from = 0, scrollSize = annotationIndexMaxResultWindow;
 
         String requestUrl = String.format("/%s-*/_search", ANNOTATION_INDEX_TEMPLATE_PATTERN_START);
         try{
@@ -553,7 +401,7 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
                 final long time = System.currentTimeMillis() - start;
                 logger.info("ES get request completed in {} ms", time);
                 String str = extractResponse(response);
-                AnnotationRecordList list = toEntity(str, new TypeReference<AnnotationRecordList>() {});
+                AnnotationRecordList list = ElasticSearchUtils.toEntity(str, new TypeReference<AnnotationRecordList>() {},annotationMapper);
                 annotations.addAll(list.getRecords());
                 
                 if(annotations.size() == scrollSize) {
@@ -611,14 +459,6 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         return queryNode;
     }
 
-    /* Helper method to convert JSON String representation to the corresponding Java entity. */
-    private <T> T toEntity(String content, TypeReference<T> type) {
-        try {
-            return annotationMapper.readValue(content, type);
-        } catch (IOException ex) {
-            throw new SystemException(ex);
-        }
-    }
     
     @VisibleForTesting
     static String getHashedSearchIdentifier(AnnotationQuery annotationQuery) {

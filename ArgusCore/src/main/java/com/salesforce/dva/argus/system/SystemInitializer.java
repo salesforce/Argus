@@ -46,6 +46,8 @@ import com.salesforce.dva.argus.service.annotation.DefaultAnnotationService;
 import com.salesforce.dva.argus.service.annotation.ElasticSearchAnnotationService;
 import com.salesforce.dva.argus.service.batch.DefaultBatchService;
 import com.salesforce.dva.argus.service.collect.DefaultCollectionService;
+import com.salesforce.dva.argus.service.image.DefaultImageService;
+import com.salesforce.dva.argus.service.image.ElasticSearchImageService;
 import com.salesforce.dva.argus.service.jpa.DefaultChartService;
 import com.salesforce.dva.argus.service.jpa.DefaultDashboardService;
 import com.salesforce.dva.argus.service.jpa.DefaultDistributedSchedulingLockService;
@@ -54,9 +56,7 @@ import com.salesforce.dva.argus.service.jpa.DefaultNamespaceService;
 import com.salesforce.dva.argus.service.jpa.DefaultServiceManagementService;
 import com.salesforce.dva.argus.service.management.DefaultManagementService;
 import com.salesforce.dva.argus.service.metric.AsyncMetricService;
-import com.salesforce.dva.argus.service.monitor.CounterMetricJMXExporter;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
-import com.salesforce.dva.argus.service.monitor.GaugeExporter;
 import com.salesforce.dva.argus.service.oauth.DefaultOAuthAuthorizationCodeService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.CachedTSDBService;
@@ -229,7 +229,6 @@ final class SystemInitializer extends AbstractModule {
     }
 
     private void configureServices() {
-        bindConcreteClass(CounterMetricJMXExporter.class, GaugeExporter.class);
         bindConcreteClass(Property.CACHE_SERVICE_IMPL_CLASS, CacheService.class);
         bindConcreteClass(Property.MQ_SERVICE_IMPL_CLASS, MQService.class);
         bindConcreteClass(Property.ALERT_SERVICE_IMPL_CLASS, AlertService.class);
@@ -239,19 +238,22 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.SCHEMA_SERVICE_IMPL_CLASS, SchemaService.class);
         bindConcreteClass(Property.QUERYSTORE_SERVICE_IMPL_CLASS, QueryStoreService.class);
         bindConcreteClass(Property.IMAGE_SERVICE_IMPL_CLASS, ImageService.class);
+        bindConcreteClass(Property.IMAGE_STORAGE_SERVICE_IMPL_CLASS, ImageStorageService.class);
         bindConcreteClass(Property.HISTORY_SERVICE_IMPL_CLASS, HistoryService.class);
         bindConcreteClass(Property.AUDIT_SERVICE_IMPL_CLASS, AuditService.class);
         bindConcreteClass(Property.CALLBACK_SERVICE_IMPL_CLASS, CallbackService.class);
         bindConcreteClass(Property.WARDEN_SERVICE_IMPL_CLASS, WardenService.class);
         bindConcreteClass(Property.DISCOVERY_SERVICE_IMPL_CLASS, DiscoveryService.class);
         bindConcreteClass(Property.ANNOTATION_STORAGE_SERVICE_IMPL_CLASS, AnnotationStorageService.class);
-        
+
         // Named annotation binding
         bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
         bindConcreteClassWithNamedAnnotation(DefaultDiscoveryService.class, DiscoveryService.class);
         bindConcreteClassWithNamedAnnotation(DefaultUserService.class, UserService.class);
         bindConcreteClassWithNamedAnnotation(ElasticSearchAnnotationService.class, AnnotationStorageService.class);
-        
+        bindConcreteClassWithNamedAnnotation(ElasticSearchImageService.class, ImageStorageService.class);
+
+
         // static binding
         bindConcreteClass(CachedTSDBService.class, TSDBService.class);
         bindConcreteClass(CachedUserService.class, UserService.class);

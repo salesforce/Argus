@@ -265,6 +265,7 @@ public interface MonitorService extends Service {
         SCHEMARECORDS_WRITTEN("argus.core", "schemarecords.written", MetricType.COUNTER),
         SCHEMARECORDS_WRITE_LATENCY("argus.core", "schemarecords.write.latency"),
         SCHEMARECORDS_QUERY_COUNT("argus.core", "schemarecords.query.count", MetricType.COUNTER),
+        SCHEMARECORDS_DOCS_PULLED("argus.core", "schemarecords.docs.pulled.count", MetricType.COUNTER),
         SCHEMARECORDS_QUERY_LATENCY("argus.core", "schemarecords.query.latency"),
 
         METATAGS_WRITTEN("argus.core", "metatags.written", MetricType.COUNTER),
@@ -280,8 +281,11 @@ public interface MonitorService extends Service {
         
         ELASTIC_SEARCH_GET_FAILURES("argus.core", "elastic.search.get.failures", MetricType.COUNTER),
         
-        ANNOTATION_RECORDS_WRITE_FAILURES("argus.core", "annotation.records.write.failures", MetricType.COUNTER);
-        
+        ANNOTATION_RECORDS_WRITE_FAILURES("argus.core", "annotation.records.write.failures", MetricType.COUNTER),
+
+        IMAGE_RECORDS_WRITE_FAILURES("argus.core", "image.records.write.failures", MetricType.COUNTER);
+
+
         private final String _scope;
         private final String _metric;
         private final MetricType _type;

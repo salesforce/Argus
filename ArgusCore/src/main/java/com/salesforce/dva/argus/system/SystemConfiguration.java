@@ -277,7 +277,7 @@ public final class SystemConfiguration extends Properties {
         AUTH_SERVICE_IMPL_CLASS("service.binding.auth", "com.salesforce.dva.argus.service.auth.LDAPAuthService"),
         AUTH_SERVICE_PROPERTY_FILE("service.config.auth","placeholder_ldap.properties"),
 
-        SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.AsyncHbaseSchemaService"),
+        SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService"),
         SCHEMA_SERVICE_PROPERTY_FILE("service.config.schema","placeholder_schema.properties"),
 
         QUERYSTORE_SERVICE_IMPL_CLASS("service.binding.querystore", "com.salesforce.dva.argus.service.querystore.NoOperationQueryStoreService"),
@@ -299,7 +299,9 @@ public final class SystemConfiguration extends Properties {
 
         ANNOTATION_STORAGE_SERVICE_IMPL_CLASS("service.binding.annotation.storage", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
         ANNOTATION_STORAGE_SERVICE_PROPERTY_FILE("service.config.annotation.storage","placeholder_annotation.storage.properties"),
-        
+
+        IMAGE_STORAGE_SERVICE_IMPL_CLASS("service.binding.image.storage", "com.salesforce.dva.argus.service.image.ElasticSearchImageService"),
+
         WARDEN_SERVICE_IMPL_CLASS("service.binding.warden", "com.salesforce.dva.argus.service.warden.DefaultWardenService"),
         WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "placeholder_warden.properties"),
 

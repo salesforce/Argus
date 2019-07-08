@@ -1,6 +1,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
@@ -69,6 +70,11 @@ public class RateTransform implements Transform{
 				metric.setDatapoints(sortedDatapoints);
 				result.add(metric);
 			}else {
+				// For Rate Transform we are culling the data when there is only one datapoint for a metric
+				if (metric.getDatapoints().size()==1)
+				{
+					metric.setDatapoints(new HashMap<>());
+				}
 				result.add(metric);
 			}
 		}

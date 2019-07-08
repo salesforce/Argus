@@ -80,6 +80,7 @@ import java.util.TreeSet;
  * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
 @Singleton
+@Deprecated
 public class AsyncHbaseSchemaService extends AbstractSchemaService {
 
     //~ Static fields/initializers *******************************************************************************************************************

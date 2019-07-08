@@ -76,7 +76,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 	/** Global ES properties */
 	private static final String KEEP_SCROLL_CONTEXT_OPEN_FOR = "1m";
-	private static final int INDEX_MAX_RESULT_WINDOW = 10000;
+	static final String SCROLL_ENDPOINT = "/_search/scroll";
 	private static final int MAX_RETRY_TIMEOUT = 300 * 1000;
 	private static final String FIELD_TYPE_TEXT = "text";
 	private static final String FIELD_TYPE_DATE ="date";
@@ -401,94 +401,115 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	public List<MetricSchemaRecord> get(MetricSchemaRecordQuery query) {
 	    requireNotDisposed();
 	    SystemAssert.requireArgument(query != null, "MetricSchemaRecordQuery cannot be null.");
-	    long size = (long) query.getLimit() * query.getPage();
-	    SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE,
-	            "(limit * page) must be greater than 0 and atmost Integer.MAX_VALUE");
-
+	    SystemAssert.requireArgument(query.getLimit() >= 0, "Limit must be >= 0");
+		SystemAssert.requireArgument(query.getPage() >= 1, "Page must be >= 1");
+		try {
+			Math.multiplyExact(query.getLimit(), query.getPage());
+		} catch (ArithmeticException ex) {
+			SystemAssert.requireArgument(true, "(limit * page) cannot result in int overflow");
+		}
 
 	    Map<String, String> tags = new HashMap<>();
 	    tags.put("type", "REGEXP_WITHOUT_AGGREGATION");
 	    long start = System.currentTimeMillis();
-	    boolean scroll = false;
-	    StringBuilder sb = new StringBuilder().append("/")
-	            .append(TAGS_INDEX_NAME)
-	            .append("/")
-	            .append(TAGS_TYPE_NAME)
-	            .append("/")
-	            .append("_search");
+	    StringBuilder sb = new StringBuilder().append(String.format("/%s/%s/_search", TAGS_INDEX_NAME, TAGS_TYPE_NAME));
 
-	    int from = 0, scrollSize;
-	    if(query.getLimit() * query.getPage() > 10000) {
-	        sb.append("?scroll=").append(KEEP_SCROLL_CONTEXT_OPEN_FOR);
-	        scroll = true;
-	        int total = query.getLimit() * query.getPage();
-	        scrollSize = (int) (total / (total / 10000 + 1));
-	    } else {
-	        from = query.getLimit() * (query.getPage() - 1);
-	        scrollSize = query.getLimit();
-	    }
+		List<MetricSchemaRecord> finalResult;
+		try {
+			/*
+				If the limit is 0, this is an unbounded query from MetricQueryProcessor
+				It is unknown whether the matched doc count will be <= ES window limit or greater at this point
+				First, send a non-scroll request to get the doc count
+					If the total doc count is > ES window limit, re-send the request with ?scroll and start scrolling
+					   [ Need to re-ask for the entire first 10k since ordering / eliminating seen-documents is not guaranteed without scroll ]
+					Else return
+			 */
+			if (query.getLimit() == 0) {
+				MetricSchemaRecordList list = _getRecords(sb.toString(), _constructTermQuery(query, 0, ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW));
+				if (list.getTotalHits() > ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW) {
+					sb.append("?scroll=").append(KEEP_SCROLL_CONTEXT_OPEN_FOR);
+					list = _getRecords(sb.toString(), _constructTermQuery(query, 0, ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW));
+					List<MetricSchemaRecord> records = new LinkedList<>(list.getRecords());
+					_appendScrollRecordsUntilCountOrEnd(records, list.getScrollID(), query.getLimit() * query.getPage(), ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW);
+					finalResult = records;
+				} else {
+					finalResult = list.getRecords();
+				}
+				_monitorService.modifyCounter(Counter.SCHEMARECORDS_DOCS_PULLED, finalResult.size(), tags);
+			}
+			// If the user manually asks for a much later page and/or a high limit past the ES window limit, a scroll is mandatory
+			else if (query.getLimit() * query.getPage() > ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW) {
+				sb.append("?scroll=").append(KEEP_SCROLL_CONTEXT_OPEN_FOR);
+				MetricSchemaRecordList list = _getRecords(sb.toString(), _constructTermQuery(query, 0, ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW));
+				List<MetricSchemaRecord> records = new LinkedList<>(list.getRecords());
+				_appendScrollRecordsUntilCountOrEnd(records, list.getScrollID(), query.getLimit() * query.getPage(), ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW);
 
-	    String requestUrl = sb.toString();
-	    String queryJson = _constructTermQuery(query, from, scrollSize);
+				int fromIndex = query.getLimit() * (query.getPage() - 1);
+				if (records.size() <= fromIndex) {
+					finalResult = Collections.emptyList();
+				} else {
+					finalResult = records.subList(fromIndex, records.size());
+				}
+				_monitorService.modifyCounter(Counter.SCHEMARECORDS_DOCS_PULLED, records.size(), tags);
+			}
+			// Otherwise no need to scroll
+			else {
+				int from = query.getLimit() * (query.getPage() - 1);
+				MetricSchemaRecordList list = _getRecords(sb.toString(), _constructTermQuery(query, from, ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW));
+				finalResult = list.getRecords();
+				_monitorService.modifyCounter(Counter.SCHEMARECORDS_DOCS_PULLED, finalResult.size(), tags);
+			}
+			_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
+			_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
+		} catch (UnsupportedEncodingException | JsonProcessingException e) {
+			throw new SystemException("Search failed: " + e);
+		} catch (IOException e) {
+			throw new SystemException("IOException when trying to perform ES request" + e);
+		}
+		return finalResult;
+	}
 
-	    try {
-	        _logger.debug("get POST requestUrl {} queryJson {}", requestUrl, queryJson);
-			Request request = new Request(HttpMethod.POST.getName(), requestUrl);
-			request.setEntity(new StringEntity(queryJson, ContentType.APPLICATION_JSON));
+	MetricSchemaRecordList _getRecords(String requestUrl, String queryJson) throws IOException {
+		_logger.debug("get POST requestUrl {} queryJson {}", requestUrl, queryJson);
+		Request request = new Request(HttpMethod.POST.getName(), requestUrl);
+		request.setEntity(new StringEntity(queryJson, ContentType.APPLICATION_JSON));
+		Response response = _esRestClient.performRequest(request);
+
+		String esResponse = extractResponse(response);
+		logAndMonitorESFailureResponses(esResponse);
+		return toEntity(esResponse, new TypeReference<MetricSchemaRecordList>() {});
+	}
+
+	/**
+	 * Appends documents to records argument by using ES Scroll API
+	 * @param records			List to mutate and add scrolled records to
+	 * @param startingScrollId	Starting scroll ID
+	 * @param count				User-provied total count of docs to add to records (0 if unbounded)
+	 * @param scrollSize		ES request "size" parameter
+	 * @throws IOException
+	 */
+	void _appendScrollRecordsUntilCountOrEnd(List<MetricSchemaRecord> records, String startingScrollId, int count, int scrollSize) throws IOException {
+		Map<String, String> requestBody = new HashMap<>();
+		requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
+		String scrollId = startingScrollId;
+
+		while (true) {
+			requestBody.put("scroll_id", scrollId);
+			String requestJson = genericObjectMapper.writeValueAsString(requestBody);
+			Request request = new Request(HttpMethod.POST.getName(), SCROLL_ENDPOINT);
+			request.setEntity(new StringEntity(requestJson, ContentType.APPLICATION_JSON));
 			Response response = _esRestClient.performRequest(request);
 
-	        String esResponse = extractResponse(response);
-	        logAndMonitorESFailureResponses(esResponse);
-	        MetricSchemaRecordList list = toEntity(esResponse, new TypeReference<MetricSchemaRecordList>() {});
+			MetricSchemaRecordList list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
+			records.addAll(list.getRecords());
+			scrollId = list.getScrollID();
 
-	        if(scroll) {
-	            requestUrl = new StringBuilder().append("/").append("_search").append("/").append("scroll").toString();
-	            List<MetricSchemaRecord> records = new LinkedList<>(list.getRecords());
-
-	            while(true) {
-	                String scrollID = list.getScrollID();
-
-	                Map<String, String> requestBody = new HashMap<>();
-	                requestBody.put("scroll_id", scrollID);
-	                requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
-
-	                String requestJson = genericObjectMapper.writeValueAsString(requestBody);
-	                _logger.debug("get Scroll POST requestUrl {} queryJson {}", requestUrl, queryJson);
-
-	                request = new Request(HttpMethod.POST.getName(), requestUrl);
-					request.setEntity(new StringEntity(requestJson, ContentType.APPLICATION_JSON));
-					response = _esRestClient.performRequest(request);
-
-	                list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
-	                records.addAll(list.getRecords());
-
-	                if(records.size() >= query.getLimit() * query.getPage() || list.getRecords().size() < scrollSize) {
-	                    break;
-	                }
-	            }
-
-	            int fromIndex = query.getLimit() * (query.getPage() - 1);
-	            if(records.size() <= fromIndex) {
-	                _monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-	                _monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
-	                return Collections.emptyList();
-	            }
-
-	            _monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-	            _monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
-	            return records.subList(fromIndex, records.size());
-
-	        } else {
-	            _monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-	            _monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
-	            return list.getRecords();
-	        }
-
-	    } catch (UnsupportedEncodingException | JsonProcessingException e) {
-	        throw new SystemException("Search failed: " + e);
-	    } catch (IOException e) {
-	        throw new SystemException("IOException when trying to perform ES request" + e);
-	    }
+			// If total records retrieved is greater than what the user manually asked for
+			// Or if we are on the last scroll page
+			if(count != 0 && records.size() >= count || list.getRecords().size() < scrollSize) {
+				break;
+			}
+		}
 	}
 
 	@Override
@@ -592,12 +613,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			if(kq.getQuery() != null) {
 
 				int from = 0, scrollSize = 0;
+
 				boolean scroll = false;;
-				if(kq.getLimit() * kq.getPage() > 10000) {
+				if(kq.getLimit() * kq.getPage() > ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW) {
 					sb.append("?scroll=").append(KEEP_SCROLL_CONTEXT_OPEN_FOR);
 					scroll = true;
-					int total = kq.getLimit() * kq.getPage();
-					scrollSize = (int) (total / (total / 10000 + 1));
+					scrollSize = ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW;
 				} else {
 					from = kq.getLimit() * (kq.getPage() - 1);
 					scrollSize = kq.getLimit();
@@ -805,7 +826,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE,
 				"(limit * page) must be greater than 0 and less than Integer.MAX_VALUE");
 
-		ObjectNode aggsNode = _constructAggsNode(type, Math.max(size, 10000), genericObjectMapper);
+		ObjectNode aggsNode = _constructAggsNode(type, Math.max(size, ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW), genericObjectMapper);
 
 		ObjectNode rootNode = genericObjectMapper.createObjectNode();
 		rootNode.set("query", queryNode);
@@ -822,7 +843,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		rootNode.set("query", queryNode);
 		rootNode.put("from", from);
 		rootNode.put("size", size);
-
 		return rootNode.toString();
 	}
 
@@ -883,7 +903,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		long size = kq.getLimit() * kq.getPage();
 		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE,
 				"(limit * page) must be greater than 0 and less than Integer.MAX_VALUE");
-		rootNode.set("aggs", _constructAggsNode(kq.getType(), Math.max(size, 10000), genericObjectMapper));
+		rootNode.set("aggs", _constructAggsNode(kq.getType(), Math.max(size, ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW), genericObjectMapper));
 
 		return rootNode.toString();
 
@@ -1079,7 +1099,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		analysisNode.set("tokenizer", tokenizerNode);
 
 		ObjectNode indexNode = genericObjectMapper.createObjectNode();
-		indexNode.put("max_result_window", INDEX_MAX_RESULT_WINDOW);
+		indexNode.put("max_result_window", ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW);
 		indexNode.put("number_of_replicas", replicationFactor);
 		indexNode.put("number_of_shards", numShards);
 

@@ -74,7 +74,7 @@ public class RateTransformTest {
 	}
 
 	@Test
-	public void testRateWhenOneDPShouldReturnSameDP() {
+	public void testRateWhenOneDPShouldReturnZeroDP() {
 		long startTime=1, endTime=10*MINUTE;
 		RateTransform rateTransform = new RateTransform();
 		List<Metric> metrics = new ArrayList<>();
@@ -85,9 +85,7 @@ public class RateTransformTest {
 		metrics.add(actualMetric);
 		List<Metric> expectedMetrics = new ArrayList<>();
 		Metric expectedMetric= new Metric("testScope", "testMetric");
-		Map<Long, Double> expectedDPs = new HashMap<>();
-		expectedDPs.put(startTime, 1d);
-		expectedMetric.setDatapoints(expectedDPs);
+		expectedMetric.setDatapoints(null);
 		expectedMetrics.add(expectedMetric);
 		QueryContext queryContext = _getQueryContext(startTime, endTime);
 		List<String> constants = Arrays.asList("1m","FALSE","FALSE");

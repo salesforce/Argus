@@ -37,6 +37,7 @@ import org.apache.http.HttpStatus;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
@@ -48,19 +49,40 @@ import javax.ws.rs.Produces;
 @Description("Provides methods to retrieve images")
 public class ImageResources extends AbstractResource {
 
+    //~ Instance fields ******************************************************************************************************************************
+
+    private ImageService imageService = system.getServiceFactory().getImageService();
+
+    //~ Methods **************************************************************************************************************************************
+
+    /**
+     *
+     * @param req       The HTTP request.
+     * @param imageId   Id of the image to retrieve
+     * @return          Byte Array of the JPG image
+     */
     @GET
     @Path("/id/{imageid}")
     @Produces("image/jpg")
     @Description("Returns a JPG image")
-    public Response getCachedImageById(@Context HttpServletRequest req,
+    public Response getImageById(@Context HttpServletRequest req,
                                        @PathParam("imageid") String imageId) {
-        validateAndGetOwner(req, null);
-        final ImageService imageService = system.getServiceFactory().getImageService();
-        byte[] image = imageService.getImageById(imageId);
-        if(image !=null) {
-            return Response.ok(image).build();
-        }else {
-            return Response.status(HttpStatus.SC_NOT_FOUND).build();
+        if (imageId == null || imageId.isEmpty()) {
+            throw new WebApplicationException("imageid cannot be null or Empty", Response.Status.BAD_REQUEST);
         }
+        validateAndGetOwner(req, null);
+        try {
+            byte[] image = imageService.getImageById(imageId);
+            if(image !=null && image.length>0) {
+                return Response.ok(image).build();
+            }else {
+                return Response.status(HttpStatus.SC_NOT_FOUND).build();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new WebApplicationException(ex.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+        }
+
     }
 }
