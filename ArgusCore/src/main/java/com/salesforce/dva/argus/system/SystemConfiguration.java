@@ -302,6 +302,9 @@ public final class SystemConfiguration extends Properties {
 
         IMAGE_STORAGE_SERVICE_IMPL_CLASS("service.binding.image.storage", "com.salesforce.dva.argus.service.image.ElasticSearchImageService"),
 
+        AKC_CONSUMER_OFFSET_STORAGE_SERVICE_IMPL_CLASS("service.binding.akc.consumer.offset.storage", "com.salesforce.dva.argus.service.metric.NoOperationMetricsStorageService"),
+        AKC_CONSUMER_OFFSET_STORAGE_SERVICE_PROPERTY_FILE("service.config.akc.consumer.offset.storage","placeholder_akc.consumer.offset.storage.properties"),
+
         WARDEN_SERVICE_IMPL_CLASS("service.binding.warden", "com.salesforce.dva.argus.service.warden.DefaultWardenService"),
         WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "placeholder_warden.properties"),
 

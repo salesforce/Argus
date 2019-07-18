@@ -1,7 +1,10 @@
 package com.salesforce.perfeng.akc.consumer;
 
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.MetricStorageService;
 import com.salesforce.dva.argus.system.SystemMain;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
 import org.junit.Test;
@@ -355,23 +358,29 @@ public class AmurKafkaRunnerTest  {
             }
             TopicPartition tp = new TopicPartition(topic, i);
             mockLatestOffset.put(tp, (long) (i + 1));
-            when(mockConsumer.position(tp)).thenReturn((long) (i % 3));
+            OffsetAndMetadata oM = mock(OffsetAndMetadata.class);
+            when(mockConsumer.committed(tp)).thenReturn(oM);
+            when(mockConsumer.committed(tp).offset()).thenReturn((long) (i % 3));
             partitionSubscribed.add(tp);
             expectedOffset.put(tp, (long) (i + 1 - i % 3));
         }
 
         mockInstrumentationService = mock(InstrumentationService.class);
+        MetricStorageService mockConsumerOffsetMetricStorage = mock(MetricStorageService.class);
         when(mockConsumer.endOffsets(anyCollection())).thenReturn(mockLatestOffset);
-        Map<String,String> tags = new HashMap<>();
+        Metric m = new Metric("scope", "metric");
+        when(mockInstrumentationService.constructMetric(anyString(),anyMap(),anyBoolean())).thenReturn(m);
         doNothing().when(mockInstrumentationService).setCounterValue(anyString(), anyDouble(), anyMap());
-
+        doNothing().when(mockConsumerOffsetMetricStorage).putMetrics(any());
         Whitebox.setInternalState(akr, "consumer", mockConsumer);
         Whitebox.setInternalState(akr, "instrumentationService", mockInstrumentationService);
+        Whitebox.setInternalState(akr, "consumerOffsetMetricStorageService", mockConsumerOffsetMetricStorage);
 
         try {
             Whitebox.invokeMethod(akr, "computeAndPushLagOffsetPerPartitionPerTopic");
         } catch (Exception e) {
             fail();
+            System.out.println(e.getMessage());
         }
 
     }

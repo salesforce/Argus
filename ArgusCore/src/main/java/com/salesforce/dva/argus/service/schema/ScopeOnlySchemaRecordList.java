@@ -32,7 +32,7 @@ import java.util.Set;
  *
  * @author  Dilip Devaraj (ddevaraj@salesforce.com)
  */
-public class ScopeOnlySchemaRecordList implements SchemaRecordFinder<ScopeOnlySchemaRecord> {
+public class ScopeOnlySchemaRecordList implements RecordFinder<ScopeOnlySchemaRecord> {
 	
 	private Map<String, ScopeOnlySchemaRecord> _idToSchemaRecordMap = new HashMap<>();
 	private String _scrollID;
@@ -61,7 +61,12 @@ public class ScopeOnlySchemaRecordList implements SchemaRecordFinder<ScopeOnlySc
 	public List<ScopeOnlySchemaRecord> getRecords() {
 		return new ArrayList<>(_idToSchemaRecordMap.values());
 	}
-	
+
+	@Override
+	public Set<String> getIdSet() {
+		return _idToSchemaRecordMap.keySet();
+	}
+
 	public String getScrollID() {
 		return _scrollID;
 	}

@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.Metric;
 
 /**
  * The system service factory module. All services should be obtained from this class via injection.
@@ -101,6 +102,8 @@ public final class ServiceFactory {
     Provider<QueryStoreService> _queryStoreServiceProvider;
     @Inject
     Provider<ImageService> _imageServiceProvider;
+    @Inject
+    Provider<MetricStorageService> _consumerOffsetMetricStorageService;
 
 
     //~ Methods **************************************************************************************************************************************
@@ -365,6 +368,14 @@ public final class ServiceFactory {
     public synchronized ImageService getImageService() {
         return _imageServiceProvider.get();
     }
+
+
+    /***
+     * Returns an instance of the Metric Storage service.
+     *
+     * @return  An instance of the Metric Storage service.
+     */
+    public synchronized MetricStorageService getConsumerOffsetMetricStorageService() { return _consumerOffsetMetricStorageService.get();}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
 

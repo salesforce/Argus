@@ -1,6 +1,11 @@
 package com.salesforce.perfeng.akc.consumer;
 
 import com.google.common.collect.ImmutableMap;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
+import com.salesforce.dva.argus.service.MetricStorageService;
+import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.perfeng.akc.AKCConfiguration;
 import com.salesforce.perfeng.akc.exceptions.AKCException;
@@ -9,20 +14,18 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
-import org.apache.kafka.common.Metric;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.salesforce.dva.argus.service.SchemaService;
-import com.salesforce.dva.argus.service.AnnotationStorageService;
-import com.salesforce.dva.argus.service.TSDBService;
+
 import java.io.Serializable;
-import java.time.Instant;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -36,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+
 import static com.salesforce.perfeng.akc.consumer.InstrumentationService.METRIC_CONSUMER_LAG;
 
 
@@ -69,6 +73,7 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
     private TSDBService tsdbService;
     private SchemaService schemaService;
     private AnnotationStorageService annotationStorageService;
+    private MetricStorageService consumerOffsetMetricStorageService;
     private long consumptionStartTime;
     private long consumptionStopTime;
     private Map<TopicPartition,Long> stopOffsets = new HashMap<>();
@@ -82,9 +87,11 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
     private static final String[] mandatoryKafkaProps = { "topics", "bootstrap.servers", "key.deserializer",
                                                           "value.deserializer", "group.id" };
 
-    private static ThreadLocal<Map<MetricName, ? extends Metric>> threadLocalKafkaMetrics =
+    private static ThreadLocal<Map<MetricName, ? extends org.apache.kafka.common.Metric>> threadLocalKafkaMetrics =
             ThreadLocal.withInitial(()-> new HashMap<>());
-    public static Map<MetricName, ? extends Metric> getKafkaConsumerMetrics() {
+    private String groupId;
+
+    public static Map<MetricName, ? extends org.apache.kafka.common.Metric> getKafkaConsumerMetrics() {
         return threadLocalKafkaMetrics.get();
     }
 
@@ -102,6 +109,7 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
         this.kafkaProps = kafkaProps;
         this.system = system;
         this.topics = this.kafkaProps.getProperty("topics").replaceAll(",", "|");
+        this.groupId = AKCConfiguration.getParameter(AKCConfiguration.Parameter.GROUP_ID);
         if (!AmurSinkTask.class.isAssignableFrom(amurTaskClass)) {
             logger.error("EXITING since invalid task class passed, passedclass=" + amurTaskClass);
             System.exit(2);
@@ -212,6 +220,7 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
         this.tsdbService = this.system.getServiceFactory().getTSDBService();
         this.schemaService = this.system.getServiceFactory().getSchemaService();
         this.annotationStorageService = this.system.getServiceFactory().getAnnotationStorageService();
+        this.consumerOffsetMetricStorageService = this.system.getServiceFactory().getConsumerOffsetMetricStorageService();
         this.instrumentationService = InstrumentationService.getInstance(tsdbService);
 
         if (null != amurSinkTask) {
@@ -349,11 +358,17 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
 
         Map<TopicPartition, Long> latestOffsetAtBroker = consumer.endOffsets(partitionsSubscribed);
         latestOffsetAtBroker.forEach((tp, latestOffset) -> {
-            Long currentLag = latestOffset - consumer.position(tp);
+            Long currentLag = latestOffset - consumer.committed(tp).offset();
             Map<String,String> tags = new HashMap<>();
             tags.put("topic", tp.topic());
             tags.put("partition", String.valueOf(tp.partition()));
+            tags.put("groupId", groupId);
+
             instrumentationService.setCounterValue(METRIC_CONSUMER_LAG, (double) currentLag, tags);
+            // Send it to Elastic Search Annotation Cluster.
+            Metric m = instrumentationService.constructMetric(METRIC_CONSUMER_LAG, tags, false);
+            m.addDatapoint(System.currentTimeMillis(), Double.valueOf(currentLag));
+            consumerOffsetMetricStorageService.putMetrics(Arrays.asList(m));
             logger.debug("Topic: {}, Partition: {} has lag of {}", tp.topic(), tp.partition(), currentLag);
         });
     }

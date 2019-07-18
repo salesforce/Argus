@@ -667,7 +667,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			isLagPresentInAtLeastOneDC |= doesDatalagConditionSatisfy(alert, currentDC);
 		}
 
-		_logger.info(MessageFormat.format("AlertId: {0}, Expression:{1}, DC detected: {2}, lagPresent:{3}", alert.getId(), alert.getExpression(), dcList, isLagPresentInAtLeastOneDC));
+		_logger.debug(MessageFormat.format("AlertId: {0}, Expression:{1}, DC detected: {2}, lagPresent:{3}", alert.getId(), alert.getExpression(), dcList, isLagPresentInAtLeastOneDC));
 		return isLagPresentInAtLeastOneDC;
 	}
 

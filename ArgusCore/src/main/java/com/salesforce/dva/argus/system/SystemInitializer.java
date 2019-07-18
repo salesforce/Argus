@@ -56,6 +56,7 @@ import com.salesforce.dva.argus.service.jpa.DefaultNamespaceService;
 import com.salesforce.dva.argus.service.jpa.DefaultServiceManagementService;
 import com.salesforce.dva.argus.service.management.DefaultManagementService;
 import com.salesforce.dva.argus.service.metric.AsyncMetricService;
+import com.salesforce.dva.argus.service.metric.ElasticSearchConsumerOffsetMetricsService;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
 import com.salesforce.dva.argus.service.oauth.DefaultOAuthAuthorizationCodeService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
@@ -245,6 +246,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.WARDEN_SERVICE_IMPL_CLASS, WardenService.class);
         bindConcreteClass(Property.DISCOVERY_SERVICE_IMPL_CLASS, DiscoveryService.class);
         bindConcreteClass(Property.ANNOTATION_STORAGE_SERVICE_IMPL_CLASS, AnnotationStorageService.class);
+        bindConcreteClass(Property.AKC_CONSUMER_OFFSET_STORAGE_SERVICE_IMPL_CLASS, MetricStorageService.class);
 
         // Named annotation binding
         bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
@@ -314,6 +316,7 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.WARDEN_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.OAUTH_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.ANNOTATION_STORAGE_SERVICE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.AKC_CONSUMER_OFFSET_STORAGE_SERVICE_PROPERTY_FILE));
         return properties;
     }
 }

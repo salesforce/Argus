@@ -775,7 +775,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	 * @param <T>
 	 * @return
 	 */
-	<T> Set<T> doBulkIndex(String indexName, String typeName, SchemaRecordFinder<T> recordFinder, ObjectMapper mapper) {
+	<T> Set<T> doBulkIndex(String indexName, String typeName, RecordFinder<T> recordFinder, ObjectMapper mapper) {
 		String requestUrl = String.format("/%s/%s/_bulk", indexName, typeName);
 		String strResponse;
 
@@ -1081,33 +1081,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		mapper.registerModule(module);
 
 		return mapper;
-	}
-
-	private ObjectNode _createSettingsNode(int replicationFactor, int numShards) {
-		ObjectNode metadataAnalyzer = genericObjectMapper.createObjectNode();
-		metadataAnalyzer.put("tokenizer", "metadata_tokenizer");
-		metadataAnalyzer.set("filter", genericObjectMapper.createArrayNode().add("lowercase"));
-
-		ObjectNode analyzerNode = genericObjectMapper.createObjectNode();
-		analyzerNode.set("metadata_analyzer", metadataAnalyzer);
-
-		ObjectNode tokenizerNode = genericObjectMapper.createObjectNode();
-		tokenizerNode.set("metadata_tokenizer", genericObjectMapper.createObjectNode().put("type", "pattern").put("pattern", "([^\\p{L}\\d]+)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"));
-
-		ObjectNode analysisNode = genericObjectMapper.createObjectNode();
-		analysisNode.set("analyzer", analyzerNode);
-		analysisNode.set("tokenizer", tokenizerNode);
-
-		ObjectNode indexNode = genericObjectMapper.createObjectNode();
-		indexNode.put("max_result_window", ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW);
-		indexNode.put("number_of_replicas", replicationFactor);
-		indexNode.put("number_of_shards", numShards);
-
-		ObjectNode settingsNode = genericObjectMapper.createObjectNode();
-		settingsNode.set("analysis", analysisNode);
-		settingsNode.set("index", indexNode);
-
-		return settingsNode;
 	}
 
 	private ObjectNode _createMappingsNode() {

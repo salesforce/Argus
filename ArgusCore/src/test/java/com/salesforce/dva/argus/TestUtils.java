@@ -53,6 +53,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.sql.DriverManager;
 import java.sql.SQLNonTransientConnectionException;
@@ -293,5 +295,18 @@ public class TestUtils {
         Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN, triggerName, 0.95, 5000L);
         trigger.setAlert(alert);
         return trigger;
+    }
+
+    public static void setStaticField(Class<?> clazz, String fieldName, Object value) {
+        try {
+            Field field = clazz.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            Field modifiers = Field.class.getDeclaredField("modifiers");
+            modifiers.setAccessible(true);
+            modifiers.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            field.set(null, value);
+        } catch (Exception ex) {
+            fail(ex.getMessage());
+        }
     }
 }

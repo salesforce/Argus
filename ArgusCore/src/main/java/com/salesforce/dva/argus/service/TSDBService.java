@@ -51,7 +51,7 @@ import java.util.TreeMap;
  *
  * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
  */
-public interface TSDBService extends AnnotationStorageService {
+public interface TSDBService extends AnnotationStorageService, MetricStorageService {
 
 	public static final long MILLIS_IN_A_DAY = 86400000L;
 	
@@ -60,27 +60,13 @@ public interface TSDBService extends AnnotationStorageService {
 	//~ Methods **************************************************************************************************************************************
 
 	/**
-	 * Writes metric data. Any existing data is overwritten.
-	 *
-	 * @param  metrics  The list of metrics to write. Cannot be null, but may be empty.
-	 */
-	void putMetrics(List<Metric> metrics);
-
-	/**
 	 * Writes histogram data. Any existing data is overwritten.
 	 *
 	 * @param  histograms  The list of histograms to write. Cannot be null, but may be empty.
 	 */
 	void putHistograms(List<Histogram> histograms);	
 
-	/**
-	 * Reads metric data.
-	 *
-	 * @param   queries  The list of queries to execute. Cannot be null, but may be empty.
-	 *
-	 * @return  The query results as a map of query to the corresponding metrics it returns. Will never be null, but may be empty.
-	 */
-	Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries);
+
 
 	static void collate(List<Metric> metrics) {
 

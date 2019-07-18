@@ -182,6 +182,17 @@ public class Metric extends TSDBEntity implements Serializable, Comparable<Metri
 		}
 	}
 
+	/**
+	 * Adds the current set of data points to the current map.
+	 *
+	 * @param  time, value  A single point to add to timeseries.
+	 */
+	public void addDatapoint(Long time, Double value) {
+		if (time != null && value != null) {
+			_datapoints.put(time, value);
+		}
+	}
+
 
 	/**
 	 * If current set already has a value at that timestamp then sums up the datapoint value for that timestamp at coinciding cutoff boundary,
@@ -380,7 +391,7 @@ public class Metric extends TSDBEntity implements Serializable, Comparable<Metri
     /**
      * Replaces the metatags for a metric. MetatagsRecord cannot use any of the reserved tag names.
      *
-     * @param  metatags  The new metatags for the metric.
+     * @param  metatagsRec  The new metatags for the metric.
      */
     public void setMetatagsRecord(MetatagsRecord metatagsRec) {
         _metatagsRecord = metatagsRec;
@@ -389,6 +400,16 @@ public class Metric extends TSDBEntity implements Serializable, Comparable<Metri
 	@Override
 	public int compareTo(Metric m) {
 		return METRIC_COMPARATOR.compare(this, m);
+	}
+
+	/**
+	 *
+	 * @return number of datapoints present
+	 */
+
+	@JsonIgnore
+	public int getNumOfDatapoints() {
+		return (_datapoints == null) ? 0: _datapoints.size();
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

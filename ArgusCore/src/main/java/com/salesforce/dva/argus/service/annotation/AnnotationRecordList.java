@@ -47,10 +47,15 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.salesforce.dva.argus.entity.Annotation;
 
+import com.salesforce.dva.argus.service.schema.RecordFinder;
 import net.openhft.hashing.LongHashFunction;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+
+import org.apache.commons.codec.digest.DigestUtils;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -58,16 +63,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.codec.digest.DigestUtils;
-
-import java.text.SimpleDateFormat;
+import java.util.Set;
 
 /**
  * Stores map of annotation identifier to annotation. Used to serialize and deserialize Annotation map
  *
  */
-public class AnnotationRecordList {
+public class AnnotationRecordList implements RecordFinder<Annotation> {
 
     private Map<String, Annotation> _idToAnnotationMap = new HashMap<>();
     private String _scrollID;
@@ -84,13 +86,13 @@ public class AnnotationRecordList {
     public AnnotationRecordList(List<Annotation> annotations, HashAlgorithm algorithm) {
         for(Annotation annotation : annotations) {
             String id = null;
-            
+
             // Convert all timestamps to millis
             long timestamp = annotation.getTimestamp();
             if (timestamp < 100000000000L) {
                 annotation.setTimestamp(timestamp * 1000);
             }
-            
+
             String annotationKey = Annotation.getIdentifierFieldsAsString(annotation);
             if(HashAlgorithm.MD5.equals(algorithm)) {
                 id = DigestUtils.md5Hex(annotationKey);
@@ -104,18 +106,27 @@ public class AnnotationRecordList {
         }
     }
 
+    @Override
     public List<Annotation> getRecords() {
         return new ArrayList<>(_idToAnnotationMap.values());
     }
 
+    @Override
+    public Set<String> getIdSet() {
+        return _idToAnnotationMap.keySet();
+    }
+
+    @Override
     public String getScrollID() {
         return _scrollID;
     }
 
+    @Override
     public void setScrollID(String scrollID) {
         this._scrollID = scrollID;
     }
 
+    @Override
     public Annotation getRecord(String id) {
         return _idToAnnotationMap.get(id);
     }
@@ -127,7 +138,7 @@ public class AnnotationRecordList {
                 .append(annotation.getTags().toString()).append(annotation.getType()).toString();
         return hf.newHasher().putString(searchIdentifier, Charset.defaultCharset()).hash().toString();
     }
-    
+
     public static class IndexSerializer extends JsonSerializer<AnnotationRecordList> {
 
         public static final long MILLIS_IN_A_DAY = 86400000L;

@@ -58,14 +58,14 @@ import com.salesforce.dva.argus.system.SystemException;
 public class ElasticSearchAnnotationService extends DefaultService implements AnnotationStorageService {
     private static Logger logger = LoggerFactory.getLogger(ElasticSearchAnnotationService.class);
     private static ObjectMapper genericObjectMapper = new ObjectMapper();
-    
+
     protected final MonitorService monitorService;
     
     /** Global ES properties */
     private static final int ANNOTATION_MAX_RETRY_TIMEOUT = 300 * 1000;
-    static int annotationIndexMaxResultWindow = 10000;
     private static final String FIELD_TYPE_TEXT = "text";
     private static final String FIELD_TYPE_DATE ="date";
+    public static final int  ANNOTATION_INDEX_MAX_RESULT_WINDOW = 10000;
     private RestClient esRestClient;
 
     /** Annotation index properties */
@@ -258,15 +258,14 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         analyzerNode.set("annotation_analyzer", annotationAnalyzer);
 
         ObjectNode tokenizerNode = genericObjectMapper.createObjectNode();
-        tokenizerNode.set("annotation_tokenizer", genericObjectMapper.createObjectNode().put("type", "pattern").put("pattern", "([^\\p{L}\\d]+)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"));
+        tokenizerNode.set("annotation_tokenizer", genericObjectMapper.createObjectNode().put("type", "pattern").put("pattern", ElasticSearchUtils.TOKENIZER_PATTERN));
 
         ObjectNode analysisNode = genericObjectMapper.createObjectNode();
         analysisNode.set("analyzer", analyzerNode);
         analysisNode.set("tokenizer", tokenizerNode);
 
-
         ObjectNode indexNode = genericObjectMapper.createObjectNode();
-        indexNode.put("max_result_window", annotationIndexMaxResultWindow);
+        indexNode.put("max_result_window", ANNOTATION_INDEX_MAX_RESULT_WINDOW);
         indexNode.put("number_of_replicas", replicationFactorForAnnotationIndex);
         indexNode.put("number_of_shards", numShardsForAnnotationIndex);
 
@@ -275,15 +274,6 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         settingsNode.set("index", indexNode);
 
         return settingsNode;
-    }
-
-    /** Converting static call to instance method call to make this unit testable
-     * Helper to process the response. <br><br>
-     * @param   response ES response
-     * @return  Stringified response
-     */
-    public String extractResponse(Response response) {
-        return ElasticSearchUtils.extractResponse(response);
     }
     
     @Override
@@ -342,16 +332,6 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         return mapper;
     }
 
-    private ElasticSearchUtils.PutResponse performESRequest(String requestUrl, String requestBody) throws IOException {
-        String strResponse = "";
-        Request request = new Request(HttpMethod.POST.getName(), requestUrl);
-        request.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
-        Response response = esRestClient.performRequest(request);
-        strResponse = extractResponse(response);
-        ElasticSearchUtils.PutResponse putResponse = genericObjectMapper.readValue(strResponse, ElasticSearchUtils.PutResponse.class);
-        return putResponse;
-    }
-
     @Override
     public void putAnnotations(List<Annotation> annotations) {
         String requestUrl = "_bulk";
@@ -360,7 +340,7 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
             AnnotationRecordList indexAnnotationRecordList = new AnnotationRecordList(annotations, idgenHashAlgo);
             String requestBody = annotationMapper.writeValueAsString(indexAnnotationRecordList);
             Set<Annotation> failedRecords = new HashSet<>();
-            ElasticSearchUtils.PutResponse putResponse = performESRequest(requestUrl, requestBody);
+            ElasticSearchUtils.PutResponse putResponse = ElasticSearchUtils.performESRequest(esRestClient, requestUrl, requestBody);
 
             if(putResponse.isErrors()) {
                 for(ElasticSearchUtils.PutResponse.Item item : putResponse.getItems()) {
@@ -388,7 +368,7 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         requireNotDisposed();
         requireArgument(queries != null, "Annotation queries cannot be null.");
         List<Annotation> annotations = new ArrayList<>();
-        int from = 0, scrollSize = annotationIndexMaxResultWindow;
+        int from = 0, scrollSize = ANNOTATION_INDEX_MAX_RESULT_WINDOW;
 
         String requestUrl = String.format("/%s-*/_search", ANNOTATION_INDEX_TEMPLATE_PATTERN_START);
         try{
@@ -400,8 +380,8 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
                 Response response = esRestClient.performRequest(request);
                 final long time = System.currentTimeMillis() - start;
                 logger.info("ES get request completed in {} ms", time);
-                String str = extractResponse(response);
-                AnnotationRecordList list = ElasticSearchUtils.toEntity(str, new TypeReference<AnnotationRecordList>() {},annotationMapper);
+                String str = ElasticSearchUtils.extractResponse(response);
+                AnnotationRecordList list = ElasticSearchUtils.toEntity(str, new TypeReference<AnnotationRecordList>() {}, annotationMapper);
                 annotations.addAll(list.getRecords());
                 
                 if(annotations.size() == scrollSize) {
@@ -459,7 +439,6 @@ public class ElasticSearchAnnotationService extends DefaultService implements An
         return queryNode;
     }
 
-    
     @VisibleForTesting
     static String getHashedSearchIdentifier(AnnotationQuery annotationQuery) {
         HashFunction hf = Hashing.murmur3_128();
