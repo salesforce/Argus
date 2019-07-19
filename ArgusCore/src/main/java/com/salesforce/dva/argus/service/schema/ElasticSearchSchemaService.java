@@ -43,6 +43,7 @@ import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 import org.elasticsearch.client.RestClientBuilder.RequestConfigCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -57,6 +58,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
@@ -411,6 +413,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 	    Map<String, String> tags = new HashMap<>();
 	    tags.put("type", "REGEXP_WITHOUT_AGGREGATION");
+	    tags.put("user", Optional.ofNullable(MDC.get("USER")).orElse("NULLUSER"));
 	    long start = System.currentTimeMillis();
 	    StringBuilder sb = new StringBuilder().append(String.format("/%s/%s/_search", TAGS_INDEX_NAME, TAGS_TYPE_NAME));
 
