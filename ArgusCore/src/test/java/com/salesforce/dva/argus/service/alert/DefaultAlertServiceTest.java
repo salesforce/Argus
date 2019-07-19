@@ -27,6 +27,7 @@ import javax.persistence.Persistence;
 
 import com.salesforce.dva.argus.service.*;
 import com.salesforce.dva.argus.service.alert.notifier.RefocusNotifier;
+import com.salesforce.dva.argus.service.alert.testing.AlertTestResults;
 import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
@@ -1251,6 +1252,55 @@ public class DefaultAlertServiceTest {
         assertNotNull(RequestContextHolder.getRequestContext());
         assertEquals(userService.findAdminUser().getUserName() + "-alert", RequestContextHolder.getRequestContext().getUserName());
     }
+
+    // ------------------------------------------------------------------------------------------
+    //  Historical testing unit tests
+    // ------------------------------------------------------------------------------------------
+
+    @Test
+    public void testAlertsHistorical_WithWhiteListedUserWithMetricDataWithSuccessfulEvaluation() {
+        ServiceFactory sFactory = system.getServiceFactory();
+        UserService userService = sFactory.getUserService();
+
+        int triggerMinValue = 10, inertiaPeriod = 1;
+        int cooldownPeriod = 1000 * 5;
+
+        final AtomicInteger clearCount = new AtomicInteger(0);
+        final AtomicInteger notificationCount = new AtomicInteger(0);
+
+        Metric metric = new Metric("scope", "metric");
+        Map<Long, String> dps1 = new HashMap<Long, String>();
+        dps1.put(1000L, "11");
+        dps1.put(2000L, "20");
+        dps1.put(3000L, "30");
+        metric.setDatapoints(_convertDatapoints(dps1));
+
+        Alert alert = new Alert(userService.findDefaultUser(), userService.findDefaultUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
+        _setAlertId(alert, "100001");
+        Trigger trigger = new Trigger(alert, TriggerType.NO_DATA, "testTrigger", triggerMinValue, inertiaPeriod);
+        _setTriggerId(trigger, "100002");
+        Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+                cooldownPeriod);
+        _setNotificationId(notification, "100003");
+
+        alert.setTriggers(Arrays.asList(trigger));
+        alert.setNotifications(Arrays.asList(notification));
+        notification.setTriggers(alert.getTriggers());
+        alert.setEnabled(true);
+
+        DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+                Arrays.asList(metric), alert, notification, false);
+
+        // spyAlertService.executeScheduledAlerts(1, 1000);
+        AlertTestResults testResults = new AlertTestResults("myUuid");
+        spyAlertService.testEvaluateAlert( alert, 3010L, testResults);
+
+        // assertEquals(1, notificationCount.get());
+        enableDatalagMonitoring(false);
+    }
+
+
+    // Support Methods --------------------------------------------------------------------------
 
     private DefaultAlertService _initializeSpyAlertServiceWithStubs(final AtomicInteger notificationCount, final AtomicInteger clearCount,
                                                                     List<Metric> metrics, Alert alert, Notification notification, boolean isDataLagging) {

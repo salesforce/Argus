@@ -132,6 +132,19 @@ public interface AlertService extends Service {
 	void enqueueAlerts(List<Alert> alerts);
 
 	/**
+	 * Evaluates the serialized alert and delivers results to the result cache.
+	 * Used by historical testing.
+	 *
+	 * @param   serializedAlert  The serializedAlert
+	 * @param   when             The time at which to evaluate the alert.
+	 * @param   testUuid         The test UUID.
+	 *
+	 * @return  returns Job history of alerts executed.
+	 */
+	// TODO - improve architecture - test spec, and callback class for delivering results.
+	void testEvaluateAlert(String serializedAlert, Long when, String testUuid);
+
+	/**
 	 * Returns a list of alerts for an owner.
 	 *
 	 * @param   owner  The owner to return alerts for. Cannot be null.
@@ -363,12 +376,6 @@ public interface AlertService extends Service {
 	
 	//~ Enums ****************************************************************************************************************************************
 
-    // TODO - Migration of existing RefocusNotifier to the Boolean Refocus Notifier.
-    // todo - What we really want is to display 'RefocusBoolean' in the UI and implement as RefocusBoolean, and to migrate existing
-    // todo - refocus notifiers as to RefocusBoolean.
-    // todo - What we'll do is derive RefocusNotifier from RefocusBooleanNotifier, and have the UI display 'RefocusBoolean' for 'Refocus'
-    // todo - before we fixup the database to point at RefocusBoolean.
-
 	/**
 	 * Describes the list of supported notifiers.
 	 *
@@ -387,6 +394,9 @@ public interface AlertService extends Service {
 		REFOCUS(RefocusNotifier.class.getName()),
         REFOCUS_BOOLEAN(RefocusBooleanNotifier.class.getName()),
 		REFOCUS_VALUE(RefocusValueNotifier.class.getName());
+
+		// , NOOP(NoOpNotifier.class.getName()
+
 
 		String name;
 
