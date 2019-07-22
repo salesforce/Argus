@@ -308,6 +308,10 @@ public final class SystemConfiguration extends Properties {
         WARDEN_SERVICE_IMPL_CLASS("service.binding.warden", "com.salesforce.dva.argus.service.warden.DefaultWardenService"),
         WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "placeholder_warden.properties"),
 
+        METADATA_SERVICE_IMPL_CLASS("service.binding.metadata", "com.salesforce.dva.argus.service.metric.metadata.IDBMetadataService"),
+        IDB_CLIENT_IMPL_CLASS("service.binding.idbclient", "com.salesforce.dva.argus.service.metric.metadata.CachedIDBClient"),
+        IDB_CLIENT_PROPERTY_FILE("service.config.idbclient", "placeholder_idbclient.properties"),
+
         OAUTH_SERVICE_PROPERTY_FILE("service.config.oauth","placeholder_oauth.properties"),
         
         DISCOVERY_SERVICE_IMPL_CLASS("service.binding.discovery", "com.salesforce.dva.argus.service.schema.CachedDiscoveryService"),

@@ -311,6 +311,8 @@ TOKEN : { < GROUPBY : "GROUPBY" > }
 TOKEN : { < GROUPBYTAG : "GROUPBYTAG" > }
 TOKEN : { < INTERPOLATE : "INTERPOLATE" > }
 TOKEN : { < RATE : "RATE" > }
+TOKEN : { < METADATA_INCLUDE : "METADATA_INCLUDE" > }
+TOKEN : { < METADATA_EXCLUDE : "METADATA_EXCLUDE" > }
 
 TOKEN : { < COLON : ":" > }
 TOKEN : { < COMMA : "," > }
@@ -627,8 +629,8 @@ private String getFunctionNameAndUpdateContext(QueryContextHolder contextHolder)
     { 
         updateQueryContextWithFunction(t.image, contextHolder);
         return t.image; 
-    }   
-	|	
+    }
+    |
 	t = <HIGHEST>
     { 
         updateQueryContextWithFunction(t.image, contextHolder);
@@ -783,7 +785,19 @@ private String getFunctionNameAndUpdateContext(QueryContextHolder contextHolder)
     { 
         updateQueryContextWithFunction(t.image, contextHolder);
         return t.image; 
-    }    
+    }
+    |
+    t = <METADATA_INCLUDE>
+    {
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image;
+    }
+    |
+    t = <METADATA_EXCLUDE>
+    {
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image;
+    }
 }
 
 private void updateQueryContextWithFunction(String functionName, QueryContextHolder contextHolder) :

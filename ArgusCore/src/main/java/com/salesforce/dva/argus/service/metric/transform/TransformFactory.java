@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.metric.metadata.MetadataService;
 
 /**
  * Factory for metric transforms.
@@ -51,6 +52,7 @@ public class TransformFactory {
     //~ Instance fields ******************************************************************************************************************************
 
     private final TSDBService _tsdbService;
+    private final MetadataService _metadataService;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -58,10 +60,12 @@ public class TransformFactory {
      * Creates a new TransformFactory object.
      *
      * @param  tsdbService  The TSDB service to use.
+     * @param metadataService
      */
     @Inject
-    public TransformFactory(TSDBService tsdbService) {
+    public TransformFactory(TSDBService tsdbService, MetadataService metadataService) {
         _tsdbService = tsdbService;
+        _metadataService = metadataService;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -132,6 +136,10 @@ public class TransformFactory {
                 return new IncludeTransform();
             case EXCLUDE:
                 return new ExcludeTransformWrap();
+            case METADATA_INCLUDE:
+                return new MetadataInclude(_metadataService);
+            case METADATA_EXCLUDE:
+                return new MetadataExclude(_metadataService);
             case HW_FORECAST:
                 return new HoltWintersForecast(_tsdbService);
             case HW_DEVIATION:
@@ -256,6 +264,8 @@ public class TransformFactory {
         FILL_CALCULATE("FILL_CALCULATE", "Creates a constant line based on the calculated value."),
         INCLUDE("INCLUDE", "Retains metrics based on the matching of a regular expression against the metric name."),
         EXCLUDE("EXCLUDE", "Culls metrics based on the matching of a regular expression against the metric name."),
+        METADATA_INCLUDE("METADATA_INCLUDE", "Retains metrics based on metadata from an external source like IDB"),
+        METADATA_EXCLUDE("METADATA_EXCLUDE", "Culls metrics based on metadata from an external source like IDB"),
         CONSECUTIVE("CONSECUTIVE","Filter out all values that are non-consecutive"),
         HW_FORECAST("HW_FORECAST", "Performns HoltWinters Forecast."),
         HW_DEVIATION("HW_DEVIATION", "Performns HoltWinters Deviation."),

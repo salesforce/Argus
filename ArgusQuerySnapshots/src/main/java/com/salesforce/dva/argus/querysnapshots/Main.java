@@ -98,11 +98,11 @@ public class Main {
                 tsdbService,
                 discoveryService,
                 system.getServiceFactory().getMonitorService(),
-                new TransformFactory(tsdbService),
+                new TransformFactory(tsdbService, null),
                 system.getServiceFactory().getQueryStoreService());
 
-        Provider metricsProvider = (Provider<MetricReader<Metric>>) () -> new MetricReader<>(tsdbService, discoveryService, new TransformFactory(tsdbService));
-        Provider queryProvider = (Provider<MetricReader<MetricQuery>>) () -> new MetricReader<>(tsdbService, discoveryService, new TransformFactory(tsdbService));
+        Provider metricsProvider = (Provider<MetricReader<Metric>>) () -> new MetricReader<>(tsdbService, discoveryService, new TransformFactory(tsdbService, null));
+        Provider queryProvider = (Provider<MetricReader<MetricQuery>>) () -> new MetricReader<>(tsdbService, discoveryService, new TransformFactory(tsdbService, null));
         metricService = new DefaultMetricService(
                 system.getServiceFactory().getMonitorService(),
                 processor,

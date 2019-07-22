@@ -23,11 +23,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -69,10 +67,10 @@ public class MetricServiceSnapshotTest {
                 tsdbService,
                 discoveryService,
                 system.getServiceFactory().getMonitorService(),
-                new TransformFactory(tsdbService), queryStoreService
+                new TransformFactory(tsdbService, null), queryStoreService
         );
-        Provider metricsProvider = (Provider<MetricReader<Metric>>) () -> new MetricReader<>(tsdbService, discoveryService, new TransformFactory(tsdbService));
-        Provider queryProvider = (Provider<MetricReader<MetricQuery>>) () -> new MetricReader<>(tsdbService, discoveryService, new TransformFactory(tsdbService));
+        Provider metricsProvider = (Provider<MetricReader<Metric>>) () -> new MetricReader<>(tsdbService, discoveryService, new TransformFactory(tsdbService, null));
+        Provider queryProvider = (Provider<MetricReader<MetricQuery>>) () -> new MetricReader<>(tsdbService, discoveryService, new TransformFactory(tsdbService, null));
         metricService = new DefaultMetricService(
                 system.getServiceFactory().getMonitorService(),
                 processor,
