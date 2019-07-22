@@ -101,7 +101,7 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
 
     @Override
     public Double reduce(List<Double> values, List<String> constants) {
-        throw new UnsupportedOperationException("Divide Transform with reducer is not supposed to be used without a constant");
+        return reduce(values);
     }
 
     @Override

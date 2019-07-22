@@ -63,6 +63,7 @@ public class DivideTransformTest {
 
         List<String> constants = new ArrayList<String>(1);
 
+
         constants.add("5w");
         divideTransform.transform(null, metrics, constants);
     }
@@ -198,6 +199,120 @@ public class DivideTransformTest {
         divideTransform.transform(null, metrics, constants);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testDivideTransformWithWrongDefaultConstant() {
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+
+        datapoints_1.put(1000L, 10.0);
+        datapoints_1.put(2000L, 20.0);
+        datapoints_1.put(3000L, 30.0);
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(2000L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
+
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_2.setDatapoints(datapoints_2);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+        metrics.add(metric_2);
+
+        List<String> constants = new ArrayList<String>(1);
+
+        constants.add("union");
+        constants.add("abc");
+        Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
+        divideTransform.transform(null, metrics, constants);
+    }
+
+    @Test
+    public void testDivideTransformWithRightDefaultConstant() {
+        Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(2000L, 100.0);
+        datapoints_2.put(300L, 1000.0);
+
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_2.setDatapoints(datapoints_2);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+        metrics.add(metric_2);
+
+        List<String> constants = new ArrayList<String>();
+        constants.add("union");
+        constants.add("2");
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+        expected.put(100L, 2.0);
+        expected.put(1000L, 2.0);
+        expected.put(2000L, 0.02);
+        expected.put(300L, 2.0);
+        expected.put(3000L, 2.0);
+        List<Metric> result = divideTransform.transform(null, metrics, constants);
+        assertEquals(result.get(0).getDatapoints().size(), expected.size());
+        assertEquals(expected, result.get(0).getDatapoints());
+    }
+
+    @Test
+    public void testDivideTransformWithNoDataForOneTimeSeries() {
+        Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(300L, 1000.0);
+
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_2.setDatapoints(datapoints_2);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+        metrics.add(metric_2);
+
+        List<String> constants = new ArrayList<String>();
+        constants.add("union");
+        constants.add("2");
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+        expected.put(100L, 2.0);
+        expected.put(200L, 2.0);
+        expected.put(300L, 2.0);
+        List<Metric> result = divideTransform.transform(null, metrics, constants);
+        assertEquals(result.get(0).getDatapoints().size(), expected.size());
+        assertEquals(expected, result.get(0).getDatapoints());
+    }
+
+    @Test
     public void testDivideTransformWithNoConstantShareCommonDPsDividedByZero() {
         Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
         Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
@@ -394,12 +509,12 @@ public class DivideTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), expected.size());
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void testDivideTransformWithOneTimeseries() {
-    	Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
-        
-    	Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
+
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
         datapoints_1.put(3000L, 3.0);
@@ -409,12 +524,58 @@ public class DivideTransformTest {
 
         List<Metric> metrics = new ArrayList<Metric>();
         metrics.add(metric_1);
-        
+
         divideTransform.transform(null, metrics);
     }
-    
+
     @Test
-    public void testDivideTransformWithOneTimeseriesWithConstant() {
+    public void testDivideTransformWithOneTimeseriesAndDefaultValueConstants() {
+        Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
+
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+        metric_1.setDatapoints(datapoints_1);
+        List<String> constants = new ArrayList<String>();
+        constants.add("union");
+        constants.add("12");
+
+        List<Metric> metrics = new ArrayList<Metric>();
+        metrics.add(metric_1);
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+        expected.put(1000L, 12.0);
+        expected.put(2000L, 12.0);
+        expected.put(3000L, 12.0);
+
+        List<Metric> result = divideTransform.transform(null, metrics, constants);
+        assertEquals(result.get(0).getDatapoints().size(), expected.size());
+        assertEquals(expected, result.get(0).getDatapoints());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testDivideTransformWithOneTimeseriesAndOnlyUnionConstant() {
+        Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
+
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+        metric_1.setDatapoints(datapoints_1);
+        List<String> constants = new ArrayList<String>();
+        constants.add("union");
+
+        List<Metric> metrics = new ArrayList<Metric>();
+        metrics.add(metric_1);
+        List<Metric> result = divideTransform.transform(null, metrics, constants);
+    }
+
+    @Test
+    public void testDivideTransformWithOneTimeseriesWithDivisorConstant() {
     	Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
         
     	Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
@@ -427,15 +588,15 @@ public class DivideTransformTest {
 
         List<String> constants = new ArrayList<String>();
         constants.add("2");
-        
+
         List<Metric> metrics = new ArrayList<Metric>();
         metrics.add(metric_1);
-        
+
         Map<Long, Double> expected = new HashMap<Long, Double>();
         expected.put(1000L, 5.0);
         expected.put(2000L, 10.0);
         expected.put(3000L, 15.0);
-        
+
         List<Metric> result = divideTransform.transform(null, metrics, constants);
         assertEquals(result.get(0).getDatapoints().size(), expected.size());
         assertEquals(expected, result.get(0).getDatapoints());
