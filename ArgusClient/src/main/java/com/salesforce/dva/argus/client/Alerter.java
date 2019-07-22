@@ -79,7 +79,7 @@ class Alerter implements Runnable {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 int currentAlertCount = jobCounter.get();
-                jobCounter.addAndGet(service.executeScheduledAlerts(50, timeout).size());
+                jobCounter.addAndGet(service.executeScheduledAlerts(50, timeout));
 
                 if(jobCounter.get() != currentAlertCount) {
                     LOGGER.info("alerts evaluated so far: {}", jobCounter.get());

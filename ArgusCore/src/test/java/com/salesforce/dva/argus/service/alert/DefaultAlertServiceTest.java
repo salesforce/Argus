@@ -144,7 +144,7 @@ public class DefaultAlertServiceTest {
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
         Arrays.asList(metric), alert, notification, false);
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(1, notificationCount.get());
     }
@@ -181,7 +181,7 @@ public class DefaultAlertServiceTest {
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(metric), alert, notification, false);
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(2, notificationCount.get());
     }
@@ -209,7 +209,7 @@ public class DefaultAlertServiceTest {
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(), alert, notification, false);
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(1, notificationCount.get());
     }
@@ -246,9 +246,9 @@ public class DefaultAlertServiceTest {
                 Arrays.asList(metric), alert, notification, false);
 
         //This will set the notification on cooldown for the given metric and trigger.
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
         //This evaluation should not send notification. Hence notificationCount count would still be 1.
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(1, notificationCount.get());
         assertEquals(1, notification.getCooldownExpirationMap().size());
@@ -289,7 +289,7 @@ public class DefaultAlertServiceTest {
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(metric1, metric2), alert, notification, false);
 
-        spyAlertService.executeScheduledAlerts(10, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(10, 1000));
 
         assertEquals(1, notificationCount.get());
     }
@@ -337,7 +337,7 @@ public class DefaultAlertServiceTest {
         spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric),
                 alert, notification, false);
 
-        spyAlertService.executeScheduledAlerts(10, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(10, 1000));
         assertEquals(0, notificationCount.get());
         assertEquals(1, clearCount.get());
         //assertEquals(false, notification.isActiveForTriggerAndMetric(trigger, metric));
@@ -376,9 +376,9 @@ public class DefaultAlertServiceTest {
                 Arrays.asList(metric), alert, notification, false);
 
         //This will set the notification on cooldown for the given metric and trigger.
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
         //This evaluation should still send notification for refocus. Hence notificationCount count would increase by 1.
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(false, notification.isActiveForTriggerAndMetric(trigger, metric)); // refocus notification is stateless
 
@@ -414,7 +414,7 @@ public class DefaultAlertServiceTest {
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(metric), alert, notification, false);
 
-        spyAlertService.executeScheduledAlerts(10, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(10, 1000));
         assertEquals(1, notificationCount.get());
         assertEquals(false, notification.isActiveForTriggerAndMetric(trigger, metric)); // refocus notification is stateless
 
@@ -473,7 +473,7 @@ public class DefaultAlertServiceTest {
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(metric1, metric2), alert, notification, false);
 
-        spyAlertService.executeScheduledAlerts(10, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(10, 1000));
 
         assertEquals(2, notificationCount.get());
         assertEquals(2, notification.getCooldownExpirationMap().size());
@@ -524,7 +524,7 @@ public class DefaultAlertServiceTest {
 
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(metric1, metric2), alert, notification, false);
-        spyAlertService.executeScheduledAlerts(10, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(10, 1000));
 
         assertEquals(1, notificationCount.get());
         assertEquals(1, notification.getCooldownExpirationMap().size());
@@ -549,7 +549,7 @@ public class DefaultAlertServiceTest {
 
         spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric1, metric2),
                 alert, notification, false);
-        spyAlertService.executeScheduledAlerts(10, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(10, 1000));
 
         assertEquals(1, notificationCount.get());
         assertEquals(1, clearCount.get());
@@ -820,7 +820,7 @@ public class DefaultAlertServiceTest {
 
         when(_metricServiceMock.getMetrics(anyString(), anyLong())).thenReturn(queryResult);
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(0), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(0, notificationCount.get());
         enableDatalagMonitoring(false);
@@ -865,7 +865,7 @@ public class DefaultAlertServiceTest {
 
         enableDatalagMonitoring(true);
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(1, notificationCount.get());
 
@@ -905,7 +905,7 @@ public class DefaultAlertServiceTest {
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(metric), alert, notification, true);
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(0), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(0, notificationCount.get());
         enableDatalagMonitoring(false);
@@ -946,7 +946,7 @@ public class DefaultAlertServiceTest {
 
         when(_metricServiceMock.extractDCFromMetricQuery(anyList())).thenReturn(new ArrayList<>());
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(0), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(0, notificationCount.get());
         enableDatalagMonitoring(false);
@@ -995,7 +995,7 @@ public class DefaultAlertServiceTest {
 
         enableDatalagMonitoring(true);
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(0), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(0, notificationCount.get());
         enableDatalagMonitoring(false);
@@ -1044,7 +1044,7 @@ public class DefaultAlertServiceTest {
 
         enableDatalagMonitoring(true);
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(1, notificationCount.get());
         enableDatalagMonitoring(false);
@@ -1076,7 +1076,7 @@ public class DefaultAlertServiceTest {
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(), alert, notification, true);
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(1, notificationCount.get());
         enableDatalagMonitoring(false);
@@ -1108,7 +1108,7 @@ public class DefaultAlertServiceTest {
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(), alert, notification, true);
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(1, notificationCount.get());
         enableDatalagMonitoring(false);
@@ -1148,7 +1148,7 @@ public class DefaultAlertServiceTest {
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(metric), alert, notification, true);
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(1, notificationCount.get());
         enableDatalagMonitoring(false);
@@ -1188,7 +1188,7 @@ public class DefaultAlertServiceTest {
         DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
                 Arrays.asList(metric), alert, notification, true);
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(1, notificationCount.get());
         enableDatalagMonitoring(false);
@@ -1235,7 +1235,7 @@ public class DefaultAlertServiceTest {
         when(_metricServiceMock.getMetrics(anyString(), anyLong())).thenReturn(queryResult);
         when(_metricServiceMock.extractDCFromMetricQuery(anyList())).thenReturn(new ArrayList<>(Arrays.asList("DC1", "DC2", "DC3")));
 
-        spyAlertService.executeScheduledAlerts(1, 1000);
+        assertEquals(new Integer(1), spyAlertService.executeScheduledAlerts(1, 1000));
 
         assertEquals(1, notificationCount.get());
         enableDatalagMonitoring(false);

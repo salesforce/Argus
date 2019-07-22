@@ -87,6 +87,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -426,8 +427,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 	@Override
 	@Transactional
-	public List<History> executeScheduledAlerts(int alertCount, int timeout)
-	{
+	public Integer executeScheduledAlerts(int alertCount, int timeout) {
 		requireNotDisposed();
 		requireArgument(alertCount > 0, "Alert count must be greater than zero.");
 		requireArgument(timeout > 0, "Timeout in milliseconds must be greater than zero.");
@@ -532,8 +532,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		NotificationProcessor np = new NotificationProcessor(this, _logger);
 		_monitorService.modifyCounter(Counter.ALERTS_EVALUATED_TOTAL, alerts.size(), new HashMap<>());
 		boolean datalagMonitorEnabled = Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED));
-		for (Alert alert : alerts)
-		{
+		AtomicInteger numberOfAlertsEvaluated = new AtomicInteger(alerts.size());
+		for (Alert alert : alerts) {
 
 			jobStartTime = System.currentTimeMillis();
 			evaluateEndTime = 0;
@@ -605,6 +605,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						if (initialMetricSize > 0 && metrics.size() == 0)
 						{ // Skip alert evaluation if all the expanded alert expression contains dc with data lag and initial size was non-zero.
 							alertSkipped = true;
+							_logger.info(MessageFormat.format("Skipping Alert {0} Evaluation as the metrics expressions evaluation were skipped due to data lag. {1}", alert.getId().intValue(), alert.getExpression()));
 							continue;
 						}
 					}
@@ -698,8 +699,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 				tags.put(ALERTIDTAG, alert.getId().toString());
 
-				if (alertSkipped)
-				{
+				if(alertSkipped) {
+					numberOfAlertsEvaluated.decrementAndGet();
 					publishAlertTrackingMetric(Counter.ALERTS_SKIPPED.getMetric(), 1.0, tags);
 				} else
 				{
@@ -712,7 +713,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				}
 			}
 		} // end for
-		return historyList;
+		return numberOfAlertsEvaluated.get();
 	}
 
 	@VisibleForTesting

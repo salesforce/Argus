@@ -120,9 +120,9 @@ public interface AlertService extends Service {
 	 * @param   alertCount  The maximum number of alerts to dequeue.
 	 * @param   timeout     The maximum amount of time in milliseconds to attempt to dequeue alerts.
 	 *
-	 * @return  returns Job history of alerts executed.
+	 * @return  number of alerts evaluated.
 	 */
-	List<History> executeScheduledAlerts(int alertCount, int timeout);
+	Integer executeScheduledAlerts(int alertCount, int timeout);
 
 	/**
 	 * Enqueues alerts to be executed by the next available alert client.
