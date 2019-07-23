@@ -47,7 +47,7 @@ public class MetricNumberFormat extends NumberFormat {
     private static final long serialVersionUID = 1;
 
     private static NavigableMap<Double, String> suffixes = new TreeMap<>();
-    private static  DecimalFormat decimalFormat = new DecimalFormat("0.0");
+    private static  DecimalFormat decimalFormat = new DecimalFormat("0.00");
     static {
         decimalFormat.setRoundingMode(RoundingMode.DOWN);
         suffixes.put(0.000000000000000000000001d, "y");
