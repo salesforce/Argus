@@ -192,8 +192,11 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 		String limit = constants.get(0);
 		String type = constants.get(1);
 		Map<Metric, String> extendedSortedMap = createExtendedMap(metrics, type);
-		List<Metric> filteredMetricList = this.valueFilter.filter(extendedSortedMap, limit);
-
+		List<Metric> filteredMetricList = new ArrayList<Metric>();
+		if (extendedSortedMap.isEmpty()) {
+			return filteredMetricList;
+		}
+		filteredMetricList = this.valueFilter.filter(extendedSortedMap, limit);
 		return filteredMetricList;
 	}
 
@@ -202,7 +205,6 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 
 		for (Metric metric : metrics) {
 			String extendedEvaluation = internalReducer(metric, type);
-
 			if(extendedEvaluation!=null) {
 				extendedSortedMap.put(metric, extendedEvaluation);
 			}
