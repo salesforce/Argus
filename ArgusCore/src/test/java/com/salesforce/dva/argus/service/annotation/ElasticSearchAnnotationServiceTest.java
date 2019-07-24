@@ -32,49 +32,50 @@
 
 package com.salesforce.dva.argus.service.annotation;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
-import org.apache.http.entity.BasicHttpEntity;
-import org.apache.http.util.EntityUtils;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RestClient;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.salesforce.dva.argus.TestUtils;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.schema.ElasticSearchUtils;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.system.SystemException;
+import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.RestClient;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+import org.powermock.reflect.Whitebox;
 
+import java.io.IOException;
+import java.util.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
+import static org.powermock.api.mockito.PowerMockito.verifyStatic;
+
+@PowerMockIgnore("*.ssl.*")
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(ElasticSearchUtils.class)
 public class ElasticSearchAnnotationServiceTest {
 
     private RestClient restClient;
@@ -177,13 +178,14 @@ public class ElasticSearchAnnotationServiceTest {
         Properties config = new Properties();
         systemConfig = new SystemConfiguration(config);
         MonitorService mockedMonitor = mock(MonitorService.class);
+        mockStatic(ElasticSearchUtils.class);
         ElasticSearchUtils mockedElasticSearchUtils = mock(ElasticSearchUtils.class);
         esAnnotationService = new ElasticSearchAnnotationService(systemConfig, mockedMonitor, mockedElasticSearchUtils);
     }
 
     @Before
     public void setUp() {
-        ElasticSearchAnnotationService.annotationIndexMaxResultWindow = 10000;
+        TestUtils.setStaticField(ElasticSearchAnnotationService.class, "ANNOTATION_INDEX_MAX_RESULT_WINDOW", 10000);
     }
     
     @Test
@@ -231,7 +233,7 @@ public class ElasticSearchAnnotationServiceTest {
 
     @Test
     public void testPutAnnotationsUsingAnnotationIndex() throws IOException {
-        ElasticSearchAnnotationService spyService = _initializeSpyService(esAnnotationService, createSucessReply, createSucessReply);
+        ElasticSearchAnnotationService spyService = _initializeSpyService(esAnnotationService, createSucessReply, true);
         List<Annotation> annotations = new ArrayList<>();
 
         Annotation record1 = new Annotation("unittest", "id456", "unittest", "scope1", "metric1", 1557800720441L);
@@ -239,23 +241,24 @@ public class ElasticSearchAnnotationServiceTest {
 
         spyService.putAnnotations(annotations);
 
-        ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
+        ArgumentCaptor<String> requestCaptorUrl = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> requestCaptorBody = ArgumentCaptor.forClass(String.class);
 
-        verify(restClient, times(1)).performRequest(requestCaptor.capture());
+        verifyStatic(ElasticSearchUtils.class, times(1));
+        ElasticSearchUtils.performESRequest(eq(restClient), requestCaptorUrl.capture(), requestCaptorBody.capture());
 
-        Request capturedRequest = requestCaptor.getValue();
-        String indexJson = EntityUtils.toString(capturedRequest.getEntity());
+
         String expectedURL = "_bulk";
-        assertEquals(expectedURL, capturedRequest.getEndpoint());
+        assertEquals(expectedURL, requestCaptorUrl.getValue());
 
-        String[] lines = indexJson.split("\\r?\\n");
+        String[] lines = requestCaptorBody.getValue().split("\\r?\\n");
 
         String expectedIndexName = "argus-annotation-2019-05";
         JsonNode root = mapper.readTree(lines[0]);
         String actualIndexName = root.get("index").get("_index").asText();
         assertEquals(expectedIndexName, actualIndexName);
 
-        String expectedSerializedAnnotation = 
+        String expectedSerializedAnnotation =
                 "{\"metric\":\"metric1\",\"scope\":\"scope1\",\"source\":\"unittest\",\"id\":\"id456\",\"type\":\"unittest\",\"fields\":\"{}\",\"tags\":\"{}\",\"sid\":\"f9c22bcbd813474ec99f7011ae50b080\",\"ts\":\"1557800720441\"}";
         assertEquals(expectedSerializedAnnotation, lines[1]);
     }
@@ -265,7 +268,7 @@ public class ElasticSearchAnnotationServiceTest {
         AnnotationQuery annotationQuery = new AnnotationQuery("scope1", "metric1", null, "unittest", 1557809359073L, 1557809599073L);
         List<AnnotationQuery> queries = new ArrayList<>();
         queries.add(annotationQuery);
-        ElasticSearchAnnotationService spyService = _initializeSpyService(esAnnotationService, getReply, getReply);
+        ElasticSearchAnnotationService spyService = _initializeSpyService(esAnnotationService, getReply, false);
 
         List<Annotation> annotations = spyService.getAnnotations(queries);
         Annotation expectedAnnotation = new Annotation("unittest", "16ab4b56311", "unittest", "scope1", "metric1", 1557809559073L);
@@ -282,46 +285,20 @@ public class ElasticSearchAnnotationServiceTest {
 
     @Test (expected = RuntimeException.class)
     public void testGetAnnotationsExceedingLimit(){
-        ElasticSearchAnnotationService.annotationIndexMaxResultWindow = 1;
         AnnotationQuery annotationQuery = new AnnotationQuery("scope1", "metric1", null, "unittest", 1557809359073L, 1557809599073L);
         List<AnnotationQuery> queries = new ArrayList<>();
         queries.add(annotationQuery);
-        ElasticSearchAnnotationService spyService = _initializeSpyService(esAnnotationService, getReply, getReply);
+
+        ElasticSearchAnnotationService spyService = null;
+        try {
+            spyService = _initializeSpyService(esAnnotationService, getReply, false);
+        } catch (IOException e) {
+            fail();
+        }
+        Whitebox.setInternalState(spyService, "ANNOTATION_INDEX_MAX_RESULT_WINDOW", 1);
         spyService.getAnnotations(queries);
     }
-    
-    @Test
-    public void testDoExtractResponse() throws Exception {
-        final String message = "this is a test";
-        BasicHttpEntity entity = new BasicHttpEntity();
-        try(ByteArrayInputStream bis = new ByteArrayInputStream(message.getBytes())) {
-            entity.setContent(bis);
-        }
-        catch (IOException e) {
-            throw e;
-        }
 
-        String responseMessage = ElasticSearchUtils.doExtractResponse(200, entity);
-        assertEquals("expect the entity to be equal after extraction", message, responseMessage);
-    }
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    @Test
-    public void testDoExtractResponse400() {
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("Status code: 400");
-        ElasticSearchUtils.doExtractResponse(400, null);
-    }
-
-    @Test
-    public void testDoExtractResponse500() {
-        expectedException.expect(SystemException.class);
-        expectedException.expectMessage("Status code: 500");
-        ElasticSearchUtils.doExtractResponse(500, null);
-    }
-    
     @Test
     public void testHashedSearchIdentifierAnnotationAndAnnotationQueryMatch(){
         Map<String, String> annotationQueryTags = new HashMap<>();
@@ -342,23 +319,21 @@ public class ElasticSearchAnnotationServiceTest {
     }
 
     private ElasticSearchAnnotationService _initializeSpyService(ElasticSearchAnnotationService service,
-            String firstReply, String secondReply) {
+            String firstReply, boolean isPut) throws IOException {
 
         restClient = mock(RestClient.class);
         service.setESRestClient(restClient);
+        mockStatic(ElasticSearchUtils.class);
+        if (isPut) {
+            when(ElasticSearchUtils.performESRequest(eq(restClient), any(), any())).thenReturn(mapper.readValue(firstReply, ElasticSearchUtils.PutResponse.class));
+        } else {
+            when(ElasticSearchUtils.extractResponse(any())).thenReturn(firstReply);
+            mapper = ElasticSearchAnnotationService.getAnnotationObjectMapper(new AnnotationRecordList.IndexSerializer());
+            AnnotationRecordList ret = mapper.readValue(firstReply, new TypeReference<AnnotationRecordList>() {});
+            when(ElasticSearchUtils.toEntity(any(), any(),any())).thenReturn(ret);
+        }
+
         ElasticSearchAnnotationService spyService = spy(service);
-
-        doAnswer(new Answer() {
-            private int count = 0;
-            public Object answer(InvocationOnMock invocation) {
-                count++;
-                if (count == 1) {
-                    return firstReply;
-                }
-
-                return secondReply;
-            }
-        }).when(spyService).extractResponse(any());
 
         return spyService;
     }

@@ -16,7 +16,7 @@ public class GroupByTransformTest {
 	@Test
 	public void testGroupByDC() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null, null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         	datapoints.put(1000L, 1.0);
@@ -54,7 +54,7 @@ public class GroupByTransformTest {
 	@Test
 	public void testGroupByDCAndUncapturedGroup() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null, null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         	datapoints.put(1000L, 1.0);
@@ -92,7 +92,7 @@ public class GroupByTransformTest {
 	@Test
 	public void testGroupByDCAndPodPrefix() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null, null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         	datapoints.put(1000L, 1.0);
@@ -146,7 +146,7 @@ public class GroupByTransformTest {
 	@Test
 	public void testGroupByDCAndPodNumber() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null, null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         	datapoints.put(1000L, 1.0);
@@ -198,7 +198,7 @@ public class GroupByTransformTest {
 	@Test
 	public void testWeightedAvgUsingGroupBy() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null, null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         	datapoints.put(1000L, 1.0);
@@ -258,7 +258,7 @@ public class GroupByTransformTest {
 	@Test
 	public void testGroupByPod() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null, null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         	datapoints.put(1000L, 1.0);
@@ -312,7 +312,7 @@ public class GroupByTransformTest {
 	@Test
 	public void testGroupByWithFunctionTakingConstants() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null, null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         	datapoints.put(1000L, 1.0);

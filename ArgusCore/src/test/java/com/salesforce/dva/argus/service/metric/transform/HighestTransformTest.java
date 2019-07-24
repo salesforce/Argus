@@ -184,6 +184,28 @@ public class HighestTransformTest {
     }
 
     @Test
+    public void testHighestTransformWithZeroDataPointsForMetric() {
+        Transform belowTransform = new MetricFilterWithInteralReducerTransform(new HighestValueFilter());
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints);
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("2");
+        constants.add("average");
+
+        List<Metric> result = belowTransform.transform(null, metrics, constants);
+
+        assertEquals(0, result.size());
+    }
+
+    @Test
     public void testHighestTransformWithLimitLessThanDPsLenAvg() {
         Transform highestTransform = new MetricFilterWithInteralReducerTransform(new HighestValueFilter());
         Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();

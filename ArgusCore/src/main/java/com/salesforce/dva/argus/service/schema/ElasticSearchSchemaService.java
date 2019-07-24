@@ -43,6 +43,7 @@ import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
 import org.elasticsearch.client.RestClientBuilder.RequestConfigCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -57,6 +58,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
@@ -411,6 +413,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 	    Map<String, String> tags = new HashMap<>();
 	    tags.put("type", "REGEXP_WITHOUT_AGGREGATION");
+	    tags.put("user", Optional.ofNullable(MDC.get("USER")).orElse("NULLUSER"));
 	    long start = System.currentTimeMillis();
 	    StringBuilder sb = new StringBuilder().append(String.format("/%s/%s/_search", TAGS_INDEX_NAME, TAGS_TYPE_NAME));
 
@@ -775,7 +778,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	 * @param <T>
 	 * @return
 	 */
-	<T> Set<T> doBulkIndex(String indexName, String typeName, SchemaRecordFinder<T> recordFinder, ObjectMapper mapper) {
+	<T> Set<T> doBulkIndex(String indexName, String typeName, RecordFinder<T> recordFinder, ObjectMapper mapper) {
 		String requestUrl = String.format("/%s/%s/_bulk", indexName, typeName);
 		String strResponse;
 
@@ -1081,33 +1084,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		mapper.registerModule(module);
 
 		return mapper;
-	}
-
-	private ObjectNode _createSettingsNode(int replicationFactor, int numShards) {
-		ObjectNode metadataAnalyzer = genericObjectMapper.createObjectNode();
-		metadataAnalyzer.put("tokenizer", "metadata_tokenizer");
-		metadataAnalyzer.set("filter", genericObjectMapper.createArrayNode().add("lowercase"));
-
-		ObjectNode analyzerNode = genericObjectMapper.createObjectNode();
-		analyzerNode.set("metadata_analyzer", metadataAnalyzer);
-
-		ObjectNode tokenizerNode = genericObjectMapper.createObjectNode();
-		tokenizerNode.set("metadata_tokenizer", genericObjectMapper.createObjectNode().put("type", "pattern").put("pattern", "([^\\p{L}\\d]+)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"));
-
-		ObjectNode analysisNode = genericObjectMapper.createObjectNode();
-		analysisNode.set("analyzer", analyzerNode);
-		analysisNode.set("tokenizer", tokenizerNode);
-
-		ObjectNode indexNode = genericObjectMapper.createObjectNode();
-		indexNode.put("max_result_window", ElasticSearchUtils.INDEX_MAX_RESULT_WINDOW);
-		indexNode.put("number_of_replicas", replicationFactor);
-		indexNode.put("number_of_shards", numShards);
-
-		ObjectNode settingsNode = genericObjectMapper.createObjectNode();
-		settingsNode.set("analysis", analysisNode);
-		settingsNode.set("index", indexNode);
-
-		return settingsNode;
 	}
 
 	private ObjectNode _createMappingsNode() {

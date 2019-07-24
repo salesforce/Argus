@@ -10,7 +10,6 @@ import java.util.function.Supplier;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.salesforce.dva.argus.service.image.ElasticSearchImageService;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
@@ -41,7 +40,15 @@ public class ElasticSearchUtils {
 
     public static final int INDEX_MAX_RESULT_WINDOW = 10000;
 
+    public static final String TOKENIZER_PATTERN = "([^\\p{L}\\d]+)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])";
+
+
     public ElasticSearchUtils() {
+    }
+
+    public static Long convertTimestampToMillis(Long timestamp) {
+        if (timestamp < 1_00_000_000_000L) return (timestamp * 1000);
+        return timestamp;
     }
 
     public void createIndexIfNotExists(RestClient esRestClient,
@@ -107,7 +114,7 @@ public class ElasticSearchUtils {
         analyzerNode.set("metadata_analyzer", metadataAnalyzer);
 
         ObjectNode tokenizerNode = mapper.createObjectNode();
-        tokenizerNode.set("metadata_tokenizer", mapper.createObjectNode().put("type", "pattern").put("pattern", "([^\\p{L}\\d]+)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"));
+        tokenizerNode.set("metadata_tokenizer", mapper.createObjectNode().put("type", "pattern").put("pattern", TOKENIZER_PATTERN));
 
         ObjectNode analysisNode = mapper.createObjectNode();
         analysisNode.set("analyzer", analyzerNode);
@@ -178,6 +185,20 @@ public class ElasticSearchUtils {
         }
     }
 
+    public enum HashAlgorithm {
+        MD5,
+        XXHASH;
+
+        public static ElasticSearchUtils.HashAlgorithm fromString(String str) throws IllegalArgumentException {
+            for(ElasticSearchUtils.HashAlgorithm algo : ElasticSearchUtils.HashAlgorithm.values()) {
+                if(algo.name().equalsIgnoreCase(str)) {
+                    return algo;
+                }
+            }
+            throw new IllegalArgumentException(str + " does not match any of the available algorithms.");
+        }
+    }
+
     /**
      * Enumeration of supported HTTP methods.
      *
@@ -205,6 +226,16 @@ public class ElasticSearchUtils {
         public void setName(String name) {
             this.name = name;
         }
+    }
+
+    public static PutResponse performESRequest(RestClient esRestClient, String requestUrl, String requestBody) throws IOException {
+        ObjectMapper genericObjectMapper = new ObjectMapper();
+        Request request = new Request(HttpMethod.POST.getName(), requestUrl);
+        request.setEntity(new StringEntity(requestBody, ContentType.APPLICATION_JSON));
+        Response response = esRestClient.performRequest(request);
+        String strResponse = extractResponse(response);
+        PutResponse putResponse = genericObjectMapper.readValue(strResponse, PutResponse.class);
+        return putResponse;
     }
 
     /**
@@ -349,5 +380,4 @@ public class ElasticSearchUtils {
             }
         }
     }
-
 }

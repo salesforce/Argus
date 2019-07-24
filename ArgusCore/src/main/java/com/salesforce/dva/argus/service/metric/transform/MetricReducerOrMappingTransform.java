@@ -33,12 +33,15 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.util.QueryContext;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,6 +66,8 @@ public class MetricReducerOrMappingTransform implements Transform {
 	protected static String INTERSECT = "INTERSECT";
 	protected Boolean fulljoinIndicator=true;
 	public static final Set<Class> DEFAULT_FULL_JOIN_EXCLUDE_CLASSES = new HashSet<Class>(Arrays.asList(new Class[] {DivideValueReducerOrMapping.class, DiffValueReducerOrMapping.class, DeviationValueReducerOrMapping.class, ScaleValueReducerOrMapping.class}));
+	public static final Set<Class> DEFAULT_CONSTANT_VALUE_INCLUDE_CLASSES = new HashSet<Class>(Arrays.asList(new Class[] {DivideValueReducerOrMapping.class}));
+
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -114,6 +119,14 @@ public class MetricReducerOrMappingTransform implements Transform {
 				return transform(queryContext, metrics);
 			}
 		}
+		// Handling special case of DIVIDE when datapoints for some timeseries are missing and when default value is given
+		if(constants.size() == 2 && DEFAULT_CONSTANT_VALUE_INCLUDE_CLASSES.contains(valueReducerOrMapping.getClass())) {
+			if (constants.get(0).toUpperCase().equals(FULLJOIN)){
+				SystemAssert.requireArgument(NumberUtils.isNumber(constants.get(1)),
+						"Default constant value supplied to DIVIDE transform is not a number");
+				return Arrays.asList(reduce(metrics, Arrays.asList(constants.get(1))));
+			}
+		}
 		return mapping(metrics, constants);
 	}
 
@@ -152,7 +165,21 @@ public class MetricReducerOrMappingTransform implements Transform {
 	protected Metric reduce(List<Metric> metrics, List<String> constants) {
 		SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
 		if(valueReducerOrMapping instanceof DivideValueReducerOrMapping && metrics.size() < 2) {
-			throw new IllegalArgumentException("DIVIDE Transform needs at least 2 metrics to perform the operation.");
+			// Handling special scenario when there is only one metric is passed to divide transform
+			if (metrics.size() == 1) {
+				if (constants == null || constants.size()==0) {
+					throw new IllegalArgumentException("DIVIDE Transform needs default constant value along with union constant when there is only one metric to perform the operation");
+				} else if (constants.size() == 1) {
+					Double defaultValue = Double.parseDouble(constants.get(0));
+					Metric constructedMetric = metrics.get(0);
+					Map<Long, Double> dataPoints = new LinkedHashMap<>();
+					for (Map.Entry<Long, Double> point : metrics.get(0).getDatapoints().entrySet()) {
+						dataPoints.put(point.getKey(), defaultValue);
+					}
+					constructedMetric.setDatapoints(dataPoints);
+					return constructedMetric;
+				}
+			}
 		}
 
 		MetricDistiller distiller = new MetricDistiller();
@@ -189,11 +216,18 @@ public class MetricReducerOrMappingTransform implements Transform {
 		Map<Long, Double> reducedDatapoints = new HashMap<>();
 
 		for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
-			if (entry.getValue().size() < metrics.size()  && !fulljoinIndicator) {
+
+			// Handling special case of DIVIDE when datapoints for some timeseries are missing and when default value is given
+			if (entry.getValue().size() < metrics.size() && DEFAULT_CONSTANT_VALUE_INCLUDE_CLASSES.contains(valueReducerOrMapping.getClass()) && constants!=null && constants.size()==1)
+			{
+				reducedDatapoints.put(entry.getKey(), Double.parseDouble(constants.get(0)));
+				continue;
+			}
+			else if (entry.getValue().size() < metrics.size() && !fulljoinIndicator) {
 				continue;
 			}
 
-			Double reducedValue = constants == null || constants.isEmpty() ? 
+				Double reducedValue = constants == null || constants.isEmpty() ?
 					this.valueReducerOrMapping.reduce(entry.getValue()) :
 						this.valueReducerOrMapping.reduce(entry.getValue(), constants);
 					if(reducedValue!=null) {

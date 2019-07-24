@@ -32,7 +32,7 @@ import java.util.Set;
  *
  * @author  Kunal Nawale (knawale@salesforce.com)
  */
-public class MetatagsSchemaRecordList implements SchemaRecordFinder<MetatagsRecord> {
+public class MetatagsSchemaRecordList implements RecordFinder<MetatagsRecord> {
 
     private Map<String, MetatagsRecord> _idToSchemaRecordMap = new HashMap<>();
     private String _scrollID;
@@ -59,6 +59,11 @@ public class MetatagsSchemaRecordList implements SchemaRecordFinder<MetatagsReco
 
     public List<MetatagsRecord> getRecords() {
         return new ArrayList<>(_idToSchemaRecordMap.values());
+    }
+
+    @Override
+    public Set<String> getIdSet() {
+        return _idToSchemaRecordMap.keySet();
     }
 
     public String getScrollID() {

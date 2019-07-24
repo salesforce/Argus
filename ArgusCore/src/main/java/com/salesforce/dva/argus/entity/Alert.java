@@ -1430,6 +1430,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		}
 	}
 
+
+	// NOTE - ian - TODO - create a separate deserializer for testing OR handle missing info here?
 	public static class Deserializer extends JsonDeserializer<Alert> {
 
 		@Override

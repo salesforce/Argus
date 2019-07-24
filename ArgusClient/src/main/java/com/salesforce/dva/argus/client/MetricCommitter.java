@@ -60,8 +60,8 @@ public class MetricCommitter extends AbstractCommitter {
      * @param  monitorService 	The monitoring service to use. Cannot be null.
      * @param  jobCounter  The global job counter used to track the number of annotations.
      */
-    MetricCommitter(CollectionService colletionService, MonitorService monitorService, AtomicInteger jobCounter) {
-        super(colletionService,monitorService, jobCounter);
+    MetricCommitter(CollectionService collectionService, MonitorService monitorService, AtomicInteger jobCounter) {
+        super(collectionService,monitorService, jobCounter);
     }
 
     //~ Methods **************************************************************************************************************************************

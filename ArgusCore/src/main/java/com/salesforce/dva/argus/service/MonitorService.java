@@ -280,11 +280,18 @@ public interface MonitorService extends Service {
         QUERY_DATAPOINTS_LIMIT_EXCEEDED("argus.core", "query.datapoints.limit.exceeded"),
         
         ELASTIC_SEARCH_GET_FAILURES("argus.core", "elastic.search.get.failures", MetricType.COUNTER),
-        
+
+        CONSUMER_OFFSET_RECORDS_WRITE_FAILURES("argus.core", "consumer.offset.records.write.failures", MetricType.COUNTER),
+        CONSUMER_OFFSET_RECORDS_WRITE_LATENCY("argus.core", "consumer.offset.records.write.latency", MetricType.COUNTER),
+        CONSUMER_OFFSET_RECORDS_READ_LATENCY("argus.core", "consumer.offset.records.read.latency", MetricType.COUNTER),
+
+        IDB_CLIENT_GET_LATENCY("argus.core", "idb.client.get.latency", MetricType.COUNTER),
+        IDB_CLIENT_GET_COUNT("argus.core", "idb.client.get.count", MetricType.COUNTER),
+        IDB_CLIENT_QUERY_COUNT("argus.core", "idb.client.query.count", MetricType.COUNTER),
+        IDB_CLIENT_CACHE_HITS("argus.core", "idb.client.cache.hits", MetricType.COUNTER),
+
         ANNOTATION_RECORDS_WRITE_FAILURES("argus.core", "annotation.records.write.failures", MetricType.COUNTER),
-
         IMAGE_RECORDS_WRITE_FAILURES("argus.core", "image.records.write.failures", MetricType.COUNTER);
-
 
         private final String _scope;
         private final String _metric;

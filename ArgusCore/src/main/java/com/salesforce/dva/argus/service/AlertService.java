@@ -120,9 +120,9 @@ public interface AlertService extends Service {
 	 * @param   alertCount  The maximum number of alerts to dequeue.
 	 * @param   timeout     The maximum amount of time in milliseconds to attempt to dequeue alerts.
 	 *
-	 * @return  returns Job history of alerts executed.
+	 * @return  number of alerts evaluated.
 	 */
-	List<History> executeScheduledAlerts(int alertCount, int timeout);
+	Integer executeScheduledAlerts(int alertCount, int timeout);
 
 	/**
 	 * Enqueues alerts to be executed by the next available alert client.
@@ -130,6 +130,19 @@ public interface AlertService extends Service {
 	 * @param  alerts  The alerts to enqueue. Cannot be null, but may be empty.
 	 */
 	void enqueueAlerts(List<Alert> alerts);
+
+	/**
+	 * Evaluates the serialized alert and delivers results to the result cache.
+	 * Used by historical testing.
+	 *
+	 * @param   serializedAlert  The serializedAlert
+	 * @param   when             The time at which to evaluate the alert.
+	 * @param   testUuid         The test UUID.
+	 *
+	 * @return  returns Job history of alerts executed.
+	 */
+	// TODO - improve architecture - test spec, and callback class for delivering results.
+	void testEvaluateAlert(String serializedAlert, Long when, String testUuid);
 
 	/**
 	 * Returns a list of alerts for an owner.
@@ -363,12 +376,6 @@ public interface AlertService extends Service {
 	
 	//~ Enums ****************************************************************************************************************************************
 
-    // TODO - Migration of existing RefocusNotifier to the Boolean Refocus Notifier.
-    // todo - What we really want is to display 'RefocusBoolean' in the UI and implement as RefocusBoolean, and to migrate existing
-    // todo - refocus notifiers as to RefocusBoolean.
-    // todo - What we'll do is derive RefocusNotifier from RefocusBooleanNotifier, and have the UI display 'RefocusBoolean' for 'Refocus'
-    // todo - before we fixup the database to point at RefocusBoolean.
-
 	/**
 	 * Describes the list of supported notifiers.
 	 *
@@ -387,6 +394,9 @@ public interface AlertService extends Service {
 		REFOCUS(RefocusNotifier.class.getName()),
         REFOCUS_BOOLEAN(RefocusBooleanNotifier.class.getName()),
 		REFOCUS_VALUE(RefocusValueNotifier.class.getName());
+
+		// , NOOP(NoOpNotifier.class.getName()
+
 
 		String name;
 

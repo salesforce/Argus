@@ -28,7 +28,7 @@ import java.util.Set;
 import static com.salesforce.dva.argus.entity.MetricSchemaRecord.DEFAULT_RETENTION_DISCOVERY_DAYS;
 import static com.salesforce.dva.argus.entity.MetricSchemaRecord.EXPIRATION_TS;
 
-public class MetricSchemaRecordList implements SchemaRecordFinder<MetricSchemaRecord> {
+public class MetricSchemaRecordList implements RecordFinder<MetricSchemaRecord> {
 	private final static long ONE_DAY_IN_MILLIS = 24L * 3600L * 1000L;
 	private Map<String, MetricSchemaRecord> _idToSchemaRecordMap = new HashMap<>();
 	private String _scrollID;
@@ -55,22 +55,27 @@ public class MetricSchemaRecordList implements SchemaRecordFinder<MetricSchemaRe
 		this.totalHits = totalHits;
 	}
 
+	@Override
 	public List<MetricSchemaRecord> getRecords() {
 		return new ArrayList<>(_idToSchemaRecordMap.values());
 	}
 
+	@Override
 	public Set<String> getIdSet() {
 		return _idToSchemaRecordMap.keySet();
 	}
 	
+	@Override
 	public String getScrollID() {
 		return _scrollID;
 	}
 
+	@Override
 	public void setScrollID(String scrollID) {
 		this._scrollID = scrollID;
 	}
 	
+	@Override
 	public MetricSchemaRecord getRecord(String id) {
 		return _idToSchemaRecordMap.get(id);
 	}
@@ -100,7 +105,7 @@ public class MetricSchemaRecordList implements SchemaRecordFinder<MetricSchemaRe
 		@Override
 		public void serialize(MetricSchemaRecordList list, JsonGenerator jgen, SerializerProvider provider)
 				throws IOException{
-			
+
 			ObjectMapper mapper = new ObjectMapper();
 			mapper.setSerializationInclusion(Include.NON_NULL);
 			final long now = System.currentTimeMillis();

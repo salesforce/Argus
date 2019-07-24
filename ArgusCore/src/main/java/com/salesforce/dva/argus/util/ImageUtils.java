@@ -79,6 +79,7 @@ public class ImageUtils {
     private static final Font DEFAULT_NODATA_FONT = new Font("Arial", Font.ITALIC, 20);
     private static final BasicStroke DEFAULT_BASIC_STROKE = new BasicStroke(1.5f);
     private static final Color DEFAULT_BACKGROUND_COLOR = Color.white;
+    private static final Color DEFAULT_FIRST_TIMESERIES_COLOR = Color.BLUE;
 
 
     public static byte[] getMetricsImage(List<Metric> metrics, ImageProperties imageProperties) throws IOException{
@@ -142,6 +143,8 @@ public class ImageUtils {
                 }
             }
             XYItemRenderer r = plot.getRenderer();
+            // Setting the default color of the first time series to be BLUE
+            r.setSeriesPaint( 0, DEFAULT_FIRST_TIMESERIES_COLOR );
             if (r instanceof XYLineAndShapeRenderer) {
                 XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) r;
                 renderer.setDefaultShapesVisible(true);
