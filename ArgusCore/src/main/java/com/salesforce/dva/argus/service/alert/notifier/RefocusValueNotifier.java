@@ -172,7 +172,11 @@ public class RefocusValueNotifier extends AuditNotifier {
         if( customText != null && customText.length()>0){
             sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("<br/>");
         }
-        sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context,notification.getName())));
+		context.getAlertEvaluationTrackingID().ifPresent(trackingID -> {
+			sb.append("<b>Tracking ID:</b> " + trackingID + "<br/>");
+		});
+
+		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context,notification.getName())));
 
         if (!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
         else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));

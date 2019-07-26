@@ -197,6 +197,11 @@ public class EmailNotifier extends AuditNotifier {
         if( customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
             sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("<br/>");
         }
+
+        context.getAlertEvaluationTrackingID().ifPresent(trackingID -> {
+            sb.append("<b>Tracking ID:</b> " + trackingID + "<br/>");
+        });
+
         Alert currentAlert = notification.getAlert();
         String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
         if(currentAlert.getNotifications().size() > 1)

@@ -396,6 +396,11 @@ public class GOCNotifier extends AuditNotifier {
 		if( customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
 			sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("\n");
 		}
+
+		context.getAlertEvaluationTrackingID().ifPresent(trackingID -> {
+			sb.append("Tracking ID: " + trackingID + "\n");
+		});
+
 		if(currentAlert.getNotifications().size() > 1)
 			sb.append(MessageFormat.format("Notification:  {0}\n", TemplateReplacer.applyTemplateChanges(context, notification.getName())));
 		if(currentAlert.getTriggers().size() > 1)

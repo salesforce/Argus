@@ -153,6 +153,9 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 		alertBuilder.add("name", TemplateReplacer.applyTemplateChanges(context, alert.getName()));
 		alertBuilder.add("alertUrl", notifier.getAlertUrl(alert.getId()));
 		alertBuilder.add("firedAt", context.getTriggerFiredTime());
+		context.getAlertEvaluationTrackingID().ifPresent(trackingID -> {
+			alertBuilder.add("trackingID", trackingID);
+		});
 
 		notificationBuilder.add("name", TemplateReplacer.applyTemplateChanges(context, notification.getName()));
 		notificationBuilder.add("status", "Triggered");

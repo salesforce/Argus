@@ -1321,7 +1321,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		}
 
-		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, triggerValue, metric, history, evaluatedMetricSnapshotDetails, evaluatedMetricSnapshotURL);
+		Long timestamp = (triggerFiredTime != null) ? triggerFiredTime : System.currentTimeMillis();
+		String alertEvaluationTrackingID = getAlertEvaluationTrackingID(alert, timestamp);
+
+		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime,
+				triggerValue, metric, history, evaluatedMetricSnapshotDetails, evaluatedMetricSnapshotURL, alertEvaluationTrackingID );
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
@@ -1402,7 +1406,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		}
 
-		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), 0.0, metric, history, evaluatedMetricSnapshotDetails, evaluatedMetricSnapshotURL);
+		Long timestamp = (alertEnqueueTime != null) ? alertEnqueueTime : System.currentTimeMillis();
+		String alertEvaluationTrackingID = getAlertEvaluationTrackingID(alert, timestamp);
+
+		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(),
+				0.0, metric, history, evaluatedMetricSnapshotDetails, evaluatedMetricSnapshotURL,
+				alertEvaluationTrackingID);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
@@ -1440,6 +1449,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		_logger.info(logMessage);
 		history.appendMessageNUpdateHistory(logMessage, null, 0);
+	}
+
+	private String getAlertEvaluationTrackingID(Alert alert, Long timestamp) {
+		BigInteger alertId = alert.getId();
+		if(timestamp == null) {
+			_logger.error("The timestamp is null. Unable to construct a tracking ID for evaluation on alert ID "+ alertId);
+		}
+		return alertId + "_" + timestamp;
 	}
 
 
@@ -2442,6 +2459,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		private int notificationRetries = 0;
 		private Pair<String, byte[]> evaluatedMetricSnapshotDetails;
 		private String evaluatedMetricSnapshotURL;
+		private String alertEvaluationTrackingID;
 
 		/**
 		 * Creates a new Notification Context object.
@@ -2455,7 +2473,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 * @param history             History object
 		 */
 		public NotificationContext(Alert alert, Trigger trigger, Notification notification, long triggerFiredTime,
-								   double triggerEventValue, Metric triggeredMetric, History history, Pair<String, byte[]> evaluatedMetricSnapshotDetails, String evaluatedMetricSnapshotURL) {
+								   double triggerEventValue, Metric triggeredMetric, History history,
+								   Pair<String, byte[]> evaluatedMetricSnapshotDetails, String evaluatedMetricSnapshotURL,
+								   String alertEvaluationTrackingID) {
 			this.alert = alert;
 			this.trigger = trigger;
 			this.coolDownExpiration = notification.getCooldownExpirationByTriggerAndMetric(trigger, triggeredMetric);
@@ -2467,6 +2487,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			this.history = history;
 			this.evaluatedMetricSnapshotDetails = evaluatedMetricSnapshotDetails;
 			this.evaluatedMetricSnapshotURL = evaluatedMetricSnapshotURL;
+			this.alertEvaluationTrackingID = alertEvaluationTrackingID;
 		}
 
 		public NotificationContext(Alert alert, Trigger trigger, Notification notification, long triggerFiredTime,
@@ -2482,6 +2503,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			this.history = history;
 			this.evaluatedMetricSnapshotDetails = null;
 			this.evaluatedMetricSnapshotURL = null;
+			this.alertEvaluationTrackingID = null;
 		}
 
 		/** Creates a new NotificationContext object. */
@@ -2640,6 +2662,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		public Optional<String> getEvaluatedMetricSnapshotURL() {
 			return Optional.ofNullable(evaluatedMetricSnapshotURL);
+		}
+
+		public Optional<String> getAlertEvaluationTrackingID() {
+			return Optional.ofNullable(alertEvaluationTrackingID);
 		}
 
 		/**
