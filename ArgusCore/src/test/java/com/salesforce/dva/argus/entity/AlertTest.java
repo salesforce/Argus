@@ -106,6 +106,7 @@ public class AlertTest {
         Alert alert = generateAlert("alert-name", admin, EXPRESSION);
         Trigger trigger = generateTrigger("trigger-name", alert);
         Notification notification = generateNotification("notification-name", alert, Arrays.asList(new Trigger[]{trigger}));
+        notification.setEnableClearNotification(true);
         alert.setNotifications(Arrays.asList(new Notification[]{notification}));
         alert.setTriggers(Arrays.asList(new Trigger[]{trigger}));
         alert.setEnabled(true);

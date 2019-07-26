@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.ws.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
+import org.apache.commons.lang.StringUtils;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
@@ -42,6 +44,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Notification Dto.
@@ -68,6 +72,8 @@ public class NotificationDto extends EntityDTO {
     private String eventName;
     private String elementName;
     private String productTag;
+    private boolean enableClearNotification; // used by EmailNotifier and GusNotifier
+    private String emailSubject; // used by EmailNotifier
 
     //~ Methods **************************************************************************************************************************************
 
@@ -316,6 +322,22 @@ public class NotificationDto extends EntityDTO {
 
     public void setProductTag(String productTag) { this.productTag = productTag; }
 
+    public boolean isEnableClearNotification() {
+        return enableClearNotification;
+    }
+
+    public void setEnableClearNotification(boolean enableClearNotification) {
+        this.enableClearNotification = enableClearNotification;
+    }
+
+    public String getEmailSubject() {
+        return emailSubject;
+    }
+
+    public void setEmailSubject(String emailSubject) {
+        this.emailSubject = emailSubject;
+    }
+
     /**
      * Sets the severity level of notification
      *
@@ -348,6 +370,8 @@ public class NotificationDto extends EntityDTO {
         result.setProductTag("sample-productTag");
         result.setSubscriptions(Arrays.asList(new String[] { "joe.smith@salesforce.com" }));
         result.setCustomText("Sample custom text to include in the notification");
+        result.setEnableClearNotification(true);
+        result.setEmailSubject("sample-emailSubject");
         return result;
     }
 }
