@@ -31,51 +31,32 @@
 
 package com.salesforce.dva.argus.service.alert.notifier;
 
-import com.salesforce.dva.argus.service.alert.notifier.RefocusProperty;
-
-import com.google.gson.JsonObject;
-import com.google.gson.JsonArray;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.system.SystemException;
-
-
-
+import org.apache.http.HttpHost;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.*;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.config.Registry;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.HttpHost;
-import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-// SSL
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.ssl.SSLContexts;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.io.InputStream;
 import java.security.KeyStore;
-import org.apache.http.ssl.SSLContexts;
-
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.text.MessageFormat;
-
-import java.lang.System;
 
 /**
  * Manage Refocus connection, proxy and timeouts.

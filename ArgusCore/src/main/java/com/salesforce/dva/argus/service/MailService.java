@@ -31,6 +31,8 @@
 	 
 package com.salesforce.dva.argus.service;
 
+import com.salesforce.dva.argus.service.mail.EmailContext;
+
 import java.util.Set;
 
 /**
@@ -45,14 +47,10 @@ public interface MailService extends Service {
     /**
      * Sends an email message.
      *
-     * @param  to           The set of email recipients.
-     * @param  subject      The email subject.
-     * @param  message      The message body.
-     * @param  contentType  The content type.
-     * @param  priority     The message priority.
+     * @param  emailContext Context of the email such as recipients, subject, body, ...
      * @return true for success, false when there's error
      */
-    boolean sendMessage(Set<String> to, String subject, String message, String contentType, Priority priority);
+    boolean sendMessage(EmailContext emailContext);
 
     //~ Enums ****************************************************************************************************************************************
 

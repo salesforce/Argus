@@ -117,8 +117,8 @@ public class PagerDutyNotifier extends AuditNotifier {
      * @param emf               The entity manager factory to use.  Cannot be null.
      */
     @Inject
-    public PagerDutyNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
-                             SystemConfiguration config, Provider<EntityManager> emf, MonitorService monitorService) {
+    public PagerDutyNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, SystemConfiguration config, Provider<EntityManager> emf,
+                             MonitorService monitorService) {
         this(metricService,
                 annotationService,
                 auditService,
@@ -131,8 +131,8 @@ public class PagerDutyNotifier extends AuditNotifier {
     }
 
     protected PagerDutyNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
-                                SystemConfiguration config, Provider<EntityManager> emf, MonitorService monitorService,
-                                String endpoint, String token, long httpResponseCode429RetryDelayTime) {
+                                SystemConfiguration config, Provider<EntityManager> emf,
+                                MonitorService monitorService, String endpoint, String token, long httpResponseCode429RetryDelayTime) {
         super(metricService, annotationService, auditService, config, emf);
         requireArgument(config != null, "The configuration cannot be null.");
         requireArgument(monitorService != null, "The monitorService cannot be null.");
@@ -211,6 +211,11 @@ public class PagerDutyNotifier extends AuditNotifier {
                         " Trigger: " + context.getTrigger().getName()));
         String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
         message.setEvaluatedMetricExpression(expression);
+
+        if (context.getEvaluatedMetricSnapshotURL().isPresent() && !context.getEvaluatedMetricSnapshotURL().get().equals("")) {
+            message.addLink("Snapshot of the evaluated metric: ", context.getEvaluatedMetricSnapshotURL().get());
+        }
+
         message.addLink("Argus metric expression", getExpressionUrl(expression));
         for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
             message.addLink("Argus triggered metrics", getMetricUrl(metricToAnnotate, context.getTriggerFiredTime()));

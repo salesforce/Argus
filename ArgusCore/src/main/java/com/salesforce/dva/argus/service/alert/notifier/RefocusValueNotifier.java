@@ -35,7 +35,6 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Notification;
-import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
@@ -177,19 +176,22 @@ public class RefocusValueNotifier extends AuditNotifier {
 
         if (!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
         else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
-        if(!expression.equals("")) {
-            sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/>");
-        }
-        sb.append("<p><a href='").append(getExpressionUrl(context.getAlert().getExpression())).append("'>Click here for the current view of the metric data.</a><br/><br/>");
 
+        if (context.getEvaluatedMetricSnapshotURL().isPresent() && !context.getEvaluatedMetricSnapshotURL().get().equals("")) {
+	        sb.append("<p><a href='").append(context.getEvaluatedMetricSnapshotURL().get()).append("'>Snapshot of the current view the evaluated metric data.</a><br/>");
+        } else {
+	        if(!expression.equals("")) {
+		        sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/>");
+	        }
+        }
+
+        sb.append("<p><a href='").append(getExpressionUrl(context.getAlert().getExpression())).append("'>Click here for the current view of the metric data.</a><br/><br/>");
         sb.append("<p><small>Disclaimer:  This alert was evaluated using the time series data as it existed at the time of evaluation.  ");
         sb.append("If the data source has inherent lag or a large aggregation window is used during data collection, it is possible ");
         sb.append("for the time series data to be updated such that the alert condition is no longer met.  This may be avoided by ");
         sb.append("ensuring the time window used in alert expression is outside the range of the datasource lag.</small>");
         return sb.toString();
     }
-
-
 
     @Override
 	public String getName() {

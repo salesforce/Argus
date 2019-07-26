@@ -48,6 +48,7 @@ import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
+import com.salesforce.dva.argus.service.alert.retriever.ImageDataRetriever;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,6 +83,7 @@ public class SchedulingServiceTest {
     @Mock private HistoryService _historyServiceMock;
     @Mock private MonitorService _monitorServiceMock;
     @Mock private AuditService _auditServiceMock;
+    @Mock private ImageDataRetriever imageDataRetrieverMock;
 
     private EntityManager em;
 
@@ -129,7 +131,7 @@ public class SchedulingServiceTest {
 
         // Alert service with mocked tsdb service
         DefaultAlertService alertServiceOriginal = new DefaultAlertService(system.getConfiguration(), mqService, _metricServiceMock, _auditServiceMock,
-                _tsdbServiceMock, _mailServiceMock, _historyServiceMock, _monitorServiceMock, system.getNotifierFactory(),
+                _tsdbServiceMock, _mailServiceMock, _historyServiceMock, _monitorServiceMock, imageDataRetrieverMock, system.getNotifierFactory(),
                 _emProviderMock);
 
         DefaultAlertService alertService = spy(alertServiceOriginal);

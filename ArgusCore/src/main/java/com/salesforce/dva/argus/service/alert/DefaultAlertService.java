@@ -57,7 +57,10 @@ import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.NotifierFactory;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.alert.retriever.ImageDataRetrievalContext;
+import com.salesforce.dva.argus.service.alert.retriever.ImageDataRetriever;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
+import com.salesforce.dva.argus.service.mail.EmailContext;
 import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
@@ -69,6 +72,7 @@ import com.salesforce.dva.argus.util.RequestContext;
 import com.salesforce.dva.argus.util.RequestContextHolder;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +90,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
@@ -134,6 +139,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private final TSDBService _tsdbService;
 	private final MetricService _metricService;
 	private final MailService _mailService;
+	private final ImageDataRetriever _imageDataRetriever;
 	private final SystemConfiguration _configuration;
 	private final HistoryService _historyService;
 	private final MonitorService _monitorService;
@@ -170,7 +176,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	@Inject
 	public DefaultAlertService(SystemConfiguration configuration, MQService mqService, MetricService metricService,
 							   AuditService auditService, TSDBService tsdbService, MailService mailService, HistoryService historyService,
-							   MonitorService monitorService, NotifierFactory notifierFactory, Provider<EntityManager> emProvider)
+							   MonitorService monitorService, ImageDataRetriever imageDataRetriever, NotifierFactory notifierFactory, Provider<EntityManager> emProvider)
 	{
 		super(auditService, configuration);
 		requireArgument(mqService != null, "MQ service cannot be null.");
@@ -183,6 +189,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_configuration = configuration;
 		_historyService = historyService;
 		_monitorService = monitorService;
+		_imageDataRetriever = imageDataRetriever;
 		_notifierFactory = notifierFactory;
 		_emProvider = emProvider;
 
@@ -1303,7 +1310,18 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			triggerValue = metric.getDatapoints().get(triggerFiredTime);
 		}
 
-		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, triggerValue, metric, history);
+		Pair<String, byte[]> evaluatedMetricSnapshotDetails = null;
+		String evaluatedMetricSnapshotURL = null;
+		if (isImagesInNotificationsEnabled(action)) {
+			ImageDataRetrievalContext imageDataRetrievalContext = new ImageDataRetrievalContext(alert, trigger,
+					triggerFiredTime, metric, Notifier.NotificationStatus.TRIGGERED);
+			evaluatedMetricSnapshotDetails = getEvaluatedMetricSnapshotDetails(imageDataRetrievalContext);
+			if (evaluatedMetricSnapshotDetails != null) {
+				evaluatedMetricSnapshotURL = _imageDataRetriever.getImageURL(evaluatedMetricSnapshotDetails);
+			}
+		}
+
+		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, triggerValue, metric, history, evaluatedMetricSnapshotDetails, evaluatedMetricSnapshotURL);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
@@ -1353,9 +1371,38 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		history.appendMessageNUpdateHistory(logMessage, null, 0);
 	}
 
+	private boolean isImagesInNotificationsEnabled(String action) {
+		return Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.IMAGES_IN_NOTIFICATIONS_ENABLED)) &&
+				(ACTION_TRIGGERED.equals(action) || ACTION_CLEARED.equals(action));
+	}
+
+	private Pair<String, byte[]> getEvaluatedMetricSnapshotDetails(ImageDataRetrievalContext imageDataRetrievalContext) {
+		Pair<String, byte[]> evaluatedMetricSnapshotDetails;
+		try {
+			evaluatedMetricSnapshotDetails = _imageDataRetriever.getAnnotatedImage(imageDataRetrievalContext);
+		} catch (Exception e) {
+			_logger.error("Exception encountered while trying to fetch the evaluated metric snapshot details. The snapshot" +
+					" or the URL will not be displayed for notification associated with alert ID "
+					+ imageDataRetrievalContext.getAlert().getId(), e);
+			return null;
+		}
+		return evaluatedMetricSnapshotDetails;
+	}
+
 
 	public void sendClearNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert, Long alertEnqueueTime, String action) {
-		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), 0.0, metric, history);
+		Pair<String, byte[]> evaluatedMetricSnapshotDetails = null;
+		String evaluatedMetricSnapshotURL = null;
+
+		if (isImagesInNotificationsEnabled(action)) {
+			ImageDataRetrievalContext imageDataRetrievalContext = new ImageDataRetrievalContext(alert, trigger, metric, Notifier.NotificationStatus.CLEARED);
+			evaluatedMetricSnapshotDetails = getEvaluatedMetricSnapshotDetails(imageDataRetrievalContext);
+			if (evaluatedMetricSnapshotDetails != null) {
+				evaluatedMetricSnapshotURL = _imageDataRetriever.getImageURL(evaluatedMetricSnapshotDetails);
+			}
+		}
+
+		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), 0.0, metric, history, evaluatedMetricSnapshotDetails, evaluatedMetricSnapshotURL);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
@@ -1445,11 +1492,21 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			message.append(MessageFormat.format("<br> Exception message: The alert with id {0} does not exist.", alertId.intValue()));
 		}
 		message.append(MessageFormat.format("<br> Time stamp: {0}", History.DATE_FORMATTER.get().format(new Date(System.currentTimeMillis()))));
-		_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
+
+		EmailContext.Builder emailContextBuilder = new EmailContext.Builder()
+				.withRecipients(to)
+				.withSubject(subject)
+				.withEmailBody(message.toString())
+				.withContentType("text/html; charset=utf-8")
+				.withEmailPriority(MailService.Priority.HIGH);
+
+		_mailService.sendMessage(emailContextBuilder.build());
 		if (alert != null && alert.getOwner() != null && alert.getOwner().getEmail() != null && !alert.getOwner().getEmail().isEmpty()) {
 			to.clear();
 			to.add(alert.getOwner().getEmail());
-			_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
+
+			emailContextBuilder = emailContextBuilder.withRecipients(to);
+			_mailService.sendMessage(emailContextBuilder.build());
 		}
 	}
 
@@ -1465,7 +1522,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			if (alert.getOwner() != null && alert.getOwner().getEmail() != null && !alert.getOwner().getEmail().isEmpty()) {
 				Set<String> to = new HashSet<>();
 				to.add(alert.getOwner().getEmail());
-				_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.NORMAL);
+				EmailContext emailContext = new EmailContext.Builder()
+						.withRecipients(to)
+						.withSubject(subject)
+						.withEmailBody(message.toString())
+						.withContentType("text/html; charset=utf-8")
+						.withEmailPriority(MailService.Priority.NORMAL)
+						.build();
+
+				_mailService.sendMessage(emailContext);
 			}
 		}
 	}
@@ -1482,7 +1547,16 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		message.append(MessageFormat.format("<br> Alert name: {0}" , alert.getName()));
 		message.append(MessageFormat.format("<br> No data found for the following metric expression: {0}", alert.getExpression()));
 		message.append(MessageFormat.format("<br> Time stamp: {0}", History.DATE_FORMATTER.get().format(new Date(System.currentTimeMillis()))));
-		boolean rc = _mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
+
+		EmailContext emailContext = new EmailContext.Builder()
+				.withRecipients(to)
+				.withSubject(subject)
+				.withEmailBody(message.toString())
+				.withContentType("text/html; charset=utf-8")
+				.withEmailPriority(MailService.Priority.HIGH)
+				.build();
+
+		boolean rc = _mailService.sendMessage(emailContext);
 
 		Map<String, String> tags = new HashMap<>();
 		tags.put(ALERTIDTAG, alert.getId().toString());
@@ -2366,6 +2440,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		private long alertEnqueueTimestamp;
 		private History history;
 		private int notificationRetries = 0;
+		private Pair<String, byte[]> evaluatedMetricSnapshotDetails;
+		private String evaluatedMetricSnapshotURL;
 
 		/**
 		 * Creates a new Notification Context object.
@@ -2378,7 +2454,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 * @param  triggeredMetric    The corresponding metric
 		 * @param history             History object
 		 */
-		public NotificationContext(Alert alert, Trigger trigger, Notification notification, long triggerFiredTime, double triggerEventValue, Metric triggeredMetric, History history) {
+		public NotificationContext(Alert alert, Trigger trigger, Notification notification, long triggerFiredTime,
+								   double triggerEventValue, Metric triggeredMetric, History history, Pair<String, byte[]> evaluatedMetricSnapshotDetails, String evaluatedMetricSnapshotURL) {
 			this.alert = alert;
 			this.trigger = trigger;
 			this.coolDownExpiration = notification.getCooldownExpirationByTriggerAndMetric(trigger, triggeredMetric);
@@ -2388,6 +2465,23 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			this.triggeredMetric = triggeredMetric;
 			this.alertEnqueueTimestamp = 0L;
 			this.history = history;
+			this.evaluatedMetricSnapshotDetails = evaluatedMetricSnapshotDetails;
+			this.evaluatedMetricSnapshotURL = evaluatedMetricSnapshotURL;
+		}
+
+		public NotificationContext(Alert alert, Trigger trigger, Notification notification, long triggerFiredTime,
+								   double triggerEventValue, Metric triggeredMetric, History history) {
+			this.alert = alert;
+			this.trigger = trigger;
+			this.coolDownExpiration = notification.getCooldownExpirationByTriggerAndMetric(trigger, triggeredMetric);
+			this.notification = notification;
+			this.triggerFiredTime = triggerFiredTime;
+			this.triggerEventValue = triggerEventValue;
+			this.triggeredMetric = triggeredMetric;
+			this.alertEnqueueTimestamp = 0L;
+			this.history = history;
+			this.evaluatedMetricSnapshotDetails = null;
+			this.evaluatedMetricSnapshotURL = null;
 		}
 
 		/** Creates a new NotificationContext object. */
@@ -2539,6 +2633,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		public void setAlertEnqueueTimestamp(Long alertEnqueueTimestamp) { this.alertEnqueueTimestamp = alertEnqueueTimestamp; }
 
 		public void setNotificationRetries(int notificationRetries) { this.notificationRetries = notificationRetries; }
+
+		public Optional<Pair<String, byte[]>> getEvaluatedMetricSnapshotDetails() {
+			return Optional.ofNullable(evaluatedMetricSnapshotDetails);
+		}
+
+		public Optional<String> getEvaluatedMetricSnapshotURL() {
+			return Optional.ofNullable(evaluatedMetricSnapshotURL);
+		}
 
 		/**
 		 *

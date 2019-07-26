@@ -43,9 +43,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
 import javax.mail.Address;
 import javax.mail.BodyPart;
 import javax.mail.Message;
+import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Transport;
@@ -54,6 +57,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
+import javax.mail.util.ByteArrayDataSource;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 import static com.salesforce.dva.argus.system.SystemAssert.requireState;
@@ -100,50 +104,61 @@ public class DefaultMailService extends DefaultService implements MailService {
     }
 
     @Override
-    public boolean sendMessage(Set<String> to, String subject, String body, String contentType, Priority priority) {
+    public boolean sendMessage(EmailContext context) {
         requireState(!isDisposed(), "Cannot call methods on a disposed service.");
-        requireArgument(to != null && !to.isEmpty(), "Recipients cannot be null or empty.");
-        if (contentType == null || contentType.isEmpty()) {
-            contentType = "text; charset=utf-8";
-        }
-        if (priority == null) {
-            priority = Priority.NORMAL;
-        }
+        requireArgument(context.getRecipients() != null && !context.getRecipients().isEmpty(),
+                "Recipients cannot be null or empty.");
+        String contentType = (context.getContentType() == null || context.getContentType().isEmpty()) ?
+                "text; charset=utf-8" : context.getContentType();
+
+        MailService.Priority priority = (context.getEmailPriority() == null) ? Priority.NORMAL : context.getEmailPriority();
+
         if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.EMAIL_ENABLED))) {
             try {
                 Session session = Session.getInstance(getMailProperties());
                 MimeMessage message = new MimeMessage(session);
 
                 message.setFrom(new InternetAddress(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.ADMIN_EMAIL)));
-                message.setSubject(subject);
-                message.setRecipients(Message.RecipientType.TO, getEmailToAddresses(to));
+                message.setSubject(context.getSubject());
+                message.setRecipients(Message.RecipientType.TO, getEmailToAddresses(context.getRecipients()));
                 message.addHeader("X-Priority", String.valueOf(priority.getXPriority()));
 
-                BodyPart messageBodyPart1 = new MimeBodyPart();
-
-                messageBodyPart1.setContent(body, contentType);
-
                 Multipart multipart = new MimeMultipart();
-
+                BodyPart messageBodyPart1 = new MimeBodyPart();
+                messageBodyPart1.setContent(context.getEmailBody(), contentType);
                 multipart.addBodyPart(messageBodyPart1);
+
+                context.getImageDetails().ifPresent(imageDetail -> {
+                    try {
+                        BodyPart imageBodyPart = new MimeBodyPart();
+                        DataSource dataSource = new ByteArrayDataSource(imageDetail.getRight(), "image/jpg");
+                        imageBodyPart.setDataHandler(new DataHandler(dataSource));
+                        imageBodyPart.setHeader("Content-ID", "<" + imageDetail.getLeft() + ">");
+                        imageBodyPart.setDisposition(MimeBodyPart.INLINE);
+                        multipart.addBodyPart(imageBodyPart);
+                    } catch (MessagingException e) {
+                        _logger.warn("Unable to embed image into the email with subject" + context.getSubject(), e);
+                    }
+                });
+
                 message.setContent(multipart);
                
                 Transport transport = session.getTransport();
                 
-                transport.connect(_config.getValue(Property.EMAIL_SMTP_HOST.getName(),Property.EMAIL_SMTP_HOST.getDefaultValue()), 
+                transport.connect(_config.getValue(Property.EMAIL_SMTP_HOST.getName(),Property.EMAIL_SMTP_HOST.getDefaultValue()),
                 		_config.getValue(Property.EMAIL_SMTP_USERNAME.getName(),Property.EMAIL_SMTP_USERNAME.getDefaultValue()), 
                 		_config.getValue(Property.EMAIL_SMTP_PASSWORD.getName(), Property.EMAIL_SMTP_PASSWORD.getDefaultValue())); 
             	
                 transport.sendMessage(message, message.getAllRecipients());
-                _logger.info("Sent email having subject '{}' to {}.", subject, to);
+                _logger.info("Sent email having subject '{}' to {}.", context.getSubject(), context.getRecipients());
                 return true;
             } catch (Exception ex) {
-                String logMessage = MessageFormat.format("MailService: Failed to send an email notification to {0} .", to);
+                String logMessage = MessageFormat.format("MailService: Failed to send an email notification to {0} .", context.getRecipients());
                 _logger.error(logMessage, ex);
                 throw new SystemException(logMessage, ex);
             }
         } else {
-            _logger.warn("Sending email is disabled.  Not sending email having subject '{}' to {}.", subject, to);
+            _logger.warn("Sending email is disabled.  Not sending email having subject '{}' to {}.", context.getSubject(), context.getRecipients());
         }
         
         return false;

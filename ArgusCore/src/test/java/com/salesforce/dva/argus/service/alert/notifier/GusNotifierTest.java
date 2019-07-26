@@ -14,7 +14,9 @@ import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
+import com.salesforce.dva.argus.service.alert.retriever.ImageDataRetriever;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -45,7 +47,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import static org.powermock.api.mockito.PowerMockito.whenNew;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({GusNotifier.class, GusTransport.class, EntityUtils.class})
+@PrepareForTest({GusNotifier.class, GusTransport.class, EntityUtils.class, ImageDataRetriever.class})
 public class GusNotifierTest {
     /* Constants */
     private static final String SYSTEM_CONFIG_GUS_ENABLED = "system.property.gus.enabled";
