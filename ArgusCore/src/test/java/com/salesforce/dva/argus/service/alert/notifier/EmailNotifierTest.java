@@ -14,6 +14,7 @@ import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.mail.EmailContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.TemplateReplacer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,8 +73,7 @@ public class EmailNotifierTest {
     private static final String IMAGE_URL = "https://argus-ws.data.sfdc.net/argusws/images/id/img1";
     private static final String TRACKING_ID = "1_" + TRIGGER_FIRED_TIME_SECONDS;
 
-    private static final List<String> subscriptionList = Arrays.asList("test-subscription");
-    private static final Set<String> subscriptionSet = new HashSet<>(subscriptionList);
+    private static final List<String> SUBSCRIPTION_LIST = Arrays.asList("test-subscription");
 
     @Mock
     private MailService mailServiceMock;
@@ -107,7 +107,7 @@ public class EmailNotifierTest {
         List<Trigger> triggerList = ImmutableList.of(trigger);
         alert.setTriggers(triggerList);
 
-        Notification notification = getNotification(EMAIL_NOTIFICATION_NAME, EMAIL_NOTIFIER_NAME, alert, subscriptionList);
+        Notification notification = getNotification(EMAIL_NOTIFICATION_NAME, EMAIL_NOTIFIER_NAME, alert, SUBSCRIPTION_LIST);
         alert.addNotification(notification);
 
         Metric metric = getMetric();
@@ -121,6 +121,77 @@ public class EmailNotifierTest {
     @Test
     public void testGetNameReturnsEmailNotifierClassName() {
         assertEquals(emailNotifier.getName(), "com.salesforce.dva.argus.service.alert.notifier.EmailNotifier");
+    }
+
+    @Test
+    public void getEmailSubject_testDefaultValueWithOnly1Trigger1Notification() {
+        String subjectTemplate = "[Argus] Notification for Alert: ${alert.name}";
+        String expectedSubject = TemplateReplacer.applyTemplateChanges(notificationContext, subjectTemplate);
+        String subject = emailNotifier.getEmailSubject(notificationContext);
+
+        assertEquals(expectedSubject, subject);
+
+        notificationContext.getNotification().setEmailSubject("  "); // whitespace should get "trimmed" and default subject should be returned
+        subject = emailNotifier.getEmailSubject(notificationContext);
+
+        assertEquals(expectedSubject, subject);
+    }
+
+    @Test
+    public void getEmailSubject_testDefaultValueWith2Triggers2Notifications() {
+        Alert alert = notificationContext.getAlert();
+        Trigger trigger2 = getTrigger(alert, TRIGGER_TYPE, TRIGGER_NAME2, TRIGGER_THRESHOLD2, TRIGGER_INERTIA_MILLIS);
+        alert.setTriggers(Arrays.asList(notificationContext.getTrigger(), trigger2));
+        Notification notification2 = getNotification("name2",
+                EMAIL_NOTIFIER_NAME,
+                alert,
+                SUBSCRIPTION_LIST);
+        alert.setNotifications(Arrays.asList(notificationContext.getNotification(), notification2));
+
+        String subjectTemplate = "[Argus] Notification for Alert: ${alert.name} Notification: ${notification.name} Trigger:${trigger.name}";
+        String expectedSubject = TemplateReplacer.applyTemplateChanges(notificationContext, subjectTemplate);
+        String subject = emailNotifier.getEmailSubject(notificationContext);
+
+        assertEquals(expectedSubject, subject);
+    }
+
+    @Test
+    public void getEmailSubject_testDefaultValueWith2Notifications() {
+        Alert alert = notificationContext.getAlert();
+        Notification notification2 = getNotification("name2",
+                EMAIL_NOTIFIER_NAME,
+                alert,
+                SUBSCRIPTION_LIST);
+        alert.setNotifications(Arrays.asList(notificationContext.getNotification(), notification2));
+
+        String subjectTemplate = "[Argus] Notification for Alert: ${alert.name} Notification: ${notification.name}";
+        String expectedSubject = TemplateReplacer.applyTemplateChanges(notificationContext, subjectTemplate);
+        String subject = emailNotifier.getEmailSubject(notificationContext);
+
+        assertEquals(expectedSubject, subject);
+    }
+
+    @Test
+    public void getEmailSubject_testDefaultValueWith2Triggers() {
+        Alert alert = notificationContext.getAlert();
+        Trigger trigger2 = getTrigger(alert, TRIGGER_TYPE, TRIGGER_NAME2, TRIGGER_THRESHOLD2, TRIGGER_INERTIA_MILLIS);
+        alert.setTriggers(Arrays.asList(notificationContext.getTrigger(), trigger2));
+
+        String subjectTemplate = "[Argus] Notification for Alert: ${alert.name} Trigger:${trigger.name}";
+        String expectedSubject = TemplateReplacer.applyTemplateChanges(notificationContext, subjectTemplate);
+        String subject = emailNotifier.getEmailSubject(notificationContext);
+
+        assertEquals(expectedSubject, subject);
+    }
+
+    @Test
+    public void getEmailSubject_test() {
+        String expectedSubject = "TEST SUBJECT";
+        notificationContext.getNotification().setEmailSubject(expectedSubject);
+
+        String subject = emailNotifier.getEmailSubject(notificationContext);
+
+        assertEquals(expectedSubject, subject);
     }
 
     @Test
@@ -154,7 +225,7 @@ public class EmailNotifierTest {
         List<Trigger> triggerList = ImmutableList.of(trigger);
         alert.setTriggers(triggerList);
 
-        Notification notification = getNotification(EMAIL_NOTIFICATION_NAME, EMAIL_NOTIFIER_NAME, alert, subscriptionList);
+        Notification notification = getNotification(EMAIL_NOTIFICATION_NAME, EMAIL_NOTIFIER_NAME, alert, SUBSCRIPTION_LIST);
         alert.addNotification(notification);
 
         Metric metric = getMetric();
@@ -284,10 +355,10 @@ public class EmailNotifierTest {
         List<Trigger> triggerList = ImmutableList.of(trigger);
         alert.setTriggers(triggerList);
 
-        Notification emailNotification = getNotification(EMAIL_NOTIFICATION_NAME, EMAIL_NOTIFIER_NAME, alert, subscriptionList);
+        Notification emailNotification = getNotification(EMAIL_NOTIFICATION_NAME, EMAIL_NOTIFIER_NAME, alert, SUBSCRIPTION_LIST);
         alert.addNotification(emailNotification);
 
-        Notification pagerDutyNotification = getNotification(PAGER_DUTY_NOTIFICATION_NAME, PAGER_DUTY_NOTIFIER_NAME, alert, subscriptionList);
+        Notification pagerDutyNotification = getNotification(PAGER_DUTY_NOTIFICATION_NAME, PAGER_DUTY_NOTIFIER_NAME, alert, SUBSCRIPTION_LIST);
         alert.addNotification(pagerDutyNotification);
 
         Metric metric = getMetric();
@@ -327,7 +398,7 @@ public class EmailNotifierTest {
         List<Trigger> triggerList = ImmutableList.of(trigger1, trigger2);
         alert.setTriggers(triggerList);
 
-        Notification emailNotification = getNotification(EMAIL_NOTIFICATION_NAME, EMAIL_NOTIFIER_NAME, alert, subscriptionList);
+        Notification emailNotification = getNotification(EMAIL_NOTIFICATION_NAME, EMAIL_NOTIFIER_NAME, alert, SUBSCRIPTION_LIST);
         alert.addNotification(emailNotification);
 
         Metric metric = getMetric();
@@ -384,7 +455,7 @@ public class EmailNotifierTest {
 
     private String getAuditMessageWhenEmailNotSent(String notificationStatus) {
         return " Not able to send email for " + notificationStatus.toLowerCase() + " notification: `" + EMAIL_NOTIFICATION_NAME +
-                ".` to recipient " + subscriptionList;
+                ".` to recipient " + SUBSCRIPTION_LIST;
     }
 
     private String getNotificationSubjectSingleNotification() {

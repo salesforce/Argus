@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.alert.notifier;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -60,6 +60,8 @@ import com.salesforce.dva.argus.util.TemplateReplacer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.commons.lang.StringUtils;
 
 /**
  * Implementation of notifier interface for notifying via email.
@@ -151,14 +153,32 @@ public class EmailNotifier extends AuditNotifier {
         return new HashSet<>(notification.getSubscriptions());
     }
 
-    private String getEmailSubject(NotificationContext context) {
-        String currentSubject = "[Argus] Notification for Alert: " + TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName());
+    /**
+     * Returns the email subject.
+     *
+     * @param   context             The notification context.
+     *
+     * @return  The email subject.
+     */
+    protected String getEmailSubject(NotificationContext context) {
+        String subject = context.getNotification().getEmailSubject();
+        if (StringUtils.isBlank(subject)) {
+            subject = generateDefaultEmailSubjectTemplate(context);
+        }
+        return TemplateReplacer.applyTemplateChanges(context, subject);
+    }
+
+    private String generateDefaultEmailSubjectTemplate(NotificationContext context) {
         Alert currentAlert = context.getAlert();
-        if (currentAlert.getNotifications().size() > 1)
-            currentSubject += " Notification: "+ TemplateReplacer.applyTemplateChanges(context, context.getNotification().getName());
-        if (currentAlert.getTriggers().size() > 1)
-            currentSubject += " Trigger:" + TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName());
-        return currentSubject;
+        StringBuilder subject = new StringBuilder();
+        subject.append("[Argus] Notification for Alert: ${alert.name}");
+        if (currentAlert.getNotifications().size() > 1) {
+            subject.append(" Notification: ${notification.name}");
+        }
+        if (currentAlert.getTriggers().size() > 1) {
+            subject.append(" Trigger:${trigger.name}");
+        }
+        return subject.toString();
     }
 
     /**
@@ -243,13 +263,13 @@ public class EmailNotifier extends AuditNotifier {
                 "here for the current view of the metric data.</a><br/><br/>");
 
         if(context.getTriggeredMetric()!=null) {
-			if(notificationStatus == NotificationStatus.TRIGGERED){
-				sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
-			}else {
-				sb.append(MessageFormat.format("<b>Cleared on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
-			}
-		}
-		
+            if(notificationStatus == NotificationStatus.TRIGGERED) {
+                sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+            }else {
+                sb.append(MessageFormat.format("<b>Cleared on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+            }
+        }
+
         sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger, context)));
         if(!trigger.getType().equals(TriggerType.NO_DATA) && notificationStatus == NotificationStatus.TRIGGERED){
             sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
@@ -261,7 +281,7 @@ public class EmailNotifier extends AuditNotifier {
             sb.append(getMetricUrl(metricToAnnotate, context.getTriggerFiredTime()));
             sb.append("'>Click here to view the annotated series for ").append(metricToAnnotate).append(".</a><br/>");
         }
-        
+
         sb.append("<p><a href='").append(getAlertUrl(notification.getAlert().getId())).append("'>Click here to view alert definition.</a><br/>");
         sb.append("<p><small>Disclaimer:  This alert was evaluated using the time series data as it existed at the time of evaluation.  ");
         sb.append("If the data source has inherent lag or a large aggregation window is used during data collection, it is possible ");
