@@ -38,6 +38,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.mock;
@@ -251,6 +252,26 @@ public class GusNotifierTest {
     public void clearAdditionalNotification_testPostGusNotificationRespCode204() throws Exception {
         boolean result = clearAdditionalNotification_testHappyCaseTemplate(204);
         assertTrue(result);
+    }
+
+    @Test
+    public void clearAdditionalNotification_testDisableClearNotification() throws Exception {
+        context.getNotification().setEnableClearNotification(false);
+
+        // create object under test
+        notifier = new GusNotifier(metricService, annotationService, auditService, config, emf, monitorService);
+
+        // test
+        boolean result = notifier.clearAdditionalNotification(context);
+
+        // verify
+        assertTrue(result);
+        verify(gusTransport, never()).getEndpointInfo(false);
+        verify(gusTransport, never()).getEndpointInfo(true);
+        verify(httpClient, never()).execute(any());
+        verify(httpResponse, never()).getStatusLine();
+        verify(httpResponseStatusLine, never()).getStatusCode();
+        verify(httpResponse, never()).close();
     }
 
     private boolean sendAdditionalNotification_testHappyCaseTemplate(int postNotificationResponseCode) throws Exception {

@@ -42,6 +42,8 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -295,6 +297,16 @@ public class EmailNotifierTest {
 
         assertTrue(notificationContext.getHistory().getMessage().contains(getAuditMessageWhenEmailNotSent(CLEARED)));
         assertFalse(isEmailSent);
+    }
+
+    @Test
+    public void clearAdditionalNotification_testDisabledClearNotification() {
+        notificationContext.getNotification().setEnableClearNotification(false);
+
+        boolean result = emailNotifier.clearAdditionalNotification(notificationContext);
+
+        assertTrue(result);
+        verify(mailServiceMock, never()).sendMessage(any());
     }
 
     @Test

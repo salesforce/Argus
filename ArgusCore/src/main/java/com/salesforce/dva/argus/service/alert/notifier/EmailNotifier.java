@@ -298,14 +298,16 @@ public class EmailNotifier extends AuditNotifier {
         requireArgument(context != null, "Notification context cannot be null.");
         super.clearAdditionalNotification(context);
 
-        Set<String> recipients = _getNotificationSubscriptions(context);
-        EmailContext emailContext = getEmailContextForEmailNotifications(context, NotificationStatus.CLEARED, recipients);
+        boolean isSent = true;
+        if (context.getNotification().isEnableClearNotification()) {
+            Set<String> recipients = _getNotificationSubscriptions(context);
+            EmailContext emailContext = getEmailContextForEmailNotifications(context, NotificationStatus.CLEARED, recipients);
 
-        boolean isSent = _mailService.sendMessage(emailContext);
-        if (!isSent) {
-            context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to send email for cleared notification: `{0}.` to recipient {1}",
-                    context.getNotification().getName(), recipients), null, 0);
-
+            isSent = _mailService.sendMessage(emailContext);
+            if (!isSent) {
+                context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to send email for cleared notification: `{0}.` to recipient {1}",
+                        context.getNotification().getName(), recipients), null, 0);
+            }
         }
         return isSent;
     }
