@@ -47,7 +47,7 @@ public class MetricNumberFormat extends NumberFormat {
     private static final long serialVersionUID = 1;
 
     private static NavigableMap<Double, String> suffixes = new TreeMap<>();
-    private static  DecimalFormat decimalFormat = new DecimalFormat("0.00");
+    private static  DecimalFormat decimalFormat = new DecimalFormat("0.###");
     static {
         decimalFormat.setRoundingMode(RoundingMode.DOWN);
         suffixes.put(0.000000000000000000000001d, "y");
@@ -76,7 +76,7 @@ public class MetricNumberFormat extends NumberFormat {
     public String formatNumber(double value) {
         if (value == Double.MIN_VALUE) return formatNumber(Double.MIN_VALUE + 1);
         if (value < 0) return "-" + formatNumber(-value);
-        if (value < 1000 && value>=0) return Double.toString(value);
+        if ((value < 1000 && value>=1) || value==0) return decimalFormat.format(value);
         Map.Entry<Double, String> e = suffixes.floorEntry(value);
         Double divideBy = e.getKey();
         String suffix = e.getValue();
