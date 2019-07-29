@@ -3,6 +3,7 @@ package com.salesforce.perfeng.akc.consumer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.MetricStorageService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.monitor.CounterMetric;
 import com.salesforce.dva.argus.service.monitor.GaugeMetric;
@@ -29,6 +30,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.DoubleAdder;
+import java.util.stream.Collectors;
 
 import static com.salesforce.perfeng.akc.AKCAssert.requireArgument;
 import static com.salesforce.perfeng.akc.AKCUtil.replaceUnsupportedChars;
@@ -38,7 +40,7 @@ public class InstrumentationService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(InstrumentationService.class);
 	private static final String SCOPE = "ajna.consumer";
 	private static final String HOSTNAME = getHostname();
-	private final AtomicReference<Map<Metric, CounterMetric>> instrumentedCounterMetrics;
+	private final AtomicReference<Map<Metric, GaugeMetric>> instrumentedMetrics;
 	private final Map<Metric, MetricMXBean> registeredMetrics;
 	private static final int MAX_ADD_LATENCY_METRIC_ATTEMPTS = 100;
 
@@ -117,7 +119,7 @@ public class InstrumentationService {
 
 
 	@VisibleForTesting
-	protected static final List<String> DATAPOINT_METRICS = Arrays.asList(
+	protected static final List<String> DATAPOINT_COUNTER_METRICS = Arrays.asList(
 			DATAPOINTS_CONSUMED,
 			DATAPOINTS_POSTED,
 			METRIC_DATAPOINTS_DEDUPED,
@@ -132,9 +134,8 @@ public class InstrumentationService {
 			HISTOGRAM_TOO_OLD,
 			HISTOGRAM_TIMESTAMP_INVALID,
 			HISTOGRAM_DROPPED_TOOLARGE,
-			HISTOGRAM_DROPPED,
-			METRIC_CONSUMER_LAG);
-	private static final List<String> SCHEMA_METRICS = Arrays.asList(
+			HISTOGRAM_DROPPED);
+	private static final List<String> SCHEMA_COUNTER_METRICS = Arrays.asList(
 			SCHEMA_CONSUMED,
 			SCHEMA_POSTED,
 			SCHEMA_BLOCKED,
@@ -149,12 +150,17 @@ public class InstrumentationService {
 			HISTOGRAM_SCHEMA_TOO_OLD,
 			HISTOGRAM_SCHEMA_TIMESTAMP_INVALID,
 			HISTOGRAM_SCHEMA_DROPPED);
-	private static final List<String> ANNOTATIONS_METRICS = Arrays.asList(
+	private static final List<String> ANNOTATIONS_COUNTER_METRICS = Arrays.asList(
 			ANNOTATIONS_CONSUMED,
 			ANNOTATIONS_POSTED,
 			ANNOTATIONS_BLOCKED,
 			ANNOTATIONS_DROPPED,
 			ANNOTATIONS_DROPPED_TOOLARGE);
+	private static final List<String> METRICS_TO_ES = Arrays.asList(
+			METRIC_CONSUMER_LAG
+	);
+
+
 
 	private static final double[] HIGH_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS = new double[] {2000, 5000, 10000, 20000, 40000, 80000};
 	private static final double[] MID_LATENCY_METRIC_BUCKET_LIMITS_MILLISECONDS = new double[] {500, 1000, 2000, 5000, 10000, 20000};
@@ -179,6 +185,7 @@ public class InstrumentationService {
 			.build();
 
 	private final TSDBService tsdbService;
+	private MetricStorageService metricStorageService;
 	private Thread instrumentMetricsThread;
 	private final String site;
 
@@ -188,16 +195,26 @@ public class InstrumentationService {
 	private final MBeanServer mbeanServer;
 
 	synchronized static InstrumentationService getInstance(TSDBService tsdbService) {
+		return getInstance(tsdbService, null);
+	}
+
+	synchronized static InstrumentationService getInstance(TSDBService tsdbService, MetricStorageService metricStorageService) {
 		if (instance == null) {
-			instance = new InstrumentationService(tsdbService);
+			instance = new InstrumentationService(tsdbService, metricStorageService);
 			instance.instrument();
+		} else if (metricStorageService == null) {
+			instance.setMetricStorageService(metricStorageService);
 		}
 		return instance;
 	}
 
+	private void setMetricStorageService(MetricStorageService metricStorageService) {
+		this.metricStorageService = metricStorageService;
+	}
+
 	@VisibleForTesting
-	Map<Metric, CounterMetric> getInstrumentedCounterMetrics() {
-		return instrumentedCounterMetrics.get();
+	Map<Metric, GaugeMetric> getInstrumentedMetrics() {
+		return instrumentedMetrics.get();
 	}
 
 	@VisibleForTesting
@@ -210,22 +227,23 @@ public class InstrumentationService {
 		return registeredMetrics;
 	}
 
-	InstrumentationService(TSDBService tsdbService) {
-		this(tsdbService, true, ManagementFactory.getPlatformMBeanServer());
+	InstrumentationService(TSDBService tsdbService, MetricStorageService metricStorageService) {
+		this(tsdbService, true, ManagementFactory.getPlatformMBeanServer(), metricStorageService);
 	}
-	
+
 	@VisibleForTesting
-	InstrumentationService(TSDBService tsdbService, boolean isExporting, MBeanServer mBeanServer) {
+	InstrumentationService(TSDBService tsdbService, boolean isExporting, MBeanServer mBeanServer, MetricStorageService metricStorageService) {
 		String bootstrapServers = AKCConfiguration.getParameter(AKCConfiguration.Parameter.BOOTSTRAP_SERVERS);
 		site = replaceUnsupportedChars(bootstrapServers);
 		this.tsdbService = tsdbService;
 		this.instrumentedLatencyMetrics = new AtomicReference<>();
 		this.instrumentedLatencyMetrics.set(new ConcurrentHashMap<>());
 		InstrumentationService.exportToJMX = isExporting;
-		this.instrumentedCounterMetrics = new AtomicReference<Map<Metric, CounterMetric>>();
-		this.instrumentedCounterMetrics.set(new ConcurrentHashMap<Metric, CounterMetric>());
+		this.instrumentedMetrics = new AtomicReference<Map<Metric, GaugeMetric>>();
+		this.instrumentedMetrics.set(new ConcurrentHashMap<Metric, GaugeMetric>());
 		this.registeredMetrics = new ConcurrentHashMap<>();
 		this.mbeanServer = mBeanServer;
+		this.metricStorageService = metricStorageService;
 	}
 
 	private static String getHostname() {
@@ -251,28 +269,60 @@ public class InstrumentationService {
 		}
 	}
 
-	public void setCounterValue(String metric, Double value, Map<String, String> tags) {
+	/**
+	 * Creates/Updates a GaugeMXBean instance for the metric sent. It is then pushed to prometheus and tsdb.
+	 * @param metric Name of metric for which gauge value is to be set
+	 * @param value Value of the metric to be set
+	 * @param tags User defined tags to be added to the metric
+	 */
+	public void setGaugeValue(String metric, Double value, Map<String, String> tags) {
 		requireArgument(metric != null && !metric.isEmpty(), "Metric to instrument cannot be null or empty.");
 
 		Metric key = constructMetric(metric, tags, false);
-		instrumentedCounterMetrics.get().computeIfAbsent(key, k -> getCounterMXBeanInstance(k)).setValue(value);
+		instrumentedMetrics.get().computeIfAbsent(key, k -> getGaugeMXBeanInstance(k)).setValue(value);
 	}
 
+	/**
+	 *
+	 * @param metric Name of metric for which counter value is to be updated
+	 * @param delta value added to the current counter
+	 * @param tags User defined tags to be added to the metric
+	 */
 	public void updateCounter(String metric, double delta, Map<String, String> tags) {
 		updateCounter(metric, delta, tags, false);
 	}
 
+	/**
+	 *
+	 * @param metric Name of metric for which counter value is to be updated
+	 * @param delta value added to the current counter
+	 * @param tags User defined tags to be added to the metric
+	 * @param useQuotaOptimizeTags default tags added would differ based on the boolean flag selected
+	 */
 	public void updateCounter(String metric, double delta, Map<String, String> tags, boolean useQuotaOptimizeTags) {
 		requireArgument(metric != null && !metric.isEmpty(), "Metric to instrument cannot be null or empty.");
 
 		Metric key = constructMetric(metric, tags, useQuotaOptimizeTags);
-		instrumentedCounterMetrics.get().computeIfAbsent(key, k -> getCounterMXBeanInstance(k)).addValue(delta);
+		instrumentedMetrics.get().computeIfAbsent(key, k -> getCounterMXBeanInstance(k)).addValue(delta);
 	}
 
+	/**
+	 *
+	 * @param metric Name of metric for which gauge value is to be set
+	 * @param latencyMS latency in millis to be set
+	 * @param tags User defined tags to be added to the metric
+	 */
 	public void updateTimer(String metric, double latencyMS, Map<String, String> tags) {
 		updateTimer(metric, latencyMS, tags, false);
 	}
 
+	/**
+	 * Creates/Updates(adds) timer metric which is then pushed to prometheus and tsdb.
+	 * @param metric Name of metric for which gauge value is to be set
+	 * @param latencyMS latency in millis to be set
+	 * @param tags User defined tags to be added to the metric
+	 * @param useQuotaOptimizeTags default tags added would differ based on the boolean flag selected
+	 */
 	public void updateTimer(String metric, double latencyMS, Map<String, String> tags, boolean useQuotaOptimizeTags) {
 		requireArgument(metric != null && !metric.isEmpty(), "Metric to instrument cannot be null or empty.");
 
@@ -345,8 +395,8 @@ public class InstrumentationService {
 	}
 
 	private CounterMetric createCounterMXBean(Metric m) {
-	    return new CounterMetric(m, ".count");
-    }
+		return new CounterMetric(m, ".count");
+	}
 
 	protected GaugeMetric getGaugeMXBeanInstance(Metric m) {
 		LOGGER.debug("Get GaugeMetric=" + m.getMetric() + m.getTags());
@@ -380,8 +430,8 @@ public class InstrumentationService {
 		@Override
 		public void run() {
 			while(!Thread.currentThread().isInterrupted()) {
-				pushInstrumentedMetrics();
 				sleep();
+				pushInstrumentedMetrics();
 			}
 
 			if(Thread.currentThread().isInterrupted()) {
@@ -406,29 +456,30 @@ public class InstrumentationService {
 		void pushInstrumentedMetrics() {
 
 			boolean consumedNothing = false;
-			if (instrumentedCounterMetrics.get().isEmpty()) {
+			if (instrumentedMetrics.get().isEmpty()) {
 				consumedNothing = true;
 			}
 
 			// pull snapshot of current counters and reset map
-			final Map<Metric, CounterMetric> countersSnapshot = instrumentedCounterMetrics.getAndSet(new ConcurrentHashMap<Metric, CounterMetric>());
+			final Map<Metric, GaugeMetric> metricSnapshot = instrumentedMetrics.getAndSet(new ConcurrentHashMap<Metric, GaugeMetric>());
 
 			// Record default 0 for basic metrics in case nothing ever got dropped, posted, etc.
 			if (AKCConfiguration.getParameter(AKCConfiguration.Parameter.CONSUMER_TYPE).equals(ConsumerType.METRICS.toString())) {
-				DATAPOINT_METRICS.forEach(metric -> countersSnapshot.computeIfAbsent(constructMetric(metric, null, false), k -> getCounterMXBeanInstance(k)));
+				DATAPOINT_COUNTER_METRICS.forEach(metric -> metricSnapshot.computeIfAbsent(constructMetric(metric, null, false), k -> getCounterMXBeanInstance(k)));
 			} else if (AKCConfiguration.getParameter(AKCConfiguration.Parameter.CONSUMER_TYPE).equals(ConsumerType.SCHEMA.toString())) {
-				SCHEMA_METRICS.forEach(metric -> countersSnapshot.computeIfAbsent(constructMetric(metric, null, false), k -> getCounterMXBeanInstance(k)));
+				SCHEMA_COUNTER_METRICS.forEach(metric -> metricSnapshot.computeIfAbsent(constructMetric(metric, null, false), k -> getCounterMXBeanInstance(k)));
 			} else if (AKCConfiguration.getParameter(AKCConfiguration.Parameter.CONSUMER_TYPE).equals(ConsumerType.ANNOTATIONS.toString())) {
-				ANNOTATIONS_METRICS.forEach(metric -> countersSnapshot.computeIfAbsent(constructMetric(metric, null, false), k -> getCounterMXBeanInstance(k)));
+				ANNOTATIONS_COUNTER_METRICS.forEach(metric -> metricSnapshot.computeIfAbsent(constructMetric(metric, null, false), k -> getCounterMXBeanInstance(k)));
 			}
 
 			final long timestamp = (System.currentTimeMillis() / 60000) * 60000L;
-			for (Entry<Metric, CounterMetric> entry : countersSnapshot.entrySet()) {
+			for (Entry<Metric, GaugeMetric> entry : metricSnapshot.entrySet()) {
 				Map<Long, Double> dataPoints = new HashMap<>(1);
 
 				dataPoints.put(timestamp, entry.getValue().computeNewGaugeValueAndResetGaugeAdder());
 				entry.getKey().setDatapoints(dataPoints);
 			}
+
 
 			// pull snapshot of current latencies and reset map
 			final Map<Metric, LatencyMetricValue> latenciesSnapshot = instrumentedLatencyMetrics.getAndSet(new ConcurrentHashMap<Metric, LatencyMetricValue>());
@@ -493,25 +544,32 @@ public class InstrumentationService {
 					LOGGER.info("Last 60 seconds: Did not consume or post any objects of type " + AKCConfiguration.getParameter(AKCConfiguration.Parameter.CONSUMER_TYPE));
 				} else {
 					if (AKCConfiguration.getParameter(AKCConfiguration.Parameter.CONSUMER_TYPE).equals(ConsumerType.METRICS.toString())) {
-						logSummary(countersSnapshot, DATAPOINT_METRICS);
+						logSummary(metricSnapshot, DATAPOINT_COUNTER_METRICS);
 					} else if (AKCConfiguration.getParameter(AKCConfiguration.Parameter.CONSUMER_TYPE).equals(ConsumerType.SCHEMA.toString())) {
-						logSummary(countersSnapshot, SCHEMA_METRICS);
+						logSummary(metricSnapshot, SCHEMA_COUNTER_METRICS);
 					} else if (AKCConfiguration.getParameter(AKCConfiguration.Parameter.CONSUMER_TYPE).equals(ConsumerType.ANNOTATIONS.toString())) {
-						logSummary(countersSnapshot, ANNOTATIONS_METRICS);
+						logSummary(metricSnapshot, ANNOTATIONS_COUNTER_METRICS);
 					}
 				}
 				final List<Metric> metrics = new LinkedList<Metric>(latencyMetrics.keySet());
-				metrics.addAll(countersSnapshot.keySet());
+				metrics.addAll(metricSnapshot.keySet());
 				LOGGER.trace("pushInstrumentedMetrics metrics=" + metrics);
 
 				tsdbService.putMetrics(metrics);
+
+				List<Metric> metricsToBePushedToES = metrics.stream()
+						.filter(m -> METRICS_TO_ES.contains(m.getMetric()))
+						.collect(Collectors.toList());
+
+				// Push METRIC_TO_ES to ES metrics storage service.
+				metricStorageService.putMetrics(metricsToBePushedToES);
 			} catch(Exception e) {
 				LOGGER.warn("Failed to post metrics to TSDB", e);
 			}
 		}
 	}
 
-	private void logSummary(Map<Metric, CounterMetric> countersSnapshot, List<String> labels) {
+	private void logSummary(Map<Metric, GaugeMetric> countersSnapshot, List<String> labels) {
 
 		Map<String, DoubleAdder> summaryCounters = new HashMap<>();
 
@@ -522,11 +580,11 @@ public class InstrumentationService {
 			String metricName = metric.getMetric();
 
 			if (labels.contains(metricName)) {
-			    if (metric.getDatapoints() != null && metric.getDatapoints().values() != null &&
-                        !metric.getDatapoints().values().isEmpty()) {
-			        Double val = metric.getDatapoints().values().iterator().next();
-			        summaryCounters.computeIfAbsent(metricName, k -> new DoubleAdder()).add(val);
-                }
+				if (metric.getDatapoints() != null && metric.getDatapoints().values() != null &&
+						!metric.getDatapoints().values().isEmpty()) {
+					Double val = metric.getDatapoints().values().iterator().next();
+					summaryCounters.computeIfAbsent(metricName, k -> new DoubleAdder()).add(val);
+				}
 			}
 		}
 

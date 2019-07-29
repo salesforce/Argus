@@ -251,12 +251,12 @@ public class ElasticSearchConsumerOffsetMetricsServiceTest {
 	}
 
 	@Test
-	public void testConstructQuery() {
+	public void testConstructQuery() throws IOException {
 		Map<String, String> tags = new HashMap<>();
 		tags.put("service", "scope*");
 		tags.put("groupId", "groupId*");
 		tags.put("topic", "*");
-		when(ElasticSearchUtils.convertTimestampToMillis(1L)).thenReturn(1000L);
+		esConsumerOffsetMetricsService = _initializeSpyService(esConsumerOffsetMetricsService, getReply, false);
 		MetricQuery mQ = new MetricQuery("test", "test", tags, 0L, 1L);
 		mQ.setDownsamplingPeriod((long)(2 * 60 * 1000));
 		mQ.setDownsampler(MetricQuery.Aggregator.MAX);
@@ -363,7 +363,7 @@ public class ElasticSearchConsumerOffsetMetricsServiceTest {
 	@Test
 	public void testPutMetricsUsingOffsetIndex() throws IOException {
 		Long currentTime = System.currentTimeMillis();
-		ElasticSearchConsumerOffsetMetricsService spyService = _initializeSpyService(esConsumerOffsetMetricsService, successReply, true, currentTime);
+		ElasticSearchConsumerOffsetMetricsService spyService = _initializeSpyService(esConsumerOffsetMetricsService, successReply, true);
 		List<Metric> metrics = new ArrayList<>();
 
 		Metric record1 = new Metric("scope", "metric");
@@ -415,7 +415,7 @@ public class ElasticSearchConsumerOffsetMetricsServiceTest {
 		List<MetricQuery> queries = new ArrayList<>();
 		queries.add(metricQuery);
 
-		ElasticSearchConsumerOffsetMetricsService spyService = _initializeSpyService(esConsumerOffsetMetricsService, getReply, false, 1557809359L, 1557809599L);
+		ElasticSearchConsumerOffsetMetricsService spyService = _initializeSpyService(esConsumerOffsetMetricsService, getReply, false);
 
 		Map<MetricQuery, List<Metric>> metricsResult = spyService.getMetrics(queries);
 		String expectedMetric =
@@ -444,7 +444,7 @@ public class ElasticSearchConsumerOffsetMetricsServiceTest {
 
 		ElasticSearchConsumerOffsetMetricsService spyService = null;
 		try {
-			spyService = _initializeSpyService(esConsumerOffsetMetricsService, getReply, false, null);
+			spyService = _initializeSpyService(esConsumerOffsetMetricsService, getReply, false);
 		} catch (IOException e) {
 			fail();
 		}
@@ -453,7 +453,7 @@ public class ElasticSearchConsumerOffsetMetricsServiceTest {
 	}
 
 	private ElasticSearchConsumerOffsetMetricsService _initializeSpyService(ElasticSearchConsumerOffsetMetricsService service,
-																			String reply, boolean isPut, Long ... times) throws IOException {
+																			String reply, boolean isPut) throws IOException {
 
 		restClient = mock(RestClient.class);
 		service.setESRestClient(restClient);
@@ -467,14 +467,7 @@ public class ElasticSearchConsumerOffsetMetricsServiceTest {
 			when(ElasticSearchUtils.toEntity(any(), any(),any())).thenReturn(ret);
 		}
 
-		for (Long time : times) {
-			if ( time < 1_00_000_000_000L) {
-				when(ElasticSearchUtils.convertTimestampToMillis(time)).thenReturn(time * 1000);
-			}
-			else {
-				when(ElasticSearchUtils.convertTimestampToMillis(time)).thenReturn(time);
-			}
-		}
+		when(ElasticSearchUtils.convertTimestampToMillis(any())).thenCallRealMethod();
 		ElasticSearchConsumerOffsetMetricsService spyService = spy(service);
 
 		return spyService;

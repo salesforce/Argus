@@ -1,7 +1,6 @@
 package com.salesforce.perfeng.akc.consumer;
 
 import com.google.common.collect.ImmutableMap;
-import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.MetricStorageService;
 import com.salesforce.dva.argus.service.SchemaService;
@@ -25,7 +24,6 @@ import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -85,7 +83,7 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
     private String CUSTOM_CATCHUP_CONSUMER = new String("custom");
 
     private static final String[] mandatoryKafkaProps = { "topics", "bootstrap.servers", "key.deserializer",
-                                                          "value.deserializer", "group.id" };
+            "value.deserializer", "group.id" };
 
     private static ThreadLocal<Map<MetricName, ? extends org.apache.kafka.common.Metric>> threadLocalKafkaMetrics =
             ThreadLocal.withInitial(()-> new HashMap<>());
@@ -184,8 +182,8 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
                 instrumentationService.updateCounter(CATCHUP_CONSUMER_START_OFFSET,customStartOffset,tags);
 
                 logger.info("Seeking partition {} of the topic {} to offset {} for timestamp {} ",
-                            topicPartition.partition(),
-                            topicPartition.topic(), customStartOffset, consumptionStartTime);
+                        topicPartition.partition(),
+                        topicPartition.topic(), customStartOffset, consumptionStartTime);
 
             } catch (IllegalArgumentException e) {
                 logger.error("Illegal arguments for seek for the custom timestamps for consumer");
@@ -221,15 +219,15 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
         this.schemaService = this.system.getServiceFactory().getSchemaService();
         this.annotationStorageService = this.system.getServiceFactory().getAnnotationStorageService();
         this.consumerOffsetMetricStorageService = this.system.getServiceFactory().getConsumerOffsetMetricStorageService();
-        this.instrumentationService = InstrumentationService.getInstance(tsdbService);
+        this.instrumentationService = InstrumentationService.getInstance(tsdbService, consumerOffsetMetricStorageService);
 
         if (null != amurSinkTask) {
             threadLocalKafkaMetrics.set(consumer.metrics());//must be before amurSinkTask.init()
             this.amurSinkTask.init(tsdbService,
-                                   schemaService,
-                                   annotationStorageService,
-                                   instrumentationService,
-                                    QuotaUtilFactory.getBlacklistService());
+                    schemaService,
+                    annotationStorageService,
+                    instrumentationService,
+                    QuotaUtilFactory.getBlacklistService());
             Pattern p = getRegexPattern();
             consumer.subscribe(p, new ConsumerRebalanceListener() {
                 @Override
@@ -358,17 +356,13 @@ public class AmurKafkaRunner<K extends Serializable, V extends Serializable> imp
 
         Map<TopicPartition, Long> latestOffsetAtBroker = consumer.endOffsets(partitionsSubscribed);
         latestOffsetAtBroker.forEach((tp, latestOffset) -> {
-            Long currentLag = latestOffset - consumer.committed(tp).offset();
+            Long currentLag = latestOffset - consumer.position(tp);
             Map<String,String> tags = new HashMap<>();
             tags.put("topic", tp.topic());
             tags.put("partition", String.valueOf(tp.partition()));
             tags.put("groupId", groupId);
 
-            instrumentationService.setCounterValue(METRIC_CONSUMER_LAG, (double) currentLag, tags);
-            // Send it to Elastic Search Annotation Cluster.
-            Metric m = instrumentationService.constructMetric(METRIC_CONSUMER_LAG, tags, false);
-            m.addDatapoint(System.currentTimeMillis(), Double.valueOf(currentLag));
-            consumerOffsetMetricStorageService.putMetrics(Arrays.asList(m));
+            instrumentationService.setGaugeValue(METRIC_CONSUMER_LAG, Double.valueOf(currentLag), tags);
             logger.debug("Topic: {}, Partition: {} has lag of {}", tp.topic(), tp.partition(), currentLag);
         });
     }

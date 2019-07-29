@@ -31,33 +31,38 @@
 
 package com.salesforce.dva.argus.service;
 
+import com.salesforce.dva.argus.TestUtils;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.service.monitor.DataLagMonitor;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.system.SystemMain;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.powermock.reflect.Whitebox;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.powermock.reflect.Whitebox;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import com.salesforce.dva.argus.system.SystemMain;
-import com.salesforce.dva.argus.TestUtils;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 
 @RunWith(MockitoJUnitRunner.class)
@@ -142,7 +147,7 @@ public class MonitorServiceTest {
         assertEquals(expectedCounterValue, customCounter, DOUBLE_COMPARISON_MAX_DELTA);
 
         // jmx gauge should be 0 since gauge value should be init to 0
-        ObjectName jmxName = new ObjectName("ArgusMetrics:type=Counter,scope=argus.custom,metric=" + metricName + ",host=" + HOSTNAME);
+        ObjectName jmxName = new ObjectName("ArgusMetrics:type=Gauge,scope=argus.custom,metric=" + metricName + ",host=" + HOSTNAME);
         double jmxValue = (Double)mbeanServer.getAttribute(jmxName, "Value");
         assertEquals(0, jmxValue, DOUBLE_COMPARISON_MAX_DELTA);
 

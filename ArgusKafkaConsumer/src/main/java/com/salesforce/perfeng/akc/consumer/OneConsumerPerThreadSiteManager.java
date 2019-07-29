@@ -98,4 +98,5 @@ public class OneConsumerPerThreadSiteManager implements Runnable {
 
         LOGGER.info("COMPLETED shutdown of argus kafka consumer for site: " + config.getProperty("bootstrap.servers"));
     }
+
 }

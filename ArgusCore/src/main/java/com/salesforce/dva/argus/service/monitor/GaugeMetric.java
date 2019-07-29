@@ -25,7 +25,7 @@ public class GaugeMetric implements MetricMXBean {
     private final String jmxName;
 
     public GaugeMetric(Metric metric) {
-        this(metric, _createJMXObjectNameForMetric(metric, ""));
+        this(metric, _createJMXObjectNameForMetric(metric, "", MetricType.GAUGE_METRIC));
     }
 
     protected GaugeMetric(Metric metric, String jmxName) {
@@ -85,8 +85,8 @@ public class GaugeMetric implements MetricMXBean {
         return value;
     }
 
-    protected static String _createJMXObjectNameForMetric(Metric metric, String jmxMetricNameSuffix) {
-        String objName = "ArgusMetrics:type=Counter,scope=" + metric.getScope() + ",metric=" + metric.getMetric() + jmxMetricNameSuffix;
+    protected static String _createJMXObjectNameForMetric(Metric metric, String jmxMetricNameSuffix, MetricType metricType) {
+        String objName = "ArgusMetrics:type=" + metricType.getName() + ",scope=" + metric.getScope() + ",metric=" + metric.getMetric() + jmxMetricNameSuffix;
         if (null != metric.getTags()) {
             for (String key : metric.getTags().keySet()) {
                 objName = objName + "," + (key.equalsIgnoreCase("type") || key.equalsIgnoreCase("scope")
@@ -97,7 +97,7 @@ public class GaugeMetric implements MetricMXBean {
     }
 
     protected static String _createJMXObjectNameForMetric(Metric metric, MonitorService.Counter counter) {
-        return _createJMXObjectNameForMetric(metric, counter.getJMXMetricNameSuffix());
+        return _createJMXObjectNameForMetric(metric, counter.getJMXMetricNameSuffix(), MetricType.GAUGE_METRIC);
     }
 
 }

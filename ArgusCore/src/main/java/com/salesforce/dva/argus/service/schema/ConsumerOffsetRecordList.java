@@ -16,6 +16,8 @@ import com.salesforce.dva.argus.service.metric.ElasticSearchConsumerOffsetMetric
 import com.salesforce.dva.argus.service.schema.ElasticSearchUtils.HashAlgorithm;
 import net.openhft.hashing.LongHashFunction;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -35,6 +37,7 @@ public class ConsumerOffsetRecordList implements RecordFinder<ConsumerOffsetMetr
 	private Map<String, ConsumerOffsetMetric> _idToMetricMap = new HashMap<>();
 	private String _scrollID;
 	private static ObjectMapper mapper = new ObjectMapper();
+	private static Logger logger = LoggerFactory.getLogger(ConsumerOffsetRecordList.class);
 
 	public ConsumerOffsetRecordList(List<ConsumerOffsetMetric> metrics, String scrollID) {
 		int count = 0;
@@ -46,7 +49,7 @@ public class ConsumerOffsetRecordList implements RecordFinder<ConsumerOffsetMetr
 
 	public ConsumerOffsetRecordList(List<ConsumerOffsetMetric> metrics, HashAlgorithm algorithm) {
 		for(ConsumerOffsetMetric metric : metrics) {
-			String id = null;
+			String id;
 			metric.setTime(ElasticSearchUtils.convertTimestampToMillis(metric.getTime()));
 			String metricKey = ConsumerOffsetMetric.getIdentifierFieldsAsString(metric);
 			if(HashAlgorithm.XXHASH.equals(algorithm)) {
@@ -91,28 +94,32 @@ public class ConsumerOffsetRecordList implements RecordFinder<ConsumerOffsetMetr
 		@Override
 		public void serialize(ConsumerOffsetRecordList list, JsonGenerator jgen, SerializerProvider provider)
 				throws IOException {
+			try {
+				mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
-			mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+				for (Map.Entry<String, ConsumerOffsetMetric> entry : list._idToMetricMap.entrySet()) {
+					ConsumerOffsetMetric offsetMetric = entry.getValue();
 
-			for(Map.Entry<String, ConsumerOffsetMetric> entry : list._idToMetricMap.entrySet()) {
-				ConsumerOffsetMetric offsetMetric = entry.getValue();
+					if (isMetricTimestampOld(offsetMetric.getTime())) continue;
 
-				if(isMetricTimestampOld(offsetMetric.getTime())) continue;
-
-				jgen.writeRaw("{ \"index\" : " +
-						"{\"_index\" : \"" + getMetricIndex(offsetMetric.getTime()) + "\"," +
-						"\"_type\": \"_doc\"," +
-						"\"_id\" : \"" + entry.getKey()
-						+ "\"}}");
-				jgen.writeRaw(System.lineSeparator());
-				Map<String, String> fieldsData = new HashMap<>();
-				fieldsData.put(ConsumerOffsetRecordType.METRIC.getName(), offsetMetric.getMetric());
-				fieldsData.put(ConsumerOffsetRecordType.TOPIC.getName(), offsetMetric.getTopic());
-				fieldsData.put(ConsumerOffsetRecordType.TIMESERIES.getName(), Long.toString(offsetMetric.getTime()));
-				fieldsData.put(ConsumerOffsetRecordType.VALUE.getName(), Double.toString(offsetMetric.getValue()));
-				fieldsData.put(ConsumerOffsetRecordType.TAGS.getName(), mapper.writeValueAsString(offsetMetric.getTags()));
-				jgen.writeRaw(mapper.writeValueAsString(fieldsData));
-				jgen.writeRaw(System.lineSeparator());
+					jgen.writeRaw("{ \"index\" : " +
+							"{\"_index\" : \"" + getMetricIndex(offsetMetric.getTime()) + "\"," +
+							"\"_type\": \"_doc\"," +
+							"\"_id\" : \"" + entry.getKey()
+							+ "\"}}");
+					jgen.writeRaw(System.lineSeparator());
+					Map<String, String> fieldsData = new HashMap<>();
+					fieldsData.put(ConsumerOffsetRecordType.METRIC.getName(), offsetMetric.getMetric());
+					fieldsData.put(ConsumerOffsetRecordType.TOPIC.getName(), offsetMetric.getTopic());
+					fieldsData.put(ConsumerOffsetRecordType.TIMESERIES.getName(), Long.toString(offsetMetric.getTime()));
+					fieldsData.put(ConsumerOffsetRecordType.VALUE.getName(), Double.toString(offsetMetric.getValue()));
+					fieldsData.put(ConsumerOffsetRecordType.TAGS.getName(), mapper.writeValueAsString(offsetMetric.getTags()));
+					jgen.writeRaw(mapper.writeValueAsString(fieldsData));
+					jgen.writeRaw(System.lineSeparator());
+				}
+			} catch (Exception ex) {
+				logger.error("Error while Serializing Consumer Offset Record List: ", ex);
+				logger.error("RecordList: {}", list.getRecords());
 			}
 		}
 
@@ -126,6 +133,7 @@ public class ConsumerOffsetRecordList implements RecordFinder<ConsumerOffsetMetr
 			String indexNameToAppend = String.format(ElasticSearchConsumerOffsetMetricsService.INDEX_FORMAT,
 					ElasticSearchConsumerOffsetMetricsService.INDEX_TEMPLATE_PATTERN_START,
 					formatter.format(metricDate));
+			logger.debug("Metric Index Name to Append for Consumer Offset Documents: {}", indexNameToAppend);
 			return indexNameToAppend;
 		}
 	}
@@ -140,30 +148,37 @@ public class ConsumerOffsetRecordList implements RecordFinder<ConsumerOffsetMetr
 			List<ConsumerOffsetMetric> result = new ArrayList<>();
 
 			JsonNode rootNode = jp.getCodec().readTree(jp);
-			if(rootNode.has("_scroll_id")) {
-				scrollID = rootNode.get("_scroll_id").asText();
-			}
-			JsonNode recordsPerTopic = rootNode.get("aggregations").get("max_topic_offset_per_unit_time_greater_than").get("buckets");
+			try {
+				if (rootNode.has("_scroll_id")) {
+					scrollID = rootNode.get("_scroll_id").asText();
+				}
 
-			if(JsonNodeType.ARRAY.equals(recordsPerTopic.getNodeType())) {
-				Iterator<JsonNode> topicIter = recordsPerTopic.elements();
-				topicIter.forEachRemaining(topicJson -> {
-					JsonNode topicNode = topicJson.get("key");
-					JsonNode recordsPerUnitTime = topicJson.get("max_offset_per_unit_time_greater_than").get("buckets");
-					if (JsonNodeType.ARRAY.equals(recordsPerUnitTime.getNodeType())) {
-						Iterator<JsonNode> timeIter = recordsPerUnitTime.elements();
-						timeIter.forEachRemaining(valJson -> {
-							JsonNode timestampNode = valJson.get("key");
-							JsonNode valueNode = valJson.get("max_offset_greater_than").get("value");
-							Map<String, String> tags = new HashMap<>();
-							tags.put("service", SCOPE_NAME);
-							ConsumerOffsetMetric consumerOffsetMetric = new ConsumerOffsetMetric(METRIC_NAME, topicNode.asText(), timestampNode.asLong(), valueNode.asDouble(), tags);
-							result.add(consumerOffsetMetric);
-						});
-					}
-				});
+				JsonNode recordsPerTopic = rootNode.get("aggregations").get("max_topic_offset_per_unit_time_greater_than").get("buckets");
+
+				if (JsonNodeType.ARRAY.equals(recordsPerTopic.getNodeType())) {
+					Iterator<JsonNode> topicIter = recordsPerTopic.elements();
+					topicIter.forEachRemaining(topicJson -> {
+						JsonNode topicNode = topicJson.get("key");
+						JsonNode recordsPerUnitTime = topicJson.get("max_offset_per_unit_time_greater_than").get("buckets");
+						if (JsonNodeType.ARRAY.equals(recordsPerUnitTime.getNodeType())) {
+							Iterator<JsonNode> timeIter = recordsPerUnitTime.elements();
+							timeIter.forEachRemaining(valJson -> {
+								JsonNode timestampNode = valJson.get("key");
+								JsonNode valueNode = valJson.get("max_offset_greater_than").get("value");
+								Map<String, String> tags = new HashMap<>();
+								tags.put("service", SCOPE_NAME);
+								ConsumerOffsetMetric consumerOffsetMetric = new ConsumerOffsetMetric(METRIC_NAME, topicNode.asText(), timestampNode.asLong(), valueNode.asDouble(), tags);
+								result.add(consumerOffsetMetric);
+							});
+						}
+					});
+				}
+				return new ConsumerOffsetRecordList(result, scrollID);
+			} catch (Exception ex) {
+				logger.error("Exception occured while deserializing consumer offset documents: ", ex);
+				logger.error("Json to parse: {}", rootNode);
+				throw ex;
 			}
-			return new ConsumerOffsetRecordList(result, scrollID);
 		}
 	}
 

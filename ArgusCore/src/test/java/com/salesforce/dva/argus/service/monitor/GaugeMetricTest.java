@@ -26,7 +26,7 @@ public class GaugeMetricTest {
 
     @Test
     public void getObjectName_test() {
-        assertEquals("ArgusMetrics:type=Counter,scope=test.scope,metric=test.name,host=localhost", gm.getObjectName());
+        assertEquals("ArgusMetrics:type=Gauge,scope=test.scope,metric=test.name,host=localhost", gm.getObjectName());
     }
 
     @Test

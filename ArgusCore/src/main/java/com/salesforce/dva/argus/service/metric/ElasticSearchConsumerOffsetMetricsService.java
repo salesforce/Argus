@@ -167,23 +167,23 @@ public class ElasticSearchConsumerOffsetMetricsService extends DefaultService im
 	 */
 	public enum Property {
 
-		CONSUMER_OFFSET_METRICS_ES_ENDPOINT("service.property.consumer.offset.metrics.elasticsearch.endpoint", "http://localhost:9200,http://localhost:9201"),
+		CONSUMER_OFFSET_METRICS_ES_ENDPOINT("service.property.akc.consumer.offset.elasticsearch.endpoint", "http://localhost:9200,http://localhost:9201"),
 		/** Connection timeout for ES REST client. */
-		CONSUMER_OFFSET_METRICS_ES_ENDPOINT_CONNECTION_TIMEOUT_MILLIS("service.property.consumer.offset.metrics.elasticsearch.endpoint.connection.timeout.millis", "10000"),
+		CONSUMER_OFFSET_METRICS_ES_ENDPOINT_CONNECTION_TIMEOUT_MILLIS("service.property.akc.consumer.offset.elasticsearch.endpoint.connection.timeout", "10000"),
 		/** Socket connection timeout for ES REST client. */
-		CONSUMER_OFFSET_METRICS_ES_ENDPOINT_SOCKET_TIMEOUT("service.property.consumer.offset.metrics.elasticsearch.endpoint.socket.timeout", "10000"),
+		CONSUMER_OFFSET_METRICS_ES_ENDPOINT_SOCKET_TIMEOUT("service.property.akc.consumer.offset.elasticsearch.endpoint.socket.timeout", "10000"),
 		/** Connection count for ES REST client. */
-		CONSUMER_OFFSET_METRICS_ES_CONNECTION_COUNT("service.property.consumer.offset.metrics.elasticsearch.connection.count", "10"),
+		CONSUMER_OFFSET_METRICS_ES_CONNECTION_COUNT("service.property.akc.consumer.offset.elasticsearch.connection.count", "10"),
 		/** The hashing algorithm to use for generating document id. */
-		CONSUMER_OFFSET_METRICS_ES_IDGEN_HASH_ALGO("service.property.consumer.offset.metrics.elasticsearch.idgen.hash.algo", "MD5"),
+		CONSUMER_OFFSET_METRICS_ES_IDGEN_HASH_ALGO("service.property.akc.consumer.offset.elasticsearch.idgen.hash.algo", "MD5"),
 		/** Replication factor */
-		CONSUMER_OFFSET_METRICS_ES_NUM_REPLICAS("service.property.consumer.offset.metrics.elasticsearch.num.replicas", "1"),
+		CONSUMER_OFFSET_METRICS_ES_NUM_REPLICAS("service.property.akc.consumer.offset.elasticsearch.num.replicas", "1"),
 		/** Shard count */
-		CONSUMER_OFFSET_METRICS_ES_SHARDS_COUNT("service.property.consumer.offset.metrics.elasticsearch.shards.count", "3"),
+		CONSUMER_OFFSET_METRICS_ES_SHARDS_COUNT("service.property.akc.consumer.offset.elasticsearch.shards.count", "3"),
 		/** Index template name */
-		CONSUMER_OFFSET_METRICS_ES_INDEX_TEMPLATE_NAME("service.property.consumer.offset.metrics.elasticsearch.indextemplate.name", "argus-akc-consumer-offset-template"),
+		CONSUMER_OFFSET_METRICS_ES_INDEX_TEMPLATE_NAME("service.property.akc.consumer.offset.elasticsearch.indextemplate.name", "argus-akc-consumer-offset-template"),
 		/** Index template pattern match */
-		CONSUMER_OFFSET_METRICS_ES_INDEX_TEMPLATE_PATTERN_START("service.property.consumer.offset.metrics.elasticsearch.indextemplate.patternstart", "argus-akc-consumer-offset");
+		CONSUMER_OFFSET_METRICS_ES_INDEX_TEMPLATE_PATTERN_START("service.property.akc.consumer.offset.elasticsearch.indextemplate.patternstart", "argus-akc-consumer-offset");
 
 		private final String _name;
 		private final String _defaultValue;
@@ -310,6 +310,7 @@ public class ElasticSearchConsumerOffsetMetricsService extends DefaultService im
 
 	@Override
 	public void putMetrics(List<Metric> metrics) {
+		requireArgument(metrics.size() > 0, "Cannot push empty list of metrics to ES.");
 		try {
 			final long start = System.currentTimeMillis();
 			ConsumerOffsetRecordList indexRecordList = new ConsumerOffsetRecordList(ConsumerOffsetMetric.convertToConsumerOffsetMetrics(metrics), idgenHashAlgo);

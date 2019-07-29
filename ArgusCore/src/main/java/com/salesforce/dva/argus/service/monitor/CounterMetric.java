@@ -3,8 +3,6 @@ package com.salesforce.dva.argus.service.monitor;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.MonitorService;
 
-import java.util.concurrent.atomic.DoubleAdder;
-
 public class CounterMetric extends GaugeMetric implements MetricMXBean {
     private static final double DOUBLE_COMPARISON_MAX_DELTA = 0.001;
     /**
@@ -19,7 +17,7 @@ public class CounterMetric extends GaugeMetric implements MetricMXBean {
     }
 
     public CounterMetric(Metric metric, String jmxMetricNameSuffix) {
-        super(metric, _createJMXObjectNameForMetric(metric, jmxMetricNameSuffix));
+        super(metric, _createJMXObjectNameForMetric(metric, jmxMetricNameSuffix, MetricType.COUNTER_METRIC));
         previousResetAdderValue = 0.0;
     }
 
