@@ -31,11 +31,11 @@ public class GroupByTagTransform implements Transform {
 		SystemAssert.requireArgument(constants != null && constants.size() >= 2, "Constants list cannot be null and its size must be 2 or more.");
 
 		// Find a constant with a function name: expected syntax is: tagk[,tagk]*,transform[,transformConstant]*
-		// scanning back to find the transform function
+		// Scanning from front to avoid handling #UNION# as transform rather than as constant with DIVIDE and other similar transforms
 		TransformFactory.Function functionName = null;
 		int functionElementId = -1;
 		
-		for (int i = constants.size() - 1; i >= 0; i--) {
+		for (int i = 0; i < constants.size(); i++) {
 		    String constant = constants.get(i);
         	try {
         		functionName = TransformFactory.Function.valueOf(constant);
