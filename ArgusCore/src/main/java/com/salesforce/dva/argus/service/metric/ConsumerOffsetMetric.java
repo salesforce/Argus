@@ -31,21 +31,17 @@
 
 package com.salesforce.dva.argus.service.metric;
 
-import com.google.common.collect.ImmutableList;
 import com.salesforce.dva.argus.entity.Metric;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -64,6 +60,8 @@ public class ConsumerOffsetMetric {
 	private static final String TAG_TOPIC = "topic";
 	private static final String TAG_SERVICE = "service";
 	private static final String ARGUS_CORE = "argus.core";
+
+	private static final Logger logger = LoggerFactory.getLogger(ConsumerOffsetMetric.class);
 
 	/**
 	 *
@@ -126,9 +124,16 @@ public class ConsumerOffsetMetric {
 	 * @return The list of consumer offset metrics after conversion.
 	 */
 	public static List<ConsumerOffsetMetric> convertToConsumerOffsetMetrics(List<Metric> metricList) {
-		return metricList.stream()
-				.map(m -> new ConsumerOffsetMetric(m))
-				.collect(Collectors.toList());
+		List<ConsumerOffsetMetric> cOMetricList = new ArrayList<>();
+		metricList.forEach(m -> {
+			try {
+				cOMetricList.add(new ConsumerOffsetMetric(m));
+			} catch (Exception ex) {
+				logger.error("Failed converting Metric {} to Consumer Offset Metric", m, ex);
+			}
+		});
+
+		return cOMetricList;
 	}
 
 	/**
@@ -136,8 +141,8 @@ public class ConsumerOffsetMetric {
 	 * @param m Checks for required tag field in metric m needed before conversion.
 	 */
 	private static void validateMetric(Metric m) {
-		requireArgument(m != null, "Cannot convert null metric to consumer offset metric");
-		requireArgument(m.getTag(TAG_TOPIC) != null, "Topic tag not present in Metric Query.");
+		requireArgument(m != null, "Cannot convert null Metric to Consumer Offset Metric");
+		requireArgument(m.getTag(TAG_TOPIC) != null, "Topic tag not present in Metric");
 		requireArgument(m.getNumOfDatapoints() == 1, "In order to convert metric, you can only have a single data point.");
 	}
 
@@ -149,12 +154,16 @@ public class ConsumerOffsetMetric {
 	public static List<Metric> convertToMetrics(List<ConsumerOffsetMetric> consumerOffsetMetrics) {
 		Map<String, Metric> metricMap = new HashMap<>();
 		consumerOffsetMetrics.forEach(cOMetric -> {
-			Metric metric = cOMetric.convertToMetric();
-			String identifier = metric.getIdentifier();
-			if(!metricMap.containsKey(identifier)) {
-				metricMap.put(identifier, metric);
-			} else {
-				metricMap.get(identifier).addDatapoint(cOMetric.getTime(), cOMetric.getValue());
+			try {
+				Metric metric = cOMetric.convertToMetric();
+				String identifier = metric.getIdentifier();
+				if (!metricMap.containsKey(identifier)) {
+					metricMap.put(identifier, metric);
+				} else {
+					metricMap.get(identifier).addDatapoint(cOMetric.getTime(), cOMetric.getValue());
+				}
+			} catch (Exception ex) {
+				logger.error("Failed while converting Consumer Offset Metric {} to Metric", cOMetric, ex);
 			}
 		});
 		return new ArrayList<>(metricMap.values());
@@ -171,6 +180,13 @@ public class ConsumerOffsetMetric {
 				.append(consumerOffsetMetric.getTime())
 				.append(consumerOffsetMetric.getValue())
 				.append(consumerOffsetMetric.getTags()).toString();
+	}
+
+	@Override
+	public String toString() {
+		String format = "ConsumerOffsetMetric(metric=>{0}, topic=>{1}, time=>{2,number,#}, value=>{3,number,#}, tags=>{4})";
+		Object [] params = {getMetric(), getTopic(), getTime(), getValue(), getTags()};
+		return MessageFormat.format(format, params);
 	}
 
 	/*

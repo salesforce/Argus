@@ -1,5 +1,11 @@
 package com.salesforce.dva.argus.service.alert;
 
+import static com.salesforce.dva.argus.TestUtils.generateAlert;
+import static com.salesforce.dva.argus.TestUtils.getHistory;
+import static com.salesforce.dva.argus.TestUtils.getMetric;
+import static com.salesforce.dva.argus.TestUtils.getNotification;
+import static com.salesforce.dva.argus.TestUtils.getTrigger;
+import static com.salesforce.dva.argus.service.metric.ElasticSearchConsumerOffsetMetricsService.METRIC_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -15,18 +21,24 @@ import static org.mockito.Mockito.*;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Persistence;
 
+import com.google.common.collect.ImmutableList;
 import com.salesforce.dva.argus.service.*;
+import com.salesforce.dva.argus.service.alert.notifier.EmailNotifier;
 import com.salesforce.dva.argus.service.alert.notifier.RefocusNotifier;
+import com.salesforce.dva.argus.service.alert.retriever.ImageDataRetrievalContext;
+import com.salesforce.dva.argus.service.alert.retriever.ImageDataRetriever;
 import com.salesforce.dva.argus.service.alert.testing.AlertTestResults;
 import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 
@@ -34,6 +46,7 @@ import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.RequestContextHolder;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -72,6 +85,7 @@ public class DefaultAlertServiceTest {
     @Mock private HistoryService _historyServiceMock;
     @Mock private MonitorService _monitorServiceMock;
     @Mock private AuditService _auditServiceMock;
+    @Mock private ImageDataRetriever _imageDataRetrieverMock;
     @Mock private ObjectMapper _mapper;
 
     private DefaultAlertService alertService;
@@ -97,7 +111,7 @@ public class DefaultAlertServiceTest {
     public void setup() {
         em = mock(EntityManager.class);
         alertService = new DefaultAlertService(system.getConfiguration(), _mqServiceMock, _metricServiceMock, _auditServiceMock,
-                _tsdbServiceMock, _mailServiceMock, _historyServiceMock, _monitorServiceMock, system.getNotifierFactory(),
+                _tsdbServiceMock, _mailServiceMock, _historyServiceMock, _monitorServiceMock, _imageDataRetrieverMock, system.getNotifierFactory(),
                 _emProviderMock);
         try {
             Field field = alertService.getClass().getDeclaredField("_mapper");
@@ -565,6 +579,132 @@ public class DefaultAlertServiceTest {
             }
         }
         return size;
+    }
+
+    @Test
+    public void testSendNotificationWhenImageSendingIsEnabled() {
+        UserService userService = system.getServiceFactory().getUserService();
+        Alert alert = generateAlert("testAlert", userService.findAdminUser(), "-1h:"+METRIC_NAME);
+        alert.setEnabled(true);
+        _setAlertId(alert, "1");
+
+        Trigger trigger = getTrigger(alert, TriggerType.GREATER_THAN, "testTrigger", "2.0", "1");
+        List<Trigger> triggerList = ImmutableList.of(trigger);
+        alert.setTriggers(triggerList);
+
+        Notification notification = getNotification("EmailNotifier",
+                EmailNotifier.class.getName(), alert, ImmutableList.of("test@salesforce.com"));
+        alert.addNotification(notification);
+
+        Metric metric = createMetric();
+        History history = getHistory();
+
+        Pair<String, byte[]> evaluatedMetricSnapshotDetails = Pair.of("img1", "Test String".getBytes());
+        when(_imageDataRetrieverMock.getAnnotatedImage(any(ImageDataRetrievalContext.class))).thenReturn(evaluatedMetricSnapshotDetails);
+        when(_imageDataRetrieverMock.getImageURL(evaluatedMetricSnapshotDetails)).thenReturn("https://localhost:8080/img1");
+
+        alertService.sendNotification(trigger, metric, history, notification, alert, 2L, 500L, "triggered");
+
+        verify(_imageDataRetrieverMock, times(1)).getAnnotatedImage(any(ImageDataRetrievalContext.class));
+        verify(_imageDataRetrieverMock, times(1)).getImageURL(evaluatedMetricSnapshotDetails);
+    }
+
+    @Test
+    public void testSendNotificationWhenImageSendingIsDisabled() {
+        UserService userService = system.getServiceFactory().getUserService();
+        Alert alert = generateAlert("testAlert", userService.findAdminUser(), "-1h:"+METRIC_NAME);
+        alert.setEnabled(true);
+        _setAlertId(alert, "1");
+
+        Trigger trigger = getTrigger(alert, TriggerType.GREATER_THAN, "testTrigger", "2.0", "1");
+        List<Trigger> triggerList = ImmutableList.of(trigger);
+        alert.setTriggers(triggerList);
+
+        Notification notification = getNotification("EmailNotifier",
+                EmailNotifier.class.getName(), alert, ImmutableList.of("test@salesforce.com"));
+        alert.addNotification(notification);
+
+        Metric metric = createMetric();
+        History history = getHistory();
+
+        Pair<String, byte[]> evaluatedMetricSnapshotDetails = Pair.of("img1", "Test String".getBytes());
+
+        alertService.sendNotification(trigger, metric, history, notification, alert, 2L, 500L, "notified");
+
+        verify(_imageDataRetrieverMock, never()).getAnnotatedImage(any(ImageDataRetrievalContext.class));
+        verify(_imageDataRetrieverMock, never()).getImageURL(evaluatedMetricSnapshotDetails);
+    }
+
+    @Test
+    public void testClearNotificationWhenImageSendingIsEnabled() {
+        UserService userService = system.getServiceFactory().getUserService();
+        Alert alert = generateAlert("testAlert", userService.findAdminUser(), "-1h:"+METRIC_NAME);
+        alert.setEnabled(true);
+        _setAlertId(alert, "1");
+
+        Trigger trigger = getTrigger(alert, TriggerType.GREATER_THAN, "testTrigger", "2.0", "1");
+        List<Trigger> triggerList = ImmutableList.of(trigger);
+        alert.setTriggers(triggerList);
+
+        Notification notification = getNotification("EmailNotifier",
+                EmailNotifier.class.getName(), alert, ImmutableList.of("test@salesforce.com"));
+        alert.addNotification(notification);
+
+        Metric metric = createMetric();
+        History history = getHistory();
+
+        Pair<String, byte[]> evaluatedMetricSnapshotDetails = Pair.of("img1", "Test String".getBytes());
+        when(_imageDataRetrieverMock.getAnnotatedImage(any(ImageDataRetrievalContext.class))).thenReturn(evaluatedMetricSnapshotDetails);
+        when(_imageDataRetrieverMock.getImageURL(evaluatedMetricSnapshotDetails)).thenReturn("https://localhost:8080/img1");
+
+        alertService.sendClearNotification(trigger, metric, history, notification, alert, 2L, "cleared");
+
+        verify(_imageDataRetrieverMock, times(1)).getAnnotatedImage(any(ImageDataRetrievalContext.class));
+        verify(_imageDataRetrieverMock, times(1)).getImageURL(evaluatedMetricSnapshotDetails);
+    }
+
+    @Test
+    public void testClearNotificationWhenImageSendingIsDisabled() {
+        UserService userService = system.getServiceFactory().getUserService();
+        Alert alert = generateAlert("testAlert", userService.findAdminUser(), "-1h:"+METRIC_NAME);
+        alert.setEnabled(true);
+        _setAlertId(alert, "1");
+
+        Trigger trigger = getTrigger(alert, TriggerType.GREATER_THAN, "testTrigger", "2.0", "1");
+        List<Trigger> triggerList = ImmutableList.of(trigger);
+        alert.setTriggers(triggerList);
+
+        Notification notification = getNotification("EmailNotifier",
+                EmailNotifier.class.getName(), alert, ImmutableList.of("test@salesforce.com"));
+        alert.addNotification(notification);
+
+        Metric metric = createMetric();
+        History history = getHistory();
+
+        Pair<String, byte[]> evaluatedMetricSnapshotDetails = Pair.of("img1", "Test String".getBytes());
+
+        alertService.sendClearNotification(trigger, metric, history, notification, alert, 2L, "missingdata");
+
+        verify(_imageDataRetrieverMock, never()).getAnnotatedImage(any(ImageDataRetrievalContext.class));
+        verify(_imageDataRetrieverMock, never()).getImageURL(evaluatedMetricSnapshotDetails);
+    }
+
+    private static Metric createMetric() {
+        SecureRandom random = new SecureRandom();
+        int datapointCount = ((int) (random.nextDouble() * 500)) + 1;
+        Metric result = new Metric("testScopeName", "TestMetric");
+        Map<Long, Double> datapoints = new TreeMap<>();
+
+        long timestamp = 1L;
+        for (int i = 0; i < datapointCount; i++) {
+            datapoints.put(timestamp+1, random.nextDouble() * 500);
+        }
+
+        Map<String, String> tags = new HashMap<>();
+        tags.put("source", "unittest");
+        result.setDatapoints(datapoints);
+        result.setTags(tags);
+        return result;
     }
 
     @Test

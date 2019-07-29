@@ -55,8 +55,9 @@ public class CallbackNotifier extends AuditNotifier {
 	 * @param emf The entity manager factory. Cannot be null.
 	 */
 	@Inject
-	public CallbackNotifier(MetricService metricService, AnnotationService annotationService, AuditService
-			auditService, CallbackService callbackService, SystemConfiguration config, Provider<EntityManager> emf)
+	public CallbackNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
+							CallbackService callbackService, SystemConfiguration config,
+							Provider<EntityManager> emf)
 	{
 		super(metricService, annotationService, auditService, config, emf);
 		requireArgument(callbackService != null, "callback service cannot be null.");

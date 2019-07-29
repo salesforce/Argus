@@ -2,8 +2,10 @@ package com.salesforce.perfeng.akc.consumer;
 
 import com.google.common.collect.ImmutableMap;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.MetricStorageService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.monitor.CounterMetric;
+import com.salesforce.dva.argus.service.monitor.GaugeMetric;
 import com.salesforce.dva.argus.service.monitor.MetricMXBean;
 import com.salesforce.perfeng.akc.AKCConfiguration;
 import com.salesforce.perfeng.akc.consumer.InstrumentationService.LatencyMetricValue;
@@ -25,6 +27,7 @@ import javax.management.ObjectName;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -35,11 +38,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.DoubleAdder;
+import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -95,6 +101,8 @@ public class InstrumentationServiceTest {
     @Mock
     private TSDBService mockTSDBService;
     @Mock
+    private MetricStorageService mockMetricStorageService;
+    @Mock
     private MBeanServer mBeanServer;
     private InstrumentationService instrumentationService;
 
@@ -124,7 +132,9 @@ public class InstrumentationServiceTest {
         when(AKCConfiguration.getParameter(AKCConfiguration.Parameter.CONSUMER_TYPE)).thenReturn("METRICS");
 
         reset(mockTSDBService);
-        instrumentationService = new InstrumentationService(mockTSDBService, true, mBeanServer);
+        reset(mockMetricStorageService);
+        doNothing().when(mockMetricStorageService).putMetrics(any());
+        instrumentationService = new InstrumentationService(mockTSDBService, true, mBeanServer, mockMetricStorageService);
     }
 
     @Test
@@ -214,7 +224,7 @@ public class InstrumentationServiceTest {
         assertEquals(expectedCounterMetric.getObjectName(), nameArgumentCaptor.getValue().toString());
         assertEquals(expectedDelta*3, counterArgumentCaptor.getValue().getValue(), 0.0);
 
-        Map<Metric, CounterMetric> actualInstrumentedMetrics = instrumentationService.getInstrumentedCounterMetrics();
+        Map<Metric, GaugeMetric> actualInstrumentedMetrics = instrumentationService.getInstrumentedMetrics();
         assertTrue(actualInstrumentedMetrics.containsKey(expectedMetricKey));
         // check if the deltas have been computed correctly
         assertEquals(expectedDelta*3, actualInstrumentedMetrics.get(expectedMetricKey).getCurrentGaugeAdderValue(), 0.0);
@@ -281,6 +291,7 @@ public class InstrumentationServiceTest {
         String counterName = "testCounter1";
         String timerName = InstrumentationService.QUOTA_EVALUATE_LATENCY;
         String timerName2 = "testTimer2";
+        String gaugeName = "metric.consumer.lag";
 
         InstrumentationService.InstrumentMetricsThread instrumenter = instrumentationService.new InstrumentMetricsThread();
         instrumenter.pushInstrumentedMetrics();
@@ -301,6 +312,8 @@ public class InstrumentationServiceTest {
             timerSum2 += latencies2[i];
         }
 
+        instrumentationService.setGaugeValue(gaugeName, 1682.0, tags);
+
         // simulate putMetrics() being called a second time
         instrumenter.pushInstrumentedMetrics();
         instrumentationService.dispose();
@@ -309,16 +322,21 @@ public class InstrumentationServiceTest {
         verify(mockTSDBService, times(2)).putMetrics(tsdbMetricsCapture.capture());
         List<List<Metric>> tsdbMetricsCapturedValueList = tsdbMetricsCapture.getAllValues();
 
+        ArgumentCaptor<List<Metric>> esMetricsCapture = ArgumentCaptor.forClass(List.class);
+        verify(mockMetricStorageService, times(2)).putMetrics(esMetricsCapture.capture());
+        List<Metric> esMetricsCapturedValueList = esMetricsCapture.getAllValues().stream().flatMap(Collection::stream).collect(Collectors.toList());
+        assertEquals(1, esMetricsCapturedValueList.size());
+        assertEquals(instrumentationService.constructMetric(gaugeName, tags, false).getIdentifier(), esMetricsCapturedValueList.get(0).getIdentifier());
+
         // first putMetrics() invocation
         List<Metric> tsdbMetrics = tsdbMetricsCapturedValueList.get(0);
-        assertEquals(16, tsdbMetrics.size());
+        assertEquals(15, tsdbMetrics.size());
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_POSTED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_CONSUMED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.DATAPOINTS_DROPPED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_POSTED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_CONSUMED)));
         assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.HISTOGRAM_DROPPED)));
-        assertTrue(tsdbMetrics.stream().anyMatch(m -> m.getMetric().equals(InstrumentationService.METRIC_CONSUMER_LAG)));
 
         // second putMetrics() invocation
         tsdbMetrics = tsdbMetricsCapturedValueList.get(1);
@@ -357,7 +375,7 @@ public class InstrumentationServiceTest {
         }
 
         // capture beans registered
-        ArgumentCaptor<CounterMetric> counterArgumentCaptor = ArgumentCaptor.forClass(CounterMetric.class);
+        ArgumentCaptor<GaugeMetric> counterArgumentCaptor = ArgumentCaptor.forClass(GaugeMetric.class);
         ArgumentCaptor<ObjectName> nameArgumentCaptor = ArgumentCaptor.forClass(ObjectName.class);
         verify(mBeanServer, times(40)).registerMBean(counterArgumentCaptor.capture(), nameArgumentCaptor.capture());
         // convert list of beans registered into a map of bean object name to counter value
@@ -366,56 +384,58 @@ public class InstrumentationServiceTest {
             nameToValueMap.put(mb.getObjectName(), mb.getValue());
         }
  //       assertEquals(DoubleStream.of(counts).sum(), mapLookup(nameToValueMap, "ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testCounter1.count,tag1=val1"), 0.0);
-        assertEquals(Collections.max(Arrays.<Double>asList(latencies2)), mapLookup(nameToValueMap, "ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.max,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(Collections.min(Arrays.<Double>asList(latencies2)), mapLookup(nameToValueMap, "ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.min,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(timerSum2/latencies2.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.mean,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(timerSum2, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.sum,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(latencies2.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.count,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=0-10,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=10-20,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=20-50,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=50-100,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=100-200,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(1, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=200-500,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(1, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=500-max,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(Collections.max(Arrays.<Double>asList(latencies)), mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.max,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(Collections.min(Arrays.<Double>asList(latencies)), mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.min,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(timerSum/latencies.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.mean,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(timerSum, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.sum,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(latencies.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.count,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=0-5,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=5-10,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=10-20,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=20-50,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=50-100,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(2, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=100-max,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(Collections.max(Arrays.<Double>asList(latencies2)), mapLookup(nameToValueMap, "ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.max,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(Collections.min(Arrays.<Double>asList(latencies2)), mapLookup(nameToValueMap, "ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.min,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(timerSum2/latencies2.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.mean,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(timerSum2, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.sum,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(latencies2.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.count,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=0-10,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=10-20,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=20-50,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=50-100,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=100-200,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(1, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=200-500,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(1, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=500-max,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(Collections.max(Arrays.<Double>asList(latencies)), mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.max,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(Collections.min(Arrays.<Double>asList(latencies)), mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.min,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(timerSum/latencies.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.mean,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(timerSum, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.sum,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(latencies.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.count,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=0-5,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=5-10,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=10-20,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=20-50,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=50-100,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(2, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=100-max,cluster=bootstrap_servers_test"), 0.0);
 
         assertEquals(DoubleStream.of(counts).sum(), mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testCounter1.count,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(Collections.max(Arrays.<Double>asList(latencies2)), mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.max,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(Collections.min(Arrays.<Double>asList(latencies2)), mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.min,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(timerSum2/latencies2.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.mean,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(timerSum2, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.sum,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(latencies2.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.count,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=0-10,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=10-20,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=20-50,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=50-100,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=100-200,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(1, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=200-500,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(1, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=500-max,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(Collections.max(Arrays.<Double>asList(latencies)), mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.max,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(Collections.min(Arrays.<Double>asList(latencies)), mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.min,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(timerSum/latencies.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.mean,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(timerSum, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.sum,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(latencies.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.count,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=0-5,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=5-10,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=10-20,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=20-50,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=50-100,cluster=bootstrap_servers_test"), 0.0);
-        assertEquals(2, mapLookup(nameToValueMap,"ArgusMetrics:type=Counter,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=100-max,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(Collections.max(Arrays.<Double>asList(latencies2)), mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.max,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(Collections.min(Arrays.<Double>asList(latencies2)), mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.min,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(timerSum2/latencies2.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.mean,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(timerSum2, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.sum,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(latencies2.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.count,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=0-10,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=10-20,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=20-50,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=50-100,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=100-200,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(1, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=200-500,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(1, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=testTimer2.bucketCount,bucketLimit=500-max,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(Collections.max(Arrays.<Double>asList(latencies)), mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.max,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(Collections.min(Arrays.<Double>asList(latencies)), mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.min,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(timerSum/latencies.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.mean,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(timerSum, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.sum,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(latencies.length, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.count,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=0-5,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=5-10,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=10-20,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=20-50,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(0, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=50-100,cluster=bootstrap_servers_test"), 0.0);
+        assertEquals(2, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=quota.evaluate.latency.bucketCount,bucketLimit=100-max,cluster=bootstrap_servers_test"), 0.0);
+
+        assertEquals(1682, mapLookup(nameToValueMap,"ArgusMetrics:type=Gauge,scope=ajna.consumer,metric=metric.consumer.lag,cluster=bootstrap_servers_test,tag1=val1"), 0.0);
         // default datapoint metrics
-        for (String defaultMetric : InstrumentationService.DATAPOINT_METRICS) {
+        for (String defaultMetric : InstrumentationService.DATAPOINT_COUNTER_METRICS) {
             Metric m = instrumentationService.constructMetric(defaultMetric, null, false);
             CounterMetric cm = instrumentationService.getCounterMXBeanInstance(m);
             assertEquals(0, nameToValueMap.get(cm.getObjectName()), 0.0);

@@ -31,33 +31,25 @@
 
 package com.salesforce.dva.argus;
 
+import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.HistogramBucket;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Notification;
-import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.system.SystemMain;
-import com.salesforce.dva.argus.system.SystemConfiguration;
 
-import kafka.server.KafkaConfig;
-import kafka.server.KafkaServerStartable;
-import org.apache.curator.test.TestingServer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.slf4j.LoggerFactory;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.sql.DriverManager;
-import java.sql.SQLNonTransientConnectionException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,8 +57,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
-import java.security.SecureRandom;
-
 
 import static org.junit.Assert.fail;
 
@@ -309,4 +299,26 @@ public class TestUtils {
             fail(ex.getMessage());
         }
     }
+
+    public static Notification getNotification(String notificationName, String notifierName, Alert alert, List<String> subscriptionList) {
+        Notification notification = new Notification(notificationName, alert, notifierName,
+                subscriptionList, 5000L);
+        notification.setSeverityLevel(4);
+        return notification;
+    }
+
+    public static History getHistory() {
+        return new History("TEST HISTORY MESSAGE", "TEST_HOST", new BigInteger("100002"),
+                History.JobStatus.STARTED, 10, System.currentTimeMillis() - 86400000);
+    }
+
+    public static Metric getMetric() {
+        SecureRandom random = new SecureRandom();
+        return createMetric(((int) (random.nextDouble() * 500)) + 1);
+    }
+
+    public static Trigger getTrigger(Alert alert, Trigger.TriggerType triggerType, String triggerName, String triggerThreshold, String triggerInertiaMillis) {
+        return new Trigger(alert, triggerType, triggerName, Double.parseDouble(triggerThreshold), Long.parseLong(triggerInertiaMillis));
+    }
+
 }

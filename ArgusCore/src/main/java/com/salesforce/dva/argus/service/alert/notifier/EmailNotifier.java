@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.alert.notifier;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -40,6 +40,7 @@ import java.util.Set;
 
 import javax.persistence.EntityManager;
 
+import com.google.common.base.Strings;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Alert;
@@ -50,12 +51,17 @@ import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MailService;
 import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.AlertService.Notifier.NotificationStatus;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
+import com.salesforce.dva.argus.service.mail.EmailContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.commons.lang.StringUtils;
 
 /**
  * Implementation of notifier interface for notifying via email.
@@ -63,6 +69,8 @@ import com.salesforce.dva.argus.util.TemplateReplacer;
  * @author  Raj Sarkapally (rsarkapally@salesforce.com)
  */
 public class EmailNotifier extends AuditNotifier {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(EmailNotifier.class);
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -81,8 +89,8 @@ public class EmailNotifier extends AuditNotifier {
      * @param  emf                The entity manager factory. Cannot be null.
      */
     @Inject
-    public EmailNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, MailService mailService,
-        SystemConfiguration config, Provider<EntityManager> emf) {
+    public EmailNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
+                         MailService mailService, SystemConfiguration config, Provider<EntityManager> emf) {
         super(metricService, annotationService, auditService, config, emf);
         requireArgument(mailService != null, "Mail service cannot be null.");
         requireArgument(config != null, "The configuration cannot be null.");
@@ -100,17 +108,34 @@ public class EmailNotifier extends AuditNotifier {
     protected boolean sendAdditionalNotification(NotificationContext context) {
         requireArgument(context != null, "Notification context cannot be null.");
         super.sendAdditionalNotification(context);
+        Set<String> recipients = _getNotificationSubscriptions(context);
+        EmailContext emailContext = getEmailContextForEmailNotifications(context, NotificationStatus.TRIGGERED, recipients);
 
-        String subject = getEmailSubject(context);
-        String body = getEmailBody(context, NotificationStatus.TRIGGERED);
-        Set<String> to = _getNotificationSubscriptions(context);
-
-        boolean isSent = _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
+        boolean isSent = _mailService.sendMessage(emailContext);
         if (!isSent) {
             context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to send email for triggered notification: `{0}.` to recipient {1}",
-                    context.getNotification().getName(), to), null, 0);
+                    context.getNotification().getName(), recipients), null, 0);
         }
         return isSent;
+    }
+
+    private EmailContext getEmailContextForEmailNotifications(NotificationContext context, NotificationStatus status,
+                                                              Set<String> recipients) {
+        String subject = getEmailSubject(context);
+        String body = getEmailBody(context, status);
+
+        EmailContext.Builder emailContextBuilder = new EmailContext.Builder()
+                .withRecipients(recipients)
+                .withSubject(subject)
+                .withEmailBody(body)
+                .withContentType("text/html; charset=utf-8")
+                .withEmailPriority(MailService.Priority.NORMAL);
+
+        if (context.getEvaluatedMetricSnapshotDetails().isPresent()) {
+            emailContextBuilder = emailContextBuilder.withImageDetails(context.getEvaluatedMetricSnapshotDetails().get());
+        }
+
+        return emailContextBuilder.build();
     }
 
     private Set<String> _getNotificationSubscriptions(NotificationContext context) {
@@ -128,14 +153,32 @@ public class EmailNotifier extends AuditNotifier {
         return new HashSet<>(notification.getSubscriptions());
     }
 
-    private String getEmailSubject(NotificationContext context) {
-        String currentSubject = "[Argus] Notification for Alert: " + TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName());
+    /**
+     * Returns the email subject.
+     *
+     * @param   context             The notification context.
+     *
+     * @return  The email subject.
+     */
+    protected String getEmailSubject(NotificationContext context) {
+        String subject = context.getNotification().getEmailSubject();
+        if (StringUtils.isBlank(subject)) {
+            subject = generateDefaultEmailSubjectTemplate(context);
+        }
+        return TemplateReplacer.applyTemplateChanges(context, subject);
+    }
+
+    private String generateDefaultEmailSubjectTemplate(NotificationContext context) {
         Alert currentAlert = context.getAlert();
-        if (currentAlert.getNotifications().size() > 1)
-            currentSubject += " Notification: "+ TemplateReplacer.applyTemplateChanges(context, context.getNotification().getName());
-        if (currentAlert.getTriggers().size() > 1)
-            currentSubject += " Trigger:" + TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName());
-        return currentSubject;
+        StringBuilder subject = new StringBuilder();
+        subject.append("[Argus] Notification for Alert: ${alert.name}");
+        if (currentAlert.getNotifications().size() > 1) {
+            subject.append(" Notification: ${notification.name}");
+        }
+        if (currentAlert.getTriggers().size() > 1) {
+            subject.append(" Trigger:${trigger.name}");
+        }
+        return subject.toString();
     }
 
     /**
@@ -174,6 +217,11 @@ public class EmailNotifier extends AuditNotifier {
         if( customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
             sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("<br/>");
         }
+
+        context.getAlertEvaluationTrackingID().ifPresent(trackingID -> {
+            sb.append("<b>Tracking ID:</b> " + trackingID + "<br/>");
+        });
+
         Alert currentAlert = notification.getAlert();
         String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
         if(currentAlert.getNotifications().size() > 1)
@@ -185,21 +233,43 @@ public class EmailNotifier extends AuditNotifier {
                 DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
         }
 
-        if(!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
-        else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
-        if(!expression.equals("")) {
-        	    sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/><br/>");
+        if(context.getEvaluatedMetricSnapshotDetails().isPresent()) {
+            Pair<String, byte[]> evaluatedMetricSnapshotDetails = context.getEvaluatedMetricSnapshotDetails().get();
+            byte[] imageBytes = evaluatedMetricSnapshotDetails.getRight();
+            String imageContentID = evaluatedMetricSnapshotDetails.getLeft();
+            if(imageBytes != null && !Strings.isNullOrEmpty(imageContentID)) {
+                sb.append("<img src=\"cid:" + imageContentID + "\" margin-top: 5px; margin-left: 5px; margin-bottom: 5px;'>");
+            }
+            if(context.getEvaluatedMetricSnapshotURL().isPresent() && !context.getEvaluatedMetricSnapshotURL().get().equals("")) {
+                sb.append("<p><a href='").append(context.getEvaluatedMetricSnapshotURL().get()).append("'>Snapshot of the evaluated metric data.</a><br/><br/>");
+            } else {
+                if(!expression.equals("")) {
+                    sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/><br/>");
+                }
+            }
+        } else {
+            if(!expression.equals("")) {
+                sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/><br/>");
+            }
         }
-        sb.append("<p><a href='").append(getExpressionUrl(context.getAlert().getExpression())).append("'>Click here for the current view of the metric data.</a><br/><br/>");
-		
+
+        if(!expression.equals("")) {
+            sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
+        } else {
+            sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
+        }
+
+        sb.append("<p><a href='").append(getExpressionUrl(context.getAlert().getExpression())).append("'>Click " +
+                "here for the current view of the metric data.</a><br/><br/>");
+
         if(context.getTriggeredMetric()!=null) {
-			if(notificationStatus == NotificationStatus.TRIGGERED){
-				sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
-			}else {
-				sb.append(MessageFormat.format("<b>Cleared on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
-			}
-		}
-		
+            if(notificationStatus == NotificationStatus.TRIGGERED) {
+                sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+            }else {
+                sb.append(MessageFormat.format("<b>Cleared on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+            }
+        }
+
         sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger, context)));
         if(!trigger.getType().equals(TriggerType.NO_DATA) && notificationStatus == NotificationStatus.TRIGGERED){
             sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
@@ -211,7 +281,7 @@ public class EmailNotifier extends AuditNotifier {
             sb.append(getMetricUrl(metricToAnnotate, context.getTriggerFiredTime()));
             sb.append("'>Click here to view the annotated series for ").append(metricToAnnotate).append(".</a><br/>");
         }
-        
+
         sb.append("<p><a href='").append(getAlertUrl(notification.getAlert().getId())).append("'>Click here to view alert definition.</a><br/>");
         sb.append("<p><small>Disclaimer:  This alert was evaluated using the time series data as it existed at the time of evaluation.  ");
         sb.append("If the data source has inherent lag or a large aggregation window is used during data collection, it is possible ");
@@ -219,6 +289,7 @@ public class EmailNotifier extends AuditNotifier {
         sb.append("ensuring the time window used in alert expression is outside the range of the datasource lag.</small>");
         sb.append("<p><small>You received this notification because you, or a distribution list you belong to is listed as a ");
         sb.append("subscriber of the alert.</small>");
+
         return sb.toString();
     }
 
@@ -227,15 +298,16 @@ public class EmailNotifier extends AuditNotifier {
         requireArgument(context != null, "Notification context cannot be null.");
         super.clearAdditionalNotification(context);
 
-        String subject = getEmailSubject(context);
-        String body = getEmailBody(context, NotificationStatus.CLEARED);
-        Set<String> to = _getNotificationSubscriptions(context);
+        boolean isSent = true;
+        if (context.getNotification().isEnableClearNotification()) {
+            Set<String> recipients = _getNotificationSubscriptions(context);
+            EmailContext emailContext = getEmailContextForEmailNotifications(context, NotificationStatus.CLEARED, recipients);
 
-        boolean isSent = _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
-        if (!isSent) {
-            context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to send email for cleared notification: `{0}.` to recipient {1}",
-                    context.getNotification().getName(), to), null, 0);
-
+            isSent = _mailService.sendMessage(emailContext);
+            if (!isSent) {
+                context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to send email for cleared notification: `{0}.` to recipient {1}",
+                        context.getNotification().getName(), recipients), null, 0);
+            }
         }
         return isSent;
     }

@@ -56,4 +56,19 @@ public interface MetricMXBean {
 	 */
 	Double getValue();
 
+	public enum MetricType {
+		GAUGE_METRIC("Gauge"),
+		COUNTER_METRIC("Counter");
+
+		private String type;
+
+		MetricType(String type) {
+			this.type = type;
+		}
+
+		public String getName() {
+			return type;
+		}
+	}
+
 }

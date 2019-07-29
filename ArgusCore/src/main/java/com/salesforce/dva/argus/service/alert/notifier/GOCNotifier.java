@@ -52,6 +52,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
+
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -102,7 +103,8 @@ public class GOCNotifier extends AuditNotifier {
 	 */
 	@Inject
 	public GOCNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
-					   SystemConfiguration config, Provider<EntityManager> emf, MonitorService monitorService) {
+					   SystemConfiguration config, Provider<EntityManager> emf,
+					   MonitorService monitorService) {
 		super(metricService, annotationService, auditService, config, emf);
 		requireArgument(config != null, "The configuration cannot be null.");
 		this.monitorService = monitorService;
@@ -394,6 +396,11 @@ public class GOCNotifier extends AuditNotifier {
 		if( customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
 			sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("\n");
 		}
+
+		context.getAlertEvaluationTrackingID().ifPresent(trackingID -> {
+			sb.append("Tracking ID: " + trackingID + "\n");
+		});
+
 		if(currentAlert.getNotifications().size() > 1)
 			sb.append(MessageFormat.format("Notification:  {0}\n", TemplateReplacer.applyTemplateChanges(context, notification.getName())));
 		if(currentAlert.getTriggers().size() > 1)
@@ -402,12 +409,17 @@ public class GOCNotifier extends AuditNotifier {
 		    sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		}
-		if(!expression.equals("")) {
-			sb.append(MessageFormat.format("URL for evaluated metric expression:  {0}\n", getExpressionUrl(expression)));
-		}else {
-			sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", getExpressionUrl(context.getAlert().getExpression())));
+
+		if (context.getEvaluatedMetricSnapshotURL().isPresent() && !context.getEvaluatedMetricSnapshotURL().get().equals("")) {
+			sb.append(MessageFormat.format("Snapshot of the evaluated metric data: {0}\n", context.getEvaluatedMetricSnapshotURL().get()));
+		} else {
+			if(!expression.equals("")) {
+				sb.append(MessageFormat.format("URL for evaluated metric expression:  {0}\n", getExpressionUrl(expression)));
+			}
 		}
-		sb.append(MessageFormat.format("Current view of the metric expression:  {0}\n", getExpressionUrl(context.getAlert().getExpression())));
+
+		sb.append(MessageFormat.format("Current view of the metric expression:  {0}\n",
+				getExpressionUrl(context.getAlert().getExpression())));
 
 		if(context.getTriggeredMetric()!=null) {
 			if(notificationStatus == NotificationStatus.TRIGGERED){

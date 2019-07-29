@@ -70,8 +70,8 @@ public class RefocusBooleanNotifier extends AuditNotifier {
 	 * @param  emf                The entity manager factory. Cannot be null.
 	 */
 	@Inject
-	public RefocusBooleanNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, RefocusService refocusService,
-                           SystemConfiguration config, Provider<EntityManager> emf) {
+	public RefocusBooleanNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
+								  RefocusService refocusService, SystemConfiguration config, Provider<EntityManager> emf) {
 		super(metricService, annotationService, auditService, config, emf);
 		requireArgument(config != null, "The configuration cannot be null.");
 		this._refocusService = refocusService;

@@ -40,6 +40,7 @@ import org.jfree.chart.ChartUtils;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.annotations.XYTextAnnotation;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.plot.IntervalMarker;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
@@ -48,6 +49,7 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.ui.Layer;
 import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.chart.ui.TextAnchor;
+import org.jfree.data.Range;
 import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
@@ -74,6 +76,8 @@ import java.util.Map;
 public class ImageUtils {
 
     private static final int MAX_LEGENDS_TO_DISPLAY=5;
+    private static final double TICK_UNIT_INCREMENT_VALUE = 0.5;
+    private static final Range TICK_UNIT_DEFAULT_RANGE = new Range(-1,1);
     private static final double DOUBLE_COMPARISON_MAX_DELTA = 0.000000000000001;
     private static final Font DEFAULT_FONT = new Font("Arial", Font.ITALIC, 12);
     private static final Font DEFAULT_NODATA_FONT = new Font("Arial", Font.ITALIC, 20);
@@ -106,6 +110,27 @@ public class ImageUtils {
             NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
             MetricNumberFormat metricNumberFormat = new MetricNumberFormat();
             rangeAxis.setNumberFormatOverride(metricNumberFormat);
+
+            // Handling the scenario when all the datapoints in the timeseries are same for a single Timeseries
+            if (timeseries.size()==1)
+            {
+                TimeSeries singleTimeseries = timeseries.get(0);
+                if (compareAlmostEqual(singleTimeseries.getMinY(),singleTimeseries.getMaxY(),DOUBLE_COMPARISON_MAX_DELTA))
+                {
+                    try {
+                        double absValue=Math.abs(singleTimeseries.getMinY());
+                        rangeAxis.setTickUnit(new NumberTickUnit(absValue));
+                        rangeAxis.setRange(-2 * absValue, 2 * absValue);
+                    }
+                    catch (IllegalArgumentException exception)
+                    {
+                        // Exception occurs when all the datapoints in the graph are equal to zero.
+                        // So when exception occurs I am setting the range axis to have default values
+                        rangeAxis.setTickUnit(new NumberTickUnit(TICK_UNIT_INCREMENT_VALUE));
+                        rangeAxis.setRange(TICK_UNIT_DEFAULT_RANGE);
+                    }
+                }
+            }
 
             if (imageProperties.getLabelPoints()!=null) {
                 for (ImagePoints point : imageProperties.getLabelPoints()) {

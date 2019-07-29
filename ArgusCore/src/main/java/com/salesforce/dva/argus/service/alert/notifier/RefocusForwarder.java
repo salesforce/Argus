@@ -31,52 +31,39 @@
 
 package com.salesforce.dva.argus.service.alert.notifier;
 
-import com.google.gson.JsonParser;
-import com.google.inject.Singleton;
-import com.salesforce.dva.argus.service.DefaultService;
-import com.salesforce.dva.argus.service.RefocusService;
-import com.salesforce.dva.argus.service.alert.notifier.RefocusProperty;
-import com.salesforce.dva.argus.service.alert.notifier.NotificationForwarder;
-
-import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.History;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
+import com.salesforce.dva.argus.service.DefaultService;
+import com.salesforce.dva.argus.service.RefocusService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
-
-import org.apache.http.impl.client.*;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.HttpStatus;
-
-
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.System;
-
 import javax.persistence.EntityManager;
-import java.sql.Ref;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-
-import java.io.StringWriter;
-import java.io.PrintWriter;
-import java.io.InterruptedIOException;
-import java.io.IOException;
 
 /**
  * Implementation of notifier interface for notifying Refocus.

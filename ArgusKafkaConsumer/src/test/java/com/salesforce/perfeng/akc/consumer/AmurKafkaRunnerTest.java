@@ -1,14 +1,16 @@
 package com.salesforce.perfeng.akc.consumer;
 
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.service.MetricStorageService;
 import com.salesforce.dva.argus.system.SystemMain;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.Rule;
+import org.junit.Test;
+import org.junit.contrib.java.lang.system.ExpectedSystemExit;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
+import org.powermock.reflect.Whitebox;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,19 +19,14 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.contrib.java.lang.system.ExpectedSystemExit;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
-import org.powermock.reflect.Whitebox;
-
-import static com.salesforce.perfeng.akc.consumer.InstrumentationService.METRIC_CONSUMER_LAG;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AmurKafkaRunnerTest  {
@@ -358,24 +355,16 @@ public class AmurKafkaRunnerTest  {
             }
             TopicPartition tp = new TopicPartition(topic, i);
             mockLatestOffset.put(tp, (long) (i + 1));
-            OffsetAndMetadata oM = mock(OffsetAndMetadata.class);
-            when(mockConsumer.committed(tp)).thenReturn(oM);
-            when(mockConsumer.committed(tp).offset()).thenReturn((long) (i % 3));
+            when(mockConsumer.position(tp)).thenReturn((long) (i % 3));
             partitionSubscribed.add(tp);
             expectedOffset.put(tp, (long) (i + 1 - i % 3));
         }
 
         mockInstrumentationService = mock(InstrumentationService.class);
-        MetricStorageService mockConsumerOffsetMetricStorage = mock(MetricStorageService.class);
         when(mockConsumer.endOffsets(anyCollection())).thenReturn(mockLatestOffset);
-        Metric m = new Metric("scope", "metric");
-        when(mockInstrumentationService.constructMetric(anyString(),anyMap(),anyBoolean())).thenReturn(m);
-        doNothing().when(mockInstrumentationService).setCounterValue(anyString(), anyDouble(), anyMap());
-        doNothing().when(mockConsumerOffsetMetricStorage).putMetrics(any());
+        doNothing().when(mockInstrumentationService).setGaugeValue(any(), anyDouble(), anyMap());
         Whitebox.setInternalState(akr, "consumer", mockConsumer);
         Whitebox.setInternalState(akr, "instrumentationService", mockInstrumentationService);
-        Whitebox.setInternalState(akr, "consumerOffsetMetricStorageService", mockConsumerOffsetMetricStorage);
-
         try {
             Whitebox.invokeMethod(akr, "computeAndPushLagOffsetPerPartitionPerTopic");
         } catch (Exception e) {

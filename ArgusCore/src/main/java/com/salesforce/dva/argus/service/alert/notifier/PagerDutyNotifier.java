@@ -117,8 +117,8 @@ public class PagerDutyNotifier extends AuditNotifier {
      * @param emf               The entity manager factory to use.  Cannot be null.
      */
     @Inject
-    public PagerDutyNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
-                             SystemConfiguration config, Provider<EntityManager> emf, MonitorService monitorService) {
+    public PagerDutyNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, SystemConfiguration config, Provider<EntityManager> emf,
+                             MonitorService monitorService) {
         this(metricService,
                 annotationService,
                 auditService,
@@ -131,8 +131,8 @@ public class PagerDutyNotifier extends AuditNotifier {
     }
 
     protected PagerDutyNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
-                                SystemConfiguration config, Provider<EntityManager> emf, MonitorService monitorService,
-                                String endpoint, String token, long httpResponseCode429RetryDelayTime) {
+                                SystemConfiguration config, Provider<EntityManager> emf,
+                                MonitorService monitorService, String endpoint, String token, long httpResponseCode429RetryDelayTime) {
         super(metricService, annotationService, auditService, config, emf);
         requireArgument(config != null, "The configuration cannot be null.");
         requireArgument(monitorService != null, "The monitorService cannot be null.");
@@ -211,6 +211,11 @@ public class PagerDutyNotifier extends AuditNotifier {
                         " Trigger: " + context.getTrigger().getName()));
         String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
         message.setEvaluatedMetricExpression(expression);
+
+        if (context.getEvaluatedMetricSnapshotURL().isPresent() && !context.getEvaluatedMetricSnapshotURL().get().equals("")) {
+            message.addLink("Snapshot of the evaluated metric: ", context.getEvaluatedMetricSnapshotURL().get());
+        }
+
         message.addLink("Argus metric expression", getExpressionUrl(expression));
         for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
             message.addLink("Argus triggered metrics", getMetricUrl(metricToAnnotate, context.getTriggerFiredTime()));
@@ -220,6 +225,7 @@ public class PagerDutyNotifier extends AuditNotifier {
         message.setTriggeredMetric(context.getTriggeredMetric().getIdentifier());
         message.setTriggerDetails(getTriggerDetails(context.getTrigger(), context));
         message.setTriggeringEventValue(Double.toString(context.getTriggerEventValue()));
+        context.getAlertEvaluationTrackingID().ifPresent(trackingID -> message.setTrackingID(trackingID));
         if (null != context.getNotification().getCustomText()) {
             message.setCustomerText(TemplateReplacer.applyTemplateChanges(context, context.getNotification().getCustomText()));
         }
@@ -518,6 +524,7 @@ public class PagerDutyNotifier extends AuditNotifier {
         public static final String LINKS_FIELD = "links";
 
         // subfields for custom_details
+        public static final String TRACKING_ID_SUB_FIELD = "TrackingID";
         public static final String METRIC_EXPRESSION_SUB_FIELD = "Evaluated Metric Expression";
         public static final String EVALUATION_TIME_SUB_FIELD = "Trigger Evaluation Time";
         public static final String COOLDOWN_SUB_FIELD = "Cooldown till";
@@ -586,6 +593,10 @@ public class PagerDutyNotifier extends AuditNotifier {
 
         protected void setMetricsToAnnotate(List<String> metrics) {
             customDetailsMap.put(METRICS_TO_ANNOTATE_SUB_FIELD, StringUtils.join(metrics));
+        }
+
+        protected void setTrackingID(String trackingID) {
+            customDetailsMap.put(TRACKING_ID_SUB_FIELD, trackingID);
         }
 
         protected void addLink(String label, String link) {

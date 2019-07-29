@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Notification;
@@ -58,7 +57,6 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import javax.json.stream.JsonGenerator;
-import javax.security.auth.callback.Callback;
 
 /**
  * Default {@link CallbackService} implementation sending the request via a shared apache HttpClient
@@ -155,6 +153,9 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 		alertBuilder.add("name", TemplateReplacer.applyTemplateChanges(context, alert.getName()));
 		alertBuilder.add("alertUrl", notifier.getAlertUrl(alert.getId()));
 		alertBuilder.add("firedAt", context.getTriggerFiredTime());
+		context.getAlertEvaluationTrackingID().ifPresent(trackingID -> {
+			alertBuilder.add("trackingID", trackingID);
+		});
 
 		notificationBuilder.add("name", TemplateReplacer.applyTemplateChanges(context, notification.getName()));
 		notificationBuilder.add("status", "Triggered");
@@ -203,14 +204,17 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 			}
 		}
 
-		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
+		if (context.getEvaluatedMetricSnapshotURL().isPresent()) {
+			alertBuilder.add("evaluatedMetricSnapshotUrl", context.getEvaluatedMetricSnapshotURL().get());
+		} else {
+			String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 
-		if(!expression.equals("")) {
-
-			alertBuilder.add("evaluatedMetricUrl", notifier.getExpressionUrl(expression));
-		}else {
-			alertBuilder.add("evaluatedMetric", alert.getExpression());
+			if(!expression.equals("")) {
+				alertBuilder.add("evaluatedMetricUrl", notifier.getExpressionUrl(expression));
+			}
 		}
+
+		alertBuilder.add("evaluatedMetric", alert.getExpression());
 
 		rootBuilder.add("alert", alertBuilder)
 				.add("notification", notificationBuilder)

@@ -1,10 +1,10 @@
 package com.salesforce.dva.argus.service;
 
-import java.util.List;
-import java.util.Map;
-
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Provides methods for putting or retrieving metrics from storage.

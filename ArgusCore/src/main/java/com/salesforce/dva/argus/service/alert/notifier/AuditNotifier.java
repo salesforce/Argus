@@ -44,14 +44,14 @@ import java.util.TimeZone;
 
 import javax.persistence.EntityManager;
 
-import org.joda.time.DateTimeConstants;
-
-import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Audit;
 import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
+import org.joda.time.DateTimeConstants;
+
+import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
@@ -60,6 +60,8 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationCo
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A notifier that sends notification to a database.
@@ -68,6 +70,7 @@ import com.salesforce.dva.argus.util.TemplateReplacer;
  */
 public class AuditNotifier extends DefaultNotifier {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(AuditNotifier.class);
 	//~ Static fields/initializers *******************************************************************************************************************
 
 	public static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
@@ -98,8 +101,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 * @param  emf                The entity manager factory. Cannot be null.
 	 */
 	@Inject
-	public AuditNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, SystemConfiguration config,
-			Provider<EntityManager> emf) {
+	public AuditNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, SystemConfiguration config, Provider<EntityManager> emf) {
 		super(metricService, annotationService, config);
 		_auditService = auditService;
 		_config = config;
@@ -165,26 +167,42 @@ public class AuditNotifier extends DefaultNotifier {
 
 		sb.append(notificationMessage);
 		String customText = context.getNotification().getCustomText();
-		if( customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
+		if(customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
 			sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("<br/>");
 		}
+
+		context.getAlertEvaluationTrackingID().ifPresent(trackingID -> {
+			sb.append("<b>Tracking ID:</b> " + trackingID + "<br/>");
+		});
+
 		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context,notification.getName())));
 		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName())));
 		if(notificationStatus == NotificationStatus.TRIGGERED) {
 			sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
 					DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		}
-		if (!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
-		else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
-		if(!expression.equals("")) {
-			sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/>");
+
+		if(context.getEvaluatedMetricSnapshotURL().isPresent()) {
+				sb.append("<p><a href='").append(context.getEvaluatedMetricSnapshotURL().get()).append("'>Snapshot of the evaluated metric data.</a><br/>");
+		} else {
+			if(!expression.equals("")) {
+				sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/><br/>");
+			}
 		}
-		sb.append("<p><a href='").append(getExpressionUrl(context.getAlert().getExpression())).append("'>Click here for the current view of the metric data.</a><br/><br/>");
+
+		if(!expression.equals("")) {
+			sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
+		} else {
+			sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
+		}
+
+		sb.append("<p><a href='").append(getExpressionUrl(context.getAlert().getExpression())).append("'>Click " +
+				"here for the current view of the metric data.</a><br/><br/>");
 
 		if(context.getTriggeredMetric()!=null) {
 			if(notificationStatus == NotificationStatus.TRIGGERED){
 				sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
-			}else {
+			} else {
 				sb.append(MessageFormat.format("<b>Cleared on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
 			}
 		}
@@ -316,7 +334,9 @@ public class AuditNotifier extends DefaultNotifier {
 		/** The alert URL template to use in notifications. */
 		AUDIT_ALERT_URL_TEMPLATE("notifier.property.alert.alerturl.template", "http://localhost:8080/argus/#/alerts/$alertid$"),
 		/** The metric URL template to use in notifications. */
-		AUDIT_METRIC_URL_TEMPLATE("notifier.property.alert.metricurl.template", "http://localhost:8080/argus/#/viewmetrics?expression=$expression$");
+		AUDIT_METRIC_URL_TEMPLATE("notifier.property.alert.metricurl.template", "http://localhost:8080/argus/#/viewmetrics?expression=$expression$"),
+		/** The metric image URL template to use in notifications. */
+		AUDIT_METRIC_IMAGE_URL_TEMPLATE("notifier.property.alert.imageurl.template", "http://localhost:8080/argus/#/images/$imageID$");
 
 
 		private final String _name;
