@@ -76,6 +76,7 @@ public class ImageDataRetriever {
         ImagePoints dataPoints1, dataPoints2;
         Double threshold = trigger.getThreshold();
         String label;
+        Double maxPoint, minPoint, secondaryThreshold;
 
         switch (trigger.getType()) {
             case GREATER_THAN:
@@ -103,19 +104,24 @@ public class ImageDataRetriever {
                 label = "value != "+ threshold;
                 dataPoints1 = new ImagePoints(Double.MIN_VALUE, threshold - 1, label, ImageColors.VERY_LIGHT_PINK);
                 dataPoints2 = new ImagePoints(Double.sum(threshold, 1), Double.MAX_VALUE, ImageColors.VERY_LIGHT_PINK);
-                ImmutableList.of(dataPoints1, dataPoints2);
+                return ImmutableList.of(dataPoints1, dataPoints2);
             case BETWEEN:
-                label = threshold + " <= value <= "+ trigger.getSecondaryThreshold();
-                dataPoints1 = new ImagePoints(threshold, trigger.getSecondaryThreshold(), label, ImageColors.VERY_LIGHT_PINK);
+                secondaryThreshold = trigger.getSecondaryThreshold();
+                maxPoint = Math.max(threshold, secondaryThreshold);
+                minPoint = Math.min(threshold, secondaryThreshold);
+                label = minPoint + " <= value <= "+ maxPoint;
+                dataPoints1 = new ImagePoints(minPoint, maxPoint, label, ImageColors.VERY_LIGHT_PINK);
                 return ImmutableList.of(dataPoints1);
             case NOT_BETWEEN:
-                Double secondaryThreshold = trigger.getSecondaryThreshold();
-                label = "value >= "+ Math.max(threshold, secondaryThreshold) + " or value <= " + threshold;
-                dataPoints1 = new ImagePoints(Double.MIN_VALUE, threshold, ImageColors.VERY_LIGHT_PINK);
-                dataPoints2 = new ImagePoints(trigger.getSecondaryThreshold(), Double.MAX_VALUE, label, ImageColors.VERY_LIGHT_PINK);
-                ImmutableList.of(dataPoints1, dataPoints2);
+                secondaryThreshold = trigger.getSecondaryThreshold();
+                maxPoint = Math.max(threshold, secondaryThreshold);
+                minPoint = Math.min(threshold, secondaryThreshold);
+                label = "value >= "+ maxPoint + " or value <= " + minPoint;
+                dataPoints1 = new ImagePoints(Double.MIN_VALUE, minPoint, ImageColors.VERY_LIGHT_PINK);
+                dataPoints2 = new ImagePoints(maxPoint, Double.MAX_VALUE, label, ImageColors.VERY_LIGHT_PINK);
+                return ImmutableList.of(dataPoints1, dataPoints2);
             case NO_DATA:
-                ImmutableList.of();
+                return ImmutableList.of();
             default:
                 throw new SystemException("Unsupported trigger type " + trigger.getType());
         }
