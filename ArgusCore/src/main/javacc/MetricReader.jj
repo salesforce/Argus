@@ -311,6 +311,7 @@ TOKEN : { < GROUPBY : "GROUPBY" > }
 TOKEN : { < GROUPBYTAG : "GROUPBYTAG" > }
 TOKEN : { < INTERPOLATE : "INTERPOLATE" > }
 TOKEN : { < RATE : "RATE" > }
+TOKEN : { < SLICE : "SLICE" > }
 TOKEN : { < METADATA_INCLUDE : "METADATA_INCLUDE" > }
 TOKEN : { < METADATA_EXCLUDE : "METADATA_EXCLUDE" > }
 
@@ -782,6 +783,12 @@ private String getFunctionNameAndUpdateContext(QueryContextHolder contextHolder)
     }  
     |  
     t = <RATE>
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }  
+    |  
+    t = <SLICE>
     { 
         updateQueryContextWithFunction(t.image, contextHolder);
         return t.image; 
