@@ -2,8 +2,8 @@
 'use strict';
 
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
-.controller('ViewMetrics', ['$location', '$routeParams', '$scope', '$compile', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', 'InputTracker',
-	function ($location, $routeParams, $scope, $compile, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, InputTracker) {
+.controller('ViewMetrics', ['$location', '$routeParams', '$scope', '$compile', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', 'UtilService',
+	function ($location, $routeParams, $scope, $compile, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, UtilService) {
 		var lastParams;
 		var noMorePages = false;
 		$scope.annotationType = 'ALERT';
@@ -319,4 +319,44 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 		};
 
 		$scope.getMetricData();
+
+		$scope.editorShown = false;
+		$scope.treeText = '';
+		$scope.prettify = function() {
+			$scope.editorShown = true;
+			$scope.treeText = UtilService.prettifyExpression($scope.expression);
+		};
+		$scope.hide = function() {
+			$scope.editorShown = false;
+		};
+		$scope.textAreaOnChange = function() {
+			var tree = UtilService.getExpressionTree($scope.treeText);
+			$scope.expression = UtilService.flatTree(tree);
+		};
+		$scope.editorLoaded = function (editor) {
+			editor.setSize(null, 'auto');
+			editor.on('keydown', function(editor, event){
+				event.stopPropagation();
+			});
+		};
+		$scope.editorOptions = {
+			lineWrapping: true,
+			lineNumbers: true,
+			mode: 'htmlmixed',
+			viewportMargin: Infinity,
+			tabSize: 2,
+			foldGutter: true,
+			gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+			autoCloseTags: true,
+			matchTags: {bothTags: true},
+			extraKeys: { /* key board short cuts in the the editor */
+				'Alt-Space': 'autocomplete',
+				'Ctrl-Alt-F': function(editor) {
+					editor.setOption('fullScreen', !editor.getOption('fullScreen'));
+				},
+				'Esc': function(editor) {
+					if (editor.getOption('fullScreen')) editor.setOption('fullScreen', false);
+				},
+			}
+		};
 	}]);
