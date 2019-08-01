@@ -19,6 +19,7 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -322,6 +323,7 @@ public class ElasticSearchConsumerOffsetMetricsServiceTest {
 		assertEquals(convertToPrettyJson(expectedOutput), convertToPrettyJson(actualOutput));
 	}
 
+	@Ignore
 	@Test
 	public void testConsumerOffsetSchemaRecordListMapper() throws IOException {
 		mapper = ElasticSearchConsumerOffsetMetricsService.getMetricObjectMapper(new ConsumerOffsetRecordList.IndexSerializer(), new ConsumerOffsetRecordList.Deserializer());
