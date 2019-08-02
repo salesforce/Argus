@@ -43,6 +43,7 @@ import com.salesforce.dva.argus.service.alert.testing.AlertTestResults;
 import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
+import com.salesforce.dva.argus.service.monitor.DataLagService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.RequestContextHolder;
@@ -1531,15 +1532,7 @@ public class DefaultAlertServiceTest {
     }
 
     private void enableDatalagMonitoring(boolean isDataLagging) {
-        Field testField = null;  // Checks superclasses.
-        try {
-            Whitebox.setInternalState(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED, "_defaultValue", Boolean.toString(isDataLagging));
-            testField = alertService.getClass().getDeclaredField("_configuration");
-            testField.setAccessible(true);
-            testField.set(alertService, system.getConfiguration());
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            fail();
-        }
+        TestUtils.setField(DataLagService.Property.DATA_LAG_MONITOR_ENABLED, "_defaultValue", Boolean.toString(isDataLagging));
     }
 
     private Metric _createMetric(String scope, String metricName, int triggerMinValue, int inertiaPeriod) {

@@ -43,6 +43,7 @@ import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.system.SystemMain;
+import org.powermock.reflect.Whitebox;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -293,8 +294,16 @@ public class TestUtils {
             field.setAccessible(true);
             Field modifiers = Field.class.getDeclaredField("modifiers");
             modifiers.setAccessible(true);
-            modifiers.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            modifiers.set(field, field.getModifiers() & ~Modifier.FINAL);
             field.set(null, value);
+        } catch (Exception ex) {
+            fail(ex.getMessage());
+        }
+    }
+
+    public static void setField(Object obj, String fieldName, Object value) {
+        try {
+            Whitebox.setInternalState(obj, fieldName, value);
         } catch (Exception ex) {
             fail(ex.getMessage());
         }
@@ -320,5 +329,4 @@ public class TestUtils {
     public static Trigger getTrigger(Alert alert, Trigger.TriggerType triggerType, String triggerName, String triggerThreshold, String triggerInertiaMillis) {
         return new Trigger(alert, triggerType, triggerName, Double.parseDouble(triggerThreshold), Long.parseLong(triggerInertiaMillis));
     }
-
 }

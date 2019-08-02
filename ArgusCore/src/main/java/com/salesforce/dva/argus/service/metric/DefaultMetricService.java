@@ -45,6 +45,7 @@ import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.util.QueryContext;
 import com.salesforce.dva.argus.util.QueryContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -206,6 +207,34 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			for (String expression : expressions) {
 				_logger.debug("Creating metric query for expression {}", expression);
 				queries.addAll(reader.parse(expression, relativeTo, MetricQuery.class, new QueryContextHolder(), false));
+			}
+		} catch (ParseException ex) {
+			throw new SystemException("Failed to parse the given expression", ex);
+		}
+		return queries;
+	}
+
+	@Override
+	public List<MetricQuery> parseToMetricQuery(String expressions, long relativeTo) {
+		requireNotDisposed();
+		SystemAssert.requireArgument(MetricReader.isValid(expressions), "Illegal metric expression found: " + expressions);
+		return parseToMetricQuery(Arrays.asList(expressions), relativeTo);
+	}
+
+
+	@Override
+	public List<MetricQuery> parseToMetricQuery(List<String> expressions, long relativeTo) {
+		requireNotDisposed();
+
+		MetricReader<MetricQuery> reader = _metricReaderProviderForQueries.get();
+		List<MetricQuery> queries = new ArrayList<>();
+
+		try {
+			for (String expression : expressions) {
+				_logger.debug("Parsing expression to metric query for {}", expression);
+				QueryContextHolder contextHolder = new QueryContextHolder();
+				reader.parse(expression, relativeTo, MetricQuery.class, contextHolder, false);
+				queries.add(MetricQueryProcessor.convertTSDBQueryToMetricQuery(contextHolder.getCurrentQueryContext().getExpression()));
 			}
 		} catch (ParseException ex) {
 			throw new SystemException("Failed to parse the given expression", ex);

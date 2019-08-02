@@ -157,6 +157,30 @@ public interface MetricService extends Service {
     List<MetricQuery> getQueries(List<String> expression, long relativeTo);
 
     /**
+     * Returns a list of <tt>MetricQuery</tt> objects corresponding to the given expression where the query time range is relativeTo by the given value.
+     *
+     * @param   expression  	The metric expressions to evaluate.  Cannot be null, but may be empty.  All entries must be a valid metric expression.
+     * @param   relativeTo      The timestamp from which the start and end times should be relative to. Only applied when using
+     * 							relative timestamps in expressions.
+     * 							For e.g. If the expression is -1h:argus.jvm:mem.heap.used:avg, 1 hour should be subtracted from
+     * 							relativeTo
+     * @return The corresponding list of metric query objects.  Will never return null.
+     */
+    List<MetricQuery> parseToMetricQuery(String expression, long relativeTo);
+
+    /**
+     * Returns a list of <tt>MetricQuery</tt> objects corresponding to the given expression where the query time range is relativeTo by the given value.
+     *
+     * @param   expression  	The list of metric expressions to evaluate.  Cannot be null, but may be empty.  All entries must be a valid metric expression.
+     * @param   relativeTo      The timestamp from which the start and end times should be relative to. Only applied when using
+     * 							relative timestamps in expressions.
+     * 							For e.g. If the expression is -1h:argus.jvm:mem.heap.used:avg, 1 hour should be subtracted from
+     * 							relativeTo
+     * @return The corresponding list of metric query objects.  Will never return null.
+     */
+    List<MetricQuery> parseToMetricQuery(List<String> expression, long relativeTo);
+
+    /**
      * Returns list of DC from the metric query list, if present.
      * @param   mQList  The list of MetricQuery expressions to evaluate.  Cannot be null, but may be empty.  All entries must be a valid metric expression.
      *

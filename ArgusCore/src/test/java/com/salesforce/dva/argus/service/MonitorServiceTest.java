@@ -33,12 +33,13 @@ package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.TestUtils;
 import com.salesforce.dva.argus.entity.Alert;
-import com.salesforce.dva.argus.service.monitor.DataLagMonitor;
+import com.salesforce.dva.argus.service.monitor.DataLagMonitorGoldenMetric;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemMain;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -161,47 +162,6 @@ public class MonitorServiceTest {
         // jmx gauge value should now reflect iterations * workerCount
         jmxValue = (Double)mbeanServer.getAttribute(jmxName, "Value");
         assertEquals(expectedCounterValue, jmxValue, DOUBLE_COMPARISON_MAX_DELTA);
-    }
-
-    @Test
-    public void testDatalagIncrement() {
-        DataLagMonitor dataLagMonitor = new DataLagMonitor(system.getConfiguration(), metricServiceMock, tsdbMock);
-        Field testField = null;  // Checks superclasses.
-        try {
-            testField = dataLagMonitor.getClass().getDeclaredField("_lagPerDC");
-            testField.setAccessible(true);
-        } catch (NoSuchFieldException e) {
-            fail();
-        }
-        Map<String, Double> _lagPerDCTest = new TreeMap<>();
-        Map<String, Double> expectedOutput = new TreeMap<>();
-        Double minute = 1.0 * 60 * 1000;
-        _lagPerDCTest.put("DC1", 0.0);
-        expectedOutput.put("DC1", minute);
-        _lagPerDCTest.put("DC2", 1.0 * 60 * 60 * 1000);
-        expectedOutput.put("DC2", 1.0 * 60 * 60 * 1000 + minute);
-        _lagPerDCTest.put("DC3", 2.0 * 60 * 60 * 1000);
-        expectedOutput.put("DC3", 2.0 * 60 * 60 * 1000 + minute);
-        _lagPerDCTest.put("DC4", 4.0 * 60 * 60 * 1000);
-        expectedOutput.put("DC4", 4.0 * 60 * 60 * 1000);
-        _lagPerDCTest.put("DC5", 7.0 * 60 * 60 * 1000);
-        expectedOutput.put("DC5", 4.0 * 60 * 60 * 1000);
-        try {
-            testField.set(dataLagMonitor, _lagPerDCTest);
-        } catch (IllegalAccessException e) {
-            fail();
-        }
-
-        for(String dc: _lagPerDCTest.keySet()) {
-            Double lagTime = null;
-            try {
-                lagTime = Whitebox.invokeMethod(dataLagMonitor, "getLagTimeInMillis", dc, System.currentTimeMillis(), null);
-            } catch (Exception e) {
-                fail();
-            }
-            assertEquals(expectedOutput.get(dc), lagTime, 0.01);
-        }
-
     }
 
     @Test(timeout = 5000L)

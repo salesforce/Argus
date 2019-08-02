@@ -47,6 +47,7 @@ import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.DashboardService;
 import com.salesforce.dva.argus.service.MailService;
 import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.MetricStorageService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.ServiceManagementService;
 import com.salesforce.dva.argus.service.TSDBService;
@@ -123,7 +124,10 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	private final SystemConfiguration _sysConfig;
 	private final MBeanServer _mbeanServer;
 	private Thread _monitorThread;
-	private DataLagMonitor _dataLagMonitorThread;
+	private Thread _dataLagMonitorThread;
+	private DataLagService _dataLagService;
+	// TODO: remove this after data lag consumer offset service verification is over.
+	private MetricStorageService _metricStorageService;
 
 
 	//~ Constructors *********************************************************************************************************************************
@@ -142,8 +146,8 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	 */
 	@Inject
 	public DefaultMonitorService(TSDBService tsdbService, UserService userService, AlertService alertService,
-			ServiceManagementService serviceManagementService, DashboardService dashboardService, MetricService metricService, MailService mailService, 
-			SystemConfiguration sysConfig) {
+								 ServiceManagementService serviceManagementService, DashboardService dashboardService, MetricService metricService, MailService mailService,
+								 SystemConfiguration sysConfig, DataLagService dataLagService, MetricStorageService metricStorageService) {
 		super(null, sysConfig);
 		requireArgument(tsdbService != null, "TSDB service cannot be null.");
 		requireArgument(userService != null, "User service cannot be null.");
@@ -162,6 +166,9 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		_mbeanServer = ManagementFactory.getPlatformMBeanServer();
 		_metrics = new ConcurrentHashMap<>();
 		_registeredMetrics = new ConcurrentHashMap<>();
+		_dataLagService = dataLagService;
+		// TODO: remove this after data lag consumer offset service verification is over.
+		_metricStorageService = metricStorageService;
 	}
 
 	//~ Methods **************************************************************************************************************************************
@@ -215,23 +222,26 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			_checkAlertExistence(true);
 			_monitorThread = new MonitorThread("system-monitor");
 
-			_monitorThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-
-				@Override
-				public void uncaughtException(Thread t, Throwable e) {
-					_logger.error("Uncaught exception occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, e.getMessage());
-					t.interrupt();
+			_monitorThread.setUncaughtExceptionHandler((t, e) -> {
+				_logger.error("Uncaught exception occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, e.getMessage());
+				t.interrupt();
 				}
-			});
+			);
 
 			_monitorThread.start();
 			_logger.info("System monitor thread started.");
 
-			if (Boolean.valueOf(_sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))) {
+			// TODO: remove this after data lag consumer offset service verification is over.
+			if (Boolean.valueOf(_sysConfig.getValue(DataLagService.Property.DATA_LAG_MONITOR_ENABLED.getName(), DataLagService.Property.DATA_LAG_MONITOR_ENABLED.getDefaultValue()))) {
 				_logger.info("Starting data lag monitor thread.");
-				_dataLagMonitorThread = new DataLagMonitor(_sysConfig, _metricService, _tsdbService);
+				_dataLagMonitorThread = new Thread(_dataLagService, "datalag-monitor-thread-" + _dataLagService.getClass().getSimpleName());
 				_dataLagMonitorThread.start();
 				_logger.info("Data lag monitor thread started.");
+
+				if(Boolean.valueOf(_sysConfig.getValue(DataLagMonitorConsumerOffset.Property.DATA_LAG_DEBUG.getName(), DataLagMonitorConsumerOffset.Property.DATA_LAG_DEBUG.getDefaultValue()))) {
+					_logger.info("Starting data lag consumer offset monitor thread in debug mode");
+					new Thread(new DataLagMonitorConsumerOffset(_sysConfig, _metricStorageService, _metricService, _tsdbService, _mailService)).start();
+				}
 			}
 		}
 	}
@@ -394,8 +404,8 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 	@Override
 	public boolean isDataLagging(String dataCenter) {
-		if(_dataLagMonitorThread!=null) {
-			return _dataLagMonitorThread.isDataLagging(dataCenter);
+		if(_dataLagMonitorThread != null) {
+			return _dataLagService.isDataLagging(dataCenter);
 		}else {
 			return false;
 		}

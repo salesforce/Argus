@@ -90,6 +90,7 @@ import com.salesforce.dva.argus.service.management.DefaultManagementService;
 import com.salesforce.dva.argus.service.metric.AsyncMetricService;
 import com.salesforce.dva.argus.service.metric.metadata.IDBClient;
 import com.salesforce.dva.argus.service.metric.metadata.MetadataService;
+import com.salesforce.dva.argus.service.monitor.DataLagService;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
 import com.salesforce.dva.argus.service.oauth.DefaultOAuthAuthorizationCodeService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
@@ -280,6 +281,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.AKC_CONSUMER_OFFSET_STORAGE_SERVICE_IMPL_CLASS, MetricStorageService.class);
         bindConcreteClass(Property.IDB_CLIENT_IMPL_CLASS, IDBClient.class);
         bindConcreteClass(Property.METADATA_SERVICE_IMPL_CLASS, MetadataService.class);
+        bindConcreteClass(Property.DATA_LAG_SERVICE_IMPL_CLASS, DataLagService.class);
 
         // Named annotation binding
         bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
@@ -351,6 +353,7 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.ANNOTATION_STORAGE_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.AKC_CONSUMER_OFFSET_STORAGE_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.IDB_CLIENT_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.DATA_LAG_SERVICE_PROPERTY_FILE));
         return properties;
     }
 }

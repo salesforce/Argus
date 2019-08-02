@@ -240,16 +240,11 @@ public final class SystemConfiguration extends Properties {
         REFOCUS_CLIENT_THREADS("system.property.refocus.client.threads", "1"),
         REFOCUS_CLIENT_CONNECT_TIMEOUT("system.property.refocus.client.connect.timeout", "10000"),
 
-        DATA_LAG_THRESHOLD("system.property.data.lag.threshold.millis", "300000"),
-        DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
-        DATA_LAG_WHITE_LISTED_SCOPES("system.property.data.lag.whitelisted.scopes", "whiteListedScope"),
-        DATA_LAG_WHITE_LISTED_USERS("system.property.data.lag.whitelisted.username", "default"),
-        DATA_LAG_QUERY_EXPRESSION("system.property.data.lag.expression.list","expressionListPerDC"),
-        DATA_LAG_DEFAULT_EXPRESSION("system.property.data.lag.default.expression","defaultExpression"),
+        DATA_LAG_SERVICE_IMPL_CLASS("service.binding.datalagservice", "com.salesforce.dva.argus.service.monitor.DataLagMonitorGoldenMetric"),
+        DATA_LAG_SERVICE_PROPERTY_FILE("service.config.datalagservice","placeholder_datalagservice.properties"),
 
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),
-
 
         DC_DEFAULT("system.property.dc.default", "defaultDC"),
         DC_LIST("system.property.dc.list", "DC1,DC2,DC3,DC4,DC5"),
@@ -301,6 +296,7 @@ public final class SystemConfiguration extends Properties {
         ANNOTATION_STORAGE_SERVICE_IMPL_CLASS("service.binding.annotation.storage", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
         ANNOTATION_STORAGE_SERVICE_PROPERTY_FILE("service.config.annotation.storage","placeholder_annotation.storage.properties"),
 
+
         IMAGE_STORAGE_SERVICE_IMPL_CLASS("service.binding.image.storage", "com.salesforce.dva.argus.service.image.ElasticSearchImageService"),
 
         AKC_CONSUMER_OFFSET_STORAGE_SERVICE_IMPL_CLASS("service.binding.akc.consumer.offset.storage", "com.salesforce.dva.argus.service.metric.NoOperationMetricsStorageService"),
@@ -325,7 +321,8 @@ public final class SystemConfiguration extends Properties {
         PKI_MONITORED_DIRECTORY("pki.monitored.directory", "/etc/pki_service/sfdc/argus-client"),
         PKI_CA_DIRECTORY("pki.ca.directory", "/etc/pki_service/ca");
 
-        private final String _name;
+
+		private final String _name;
         private final String _defaultValue;
 
         private Property(String name, String defaultValue) {
