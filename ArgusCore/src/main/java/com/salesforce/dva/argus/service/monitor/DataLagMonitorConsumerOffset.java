@@ -53,11 +53,14 @@ import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.mail.EmailContext;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.system.SystemException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.NotFoundException;
 import java.text.MessageFormat;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,6 +68,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -97,6 +101,8 @@ public class DataLagMonitorConsumerOffset implements DataLagService {
 	private static final String DEFAULT_SUBJECT = "Data Lag Consumer Offset Method detected a state change";
 	private static String DEBUG_PREFIX;
 
+	private final ExecutorCompletionService<AbstractMap.SimpleEntry<String, List<Metric>>> completionService;
+
 	@Inject
 	public DataLagMonitorConsumerOffset(SystemConfiguration config, MetricStorageService consumerOffsetMetricService, MetricService metricService, TSDBService tsdbService, MailService mailService) {
 		this.sysConfig = config;
@@ -107,6 +113,7 @@ public class DataLagMonitorConsumerOffset implements DataLagService {
 		this.mailService = mailService;
 		this.hostName = SystemConfiguration.getHostname();
 		datalagInertia = Long.valueOf(sysConfig.getValue(Property.DATA_LAG_INERTIA.getName(), Property.DATA_LAG_INERTIA.getDefaultValue()));
+		completionService = new ExecutorCompletionService<>(Executors.newFixedThreadPool(5));
 		init();
 		this.logger.info(DEBUG_PREFIX + "Data lag consumer offset monitor initialized");
 	}
@@ -215,18 +222,42 @@ public class DataLagMonitorConsumerOffset implements DataLagService {
 
 		Long startTimeFinal = startTime;
 
-		Map<String, List<Metric>> result = new HashMap<>();
-		List<MetricQuery> mQList = dcSet.stream().parallel()
-				.map(expressionPerDC::get)
-				.map(expression -> metricService.parseToMetricQuery(expression, startTimeFinal))
-				.flatMap(Collection::stream)
-				.collect(Collectors.toList());
-		if (mQList.size() != dcSet.size()) {
-			logger.error(DEBUG_PREFIX + "Metric Query Size does not match number of dcs present. Metric Query: {}, DCs: {}", mQList, dcSet);
+		Map<String, List<Metric>> metricsPerDC = new HashMap<>();
+
+		for (String dc : dcSet) {
+			completionService.submit(() -> {
+				List<Metric> metrics = new ArrayList<>();
+				String currentDcExpression = expressionPerDC.get(dc);
+				List<MetricQuery> metricQueryList = metricService.parseToMetricQuery(currentDcExpression, startTimeFinal);
+				try {
+					metrics = consumerOffsetMetricService.getMetrics(metricQueryList).values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+				} catch (Exception e) {
+					metrics.clear();
+					logger.error(DEBUG_PREFIX + "Consumer Offset Metric Service failed to get metric for expression: " + currentDcExpression + " while being queried by DataLagMonitorConsumerOffset, for DC: " + dc + ". Querying TSDB for metrics. Exception: ", e);
+				}
+				try {
+					if (metrics.size() == 0) {
+						logger.warn(DEBUG_PREFIX + "Cannot retrieve metrics from ES cluster. Querying TSDB for metrics.");
+						metrics = metricService.getMetrics(currentDcExpression, startTimeFinal).getMetricsList();
+					}
+				} catch (Exception e) {
+					metrics.clear();
+					logger.error(DEBUG_PREFIX + "TSDB Metric Service failed to get metric for expression: " + currentDcExpression + " while being queried by DataLagMonitorConsumerOffset, for DC: " + dc + " Exception: ", e);
+				}
+				return new AbstractMap.SimpleEntry<>(dc, metrics);
+			});
 		}
 
-		consumerOffsetMetricService.getMetrics(mQList).forEach((mQ, mList) -> result.put(getDCFromTopic(mQ.getTags().get(TOPIC_TAG)), mList));
-		return result;
+		for (int idx = 0; idx < dcSet.size(); ++idx) {
+			try {
+				AbstractMap.SimpleEntry<String, List<Metric>> result = completionService.take().get();
+				metricsPerDC.put(result.getKey(), result.getValue());
+			} catch (Exception e) {
+				logger.error(DEBUG_PREFIX + "Exception occured while querying metrics", e);
+			}
+		}
+
+		return metricsPerDC;
 	}
 
 	@VisibleForTesting
@@ -250,9 +281,9 @@ public class DataLagMonitorConsumerOffset implements DataLagService {
 	public Boolean computeDataLag(String dc, List<Metric> metricList) {
 
 		if (metricList.size() <= 0) {
-			logger.error(DEBUG_PREFIX + "No Metrics could be obtained for dc: {}, disabling data lag by default.", dc);
-			lagStatePerDC.put(dc, false);
-			return false;
+			logger.error(DEBUG_PREFIX + "No Metrics could be obtained for dc: {}, enabling data lag by default.", dc);
+			lagStatePerDC.put(dc, true);
+			return true;
 		}
 		else if (metricList.size() != 1) {
 			logger.warn(DEBUG_PREFIX + "More than 1 metrics returned for a single dc: {}, Metric list: {}\nCombining all data points to compute data lag.",dc, metricList);
