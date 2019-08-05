@@ -1,7 +1,7 @@
 /*global angular:false, console:false */
 'use strict';
 
-angular.module('argus.controllers.viewMetrics', ['ngResource'])
+angular.module('argus.controllers.viewMetrics', ['ngResource', 'ui.codemirror'])
 .controller('ViewMetrics', ['$location', '$routeParams', '$scope', '$compile', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', 'UtilService',
 	function ($location, $routeParams, $scope, $compile, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, UtilService) {
 		var lastParams;
@@ -339,16 +339,17 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 				event.stopPropagation();
 			});
 		};
+		
 		$scope.editorOptions = {
 			lineWrapping: true,
 			lineNumbers: true,
-			mode: 'htmlmixed',
+			mode: 'julia',
 			viewportMargin: Infinity,
 			tabSize: 2,
-			foldGutter: true,
+			foldGutter: {
+				rangeFinder: UtilService.rangeFinderParentheses,
+			},
 			gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
-			autoCloseTags: true,
-			matchTags: {bothTags: true},
 			extraKeys: { /* key board short cuts in the the editor */
 				'Alt-Space': 'autocomplete',
 				'Ctrl-Alt-F': function(editor) {
