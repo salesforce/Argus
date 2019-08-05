@@ -277,6 +277,7 @@ public interface MonitorService extends Service {
         QUERY_STORE_BLOOM_CREATED_APPROXIMATE_ELEMENT_COUNT("argus.core", "querystore.bloomfilter.created.approximate.element.count", MetricType.COUNTER),
 
         DATALAG_PER_DC_TIME_LAG("argus.core", "datalag.seconds"),
+        DATALAG_PER_DC_OFFSET_LAG("argus.core", "datalag.offset"),
         QUERY_DATAPOINTS_LIMIT_EXCEEDED("argus.core", "query.datapoints.limit.exceeded"),
         
         ELASTIC_SEARCH_GET_FAILURES("argus.core", "elastic.search.get.failures", MetricType.COUNTER),

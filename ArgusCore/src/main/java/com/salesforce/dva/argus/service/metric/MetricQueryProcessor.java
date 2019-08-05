@@ -104,10 +104,7 @@ public class MetricQueryProcessor {
         }
     }
 
-    private MetricQueryResult evaluateTSDBQuery(TSDBQueryExpression expression)  {
-        final long start = System.currentTimeMillis();
-
-        MetricQueryResult queryResult = new MetricQueryResult();
+    public MetricQuery convertTSDBQueryToMetricQuery(TSDBQueryExpression expression) {
         Long startTimestamp = expression.getStartTimestamp();
         Long endTimestamp = expression.getEndTimestamp();
         String namespace = expression.getNamespace();
@@ -130,6 +127,16 @@ public class MetricQueryProcessor {
             query.setAggregator(aggregator);
         }
 
+        return query;
+    }
+
+    private MetricQueryResult evaluateTSDBQuery(TSDBQueryExpression expression)  {
+        final long start = System.currentTimeMillis();
+
+        MetricQueryResult queryResult = new MetricQueryResult();
+
+
+        MetricQuery query = convertTSDBQueryToMetricQuery(expression);
         List<MetricQuery> queries = _discoveryService.getMatchingQueries(query);
 
         if (queries.size() == 0) { // No metrics inflow to argus in last DEFAULT_RETENTION_DISCOVERY_DAYS days. Save the raw query processed within inBoundMetricQuery.
@@ -157,7 +164,8 @@ public class MetricQueryProcessor {
         }
         Collections.sort(metrics);
         queryResult.setMetricsList(metrics);
-        queryResult.setQueryTimeRangeInMillis(endTimestamp-startTimestamp);
+        Long startTimestamp = expression.getStartTimestamp();
+        queryResult.setQueryTimeRangeInMillis(expression.getEndTimestamp() - startTimestamp);
         queryResult.setQueryStartTimeMillis(startTimestamp);
         if(queries.size() !=1 || queries.get(0) != query) {
             queryResult.setNumDiscoveryResults(queries.size());

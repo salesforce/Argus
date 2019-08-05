@@ -200,6 +200,8 @@ public class TransformFactory {
                 return new InterpolateTransform();
             case RATE:
                 return new RateTransform();
+            case SLICE:
+                return new SliceTransform();
             default:
                 throw new UnsupportedOperationException(functionName);
         } // end switch
@@ -277,7 +279,8 @@ public class TransformFactory {
         ANOMALY_KMEANS("ANOMALY_KMEANS", "Calculates an anomaly score (0-100) for each value of the metric based on a K-means clustering of the metric data."),
         ANOMALY_RPCA("ANOMALY_RPCA", "Calculates an anomaly score (0-100) for each value of the metric based on the RPCA matrix decomposition algorithm."),
         INTERPOLATE("INTERPOLATE", "Performs interpolation of multiple time series, that can then be used for aggregation"),
-        RATE("RATE", "Performs Rate for all given time series");
+        RATE("RATE", "Performs Rate for all given time series"),
+    	SLICE("SLICE", "Removes data points before interval start time and after interval end time. ");
 
         private final String _name;
         private final String _description;

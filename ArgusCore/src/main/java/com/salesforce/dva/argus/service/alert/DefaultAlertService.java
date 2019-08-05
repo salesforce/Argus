@@ -63,6 +63,7 @@ import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.mail.EmailContext;
 import com.salesforce.dva.argus.service.metric.MetricQueryResult;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
+import com.salesforce.dva.argus.service.monitor.DataLagService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.service.alert.testing.AlertTestResults;
@@ -408,7 +409,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	{
 		if (_whiteListedScopeRegexPatterns == null)
 		{
-			String whiteListedScopesProperty = _configuration.getValue(SystemConfiguration.Property.DATA_LAG_WHITE_LISTED_SCOPES);
+			String whiteListedScopesProperty = _configuration.getValue(DataLagService.Property.DATA_LAG_WHITE_LISTED_SCOPES.getName(), DataLagService.Property.DATA_LAG_WHITE_LISTED_SCOPES.getDefaultValue());
 			if (!StringUtils.isEmpty(whiteListedScopesProperty))
 			{
 				_whiteListedScopeRegexPatterns = Stream.of(whiteListedScopesProperty.split(",")).map(elem -> Pattern.compile(elem.toLowerCase())).collect(Collectors.toList());
@@ -420,7 +421,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		if (_whiteListedUserRegexPatterns == null)
 		{
-			String whiteListedUsersProperty = _configuration.getValue(SystemConfiguration.Property.DATA_LAG_WHITE_LISTED_USERS);
+			String whiteListedUsersProperty = _configuration.getValue(DataLagService.Property.DATA_LAG_WHITE_LISTED_USERS.getName(), DataLagService.Property.DATA_LAG_WHITE_LISTED_USERS.getDefaultValue());
 			if (!StringUtils.isEmpty(whiteListedUsersProperty))
 			{
 				_whiteListedUserRegexPatterns = Stream.of(whiteListedUsersProperty.split(",")).map(elem -> Pattern.compile(elem.toLowerCase())).collect(Collectors.toList());
@@ -538,7 +539,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		NotificationProcessor np = new NotificationProcessor(this, _logger);
 		_monitorService.modifyCounter(Counter.ALERTS_EVALUATED_TOTAL, alerts.size(), new HashMap<>());
-		boolean datalagMonitorEnabled = Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED));
+		boolean datalagMonitorEnabled = Boolean.valueOf(_configuration.getValue(DataLagService.Property.DATA_LAG_MONITOR_ENABLED.getName(), DataLagService.Property.DATA_LAG_MONITOR_ENABLED.getDefaultValue()));
 		AtomicInteger numberOfAlertsEvaluated = new AtomicInteger(alerts.size());
 		for (Alert alert : alerts) {
 
@@ -1321,7 +1322,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		}
 
-		Long timestamp = (triggerFiredTime != null) ? triggerFiredTime : System.currentTimeMillis();
+		Long timestamp = (alertEnqueueTime != null) ? alertEnqueueTime : System.currentTimeMillis();
 		String alertEvaluationTrackingID = getAlertEvaluationTrackingID(alert, timestamp);
 
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime,
@@ -1764,7 +1765,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		// Evaluate Alert, Triggers, Notifications -----------------------------------------------------------------
 		// TODO - enable datalag monitor in alert testing?
-		boolean datalagMonitorEnabled = Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED)); // TODO - get default value
+		boolean datalagMonitorEnabled = Boolean.valueOf(_configuration.getValue(DataLagService.Property.DATA_LAG_MONITOR_ENABLED.getName(), DataLagService.Property.DATA_LAG_MONITOR_ENABLED.getDefaultValue())); // TODO - get default value
 
 		long jobStartTime = System.currentTimeMillis();
 		long evaluateEndTime = 0;

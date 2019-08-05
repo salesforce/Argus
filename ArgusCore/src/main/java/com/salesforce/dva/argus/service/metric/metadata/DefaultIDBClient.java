@@ -69,8 +69,8 @@ public class DefaultIDBClient implements IDBClient {
             keystore = new DynamicKeyStoreBuilder()
                     .withMonitoredDirectory(config.getValue(Property.IDB_KEYSTORE_MONITORED_DIRECTORY.getName(),
                             Property.IDB_KEYSTORE_MONITORED_DIRECTORY.getDefaultValue()))
-                    .withCADirectory(config.getValue(Property.IDB_KEYSTORE_CA_DIRECTORY.getName(),
-                            Property.IDB_KEYSTORE_CA_DIRECTORY.getDefaultValue()))
+                    .withCADirectory(config.getValue(Property.IDB_CA_DIRECTORY.getName(),
+                            Property.IDB_CA_DIRECTORY.getDefaultValue()))
                     .withStartThread(true).build();
             SSLContext sslContext = keystore.getSSLContext();
             SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslContext);
@@ -196,7 +196,7 @@ public class DefaultIDBClient implements IDBClient {
         IDB_ENDPOINT("service.property.idbclient.endpoint", "https://cfg0-cidbapima1-0-prd.data.sfdc.net:443"),
         IDB_CONN_COUNT("service.property.idbclient.conn.count", "30"),
         IDB_KEYSTORE_MONITORED_DIRECTORY("service.property.idbclient.keystore.monitored.directory", "/etc/pki_service/sfdc/argus-ajnaconsumer"),
-        IDB_KEYSTORE_CA_DIRECTORY("service.property.idbclient.keystore.monitored.directory", "/etc/pki_service/ca"),
+        IDB_CA_DIRECTORY("service.property.idbclient.ca.directory", "/etc/pki_service/ca"),
         IDB_CACHE_TTL_SECS("service.property.idbclient.cache.ttl.secs", "1800"),
         IDB_CONN_TIMEOUT("service.property.idbclient.conn.timeout", "30000"),
         IDB_SOCKET_TIMEOUT("service.property.idbclient.socket.timeout", "30000");

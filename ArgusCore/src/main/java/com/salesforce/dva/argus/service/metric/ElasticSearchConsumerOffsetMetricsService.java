@@ -352,7 +352,7 @@ public class ElasticSearchConsumerOffsetMetricsService extends DefaultService im
 		try {
 			for (MetricQuery query : queries) {
 				List<ConsumerOffsetMetric> consumerOffsetMetrics = new ArrayList<>();
-				String queryJson = constructQuery(query, from, scrollSize);
+				String queryJson = constructQuery(new MetricQuery(query), from, scrollSize);
 				final long start = System.currentTimeMillis();
 				Request request = new Request(ElasticSearchUtils.HttpMethod.POST.getName(), requestUrl);
 				request.setEntity(new StringEntity(queryJson, ContentType.APPLICATION_JSON));
