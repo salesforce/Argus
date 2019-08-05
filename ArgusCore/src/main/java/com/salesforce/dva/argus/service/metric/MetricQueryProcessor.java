@@ -104,7 +104,7 @@ public class MetricQueryProcessor {
         }
     }
 
-    public static MetricQuery convertTSDBQueryToMetricQuery(TSDBQueryExpression expression) {
+    public MetricQuery convertTSDBQueryToMetricQuery(TSDBQueryExpression expression) {
         Long startTimestamp = expression.getStartTimestamp();
         Long endTimestamp = expression.getEndTimestamp();
         String namespace = expression.getNamespace();
@@ -184,7 +184,7 @@ public class MetricQueryProcessor {
     /*
      * We replace the aggregator to provide a non-interpolated default behavior for MIN, MAX and SUM
      */
-    private static Aggregator getSubstituteAggregator(Aggregator aggregator) {
+    private Aggregator getSubstituteAggregator(Aggregator aggregator) {
         switch (aggregator) {
         case MIN:
             return Aggregator.MIMMIN;

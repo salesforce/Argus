@@ -234,7 +234,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 				_logger.debug("Parsing expression to metric query for {}", expression);
 				QueryContextHolder contextHolder = new QueryContextHolder();
 				reader.parse(expression, relativeTo, MetricQuery.class, contextHolder, false);
-				queries.add(MetricQueryProcessor.convertTSDBQueryToMetricQuery(contextHolder.getCurrentQueryContext().getExpression()));
+				queries.add(_queryProcessor.convertTSDBQueryToMetricQuery(contextHolder.getCurrentQueryContext().getExpression()));
 			}
 		} catch (ParseException ex) {
 			throw new SystemException("Failed to parse the given expression", ex);
