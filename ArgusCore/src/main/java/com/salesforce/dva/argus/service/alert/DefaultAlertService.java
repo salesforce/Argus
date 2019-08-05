@@ -1322,7 +1322,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		}
 
-		Long timestamp = (triggerFiredTime != null) ? triggerFiredTime : System.currentTimeMillis();
+		Long timestamp = (alertEnqueueTime != null) ? alertEnqueueTime : System.currentTimeMillis();
 		String alertEvaluationTrackingID = getAlertEvaluationTrackingID(alert, timestamp);
 
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime,
