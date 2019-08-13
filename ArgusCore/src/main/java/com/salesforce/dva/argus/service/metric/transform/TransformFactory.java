@@ -60,7 +60,6 @@ public class TransformFactory {
      * @param  tsdbService  The TSDB service to use.
      * @param metadataService
      */
-    @Inject
     public TransformFactory(TSDBService tsdbService) {
         _tsdbService = tsdbService;
     }
