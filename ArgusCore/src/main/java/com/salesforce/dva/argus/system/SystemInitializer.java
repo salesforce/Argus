@@ -88,8 +88,6 @@ import com.salesforce.dva.argus.service.jpa.DefaultNamespaceService;
 import com.salesforce.dva.argus.service.jpa.DefaultServiceManagementService;
 import com.salesforce.dva.argus.service.management.DefaultManagementService;
 import com.salesforce.dva.argus.service.metric.AsyncMetricService;
-import com.salesforce.dva.argus.service.metric.metadata.IDBClient;
-import com.salesforce.dva.argus.service.metric.metadata.MetadataService;
 import com.salesforce.dva.argus.service.monitor.DataLagService;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
 import com.salesforce.dva.argus.service.oauth.DefaultOAuthAuthorizationCodeService;
@@ -279,8 +277,6 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.DISCOVERY_SERVICE_IMPL_CLASS, DiscoveryService.class);
         bindConcreteClass(Property.ANNOTATION_STORAGE_SERVICE_IMPL_CLASS, AnnotationStorageService.class);
         bindConcreteClass(Property.AKC_CONSUMER_OFFSET_STORAGE_SERVICE_IMPL_CLASS, MetricStorageService.class);
-        bindConcreteClass(Property.IDB_CLIENT_IMPL_CLASS, IDBClient.class);
-        bindConcreteClass(Property.METADATA_SERVICE_IMPL_CLASS, MetadataService.class);
         bindConcreteClass(Property.DATA_LAG_SERVICE_IMPL_CLASS, DataLagService.class);
 
         // Named annotation binding

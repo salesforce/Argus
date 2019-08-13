@@ -16,10 +16,7 @@
     <description>Argus core services.</description>
     <properties>
         <top>${project.basedir}/${project.parent.relativePath}</top>
-        <!--<kafka.client.version>2.1</kafka.client.version>-->
-        <!-- BEGINSFDC specific versioning -->
-        <kafka.version>2.0.1-sfdc-0.0.5</kafka.version>
-        <!-- ENDSFDC specific versioning -->
+        <kafka.version>2.1.1</kafka.version>
     </properties>
     <build>
         <plugins>
@@ -147,14 +144,6 @@
             </plugin>
         </plugins>
     </reporting>
-    <!-- BEGINSFDC specific repositories -->
-    <repositories>
-        <repository>
-            <id>nexus</id>
-            <url>https://nexus.soma.salesforce.com/nexus/content/groups/public</url>
-        </repository>
-    </repositories>
-    <!-- ENDSFDC specific repositories -->
 
     <dependencies>
       <dependency>
@@ -269,6 +258,11 @@
             <groupId>javax.mail</groupId>
             <artifactId>mail</artifactId>
             <version>1.4.7</version>
+        </dependency>
+        <dependency>
+          <groupId>javax.ws.rs</groupId>
+          <artifactId>javax.ws.rs-api</artifactId>
+          <version>2.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -484,23 +478,6 @@
           <artifactId>jmx_prometheus_javaagent</artifactId>
           <version>${jmx.prometheus.version}</version>
         </dependency>
-        <!-- BEGINSFDC specific dependencies -->
-        <dependency>
-            <groupId>com.salesforce.servicelibs</groupId>
-            <artifactId>dynamic-keystore-impl</artifactId>
-            <version>2.0.48</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.sfdc-bouncycastle</groupId>
-                    <artifactId>bc-fips</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.sfdc-bouncycastle</groupId>
-                    <artifactId>bctls-fips</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <!-- ENDSFDC specific dependencies -->
         <dependency>
             <groupId>org.powermock</groupId>
             <artifactId>powermock-module-junit4</artifactId>

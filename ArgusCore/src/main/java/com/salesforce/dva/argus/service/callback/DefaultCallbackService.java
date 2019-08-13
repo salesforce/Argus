@@ -33,9 +33,6 @@ import com.salesforce.dva.argus.service.alert.notifier.CallbackNotifier;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.TemplateReplacer;
-import com.salesforce.sds.keystore.DynamicKeyStore;
-import com.salesforce.sds.keystore.DynamicKeyStoreBuilder;
-import com.salesforce.sds.pki.utils.BouncyIntegration;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
@@ -66,14 +63,12 @@ import javax.json.stream.JsonGenerator;
 public class DefaultCallbackService extends DefaultService implements CallbackService {
 
 	static {
-		BouncyIntegration.init();
 	}
 
 	//~ Instance fields ******************************************************************************************************************************
 
 	private final Logger _logger = LoggerFactory.getLogger(DefaultCallbackService.class);
 	private final HttpClientPool httpClientPool;
-	private DynamicKeyStore ks;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -92,16 +87,6 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 
 		httpClientPool = new HttpClientPool(poolSize, refresh, timeUnit);
 
-		try {
-			ks = new DynamicKeyStoreBuilder().
-					withMonitoredDirectory(config.getValue(SystemConfiguration.Property.PKI_MONITORED_DIRECTORY)).
-					withCADirectory(config.getValue(SystemConfiguration.Property.PKI_CA_DIRECTORY)).
-					withStartThread(true).build();
-			_logger.info("DynamicKeyStore initialized successfully in DefaultCallbackService");
-		} catch (Exception e) {
-			_logger.error("Exception initializing DynamicKeyStore. Callback notifier will NOT support HTTPS. Exception: {}", e.getMessage());
-			ks = null;
-		}
 	}
 
 	@Override
@@ -259,11 +244,7 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 
 		try {
 			HttpClient httpClient;
-			if (request.getURI().getScheme().equals("https")) {
-				httpClient = HttpClients.custom().setSSLContext(ks.getSSLContext()).build();
-			} else {
-				httpClient = httpClientPool.borrowObject();
-			}
+                        httpClient = httpClientPool.borrowObject();
 			HttpResponse response = httpClient.execute(request);
 			EntityUtils.consume(response.getEntity());
 			return response;
