@@ -153,7 +153,7 @@ public interface MonitorService extends Service {
 	/**
 	 * This is helper function so that we can export metrics to JMX metric exporter everywhere in the
 	 * system
-	 * 
+	 *
 	 * @param metric the metric to export
 	 * @param value  the value datapoint of the metric to be export
 	 */
@@ -279,17 +279,13 @@ public interface MonitorService extends Service {
         DATALAG_PER_DC_TIME_LAG("argus.core", "datalag.seconds"),
         DATALAG_PER_DC_OFFSET_LAG("argus.core", "datalag.offset"),
         QUERY_DATAPOINTS_LIMIT_EXCEEDED("argus.core", "query.datapoints.limit.exceeded"),
-        
+
         ELASTIC_SEARCH_GET_FAILURES("argus.core", "elastic.search.get.failures", MetricType.COUNTER),
 
         CONSUMER_OFFSET_RECORDS_WRITE_FAILURES("argus.core", "consumer.offset.records.write.failures", MetricType.COUNTER),
         CONSUMER_OFFSET_RECORDS_WRITE_LATENCY("argus.core", "consumer.offset.records.write.latency", MetricType.COUNTER),
         CONSUMER_OFFSET_RECORDS_READ_LATENCY("argus.core", "consumer.offset.records.read.latency", MetricType.COUNTER),
 
-        IDB_CLIENT_GET_LATENCY("argus.core", "idb.client.get.latency", MetricType.COUNTER),
-        IDB_CLIENT_GET_COUNT("argus.core", "idb.client.get.count", MetricType.COUNTER),
-        IDB_CLIENT_QUERY_COUNT("argus.core", "idb.client.query.count", MetricType.COUNTER),
-        IDB_CLIENT_CACHE_HITS("argus.core", "idb.client.cache.hits", MetricType.COUNTER),
 
         ANNOTATION_RECORDS_WRITE_FAILURES("argus.core", "annotation.records.write.failures", MetricType.COUNTER),
         IMAGE_RECORDS_WRITE_FAILURES("argus.core", "image.records.write.failures", MetricType.COUNTER);

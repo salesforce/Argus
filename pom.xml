@@ -10,7 +10,6 @@
     <name>Argus</name>
     <description>A pom for all Argus projects. It provides standards for plugin versions, configuration and a number of other things.</description>
     <inceptionYear>2016</inceptionYear>
-    <url>https://git.soma.salesforce.com/ArgusMonitoring/Argus</url>
     <organization>
         <name>Salesforce</name>
         <url>http://www.salesforce.com</url>
@@ -121,12 +120,6 @@
     </properties>
      <!-- Add repositories here instead of maintaining in maven-settings.xml
          Please add <server> information in ~/.m2/settings.xml -->
-    <repositories>
-        <repository>
-            <id>nexus</id>
-            <url>https://nexus.soma.salesforce.com/nexus/content/groups/public</url>
-        </repository>
-    </repositories>
     <build>
       <filters>
         <filter>${top}/argus-build.properties</filter>
@@ -335,10 +328,6 @@
         </plugins>
     </reporting>
 
-    <scm>
-      <connection>scm:git:ssh://git@git.soma.salesforce.com/ArgusMonitoring/Argus</connection>
-      <url>https://git.soma.salesforce.com/ArgusMonitoring/Argus</url>
-    </scm>
 
     <dependencyManagement>
         <dependencies>
@@ -400,17 +389,5 @@
         <module>ArgusWebServices</module>
         <module>ArgusClient</module>
         <module>ArgusSDK</module>
-        <!--<module>ArgusQuerySnapshots</module>-->
-        <!--ArgusQuerySnaphots is a child directory that does not depend on the latest ArgusCore, not needs to be built frequently-->
     </modules>
-    <distributionManagement>
-        <repository>
-            <id>nexus</id>
-            <url>https://nexus.soma.salesforce.com/nexus/content/repositories/releases/</url>
-        </repository>
-        <snapshotRepository>
-            <id>nexus</id>
-            <url>https://nexus.soma.salesforce.com/nexus/content/repositories/snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
 </project>
