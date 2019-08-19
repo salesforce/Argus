@@ -107,7 +107,7 @@ public class ElasticSearchConsumerOffsetMetricsServiceTest {
 			"      \"sum_other_doc_count\" : 0,\n" +
 			"      \"buckets\" : [\n" +
 			"        {\n" +
-			"          \"key\" : \"sfdc.prod.ajna__prd.ajna_local__metrics\",\n" +
+			"          \"key\" : \"mytopic.name\",\n" +
 			"          \"doc_count\" : 28,\n" +
 			"          \"max_offset_per_unit_time_greater_than\" : {\n" +
 			"            \"buckets\" : [\n" +
@@ -139,7 +139,7 @@ public class ElasticSearchConsumerOffsetMetricsServiceTest {
 			"          }\n" +
 			"        },\n" +
 			"        {\n" +
-			"          \"key\" : \"sfdc.prod.ajna__phx.ajna_local__metrics\",\n" +
+			"          \"key\" : \"mytopic1.name\",\n" +
 			"          \"doc_count\" : 25,\n" +
 			"          \"max_offset_per_unit_time_greater_than\" : {\n" +
 			"            \"buckets\" : [\n" +
@@ -420,8 +420,8 @@ public class ElasticSearchConsumerOffsetMetricsServiceTest {
 
 		Map<MetricQuery, List<Metric>> metricsResult = spyService.getMetrics(queries);
 		String expectedMetric =
-				"[namespace=>null, scope=>ajna.consumer, metric=>metric.consumer.lag, tags=>{topic=sfdc.prod.ajna__phx.ajna_local__metrics}, datapoints=>{1560902400000=21455.0, 1561075200000=21981.0, 1561248000000=22461.0}, " +
-				"namespace=>null, scope=>ajna.consumer, metric=>metric.consumer.lag, tags=>{topic=sfdc.prod.ajna__prd.ajna_local__metrics}, datapoints=>{1560902400000=19676.0, 1561075200000=21635.0, 1561248000000=22659.0}]";
+				"[namespace=>null, scope=>ajna.consumer, metric=>metric.consumer.lag, tags=>{topic=mytopic1.name}, datapoints=>{1560902400000=21455.0, 1561075200000=21981.0, 1561248000000=22461.0}, " +
+				"namespace=>null, scope=>ajna.consumer, metric=>metric.consumer.lag, tags=>{topic=mytopic.name}, datapoints=>{1560902400000=19676.0, 1561075200000=21635.0, 1561248000000=22659.0}]";
 
 		assertEquals(expectedMetric, metricsResult.get(metricQuery).toString());
 		ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);

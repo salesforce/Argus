@@ -11,7 +11,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 public class GusTransportIT {
-    private String AUTH_ENDPOINT = "https://gus.my.salesforce.com/services/oauth2/token";
+    private String AUTH_ENDPOINT = "https://myhost.com/services/oauth2/token";
     private String AUTH_CLIENT_ID = "{INSERT VALUE}";
     private String AUTH_CLIENT_SECRET = "{INSERT VALUE}";
     private String AUTH_USERNAME = "{INSERT VALUE}";
@@ -39,7 +39,7 @@ public class GusTransportIT {
     public void getEndpointInfo_test() throws Exception {
         GusTransport.EndpointInfo ei = gusTransport.getEndpointInfo();
         assertNotSame(DEFAULT_EP, ei);
-        assertEquals("https://gus.my.salesforce.com", ei.getEndPoint());
+        assertEquals("https://myhost.com", ei.getEndPoint());
         assertTrue(ei.getToken().length() > 0);
     }
 }

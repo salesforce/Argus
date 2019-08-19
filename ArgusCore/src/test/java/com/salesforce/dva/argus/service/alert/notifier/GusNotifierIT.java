@@ -38,8 +38,8 @@ public class GusNotifierIT extends AbstractTestIT {
         p.setProperty("notifier.property.alert.gus_client_secret", "{INSERT VALUE}");
         p.setProperty("notifier.property.alert.gus_user", "{INSERT VALUE}");
         p.setProperty("notifier.property.alert.gus_pwd", "{INSERT VALUE}");
-        p.setProperty("notifier.property.alert.gus_endpoint", "https://gus.my.salesforce.com/services/oauth2/token");
-        p.setProperty("notifier.property.alert.gus_post_endpoint", "https://gus.my.salesforce.com/services/data/v35.0/chatter/feed-elements?feedElementType=FeedItem");
+        p.setProperty("notifier.property.alert.gus_endpoint", "https://myhost.com/services/oauth2/token");
+        p.setProperty("notifier.property.alert.gus_post_endpoint", "https://myhost.com/services/data/v35.0/chatter/feed-elements?feedElementType=FeedItem");
         p.setProperty("system.property.gus.enabled", "true");
         system = getInstance(p);
         system.start();
