@@ -277,7 +277,7 @@ public class QueryUtilsTest {
     @Test
     public void testNotEqualsQuery() {
         long relativeTo = System.currentTimeMillis();
-        QueryContext context = QueryUtils.getQueryContext("-1h:argus.core:alerts.evaluated{host!=shared1-argusalert1-3-prd.eng.sfdc.net}:zimsum:1m-sum", relativeTo);
+        QueryContext context = QueryUtils.getQueryContext("-1h:argus.core:alerts.evaluated{host!=myhostname7.abc.com}:zimsum:1m-sum", relativeTo);
         assertNull(context.getTransform());
         assertNull(context.getConstants());
         assertEquals(context.getChildContexts().size(),0);
@@ -288,7 +288,7 @@ public class QueryUtilsTest {
         assertEquals(expression.getAggregator().toString(), "ZIMSUM");
         assertEquals(expression.getDownsampler().toString(), "SUM");
         assertEquals(expression.getTags().keySet().size(),1);
-        assertEquals(expression.getTags().get("host"),AnnotationQuery.TAG_NOT_EQUALS_INTERNAL_PREFIX+"shared1-argusalert1-3-prd.eng.sfdc.net");
+        assertEquals(expression.getTags().get("host"),AnnotationQuery.TAG_NOT_EQUALS_INTERNAL_PREFIX+"myhostname7.abc.com");
         assertEquals(expression.getDownsamplingPeriod(), new Long(60000));
         assertEquals(expression.getStartTimestamp(),new Long(((relativeTo - 3600*1000)/1000)*1000));
         assertEquals(expression.getEndTimestamp(),new Long(relativeTo));

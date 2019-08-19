@@ -40,7 +40,7 @@ public class PagerDutyNotifierIT extends AbstractTestIT {
         p.setProperty("notifier.property.pagerduty.token", TOKEN);
         p.setProperty("notifier.property.pagerduty.endpoint", "https://events.pagerduty.com");
         p.setProperty("system.property.pagerduty.enabled", "true");
-        //p.setProperty("notifier.property.pagerduty.proxy.host", "public0-proxy1-0-prd.data.sfdc.net");
+        //p.setProperty("notifier.property.pagerduty.proxy.host", "myhostname.abc.com");
         //p.setProperty("notifier.property.pagerduty.proxy.port", "8080");
         system = getInstance(p);
         system.start();

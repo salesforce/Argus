@@ -67,7 +67,7 @@ import java.io.InterruptedIOException;
 @Ignore("Convert to Integration Test")
 @RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 public class RefocusServiceTest {
-	
+
 	@Mock private Provider<EntityManager> _emProviderMock;
 	@Mock private HistoryService _historyServiceMock;
 	@Mock private ObjectMapper _mapper;
@@ -94,7 +94,7 @@ public class RefocusServiceTest {
     // Note - replace anything you need to here if you switch to TestMode.REFOCUS
     private static final String argus_refocus_user_name="<argus_refocus_user_name>";
     private static final String argus_refocus_user_password="<argus_refocus_user_password>";
-    private static final String refocus_prd_proxy = "public0-proxy1-0-prd.data.sfdc.net";
+    private static final String refocus_prd_proxy = "myhostname.abc.com";
     private static final String refocus_prd_proxy_port = "8080";
     private static final String argus_user_refocus_user_token = "<argus_refocus_user_token>";
     private static final String argus_user_refocus_sandbox_user_token = "<argus_refocus_user_sandbox_token>";
@@ -130,7 +130,7 @@ public class RefocusServiceTest {
 
             if (use_proxy)
             {
-                _configuration.setProperty(RefocusProperty.REFOCUS_PROXY_HOST.getName(), refocus_prd_proxy); // e.g. public0-proxy1-0-prd.data.sfdc.net in prd
+                _configuration.setProperty(RefocusProperty.REFOCUS_PROXY_HOST.getName(), refocus_prd_proxy); // e.g. myhostname.abc.com
                 _configuration.setProperty(RefocusProperty.REFOCUS_PROXY_PORT.getName(), refocus_prd_proxy_port);
             }
 
