@@ -376,7 +376,28 @@ angular.module('argus.services.charts.dataProcessing', [])
 
 		createSeriesName: createSeriesName,
 
-		copyFlagSeries: copyFlagSeries
+		copyFlagSeries: copyFlagSeries,
+
+		getChartTypeByExpressions: function (expressions) {
+			var chartType = 'line';
+			if(expressions.length > 0){
+				// in view metrics page, there will only be one expression
+				if (expressions[0].includes(':histogram-buckets')){
+					chartType = 'stackbar';
+				}
+			}
+			return chartType;
+		},
+
+		getChartMarkupByType: function(chartType) {
+			return chartType === 'heatmap'?
+			'<div ngsf-fullscreen>' +
+			'<heatmap chartConfig="chartConfig" series="series" dateConfig="dateConfig"></heatmap>' +
+			'</div>' :
+			'<div ngsf-fullscreen>' +
+			'<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
+			'</div>';
+		},
 	};
 
 	return service;

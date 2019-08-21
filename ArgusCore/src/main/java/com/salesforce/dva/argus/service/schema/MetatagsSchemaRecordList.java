@@ -1,19 +1,8 @@
 package com.salesforce.dva.argus.service.schema;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.codec.digest.DigestUtils;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -24,8 +13,18 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.salesforce.dva.argus.entity.MetatagsRecord;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.service.schema.MetricSchemaRecordList.HashAlgorithm;
-
 import net.openhft.hashing.LongHashFunction;
+import org.apache.commons.codec.digest.DigestUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents a list of MetatagsRecord.
@@ -33,12 +32,12 @@ import net.openhft.hashing.LongHashFunction;
  *
  * @author  Kunal Nawale (knawale@salesforce.com)
  */
-public class MetatagsSchemaRecordList {
+public class MetatagsSchemaRecordList implements RecordFinder<MetatagsRecord> {
 
     private Map<String, MetatagsRecord> _idToSchemaRecordMap = new HashMap<>();
     private String _scrollID;
 
-    public MetatagsSchemaRecordList(List<MetatagsRecord> records, String scrollID) {
+    public MetatagsSchemaRecordList(Set<MetatagsRecord> records, String scrollID) {
         int count = 0;
         for(MetatagsRecord record : records) {
             _idToSchemaRecordMap.put(String.valueOf(count++), record);
@@ -46,7 +45,7 @@ public class MetatagsSchemaRecordList {
         setScrollID(scrollID);
     }
 
-    public MetatagsSchemaRecordList(List<MetatagsRecord> records, HashAlgorithm algorithm) {
+    public MetatagsSchemaRecordList(Set<MetatagsRecord> records, HashAlgorithm algorithm) {
         for(MetatagsRecord record : records) {
             String id = null;
             if(HashAlgorithm.MD5.equals(algorithm)) {
@@ -62,6 +61,11 @@ public class MetatagsSchemaRecordList {
         return new ArrayList<>(_idToSchemaRecordMap.values());
     }
 
+    @Override
+    public Set<String> getIdSet() {
+        return _idToSchemaRecordMap.keySet();
+    }
+
     public String getScrollID() {
         return _scrollID;
     }
@@ -70,10 +74,11 @@ public class MetatagsSchemaRecordList {
         this._scrollID = scrollID;
     }
 
-    MetatagsRecord getRecord(String id) {
+    public MetatagsRecord getRecord(String id) {
         return _idToSchemaRecordMap.get(id);
     }
 
+    /*
     static class CreateSerializer extends JsonSerializer<MetatagsSchemaRecordList> {
 
         @Override
@@ -100,6 +105,22 @@ public class MetatagsSchemaRecordList {
                 SchemaRecordList.addUpdateJson(jgen, entry.getKey());
             }
         }
+    }*/
+
+    static class IndexSerializer extends JsonSerializer<MetatagsSchemaRecordList> {
+
+        @Override
+        public void serialize(MetatagsSchemaRecordList list, JsonGenerator jgen, SerializerProvider provider)
+                throws IOException {
+
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(Include.NON_NULL);
+
+            for(Map.Entry<String, MetatagsRecord> entry : list._idToSchemaRecordMap.entrySet()) {
+                String fieldsData = mapper.writeValueAsString(entry.getValue().getMetatags());
+                SchemaRecordList.addIndexJson(jgen, entry.getKey(), fieldsData);
+            }
+        }
     }
 
     static class Deserializer extends JsonDeserializer<MetatagsSchemaRecordList> {
@@ -109,7 +130,7 @@ public class MetatagsSchemaRecordList {
             throws IOException {
 
             String scrollID = null;
-            List<MetatagsRecord> records = Collections.emptyList();
+            Set<MetatagsRecord> records = Collections.emptySet();
 
             JsonNode rootNode = jp.getCodec().readTree(jp);
             if(rootNode.has("_scroll_id")) {
@@ -118,7 +139,7 @@ public class MetatagsSchemaRecordList {
             JsonNode hits = rootNode.get("hits").get("hits");
 
             if(JsonNodeType.ARRAY.equals(hits.getNodeType())) {
-                records = new ArrayList<>(hits.size());
+                records = new HashSet<>(hits.size());
                 Iterator<JsonNode> iter = hits.elements();
                 while(iter.hasNext()) {
                     JsonNode hit = iter.next();

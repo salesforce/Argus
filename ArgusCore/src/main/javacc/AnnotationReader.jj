@@ -29,24 +29,24 @@ package com.salesforce.dva.argus.service.annotation;
 import com.salesforce.dva.argus.entity.Annotation;
 import java.io.*;
 import java.util.*;
-import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.system.SystemException;
 import static com.salesforce.dva.argus.system.SystemAssert.*;
 
 public class AnnotationReader<T> {
 
-  	private TSDBService tsdbService;
+  	private AnnotationStorageService annotationStorageService;
 
-    AnnotationReader(TSDBService tsdbService) {
+    AnnotationReader(AnnotationStorageService annotationStorageService) {
         this((Reader)null);
-        this.tsdbService = tsdbService;
+        this.annotationStorageService = annotationStorageService;
     }
 
     public static boolean isValid(Collection<String> expressions) {
         boolean result = true;
         if(expressions != null) {
-            AnnotationReader reader = new AnnotationReader((TSDBService)null);
+            AnnotationReader reader = new AnnotationReader((AnnotationStorageService)null);
             for(String expression : expressions) {
                 try {
                     if(!reader.isValidExpression(expression)) {
@@ -147,7 +147,7 @@ private List<T> start(String expression, boolean syntaxOnly, Class<T> clazz) :
 }
 {
   	{
-        requireState(syntaxOnly || tsdbService != null, "TSDB service can only be null when only syntax validation is being performed.");
+        requireState(syntaxOnly || annotationStorageService != null, "Annotation storage service can only be null when only syntax validation is being performed.");
         ReInit(new StringReader(expression));
   	}
 	result = expression(syntaxOnly, clazz)<EOF>
@@ -184,7 +184,7 @@ private List<T> expression(boolean syntaxOnly, Class<T> clazz) :
 	            AnnotationQuery query = new AnnotationQuery(scope, metric, tags, type, startTimestamp, endTimestamp);
 	            List<AnnotationQuery> queries = new ArrayList<AnnotationQuery>();
 	            queries.add(query);
-	            List<Annotation> annotations = tsdbService.getAnnotations(queries);
+	            List<Annotation> annotations = annotationStorageService.getAnnotations(queries);
 	            if(user == null) {
 	                return (List<T>) annotations;
 	            } else {

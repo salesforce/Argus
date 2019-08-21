@@ -32,10 +32,16 @@
 package com.salesforce.dva.argus.service.tsdb;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
 import com.salesforce.dva.argus.system.SystemException;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -51,6 +57,11 @@ import static java.net.URLEncoder.encode;
  * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
  */
 public class AnnotationQuery {
+
+    // The ~ character is not allowed in user-facing Argus syntax
+    public static final String TAG_NOT_EQUALS_INTERNAL_PREFIX = "~";
+    public static final String TAG_NOT_EQUALS_TSDB_PREFIX = "not_literal_or(";
+    public static final String TAG_NOT_EQUALS_TSDB_SUFFIX = ")";
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -81,7 +92,7 @@ public class AnnotationQuery {
 
     /** Creates a new AnnotationQuery object. */
     protected AnnotationQuery() {
-        _tags = new HashMap<>();
+        _tags = new TreeMap<>();
     }
 
     /**
@@ -137,9 +148,9 @@ public class AnnotationQuery {
     }
 
     /**
-     * Returns the tags associated with the query.
+     * Returns the sorted tags associated with the query.
      *
-     * @return  The tags associated with the query. Will never return null, but may be empty.
+     * @return  The sorted tags associated with the query. Will never return null, but may be empty.
      */
     public Map<String, String> getTags() {
         return _tags;

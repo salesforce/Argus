@@ -24,6 +24,18 @@
             Annotation type:
             <input type="text" ng-model="annotationType"/>
         </label>
+        <button class="floatR btn btn-primary" ng-click="prettify()"> Prettify </button>
+        <button class="floatR btn" ng-click="hide()" ng-show="editorShown"> Hide </button>
+    </div>
+    <div>
+        <div class="well well-sm" ng-show="editorShown" style="margin-top:15px">
+            <div ui-codemirror="{onLoad:editorLoaded}" ui-refresh="editorShown"
+                ui-codemirror-opts="editorOptions" ng-model="treeText"
+                ng-change="textAreaOnChange()"
+            >
+            </div>
+        </div>
+       
     </div>
 
     <div id="discoveryLookup" ng-show="showMetricDiscovery">

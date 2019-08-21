@@ -4,16 +4,20 @@
     <parent>
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
-        <version>2.22.3</version>
+        <version>4-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
+
     <artifactId>argus-client</artifactId>
+    <version>4.75-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>ArgusClient</name>
     <description>Command line client for the Argus Production Monitoring Tool.</description>
     <properties>
         <top>${project.basedir}/${project.parent.relativePath}</top>
+        <sonar.exclusions>**</sonar.exclusions>
     </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -81,6 +85,28 @@
                             <classifier>test-resources</classifier>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>copy</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>io.prometheus.jmx</groupId>
+                                    <artifactId>jmx_prometheus_javaagent</artifactId>
+                                    <version>${jmx.prometheus.version}</version>
+                                    <type>jar</type>
+                                    <classifier>sources</classifier>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                    <destFileName>jmx_prometheus_javaagent-${jmx.prometheus.version}.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                            <!-- other configurations here -->
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -142,30 +168,30 @@
         </testResources>
     </build>
     <dependencies>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>argus</artifactId>
-            <version>${project.version}</version>
-            <classifier>resources</classifier>
-            <type>zip</type>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>argus</artifactId>
-            <version>${project.version}</version>
-            <classifier>test-resources</classifier>
-            <type>zip</type>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>argus-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>argus</artifactId>
+        <version>${project.parent.version}</version>
+        <classifier>resources</classifier>
+        <type>zip</type>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>argus</artifactId>
+        <version>${project.parent.version}</version>
+        <classifier>test-resources</classifier>
+        <type>zip</type>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>com.salesforce.argus</groupId>
+        <artifactId>argus-core</artifactId>
+        <version>4.75-SNAPSHOT</version>
+      </dependency>
     </dependencies>
 </project>

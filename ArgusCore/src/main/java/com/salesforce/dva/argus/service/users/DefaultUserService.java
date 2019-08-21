@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.users;
 
 import com.google.inject.Inject;
@@ -63,9 +63,7 @@ public class DefaultUserService extends DefaultJPAService implements UserService
     //~ Instance fields ******************************************************************************************************************************
 
     private Logger _logger = LoggerFactory.getLogger(getClass());
-    @Inject
-    Provider<EntityManager> emf;
-    
+
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -112,7 +110,7 @@ public class DefaultUserService extends DefaultJPAService implements UserService
         requireNotDisposed();
         requireArgument(user != null && user.getId() != null && user.getId().compareTo(ZERO) > 0, "User cannot be null and must have a valid ID.");
         _logger.debug("Deleting user {}.", user);
-	    
+
         EntityManager em = emf.get();
         deleteEntity(em, user);
         em.flush();
@@ -123,14 +121,14 @@ public class DefaultUserService extends DefaultJPAService implements UserService
     public PrincipalUser updateUser(PrincipalUser user) {
         requireNotDisposed();
         requireArgument(user != null, "User cannot be null.");
-	    
+
         EntityManager em = emf.get();
         PrincipalUser result = mergeEntity(em, user);
 
         _logger.debug("Updated user to : {}", result);
         _auditService.createAudit("Updated user : {0}", result, result);
         em.flush();
-        
+
         return result;
     }
 
@@ -155,7 +153,7 @@ public class DefaultUserService extends DefaultJPAService implements UserService
         }
         return result;
     }
-    
+
     @Override
     @Transactional
     public synchronized PrincipalUser findDefaultUser() {
@@ -184,6 +182,6 @@ public class DefaultUserService extends DefaultJPAService implements UserService
         requireNotDisposed();
         return PrincipalUser.findUniqueUserCount(emf.get());
     }
-    
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

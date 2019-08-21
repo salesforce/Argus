@@ -1,19 +1,8 @@
 package com.salesforce.dva.argus.service.schema;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.codec.digest.DigestUtils;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -24,8 +13,18 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.salesforce.dva.argus.entity.ScopeOnlySchemaRecord;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.service.schema.MetricSchemaRecordList.HashAlgorithm;
-
 import net.openhft.hashing.LongHashFunction;
+import org.apache.commons.codec.digest.DigestUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents a list of scope names from discovery queries.
@@ -33,12 +32,12 @@ import net.openhft.hashing.LongHashFunction;
  *
  * @author  Dilip Devaraj (ddevaraj@salesforce.com)
  */
-public class ScopeOnlySchemaRecordList {
+public class ScopeOnlySchemaRecordList implements RecordFinder<ScopeOnlySchemaRecord> {
 	
 	private Map<String, ScopeOnlySchemaRecord> _idToSchemaRecordMap = new HashMap<>();
 	private String _scrollID;
 
-	public ScopeOnlySchemaRecordList(List<ScopeOnlySchemaRecord> records, String scrollID) {
+	public ScopeOnlySchemaRecordList(Set<ScopeOnlySchemaRecord> records, String scrollID) {
 		int count = 0;
 		for(ScopeOnlySchemaRecord record : records) {
 			_idToSchemaRecordMap.put(String.valueOf(count++), record);
@@ -46,7 +45,7 @@ public class ScopeOnlySchemaRecordList {
 		setScrollID(scrollID);
 	}
 	
-	public ScopeOnlySchemaRecordList(List<ScopeOnlySchemaRecord> records, HashAlgorithm algorithm) {
+	public ScopeOnlySchemaRecordList(Set<ScopeOnlySchemaRecord> records, HashAlgorithm algorithm) {
 		for(ScopeOnlySchemaRecord record : records) {
 			String id = null;
 			String scopeOnly = record.getScope();
@@ -62,7 +61,12 @@ public class ScopeOnlySchemaRecordList {
 	public List<ScopeOnlySchemaRecord> getRecords() {
 		return new ArrayList<>(_idToSchemaRecordMap.values());
 	}
-	
+
+	@Override
+	public Set<String> getIdSet() {
+		return _idToSchemaRecordMap.keySet();
+	}
+
 	public String getScrollID() {
 		return _scrollID;
 	}
@@ -71,10 +75,11 @@ public class ScopeOnlySchemaRecordList {
 		this._scrollID = scrollID;
 	}
 	
-	ScopeOnlySchemaRecord getRecord(String id) {
+	public ScopeOnlySchemaRecord getRecord(String id) {
 		return _idToSchemaRecordMap.get(id);
 	}
-	
+
+	/*
 	static class CreateSerializer extends JsonSerializer<ScopeOnlySchemaRecordList> {
 
 		@Override
@@ -105,6 +110,23 @@ public class ScopeOnlySchemaRecordList {
 				SchemaRecordList.addUpdateJson(jgen, entry.getKey());
 			}
 		}
+	} */
+
+	static class IndexSerializer extends JsonSerializer<ScopeOnlySchemaRecordList> {
+
+		@Override
+		public void serialize(ScopeOnlySchemaRecordList list, JsonGenerator jgen, SerializerProvider provider)
+				throws IOException {
+
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.setSerializationInclusion(Include.NON_NULL);
+
+			for(Map.Entry<String, ScopeOnlySchemaRecord> entry : list._idToSchemaRecordMap.entrySet()) {
+
+				String fieldsData = mapper.writeValueAsString(entry.getValue());
+				SchemaRecordList.addIndexJson(jgen, entry.getKey(), fieldsData);
+			}
+		}
 	}
 
 	static class Deserializer extends JsonDeserializer<ScopeOnlySchemaRecordList> {
@@ -114,7 +136,7 @@ public class ScopeOnlySchemaRecordList {
 				throws IOException {
 			
 			String scrollID = null;
-			List<ScopeOnlySchemaRecord> records = Collections.emptyList();
+			Set<ScopeOnlySchemaRecord> records = Collections.emptySet();
 			
 			JsonNode rootNode = jp.getCodec().readTree(jp);
 			if(rootNode.has("_scroll_id")) {
@@ -123,7 +145,7 @@ public class ScopeOnlySchemaRecordList {
 			JsonNode hits = rootNode.get("hits").get("hits");
 			
 			if(JsonNodeType.ARRAY.equals(hits.getNodeType())) {
-				records = new ArrayList<>(hits.size());
+				records = new HashSet<>(hits.size());
 				Iterator<JsonNode> iter = hits.elements();
 				while(iter.hasNext()) {
 					JsonNode hit = iter.next();

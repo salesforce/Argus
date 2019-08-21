@@ -74,5 +74,26 @@ public class AliasByTagTransformTest {
 		Metric actual = aliasByTagTransform.transform(null, Arrays.asList(metric), Arrays.asList("")).get(0);
 		assertEquals(null, actual.getDisplayName());
 	}
-
+	
+	@Test
+	public void testAliasByTagScopeNMetricWithOneTag() {
+		Metric metric = new Metric("scope", "metric");
+		metric.setTag("device", "someDevice");
+		metric.setTag("target", "someTarget");
+		Metric actual = aliasByTagTransform.transform(null, Arrays.asList(metric), Arrays.asList("device")).get(0);
+		
+		assertEquals(AliasByTagTransform.DEFAULT_SCOPE_NAME, actual.getScope());
+		assertEquals("someDevice", actual.getMetric());
+	}
+	
+	@Test
+	public void testAliasByTagScopeNMetricWithTwoTags() {
+		Metric metric = new Metric("scope", "metric");
+		metric.setTag("device", "someDevice");
+		metric.setTag("target", "someTarget");
+		Metric actual = aliasByTagTransform.transform(null, Arrays.asList(metric), Arrays.asList("device","target")).get(0);
+		
+		assertEquals(AliasByTagTransform.DEFAULT_SCOPE_NAME, actual.getScope());
+		assertEquals("someDevice,someTarget", actual.getMetric());
+	}
 }

@@ -34,7 +34,6 @@ package com.salesforce.dva.argus.entity;
 import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -49,13 +48,19 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 public abstract class TSDBEntity implements Serializable {
 	
     private static final int NUM_TAGS = 50;
+    
+    /*
+     * Argus only supports letters, digits and ./-_ for namespace, scope,
+     * metric and tags. All other characters will be replaced by this.
+     */
+    private static final String UNSUPPORTED_CHARACTER_REPLACEMENT = "__";
 
     //~ Instance fields ******************************************************************************************************************************
 
     private String _uid;
     private String _scope;
     private String _metric;
-    private final Map<String, String> _tags = new HashMap<>(0);
+    private final Map<String, String> _tags = new TreeMap<>();
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -130,12 +135,12 @@ public abstract class TSDBEntity implements Serializable {
     }
 
     /**
-     * Returns an unmodifiable collection of tags associated with the metric.
+     * Returns an unmodifiable collection of sorted tags associated with the metric.
      *
-     * @return  The tags for a metric. Will never be null but may be empty.
+     * @return  The sorted tags for a metric. Will never be null but may be empty.
      */
     public Map<String, String> getTags() {
-        Map<String, String> result = new HashMap<>();
+        Map<String, String> result = new TreeMap<>();
 
         for (Map.Entry<String, String> entry : _tags.entrySet()) {
             String key = entry.getKey();
@@ -145,6 +150,10 @@ public abstract class TSDBEntity implements Serializable {
             }
         }
         return Collections.unmodifiableMap(result);
+    }
+    
+    public void removeTag(String tagName) {
+    	    _tags.remove(tagName);
     }
 
     /**
@@ -175,6 +184,12 @@ public abstract class TSDBEntity implements Serializable {
                 //TODO: Validate that the tags contain only permissible characters.
         	}
     	}
+	}
+    
+	public static String replaceUnsupportedChars(String input) {
+	    if(input != null){
+	        return input.replaceAll("[^a-zA-Z0-9\\./\\-_]+", UNSUPPORTED_CHARACTER_REPLACEMENT);
+	    } else return input;
 	}
 
 	/**

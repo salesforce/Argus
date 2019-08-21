@@ -37,10 +37,12 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -56,6 +58,7 @@ import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
@@ -111,7 +114,10 @@ public class DefaultTSDBService extends AbstractTSDBService{
         requireNotDisposed();
         requireArgument(queries != null, "Metric Queries cannot be null.");
         _logger.debug("Active Threads in the pool = " + ((ThreadPoolExecutor) _executorService).getActiveCount());
-
+        int noFailedQueries = 0;
+        Exception lastFailedException = null;
+        MetricQuery failedMetricQuery = null;
+        
         long start = System.currentTimeMillis();
         Map<MetricQuery, List<Metric>> metricsMap = new HashMap<>();
         Map<MetricQuery, Future<List<Metric>>> futures = new HashMap<>();
@@ -131,12 +137,26 @@ public class DefaultTSDBService extends AbstractTSDBService{
         for (Entry<MetricQuery, Future<List<Metric>>> entry : futures.entrySet()) {
             try {
                 List<Metric> m = entry.getValue().get();
+                MetricQuery metricQuery = entry.getKey();
+                Set<String> tagsInQuery = new HashSet<String>();
+                if(metricQuery.getTags()!=null) {
+                	    tagsInQuery = metricQuery.getTags().keySet();
+                }
                 List<Metric> metrics = new ArrayList<>();
 
                 if (m != null) {
                     for (Metric metric : m) {
                         if (metric != null) {
                             metric.setQuery(entry.getKey());
+                            if(metric.getQuery().getAggregator() != Aggregator.NONE){
+                                Set<String> tagKeys = metric.getTags().keySet();
+                                for(String tagKey : tagKeys) {
+                                    // removing tags that the user has not requested
+                                    if(!tagsInQuery.contains(tagKey)) {
+                                        metric.removeTag(tagKey);
+                                    }
+                                }
+                            }
                             metrics.add(metric);
                         }
                     }
@@ -144,10 +164,20 @@ public class DefaultTSDBService extends AbstractTSDBService{
                 
                 instrumentQueryLatency(_monitorService, entry.getKey(), queryStartExecutionTime.get(entry.getKey()), "metrics");
                 metricsMap.put(entry.getKey(), metrics);
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (ExecutionException e){
+                lastFailedException = e;
+                failedMetricQuery  = entry.getKey();
+                noFailedQueries++;
+                continue;
+            } catch (InterruptedException e) {
                 throw new SystemException("Failed to get metrics. The query was: " + entry.getKey() + "\\n", e);
             }
         }
+        
+        if(noFailedQueries !=0 && noFailedQueries == queries.size()){
+            throw new SystemException("Failed to get metrics. The query was: " + failedMetricQuery  + "\\n", lastFailedException);
+        }
+        
         _logger.debug("Time to get Metrics = " + (System.currentTimeMillis() - start));
         return metricsMap;
     }
@@ -200,6 +230,7 @@ public class DefaultTSDBService extends AbstractTSDBService{
                         }
                     }
                 }
+                _logger.info("TSDB annotation query completed in {} ms", System.currentTimeMillis() - start);
                 instrumentQueryLatency(_monitorService, query, start, "annotations");
             }
         } catch(IOException ex) {

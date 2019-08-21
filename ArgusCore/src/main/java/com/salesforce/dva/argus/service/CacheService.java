@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service;
 
 import java.util.List;
@@ -83,8 +83,6 @@ public interface CacheService extends Service {
      */
     <V> void put(Map<String, V> entries, int ttl);
 
-    /** Removes all entries from cache. */
-    void clear();
 
     /**
      * Check if a key exists in cache.
@@ -151,7 +149,7 @@ public interface CacheService extends Service {
      *
      * @param   keys  The set of keys to examine.  Cannot be null, but may be empty.
      *
-     * @return  A map having the same size as the input set of keys, indicating the existence of each key.  
+     * @return  A map having the same size as the input set of keys, indicating the existence of each key.
      */
     Map<String, Boolean> exist(Set<String> keys);
 

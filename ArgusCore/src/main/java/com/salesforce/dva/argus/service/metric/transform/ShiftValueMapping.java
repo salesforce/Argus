@@ -63,7 +63,7 @@ public class ShiftValueMapping implements ValueMapping {
             Long newTimestamp = entry.getKey() + offset;
 
             SystemAssert.requireArgument((newTimestamp <= Long.MAX_VALUE && newTimestamp >= Long.MIN_VALUE),
-                "You are not allowed to shift like this, be nice to me!");
+                "Timestamp of shifted metrics not in range Long.MIN_VALUE - Long.MAX_VALUE");
             shiftDatapoints.put(newTimestamp, entry.getValue());
         }
         return shiftDatapoints;

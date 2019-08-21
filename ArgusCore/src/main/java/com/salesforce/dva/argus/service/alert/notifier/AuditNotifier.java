@@ -31,21 +31,8 @@
 
 package com.salesforce.dva.argus.service.alert.notifier;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.salesforce.dva.argus.entity.Audit;
-import com.salesforce.dva.argus.entity.JPAEntity;
-import com.salesforce.dva.argus.entity.Notification;
-import com.salesforce.dva.argus.entity.Trigger;
-import com.salesforce.dva.argus.entity.Trigger.TriggerType;
-import com.salesforce.dva.argus.service.AnnotationService;
-import com.salesforce.dva.argus.service.AuditService;
-import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
-import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.util.AlertUtils;
-import com.salesforce.dva.argus.util.TemplateReplacer;
-import org.joda.time.DateTimeConstants;
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
 import java.math.BigInteger;
 import java.net.URLEncoder;
 import java.sql.Date;
@@ -54,9 +41,27 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Properties;
 import java.util.TimeZone;
+
 import javax.persistence.EntityManager;
 
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import com.salesforce.dva.argus.entity.Audit;
+import com.salesforce.dva.argus.entity.JPAEntity;
+import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.Trigger;
+import org.joda.time.DateTimeConstants;
+
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.service.AnnotationService;
+import com.salesforce.dva.argus.service.AuditService;
+import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
+import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.AlertUtils;
+import com.salesforce.dva.argus.util.TemplateReplacer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A notifier that sends notification to a database.
@@ -65,9 +70,10 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
  */
 public class AuditNotifier extends DefaultNotifier {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(AuditNotifier.class);
 	//~ Static fields/initializers *******************************************************************************************************************
 
-	protected static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
+	public static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
 
 		@Override
 		protected SimpleDateFormat initialValue() {
@@ -95,8 +101,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 * @param  emf                The entity manager factory. Cannot be null.
 	 */
 	@Inject
-	public AuditNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, SystemConfiguration config,
-			Provider<EntityManager> emf) {
+	public AuditNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, SystemConfiguration config, Provider<EntityManager> emf) {
 		super(metricService, annotationService, config);
 		_auditService = auditService;
 		_config = config;
@@ -110,12 +115,21 @@ public class AuditNotifier extends DefaultNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
+	protected boolean sendAdditionalNotification(NotificationContext context) {
 		requireArgument(context != null, "Notification context cannot be null.");
 
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.TRIGGERED), SystemConfiguration.getHostname(), context.getAlert());
 
-		_auditService.createAudit(audit);
+		Audit res = _auditService.createAudit(audit);
+
+		// the previous call does not return any status, nor throw exception
+		if (null != res) {
+			return true;
+		} else {
+			context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to create a new audit record for triggered notification: {0}.",
+					context.getNotification().getName()), null, 0);
+			return false;
+		}
 	}
 
 	/**
@@ -153,25 +167,42 @@ public class AuditNotifier extends DefaultNotifier {
 
 		sb.append(notificationMessage);
 		String customText = context.getNotification().getCustomText();
-		if( customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
+		if(customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
 			sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("<br/>");
 		}
+
+		context.getAlertEvaluationTrackingID().ifPresent(trackingID -> {
+			sb.append("<b>Tracking ID:</b> " + trackingID + "<br/>");
+		});
+
 		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context,notification.getName())));
 		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName())));
 		if(notificationStatus == NotificationStatus.TRIGGERED) {
 			sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
 					DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		}
-		if (!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
-		else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
-		if(!expression.equals("")) {
-			sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/>");
+
+		if(context.getEvaluatedMetricSnapshotURL().isPresent()) {
+				sb.append("<p><a href='").append(context.getEvaluatedMetricSnapshotURL().get()).append("'>Snapshot of the evaluated metric data.</a><br/>");
+		} else {
+			if(!expression.equals("")) {
+				sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/><br/>");
+			}
 		}
+
+		if(!expression.equals("")) {
+			sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
+		} else {
+			sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
+		}
+
+		sb.append("<p><a href='").append(getExpressionUrl(context.getAlert().getExpression())).append("'>Click " +
+				"here for the current view of the metric data.</a><br/><br/>");
 
 		if(context.getTriggeredMetric()!=null) {
 			if(notificationStatus == NotificationStatus.TRIGGERED){
 				sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
-			}else {
+			} else {
 				sb.append(MessageFormat.format("<b>Cleared on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
 			}
 		}
@@ -195,7 +226,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 *
 	 * @return  The trigger detail information.
 	 */
-	protected String getTriggerDetails(Trigger trigger, NotificationContext context) {
+	public String getTriggerDetails(Trigger trigger, NotificationContext context) {
 		if (trigger != null) {
 			String triggerString = trigger.toString();
 			triggerString = TemplateReplacer.applyTemplateChanges(context, triggerString);
@@ -214,7 +245,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 *
 	 * @return  The fully constructed URL for the metric.
 	 */
-	protected String getMetricUrl(String metricToAnnotate, long triggerFiredTime) {
+	public String getMetricUrl(String metricToAnnotate, long triggerFiredTime) {
 		long start = triggerFiredTime - (6L * DateTimeConstants.MILLIS_PER_HOUR);
 		long end = Math.min(System.currentTimeMillis(), triggerFiredTime + (6L * DateTimeConstants.MILLIS_PER_HOUR));
 		String expression = MessageFormat.format("{0,number,#}:{1,number,#}:{2}", start, end, metricToAnnotate);
@@ -229,7 +260,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 * @return  The fully constructed URL for the expression.
 	 */
 	@SuppressWarnings("deprecation")
-	protected String getExpressionUrl(String expression) {
+	public String getExpressionUrl(String expression) {
 		String template = _config.getValue(Property.AUDIT_METRIC_URL_TEMPLATE.getName(), Property.AUDIT_METRIC_URL_TEMPLATE.getDefaultValue());
 		try {
 			expression = URLEncoder.encode(expression, "UTF-8");
@@ -246,7 +277,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 *
 	 * @return  The fully constructed URL for the alert.
 	 */
-	protected String getAlertUrl(BigInteger id) {
+	public String getAlertUrl(BigInteger id) {
 		String template = _config.getValue(Property.AUDIT_ALERT_URL_TEMPLATE.getName(), Property.AUDIT_ALERT_URL_TEMPLATE.getDefaultValue());
 
 		return template.replaceAll("\\$alertid\\$", String.valueOf(id));
@@ -264,12 +295,20 @@ public class AuditNotifier extends DefaultNotifier {
 	}
 
 	@Override
-	protected void clearAdditionalNotification(NotificationContext context) {
+	protected boolean clearAdditionalNotification(NotificationContext context) {
 		requireArgument(context != null, "Notification context cannot be null.");
 
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.CLEARED), SystemConfiguration.getHostname(), context.getAlert());
 
-		_auditService.createAudit(audit);
+		Audit res = _auditService.createAudit(audit);
+
+		if (null != res) {
+			return true;
+		} else {
+			context.getHistory().appendMessageNUpdateHistory(MessageFormat.format("Not able to create a new audit record for cleared notification: {0}.",
+					context.getNotification().getName()), null, 0);
+			return false;
+		}
 	}
 
 	@Override
@@ -293,9 +332,11 @@ public class AuditNotifier extends DefaultNotifier {
 		/** The prodoutage email to send notification. */
 		AUDIT_PRODOUTAGE_EMAIL_TEMPLATE("notifier.property.goc.prodoutage.email", "prodoutage@yourcompany.com"),
 		/** The alert URL template to use in notifications. */
-		AUDIT_ALERT_URL_TEMPLATE("notifier.property.alert.alerturl.template", "http://localhost:8080/argus/alertId"),
+		AUDIT_ALERT_URL_TEMPLATE("notifier.property.alert.alerturl.template", "http://localhost:8080/argus/#/alerts/$alertid$"),
 		/** The metric URL template to use in notifications. */
-		AUDIT_METRIC_URL_TEMPLATE("notifier.property.alert.metricurl.template", "http://localhost:8080/argus/metrics");
+		AUDIT_METRIC_URL_TEMPLATE("notifier.property.alert.metricurl.template", "http://localhost:8080/argus/#/viewmetrics?expression=$expression$"),
+		/** The metric image URL template to use in notifications. */
+		AUDIT_METRIC_IMAGE_URL_TEMPLATE("notifier.property.alert.imageurl.template", "http://localhost:8080/argus/#/images/$imageID$");
 
 
 		private final String _name;

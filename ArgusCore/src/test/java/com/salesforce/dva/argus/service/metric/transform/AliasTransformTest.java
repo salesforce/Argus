@@ -185,5 +185,42 @@ public class AliasTransformTest {
         assertEquals("s", result.get(1).getScope());
         assertEquals("s", result.get(2).getScope());
     }
+    
+    @Test
+    public void testDisplayName() {
+    	  Transform aliasTransform = new AliasTransform();
+          Metric metric_1 = new Metric("test_scope1", "test_metric1");
+          Metric metric_2 = new Metric("test_scope2", "test_metric2");
+          metric_2.setTag("test_key", "test_value"); 
+          List<Metric> metrics = new ArrayList<Metric>();
+
+          metrics.add(metric_1);
+          metrics.add(metric_2);
+
+          List<String> constants = new ArrayList<String>();
+          constants.add("new_metric");
+          constants.add(TEST_TYPE_LITERAL);
+          List<Metric> result = aliasTransform.transform(null, metrics, constants);
+
+          assertEquals(result.size(), 2);
+          assertEquals("test_scope1:new_metric", result.get(0).getDisplayName());
+          assertEquals("test_scope2:new_metric{test_key=test_value}", result.get(1).getDisplayName());
+    }
+    @Test
+    public void testDisplayNameAfterAliasByTag() {
+    	  Transform aliasTransform = new AliasTransform();
+          Metric metric_1 = new Metric(AliasByTagTransform.DEFAULT_SCOPE_NAME, "test_metric1");
+          Metric metric_2 = new Metric(AliasByTagTransform.DEFAULT_SCOPE_NAME, "test_metric2");
+          metric_2.setTag("test_key", "test_value"); 
+          List<Metric> metrics = new ArrayList<Metric>();
+          metrics.add(metric_1);
+          metrics.add(metric_2);
+          List<String> constants = new ArrayList<String>();
+          constants.add("new_metric");
+          constants.add(TEST_TYPE_LITERAL);
+          List<Metric> result = aliasTransform.transform(null, metrics, constants);
+          assertEquals("new_metric", result.get(0).getDisplayName());
+          assertEquals("new_metric{test_key=test_value}", result.get(1).getDisplayName());
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

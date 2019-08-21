@@ -1,6 +1,5 @@
 'use strict';
 /*global angular:false, d3:false, $:false, window:false, screen:false, console:false */
-
 angular.module('argus.directives.charts.lineChart', [])
 .directive('lineChart', ['$timeout', 'Storage', 'ChartToolService', 'ChartElementService', function($timeout, Storage, ChartToolService, ChartElementService) {
 	//--------------------resize all charts-------------------
@@ -273,6 +272,11 @@ angular.module('argus.directives.charts.lineChart', [])
 				// 	.style('display', displayProperty)
 				// 	.attr('displayProperty', displayProperty);//this is for recording the display property when circle is outside range
 			}
+
+			// change chart type
+			$scope.changeChartType = function (type) {
+				$scope.$parent.resetChartType(type);
+			}
 		}],
 		// compile: function (iElement, iAttrs, transclude) {},
 		link: function (scope, element) {
@@ -345,7 +349,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			// color scheme
 			var z = ChartToolService.setColorScheme(scope.menuOption.colorPalette);
 			// determine chart layout and dimensions
-			var containerHeight = isSmallChart ? 175 : 330;
+			var containerHeight = isSmallChart ? ChartElementService.smallChartHeight : ChartElementService.defaultChartHeight;
 			var containerWidth = $('#' + chartId).width();
 			// remember the original size
 			var defaultContainerWidth = -1;

@@ -34,13 +34,18 @@ package com.salesforce.dva.argus.ws.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
+import org.apache.commons.lang.StringUtils;
+
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response.Status;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response.Status;
+import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Notification Dto.
@@ -63,6 +68,12 @@ public class NotificationDto extends EntityDTO {
     private String customText;
     private int severityLevel = 5;
     private boolean isSRActionable;
+    private String articleNumber;
+    private String eventName;
+    private String elementName;
+    private String productTag;
+    private boolean enableClearNotification; // used by EmailNotifier and GusNotifier
+    private String emailSubject; // used by EmailNotifier
 
     //~ Methods **************************************************************************************************************************************
 
@@ -86,6 +97,7 @@ public class NotificationDto extends EntityDTO {
         for (Trigger trigger : notification.getTriggers()) {
             result.addTriggersIds(trigger);
         }
+
         return result;
     }
 
@@ -109,6 +121,12 @@ public class NotificationDto extends EntityDTO {
             result.add(transformToDto(notification));
         }
         return result;
+    }
+
+    public static boolean validateSRActionableUpdate(NotificationDto notificationDto) {
+        boolean isSRActionable = notificationDto.getSRActionable();
+        String articleNumber = notificationDto.getArticleNumber();
+        return (!isSRActionable || ( articleNumber != null && articleNumber.trim().length() > 0 ));
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -270,9 +288,7 @@ public class NotificationDto extends EntityDTO {
      *
      * @param  isSRActionable  True if  SR should monitor the notification
      */
-    public void setSRActionable(boolean isSRActionable) {
-        this.isSRActionable = isSRActionable;
-    }
+    public void setSRActionable(boolean isSRActionable) { this.isSRActionable = isSRActionable; }
     
     /**
      * Gets the severity level of notification
@@ -281,6 +297,45 @@ public class NotificationDto extends EntityDTO {
      */
     public int getSeverityLevel() {
         return severityLevel;
+    }
+
+    public String getArticleNumber() { return articleNumber; }
+
+
+    public void setArticleNumber(String articleNumber) { this.articleNumber = articleNumber; }
+
+
+    public String getElementName() { return elementName; }
+
+
+    public void setElementName(String elementName) { this.elementName = elementName; }
+
+
+    public String getEventName() { return eventName; }
+
+
+    public void setEventName(String eventName) { this.eventName = eventName; }
+
+
+    public String getProductTag() { return productTag; }
+
+
+    public void setProductTag(String productTag) { this.productTag = productTag; }
+
+    public boolean isEnableClearNotification() {
+        return enableClearNotification;
+    }
+
+    public void setEnableClearNotification(boolean enableClearNotification) {
+        this.enableClearNotification = enableClearNotification;
+    }
+
+    public String getEmailSubject() {
+        return emailSubject;
+    }
+
+    public void setEmailSubject(String emailSubject) {
+        this.emailSubject = emailSubject;
     }
 
     /**
@@ -308,9 +363,15 @@ public class NotificationDto extends EntityDTO {
         result.setName("sample-notification");
         result.setNotifierName("email");
         result.setSeverityLevel(5);
-        result.setSRActionable(false);
+        result.setSRActionable(true);
+        result.setArticleNumber("sample-articleNumber");
+        result.setElementName("sample-elementName");
+        result.setEventName("sample-eventName");
+        result.setProductTag("sample-productTag");
         result.setSubscriptions(Arrays.asList(new String[] { "joe.smith@salesforce.com" }));
-        result.setCustomText("Sample custom text to include in the notification"); 
+        result.setCustomText("Sample custom text to include in the notification");
+        result.setEnableClearNotification(true);
+        result.setEmailSubject("sample-emailSubject");
         return result;
     }
 }

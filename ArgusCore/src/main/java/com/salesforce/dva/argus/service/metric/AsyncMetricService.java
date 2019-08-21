@@ -27,8 +27,8 @@ public class AsyncMetricService extends DefaultMetricService {
     @Inject
     protected AsyncMetricService(MonitorService monitorService, Provider<MetricReader<Metric>> metricsprovider,
                                  Provider<MetricReader<MetricQuery>> queryprovider,
-                                 BatchService batchService, SystemConfiguration config) {
-        super(monitorService, metricsprovider, queryprovider, config);
+                                 BatchService batchService, MetricQueryProcessor queryProcessor, SystemConfiguration config) {
+        super(monitorService, queryProcessor, metricsprovider, queryprovider, config);
         _batchService = batchService;
     }
 

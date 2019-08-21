@@ -60,8 +60,8 @@ public class MetricCommitter extends AbstractCommitter {
      * @param  monitorService 	The monitoring service to use. Cannot be null.
      * @param  jobCounter  The global job counter used to track the number of annotations.
      */
-    MetricCommitter(CollectionService colletionService, MonitorService monitorService, AtomicInteger jobCounter) {
-        super(colletionService,monitorService, jobCounter);
+    MetricCommitter(CollectionService collectionService, MonitorService monitorService, AtomicInteger jobCounter) {
+        super(collectionService,monitorService, jobCounter);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -95,7 +95,7 @@ public class MetricCommitter extends AbstractCommitter {
                 LOGGER.info("Error occurred while committing metrics. Reason {}", ex.toString());
             }
         }
-        LOGGER.warn(MessageFormat.format("Metric committer thread interrupted. {} datapoints committed by this thread.", jobCounter.get()));
+        LOGGER.warn("Metric committer thread interrupted. {} datapoints committed by this thread.", jobCounter.get());
         collectionService.dispose();
         monitorService.dispose();
     }

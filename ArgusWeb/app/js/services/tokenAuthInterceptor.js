@@ -9,6 +9,13 @@ angular.module('argus.services.tokenAuthInterceptor',[])
 	var refreshTokenRequest = null;
 	var failRequestLimit = 50;
 	var failRequestCounter = 0;
+	function redirectToLogin(){
+		var target = Storage.get('target');
+		//remove user info and other stuff
+		Storage.reset();
+		Storage.set('target', target); // for redirect to previous url after relogin
+		$location.path('/login');
+	}
 	return {
 		'request' : function(config){
 			config.headers = config.headers || {};
@@ -26,20 +33,17 @@ angular.module('argus.services.tokenAuthInterceptor',[])
 			var path = $location.path();
 			var deferred = $q.defer();
 
-			var target = Storage.get('target');
-
 			if(response.status === 0){
-				Storage.reset();
-				Storage.set('target', target);
-				$location.path('/login');
-
+				redirectToLogin();
+			}else if(response.status !== 401 && (response.config.url === CONFIG.wsUrl + refreshPath)){
+				var message = 'Your refresh token is invalid';
+				growl.error(response.data && response.data.message || message); //-------Token Based Authentication----------
+				redirectToLogin();
 			}else if(response.status === 401){
-				if(path === '/login' ||
-					!Storage.get('accessToken')||
-					!Storage.get('refreshToken')
-					){
+				if(path === '/login'){
 					//login fails, just return to login page
-					//no token found just return to login page
+				}else if(!Storage.get('accessToken')|| !Storage.get('refreshToken')){
+					Storage.set('loginError', 'accessToken or refreshToken missing');
 				}else if(failRequestCounter > failRequestLimit){
 					//prevent infinite loop
 					//this might happen when you can get refreshToken but keeps getting 401 with new requests
@@ -49,11 +53,12 @@ angular.module('argus.services.tokenAuthInterceptor',[])
 						'This might be caused by invalid webservice endpoint, please check your markup! <br>'
 					);
 
-					deferred.reject();
+					deferred.reject(response);
 					return deferred.promise;
 
 				}else if(response.config.url === CONFIG.wsUrl + refreshPath){
-					growl.error('You refresh token has expired');//-------Token Based Authentication----------
+					message = 'Your refresh token has expired';
+					growl.error(response.data && response.data.message || message );//-------Token Based Authentication----------
 				}else{
 					//accessToken fails, refresh accessToken
 					failRequestCounter ++;
@@ -75,10 +80,7 @@ angular.module('argus.services.tokenAuthInterceptor',[])
 					});
 					return deferred.promise;
 				}
-				//remove token and other stuff
-				Storage.reset();
-				Storage.set('target', target);
-				$location.path('/login');
+				redirectToLogin();
 			}
 
 			deferred.reject(response);

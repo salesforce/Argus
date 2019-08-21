@@ -147,7 +147,7 @@ public class NormalizeTransformWrap implements Transform {
 
     @Override
     public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("NormalizeTransformWrap doesn't support list of list!");
+        throw new UnsupportedOperationException("NormalizeTransformWrap doesn't support multiple lists of metrics!");
     }
 
     //~ Inner Classes ********************************************************************************************************************************

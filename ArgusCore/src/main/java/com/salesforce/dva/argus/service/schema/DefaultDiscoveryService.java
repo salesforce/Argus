@@ -38,6 +38,7 @@ import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.entity.SchemaQuery;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.DiscoveryService;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchemaService;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
@@ -66,6 +67,9 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
     
     private final Logger _logger = LoggerFactory.getLogger(DefaultDiscoveryService.class);
     private final SchemaService _schemaService;
+    private final long _maxDataPointsPerQuery;
+    private final boolean _enforceDatapointsLimit;
+    private final MonitorService _monitorService;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -76,9 +80,12 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
      * @param config Service properties
      */
     @Inject
-    public DefaultDiscoveryService(SchemaService schemaService, SystemConfiguration config) {
+    public DefaultDiscoveryService(SchemaService schemaService, SystemConfiguration config, MonitorService monitorService) {
         super(config);
         this._schemaService = schemaService;
+        this._maxDataPointsPerQuery = Long.valueOf(config.getValue(SystemConfiguration.Property.MAX_DATAPOINTS_ALLOWED_PER_QUERY));
+        this._enforceDatapointsLimit = Boolean.valueOf(config.getValue(SystemConfiguration.Property.ENFORCE_DATAPOINTS_LIMIT));
+        this._monitorService = monitorService;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -139,18 +146,18 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         long start = System.nanoTime();
         
         if (DiscoveryService.isWildcardQuery(query)) {
-            _logger.info(MessageFormat.format("MetricQuery'{'{0}'}' contains wildcards. Will match against schema records.", query));
-            
-            int limit = 10000;
-            int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query);
+            _logger.debug(MessageFormat.format("MetricQuery {0} contains wildcards. Will match against schema records.", query));
+
+            // Use limit 0 to indicate an "unlimited" query
+            int limit = 0;
+            int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query, _maxDataPointsPerQuery);
             
             if(noOfTimeseriesAllowed == 0) {
-                throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
+                DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _enforceDatapointsLimit, _monitorService, _logger);
             }
             
             Map<String, MetricQuery> queries = new HashMap<>();
             if (query.getTags() == null || query.getTags().isEmpty()) {
-                
             	MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().namespace(query.getNamespace())
 																						            			  .scope(query.getScope())
 																						            			  .metric(query.getMetric())
@@ -159,33 +166,23 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 																						            			  .limit(limit)
 																						            			  .page(1)
 																						            			  .build();
-            	
-                while (true) {
-                	List<MetricSchemaRecord> records = _schemaService.get(schemaQuery);
-                    for (MetricSchemaRecord record : records) {
-                        String identifier = _getIdentifier(record);
 
-                        if (!queries.containsKey(identifier)) {
-                            if (queries.size() == noOfTimeseriesAllowed) {
-                                throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
-                            }
+                List<MetricSchemaRecord> records = _schemaService.get(schemaQuery);
+                for (MetricSchemaRecord record : records) {
+                    String identifier = _getIdentifier(record);
 
-                            MetricQuery mq = new MetricQuery(record.getScope(), record.getMetric(), null, 0L, 1L);
-
-                            mq.setNamespace(record.getNamespace());
-                            _copyRemainingProperties(mq, query);
-                            queries.put(identifier, mq);
+                    if (!queries.containsKey(identifier)) {
+                        if (queries.size() == noOfTimeseriesAllowed) {
+                            DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _enforceDatapointsLimit, _monitorService, _logger);
                         }
+
+                        MetricQuery mq = new MetricQuery(record.getScope(), record.getMetric(), null, 0L, 1L);
+
+                        mq.setNamespace(record.getNamespace());
+                        _copyRemainingProperties(mq, query);
+                        queries.put(identifier, mq);
                     }
-                    
-                    if (records.size() < limit) {
-                        break;
-                    }
-                    
-                    schemaQuery.setScanFrom(records.get(records.size() - 1));
-                    schemaQuery.setPage(schemaQuery.getPage()+1);
                 }
-                
                 expandedQueryList = new ArrayList<>(queries.values());
             } else {
                 Map<String, Integer> timeseriesCount = new HashMap<>();
@@ -206,57 +203,45 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                 							|| SchemaService.containsWildcard(tag.getKey())
                 							|| SchemaService.containsWildcard(tag.getValue());
 
-                    while (true) {
-                        List<MetricSchemaRecord> records;
-                        
-                        
-                        if(!containsWildcard) {
-                    		records = Arrays.asList(new MetricSchemaRecord(query.getNamespace(), query.getScope(), query.getMetric(), 
-                    				tag.getKey(), tag.getValue()));
-                    	} else {
-                    		records = _schemaService.get(schemaQuery);
-                    	}
+                    List<MetricSchemaRecord> records;
+                    if(!containsWildcard) {
+                        records = Arrays.asList(new MetricSchemaRecord(query.getNamespace(), query.getScope(), query.getMetric(),
+                                tag.getKey(), tag.getValue()));
+                    } else {
+                        records = _schemaService.get(schemaQuery);
+                    }
 
-                        for (MetricSchemaRecord record : records) {
-                            if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
-                                throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
-                            }
-                            
-                            String identifier = _getIdentifier(record);
+                    for (MetricSchemaRecord record : records) {
+                        if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
+                            DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _enforceDatapointsLimit, _monitorService, _logger);
+                        }
 
-                            if (queries.containsKey(identifier)) {
-                                MetricQuery mq = queries.get(identifier);
+                        String identifier = _getIdentifier(record);
 
-                                if (mq.getTags().containsKey(record.getTagKey())) {
-                                    String oldValue = mq.getTag(record.getTagKey());
-                                    String newValue = oldValue + "|" + record.getTagValue();
+                        if (queries.containsKey(identifier)) {
+                            MetricQuery mq = queries.get(identifier);
 
-                                    mq.setTag(record.getTagKey(), newValue);
-                                } else {
-                                    mq.setTag(record.getTagKey(), record.getTagValue());
-                                }
-                                timeseriesCount.put(identifier, DiscoveryService.numApproxTimeseriesForQuery(mq));
+                            if (mq.getTags().containsKey(record.getTagKey())) {
+                                String oldValue = mq.getTag(record.getTagKey());
+                                String newValue = oldValue + "|" + record.getTagValue();
+
+                                mq.setTag(record.getTagKey(), newValue);
                             } else {
-                                Map<String, String> tags = new HashMap<String, String>();
-
-                                tags.put(record.getTagKey(), record.getTagValue());
-
-                                MetricQuery mq = new MetricQuery(record.getScope(), record.getMetric(), tags, 0L, 1L);
-
-                                mq.setNamespace(record.getNamespace());
-                                _copyRemainingProperties(mq, query);
-                                queries.put(identifier, mq);
-                                timeseriesCount.put(identifier, 1);
+                                mq.setTag(record.getTagKey(), record.getTagValue());
                             }
+                            timeseriesCount.put(identifier, DiscoveryService.numApproxTimeseriesForQuery(mq));
+                        } else {
+                            Map<String, String> tags = new HashMap<String, String>();
+
+                            tags.put(record.getTagKey(), record.getTagValue());
+
+                            MetricQuery mq = new MetricQuery(record.getScope(), record.getMetric(), tags, 0L, 1L);
+
+                            mq.setNamespace(record.getNamespace());
+                            _copyRemainingProperties(mq, query);
+                            queries.put(identifier, mq);
+                            timeseriesCount.put(identifier, 1);
                         }
-                        
-                        if (records.size() < limit) {
-                            break;
-                        }
-                        
-                        schemaQuery.setScanFrom(records.get(records.size() - 1));
-                        schemaQuery.setPage(schemaQuery.getPage()+1);
-                        
                     }
                 }
                 
@@ -270,7 +255,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 
             } // end if-else
         } else {
-            _logger.info(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
+            _logger.debug(MessageFormat.format("MetricQuery {0} does not have any wildcards", query));
             expandedQueryList = Arrays.asList(query);
         } // end if-else
         _logger.debug("Time to get matching queries in ms: " + (System.nanoTime() - start) / 1000000);
@@ -299,11 +284,11 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 	}
 
     private void _logMatchedQueries(List<MetricQuery> queryList) {
-        _logger.info("Matched Queries:");
+        _logger.debug("Matched Queries:");
 
         int i = 1;
         for (MetricQuery q : queryList) {
-            _logger.info(MessageFormat.format("MetricQuery{0} = {1}", i++, q));
+            _logger.debug(MessageFormat.format("MetricQuery{0} = {1}", i++, q));
         }
     }
 
@@ -313,6 +298,8 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         dest.setAggregator(orig.getAggregator());
         dest.setDownsampler(orig.getDownsampler());
         dest.setDownsamplingPeriod(orig.getDownsamplingPeriod());
+        dest.setShowHistogramBuckets((orig.getShowHistogramBuckets()));
+        dest.setPercentile((orig.getPercentile()));
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -31,41 +31,23 @@
 
 package com.salesforce.dva.argus.service.alert.notifier;
 
-import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
+import com.salesforce.dva.argus.service.RefocusService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.system.SystemException;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
-import org.slf4j.Logger;
-
 import javax.persistence.EntityManager;
-import java.util.List;
-import java.util.Properties;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
  * Implementation of notifier interface for notifying Refocus.
  *
- * @author  Janine Zou (yzou@salesforce.com)
+ * @author  Janine Zou (yzou@salesforce.com), Ian Keck (ikeck@salesforce.com)
  */
-public class RefocusNotifier extends AuditNotifier {
-
-	@SLF4JTypeListener.InjectLogger
-	private Logger _logger;
-	private final String endpoint;
-	private final String token;
-
+public class RefocusNotifier extends RefocusBooleanNotifier {
 
 	/**
 	 * Creates a new Refocus notifier.
@@ -73,243 +55,15 @@ public class RefocusNotifier extends AuditNotifier {
 	 * @param  metricService      The metric service. Cannot be null.
 	 * @param  annotationService  The annotation service. Cannot be null.
 	 * @param  auditService       The audit service. Cannot be null.
+	 * @param  refocusService     The refocus service. Cannot be null.
 	 * @param  config             The system configuration. Cannot be null.
 	 * @param  emf                The entity manager factory. Cannot be null.
 	 */
 	@Inject
 	public RefocusNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
-                           SystemConfiguration config, Provider<EntityManager> emf) {
-		super(metricService, annotationService, auditService, config, emf);
+						   RefocusService refocusService, SystemConfiguration config,
+						   Provider<EntityManager> emf) {
+		super(metricService, annotationService, auditService, refocusService, config, emf);
 		requireArgument(config != null, "The configuration cannot be null.");
-		endpoint = _config.getValue(Property.REFOCUS_ENDPOINT.getName(), Property.REFOCUS_ENDPOINT.getDefaultValue());
-		token = _config.getValue(Property.REFOCUS_TOKEN.getName(), Property.REFOCUS_TOKEN.getDefaultValue());
 	}
-
-	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
-		_sendRefocusNotification(context, true);
-	}
-
-	@Override
-	protected void clearAdditionalNotification(NotificationContext context) {
-		_sendRefocusNotification(context, false);
-	}
-
-	private void _sendRefocusNotification(NotificationContext context, boolean isTriggerActive) {
-		List<String> aspectPaths = context.getNotification().getSubscriptions();
-
-		//TODO: get customer specified refocus sample values when UI is ready, currently use 1 for active trigger and 0 for non-active trigger
-
-		requireArgument(aspectPaths!=null && !aspectPaths.isEmpty(), "aspect paths (subscriptions) cannot be empty.");
-
-		for (String aspect : aspectPaths) {
-			sendMessage(aspect,  isTriggerActive);
-		}
-
-	}
-
-	/**
-	 * Sends an Refocus sample.
-	 *
-	 * @param  aspectPath    The Refocus aspect path.
-	 * @param  fired         If the trigger is fired or not.
-	 */
-	private void sendMessage(String aspectPath, boolean fired) {
-		if (Boolean.valueOf(_config.getValue(SystemConfiguration.Property.REFOCUS_ENABLED))) {
-			int refreshMaxTimes = Integer.parseInt(_config.getValue(Property.REFOCUS_CONNECTION_REFRESH_MAX_TIMES.getName(), Property.REFOCUS_CONNECTION_REFRESH_MAX_TIMES.getDefaultValue()));
-			try {
-
-				//TODO: get customer specified refocus sample values when UI is ready, currently use '1' for active trigger and '0' for non-active trigger
-
-				RefocusSample refocusSample = new RefocusSample(aspectPath, fired ? "1" : "0");
-				RefocusTransport refocusTransport = RefocusTransport.getInstance();
-				HttpClient httpclient = refocusTransport.getHttpClient(_config);
-
-				PostMethod post = null;
-				try {
-					post = new PostMethod(String.format("%s/v1/samples/upsert", endpoint));
-					post.setRequestHeader("Authorization", token);
-					post.setRequestEntity(new StringRequestEntity(refocusSample.toJSON(), "application/json", null));
-
-					for (int i = 0; i < 1 + refreshMaxTimes; i++) {
-
-						int respCode = httpclient.executeMethod(post);
-
-						// Check for success
-						if (respCode == 200 || respCode == 201 || respCode == 204) {
-							_logger.info("Success - send Refocus sample '{}'.", refocusSample.toJSON());
-							break;
-						} else if (respCode == 401) {
-							// Indication that the session timedout, Need to refresh and retry
-							continue;
-						} else {
-							_logger.error("Failure - send Refocus sample '{}'. Response code '{}' response '{}'",
-									refocusSample.toJSON(), respCode, post.getResponseBodyAsString());
-							break;
-						}
-					}
-				} catch (Exception e) {
-					_logger.error("Failure - send Refocus sample '{}'. Exception '{}'", refocusSample.toJSON(), e);
-				} finally {
-					if (post != null) {
-						post.releaseConnection();
-					}
-				}
-
-			} catch (RuntimeException ex) {
-				throw new SystemException("Failed to send an Refocus notification.", ex);
-			}
-		} else {
-			_logger.info("Sending Refocus notification is disabled.  Not sending message for aspect '{}'.", aspectPath);
-		}
-	}
-
-	@Override
-	public String getName() {
-		return RefocusNotifier.class.getName();
-	}
-
-	@Override
-	public Properties getNotifierProperties() {
-		Properties notifierProps= super.getNotifierProperties();
-
-		for(Property property: Property.values()){
-			notifierProps.put(property.getName(), property.getDefaultValue());
-		}
-		return notifierProps;
-	}
-
-	/**
-	 * Enumerates implementation specific configuration properties.
-	 *
-	 * @author  Janine Zou (yzou@salesforce.com)
-	 */
-	public enum Property {
-
-		/** The Refocus endpoint. */
-		REFOCUS_ENDPOINT("notifier.property.refocus.endpoint", "https://test.refocus.com"),
-		/** The Refocus access token. */
-		REFOCUS_TOKEN("notifier.property.refocus.token", "test-token"),
-		/** The Refocus proxy host. */
-		REFOCUS_PROXY_HOST("notifier.property.proxy.host", ""),
-		/** The Refocus port. */
-		REFOCUS_PROXY_PORT("notifier.property.proxy.port", ""),
-		/** The Refocus connection refresh max times. */
-		REFOCUS_CONNECTION_REFRESH_MAX_TIMES("notifier.property.refocus.refreshMaxTimes", "0");
-
-		private final String _name;
-		private final String _defaultValue;
-
-		private Property(String name, String defaultValue) {
-			_name = name;
-			_defaultValue = defaultValue;
-		}
-
-		/**
-		 * Returns the property name.
-		 *
-		 * @return  The property name.
-		 */
-		public String getName() {
-			return _name;
-		}
-
-		/**
-		 * Returns the default property value.
-		 *
-		 * @return  The default property value.
-		 */
-		public String getDefaultValue() {
-			return _defaultValue;
-		}
-	}
-
-	/**
-	 * RefocusSample object to generate JSON.
-	 *
-	 * @author  Janine Zou (yzou@salesforce.com)
-	 */
-	public class RefocusSample {
-
-		public static final String ASPECT_NAME_FIELD = "name";
-		public static final String ASPECT_VALUE_FIELD = "value";
-		private final String name;
-		private final String value;
-
-		private RefocusSample(final String name, final String value) {
-			this.name = name;
-			this.value = value;
-		}
-
-		/**
-		 * Convert data to a JSON string.
-		 *
-		 * @return  JSON string
-		 */
-		public String toJSON() {
-			JsonObject sampleData = new JsonObject();
-
-			sampleData.addProperty(ASPECT_NAME_FIELD, name);
-			sampleData.addProperty(ASPECT_VALUE_FIELD, value);
-			return sampleData.toString();
-		}
-
-	}
-
-	/**
-	 * Manage Refocus connection, proxy and timeouts.
-	 *
-	 * @author  Janine Zou (yzou@salesforce.com)
-	 */
-	public static class RefocusTransport {
-
-		private static final int CONNECTION_TIMEOUT_MILLIS = 10000;
-		private static final int READ_TIMEOUT_MILLIS = 10000;
-		private final MultiThreadedHttpConnectionManager theConnectionManager;
-		{
-			theConnectionManager = new MultiThreadedHttpConnectionManager();
-
-			HttpConnectionManagerParams params = theConnectionManager.getParams();
-
-			params.setConnectionTimeout(CONNECTION_TIMEOUT_MILLIS);
-			params.setSoTimeout(READ_TIMEOUT_MILLIS);
-		}
-
-		// make the class singleton
-		private RefocusTransport() {
-
-		}
-
-		public static RefocusTransport getInstance() {
-			return RefocusTransportHolder.INSTANCE;
-		}
-
-		private static class RefocusTransportHolder {
-			private final static RefocusTransport INSTANCE = new RefocusTransport();
-		}
-
-		/**
-		 * Get HttpClient with proper proxy and timeout settings.
-		 *
-		 * @param   config  The system configuration.  Cannot be null.
-		 *
-		 * @return  HttpClient
-		 */
-		public  HttpClient getHttpClient(SystemConfiguration config) {
-			HttpClient httpclient = new HttpClient(theConnectionManager);
-
-			httpclient.getParams().setParameter("http.connection-manager.timeout", 2000L); // Wait for 2 seconds to get a connection from pool
-
-			String host = config.getValue(Property.REFOCUS_PROXY_HOST.getName(), Property.REFOCUS_PROXY_HOST.getDefaultValue());
-
-			if (host != null && host.length() > 0) {
-				httpclient.getHostConfiguration().setProxy(host,
-						Integer.parseInt(config.getValue(Property.REFOCUS_PROXY_PORT.getName(), Property.REFOCUS_PROXY_PORT.getDefaultValue())));
-			}
-			return httpclient;
-		}
-
-	}
-
-
 }

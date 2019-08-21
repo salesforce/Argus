@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.inject.Inject;
@@ -58,9 +58,20 @@ public class TransformFactory {
      * Creates a new TransformFactory object.
      *
      * @param  tsdbService  The TSDB service to use.
+     * @param metadataService
+     */
+    public TransformFactory(TSDBService tsdbService) {
+        _tsdbService = tsdbService;
+    }
+
+    /**
+     * Creates a new TransformFactory object.
+     *
+     * @param  tsdbService  The TSDB service to use.
+     * @param metadataService
      */
     @Inject
-    public TransformFactory(TSDBService tsdbService) {
+    public TransformFactory(TSDBService tsdbService, TSDBService bService) {
         _tsdbService = tsdbService;
     }
 
@@ -190,6 +201,10 @@ public class TransformFactory {
                 return new AnomalyDetectionRPCATransform();
             case INTERPOLATE:
                 return new InterpolateTransform();
+            case RATE:
+                return new RateTransform();
+            case SLICE:
+                return new SliceTransform();
             default:
                 throw new UnsupportedOperationException(functionName);
         } // end switch
@@ -264,7 +279,9 @@ public class TransformFactory {
         ANOMALY_ZSCORE("ANOMALY_ZSCORE", "Calculates an anomaly score (0-100) for each value of the metric based on the z-score of each value with a Gaussian distribution."),
         ANOMALY_KMEANS("ANOMALY_KMEANS", "Calculates an anomaly score (0-100) for each value of the metric based on a K-means clustering of the metric data."),
         ANOMALY_RPCA("ANOMALY_RPCA", "Calculates an anomaly score (0-100) for each value of the metric based on the RPCA matrix decomposition algorithm."),
-        INTERPOLATE("INTERPOLATE", "Performs interpolation of multiple time series, that can then be used for aggregation");
+        INTERPOLATE("INTERPOLATE", "Performs interpolation of multiple time series, that can then be used for aggregation"),
+        RATE("RATE", "Performs Rate for all given time series"),
+    	SLICE("SLICE", "Removes data points before interval start time and after interval end time. ");
 
         private final String _name;
         private final String _description;

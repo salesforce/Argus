@@ -7,6 +7,6 @@ angular.module('argus.services.dashboards', [])
 		query: {method: 'GET', params: {dashboardId: ''}, isArray: true},
 		update: {method: 'PUT'},
 		getMeta: {method: 'GET', url: CONFIG.wsUrl + 'dashboards/meta', isArray: true},
-		getPersonalDashboards: {method: 'GET', url: CONFIG.wsUrl + 'dashboards/meta?owner=' + Auth.getUsername(), isArray: true}
+		getPersonalDashboards: {method: 'GET', url: CONFIG.wsUrl + 'dashboards/meta?shared=false&owner=' + Auth.getUsername(), isArray: true}
 	});
 }]);

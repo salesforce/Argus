@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.system;
 
 import com.google.inject.Singleton;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -45,11 +46,11 @@ import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.Properties;
-
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
+
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
  * Immutable system configuration information.
@@ -112,9 +113,9 @@ public final class SystemConfiguration extends Properties {
                 do {
                     String defaultValue = config.getValue(property);
 
-                    out.write(MessageFormat.format("Enter value for ''{0}'' ", name));
+                    out.write(MessageFormat.format("Enter value for {0} ", name));
                     if (defaultValue != null) {
-                        out.write(MessageFormat.format("'(default = '{0}')': ", config.getValue(property)));
+                        out.write(MessageFormat.format("(default = {0}): ", config.getValue(property)));
                     }
                     out.flush();
 
@@ -181,6 +182,11 @@ public final class SystemConfiguration extends Properties {
         return getProperty(key, defaultValue);
     }
 
+    public String refreshAndGetValue(Property propertyFile, String key, String defaultValue) {
+        SystemInitializer.readFile(this, getValue(propertyFile));
+        return getValue(key, defaultValue);
+    }
+
     /**
      * Returns the list of configured properties and their values.
      *
@@ -222,15 +228,20 @@ public final class SystemConfiguration extends Properties {
         EMAIL_ENABLED("system.property.mail.enabled", "false"),
         GOC_ENABLED("system.property.goc.enabled", "false"),
         GUS_ENABLED("system.property.gus.enabled", "false"),
-        REFOCUS_ENABLED("system.property.refocus.enabled", "false"),
-        
+        CALLBACK_ENABLED("system.property.callback.enabled", "false"),
+        PAGERDUTY_ENABLED("system.property.pagerduty.enabled", "false"),
+        IMAGES_IN_NOTIFICATIONS_ENABLED("system.property.images.in.notifications.enabled", "true"),
+
         EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
 
-        DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
-        DATA_LAG_QUERY_EXPRESSION("system.property.data.lag.expression", "sampleExpression"),
-        DATA_LAG_THRESHOLD("system.property.data.lag.threshold.millis", "300000"),
-        DATA_LAG_NOTIFICATION_EMAIL_ADDRESS("system.property.data.lag.notification.emailId", "someone@mycompany.com"),
-        DATA_LAG_WHITE_LISTED_SCOPES("system.property.data.lag.whitelisted.scopes", ""),
+        ARGUS_GUS_GROUP_ID("notifier.property.argus.gus.group_id", "groupId"),
+
+        REFOCUS_ENABLED("system.property.refocus.enabled", "false"),
+        REFOCUS_CLIENT_THREADS("system.property.refocus.client.threads", "1"),
+        REFOCUS_CLIENT_CONNECT_TIMEOUT("system.property.refocus.client.connect.timeout", "10000"),
+
+        DATA_LAG_SERVICE_IMPL_CLASS("service.binding.datalagservice", "com.salesforce.dva.argus.service.monitor.DataLagMonitorGoldenMetric"),
+        DATA_LAG_SERVICE_PROPERTY_FILE("service.config.datalagservice","placeholder_datalagservice.properties"),
 
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),
@@ -239,47 +250,79 @@ public final class SystemConfiguration extends Properties {
         DC_LIST("system.property.dc.list", "DC1,DC2,DC3,DC4,DC5"),
 
         CACHE_SERVICE_IMPL_CLASS("service.binding.cache", "com.salesforce.dva.argus.service.cache.NoOperationCacheService"),
-        CACHE_SERVICE_PROPERTY_FILE("service.config.cache","argus.properties"),
+        CACHE_SERVICE_PROPERTY_FILE("service.config.cache","placeholder_redis.properties"),
 
         MQ_SERVICE_IMPL_CLASS("service.binding.mq", "com.salesforce.dva.argus.service.mq.kafka.KafkaMessageService"),
-        MQ_SERVICE_PROPERTY_FILE("service.config.mq","argus.properties"),
+        MQ_SERVICE_PRODUCER_IMPL_CLASS("service.binding.mq.producer", "com.salesforce.dva.argus.service.mq.kafka.DefaultProducer"),
+        MQ_SERVICE_CONSUMER_IMPL_CLASS("service.binding.mq.consumer", "com.salesforce.dva.argus.service.mq.kafka.DefaultConsumer"),
+        MQ_SERVICE_PROPERTY_FILE("service.config.mq","placeholder_kafka.properties"),
 
         ALERT_SERVICE_IMPL_CLASS("service.binding.alert", "com.salesforce.dva.argus.service.alert.DefaultAlertService"),
-        ALERT_SERVICE_PROPERTY_FILE("service.config.alert","argus.properties"),
-        NOTIFIER_PROPERTY_FILE("service.config.notifier","notifier.properties"),
+        ALERT_SERVICE_PROPERTY_FILE("service.config.alert","placeholder_alert.properties"),
+        NOTIFIER_PROPERTY_FILE("service.config.notifier","placeholder_notifier.properties"),
 
         SCHEDULING_SERVICE_IMPL_CLASS("service.binding.scheduling", "com.salesforce.dva.argus.service.schedule.DefaultSchedulingService"),
-        SCHEDULING_SERVICE_PROPERTY_FILE("service.config.scheduling","argus.properties"),
+        SCHEDULING_SERVICE_PROPERTY_FILE("service.config.scheduling","placeholder_scheduling.properties"),
 
         MAIL_SERVICE_IMPL_CLASS("service.binding.mail", "com.salesforce.dva.argus.service.mail.DefaultMailService"),
-        MAIL_SERVICE_PROPERTY_FILE("service.config.mail","argus.properties"),
+        MAIL_SERVICE_PROPERTY_FILE("service.config.mail","placeholder_mail.properties"),
 
         CALLBACK_SERVICE_IMPL_CLASS("service.binding.callback", "com.salesforce.dva.argus.service.callback.DefaultCallbackService"),
-        CALLBACK_SERVICE_PROPPERTY_FILE("service.config.callback", "argus.properties"),
+        CALLBACK_SERVICE_PROPPERTY_FILE("service.config.callback", "placeholder_callback.properties"),
 
         AUTH_SERVICE_IMPL_CLASS("service.binding.auth", "com.salesforce.dva.argus.service.auth.LDAPAuthService"),
-        AUTH_SERVICE_PROPERTY_FILE("service.config.auth","argus.properties"),
+        AUTH_SERVICE_PROPERTY_FILE("service.config.auth","placeholder_ldap.properties"),
 
-        SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.AsyncHbaseSchemaService"),
-        SCHEMA_SERVICE_PROPERTY_FILE("service.config.schema","argus.properties"),
+        SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService"),
+        SCHEMA_SERVICE_PROPERTY_FILE("service.config.schema","placeholder_schema.properties"),
+
+        QUERYSTORE_SERVICE_IMPL_CLASS("service.binding.querystore", "com.salesforce.dva.argus.service.querystore.NoOperationQueryStoreService"),
+        QUERYSTORE_SERVICE_PROPERTY_FILE("service.config.querystore","placeholder_querystore.properties"),
+
+        IMAGE_SERVICE_IMPL_CLASS("service.binding.imageservice", "com.salesforce.dva.argus.service.image.DefaultImageService"),
+        IMAGE_SERVICE_PROPERTY_FILE("service.config.imageservice","placeholder_imageservice.properties"),
 
         HISTORY_SERVICE_IMPL_CLASS("service.binding.history", "com.salesforce.dva.argus.service.history.HBaseHistoryService"),
-        HISTORY_SERVICE_PROPERTY_FILE("service.config.history","argus.properties"),
+        HISTORY_SERVICE_PROPERTY_FILE("service.config.history","placeholder_history.properties"),
 
         AUDIT_SERVICE_IMPL_CLASS("service.binding.audit", "com.salesforce.dva.argus.service.audit.DefaultAuditService"),
-        AUDIT_SERVICE_PROPERTY_FILE("service.config.audit","argus.properties"),
+        AUDIT_SERVICE_PROPERTY_FILE("service.config.audit","placeholder_audit.properties"),
 
-        ASYNCHBASE_PROPERTY_FILE("service.config.asynchbase", "argus.properties"),
+        ASYNCHBASE_PROPERTY_FILE("service.config.asynchbase", "placeholder_asynchbase.properties"),
 
         TSDB_SERVICE_IMPL_CLASS("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
-        TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","argus.properties"),
+        TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","placeholder_cachedtsdb.properties"),
+
+        ANNOTATION_STORAGE_SERVICE_IMPL_CLASS("service.binding.annotation.storage", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
+        ANNOTATION_STORAGE_SERVICE_PROPERTY_FILE("service.config.annotation.storage","placeholder_annotation.storage.properties"),
+
+
+        IMAGE_STORAGE_SERVICE_IMPL_CLASS("service.binding.image.storage", "com.salesforce.dva.argus.service.image.ElasticSearchImageService"),
+
+        AKC_CONSUMER_OFFSET_STORAGE_SERVICE_IMPL_CLASS("service.binding.akc.consumer.offset.storage", "com.salesforce.dva.argus.service.metric.NoOperationMetricsStorageService"),
+        AKC_CONSUMER_OFFSET_STORAGE_SERVICE_PROPERTY_FILE("service.config.akc.consumer.offset.storage","placeholder_akc.consumer.offset.storage.properties"),
 
         WARDEN_SERVICE_IMPL_CLASS("service.binding.warden", "com.salesforce.dva.argus.service.warden.DefaultWardenService"),
-        WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "argus.properties"),
+        WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "placeholder_warden.properties"),
 
-        OAUTH_SERVICE_PROPERTY_FILE("service.config.oauth","argus.properties");
+        METADATA_SERVICE_IMPL_CLASS("service.binding.metadata", "com.salesforce.dva.argus.service.metric.metadata.IDBMetadataService"),
+        IDB_CLIENT_IMPL_CLASS("service.binding.idbclient", "com.salesforce.dva.argus.service.metric.metadata.CachedIDBClient"),
+        IDB_CLIENT_PROPERTY_FILE("service.config.idbclient", "placeholder_idbclient.properties"),
 
-        private final String _name;
+        OAUTH_SERVICE_PROPERTY_FILE("service.config.oauth","placeholder_oauth.properties"),
+        
+        DISCOVERY_SERVICE_IMPL_CLASS("service.binding.discovery", "com.salesforce.dva.argus.service.schema.CachedDiscoveryService"),
+        
+        // the default value of 5 million datapoints roughly correspond to 500mb of memory
+        MAX_DATAPOINTS_ALLOWED_PER_QUERY("system.property.max.datapoints.query", "5000000"),
+        
+        ENFORCE_DATAPOINTS_LIMIT("system.property.enforce.datapoints.limit", "false"),
+
+        PKI_MONITORED_DIRECTORY("pki.monitored.directory", "/etc/pki_service/sfdc/argus-client"),
+        PKI_CA_DIRECTORY("pki.ca.directory", "/etc/pki_service/ca");
+
+
+		private final String _name;
         private final String _defaultValue;
 
         private Property(String name, String defaultValue) {

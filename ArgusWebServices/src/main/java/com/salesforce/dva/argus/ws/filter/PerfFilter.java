@@ -48,6 +48,8 @@ import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.util.RequestContext;
+import com.salesforce.dva.argus.util.RequestContextHolder;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 
 /**
@@ -61,22 +63,23 @@ public class PerfFilter implements Filter {
 
 	protected final SystemMain system = ArgusWebServletListener.getSystem();
 	private MonitorService monitorService = system.getServiceFactory().getMonitorService();
-	private final String DATA_READ_PER_MIN = "perf.ws.read.count";
-	private final String DATA_READ_QUERY_LATENCY = "perf.ws.read.latency";
-	private final String DATA_WRITE_PER_MIN = "perf.ws.write.count";
-	private final String DATA_WRITE_LATENCY = "perf.ws.write.latency";
-	private final String DATA_READ_REQ_BYTES = "perf.ws.read.rxbytes";
-	private final String DATA_READ_RESP_BYTES = "perf.ws.read.txbytes";
-	private final String DATA_WRITE_REQ_BYTES = "perf.ws.write.rxbytes";
-	private final String DATA_WRITE_RESP_BYTES = "perf.ws.write.txbytes";
-	private final String TAGS_METHOD_KEY = "method";
-	private final String TAGS_ENDPOINT_KEY = "endpoint";
-	private final String TAGS_USER_KEY = "user";
-	private final String TAGS_TIME_WINDOW_KEY = "timeWindow";
-	private final String TAGS_EXPANDED_TIME_SERIES_RANGE_KEY = "expandedTimeSeriesRange";
-	private final String DATA_READ_NUM_TIME_SERIES = "perf.ws.read.num.time.series";
-	private final String DATA_READ_NUM_DISCOVERY_RESULTS = "perf.ws.read.num.discovery.results";
-	private final String DATA_READ_NUM_DISCOVERY_QUERIES = "perf.ws.read.num.discovery.queries";
+	public static final String DATA_READ_PER_MIN = "perf.ws.read.count";
+	public static final String DATA_READ_QUERY_LATENCY = "perf.ws.read.latency";
+	public static final String DATA_WRITE_PER_MIN = "perf.ws.write.count";
+	public static final String DATA_WRITE_LATENCY = "perf.ws.write.latency";
+	public static final String DATA_READ_REQ_BYTES = "perf.ws.read.rxbytes";
+	public static final String DATA_READ_RESP_BYTES = "perf.ws.read.txbytes";
+	public static final String DATA_WRITE_REQ_BYTES = "perf.ws.write.rxbytes";
+	public static final String DATA_WRITE_RESP_BYTES = "perf.ws.write.txbytes";
+	public static final String TAGS_METHOD_KEY = "method";
+	public static final String TAGS_ENDPOINT_KEY = "endpoint";
+	public static final String TAGS_USER_KEY = "user";
+	public static final String TAGS_TIME_WINDOW_KEY = "timeWindow";
+	public static final String TAGS_EXPANDED_TIME_SERIES_RANGE_KEY = "expandedTimeSeriesRange";
+	public static final String TAGS_START_TIME_WINDOW_KEY = "startTimeWindow";
+	public static final String DATA_READ_NUM_TIME_SERIES = "perf.ws.read.num.time.series";
+	public static final String DATA_READ_NUM_DISCOVERY_RESULTS = "perf.ws.read.num.discovery.results";
+	public static final String DATA_READ_NUM_DISCOVERY_QUERIES = "perf.ws.read.num.discovery.queries";
 
 	//~ Methods **************************************************************************************************************************************
 
@@ -100,6 +103,7 @@ public class PerfFilter implements Filter {
 		long start = System.currentTimeMillis();
 
 		try {
+			RequestContextHolder.setRequestContext(new RequestContext(_getUserName(req)));
 			chain.doFilter(request, response);
 		} finally {
 			long delta = System.currentTimeMillis() - start;
@@ -124,8 +128,7 @@ public class PerfFilter implements Filter {
 				tags.put(TAGS_ENDPOINT_KEY, endPoint);
 			}
 
-			Object user = req.getAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
-			String username = user != null ? String.class.cast(user) : "NULLUSER";
+			String username = _getUserName(req);
 			if(!username.isEmpty()) {
 				tags.put(TAGS_USER_KEY, username);
 			}
@@ -142,6 +145,12 @@ public class PerfFilter implements Filter {
 						timeWindow = "NULL_TIME_WINDOW";
 					}
 					tags.put(TAGS_TIME_WINDOW_KEY, timeWindow);
+					
+					String startTimeWindow = (String) req.getAttribute(TAGS_START_TIME_WINDOW_KEY);
+					if(startTimeWindow == null){
+						startTimeWindow = "NULL_TIME_WINDOW";
+					}
+					tags.put(TAGS_START_TIME_WINDOW_KEY, startTimeWindow);
 
 					String expandedTimeSeriesRange = (String) req.getAttribute(TAGS_EXPANDED_TIME_SERIES_RANGE_KEY);
 					if(expandedTimeSeriesRange == null){
@@ -149,19 +158,19 @@ public class PerfFilter implements Filter {
 					}
 					tags.put(TAGS_EXPANDED_TIME_SERIES_RANGE_KEY, expandedTimeSeriesRange);
 					
-					Integer numTimeSeries = (Integer) req.getAttribute("numTimeSeries");
+					Integer numTimeSeries = (Integer) req.getAttribute(DATA_READ_NUM_TIME_SERIES);
 					if(numTimeSeries != null){
 						monitorService.modifyCustomCounter(DATA_READ_NUM_TIME_SERIES, numTimeSeries, tags);
 					}
 					
-					Integer numDiscoveryResults = (Integer) req.getAttribute("numDiscoveryResults");
+					Integer numDiscoveryResults = (Integer) req.getAttribute(DATA_READ_NUM_DISCOVERY_RESULTS);
 
                                         /* Discovery service should not audit when no expansion performed, or number of expanded series equals 0*/
 					if(numDiscoveryResults != null && numDiscoveryResults !=0 ){
 						monitorService.modifyCustomCounter(DATA_READ_NUM_DISCOVERY_RESULTS, numDiscoveryResults, tags);
 					}
 					
-					Integer numDiscoveryQueries = (Integer) req.getAttribute("numDiscoveryQueries");
+					Integer numDiscoveryQueries = (Integer) req.getAttribute(DATA_READ_NUM_DISCOVERY_QUERIES);
 
 					if(numDiscoveryQueries != null && numDiscoveryQueries !=0 ){
 						monitorService.modifyCustomCounter(DATA_READ_NUM_DISCOVERY_QUERIES, numDiscoveryQueries, tags);
@@ -190,6 +199,12 @@ public class PerfFilter implements Filter {
 		}
 
 		return null;
+	}
+	
+	private String _getUserName(HttpServletRequest req) {
+		Object user = req.getAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
+		String username = user != null ? String.class.cast(user) : "NULLUSER";
+		return username;
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

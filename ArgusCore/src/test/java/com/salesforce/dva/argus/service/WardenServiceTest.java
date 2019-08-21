@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
 import static org.junit.Assert.assertEquals;
@@ -43,9 +43,10 @@ import java.util.Map;
 import java.util.Random;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
 import org.junit.Test;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
@@ -53,27 +54,41 @@ import com.salesforce.dva.argus.service.WardenService.PolicyCounter;
 import com.salesforce.dva.argus.service.WardenService.SubSystem;
 import com.salesforce.dva.argus.service.warden.DefaultWardenService;
 import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.system.SystemMain;
 
-public class WardenServiceTest extends AbstractTest {
+import com.salesforce.dva.argus.TestUtils;
 
-    private UserService _userService;
-    private WardenService _wardenService;
-    private AlertService _alertService;
 
-    @Before
-    @Override
-    public void setUp() {
-        super.setUp();
+public class WardenServiceTest {
+
+    static private UserService _userService;
+    static private WardenService _wardenService;
+    static private AlertService _alertService;
+    static private SystemMain system;
+    static private PrincipalUser user;
+
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
         _userService = system.getServiceFactory().getUserService();
         _wardenService = system.getServiceFactory().getWardenService();
         _alertService = system.getServiceFactory().getAlertService();
+        user = new PrincipalUser(_userService.findAdminUser(), "bhinav.sura", "bhinav.sura@salesforce.com");
+        user = _userService.updateUser(user);
+    }
 
-        PrincipalUser user = _userService.findUserByUsername("bhinav.sura");
-
-        if (user == null) {
-            user = new PrincipalUser(_userService.findAdminUser(), "bhinav.sura", "bhinav.sura@salesforce.com");
-            user = _userService.updateUser(user);
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
         }
+    }
+
+    @Before
+    public void setUp() {
         _wardenService.reinstateUser(user, SubSystem.API);
         _wardenService.reinstateUser(user, SubSystem.POSTING);
 

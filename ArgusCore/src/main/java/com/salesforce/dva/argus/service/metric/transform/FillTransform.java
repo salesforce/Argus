@@ -61,7 +61,7 @@ public class FillTransform implements Transform {
     /** The default metric scope for results. */
     public static final String DEFAULT_SCOPE_NAME = "scope";
     
-    public static final int MAX_DATAPOINTS_FOR_FILL = DiscoveryService.MAX_DATAPOINTS_PER_RESPONSE;    
+    public static final int MAX_DATAPOINTS_FOR_FILL = 2000000;  
 
     //~ Methods **************************************************************************************************************************************
 
@@ -78,14 +78,26 @@ public class FillTransform implements Transform {
 
         Long[] startAndEndTimestamps = QueryUtils.getStartAndEndTimesWithMaxInterval(queryContext);
         
+        //if interval size is more than a minute, rounding the start and end times to nearest minute
+        if(windowSizeInSeconds >= 60) {
+         	startAndEndTimestamps[0] = (startAndEndTimestamps[0]/(60*1000))*(60*1000);
+         	startAndEndTimestamps[1] = (startAndEndTimestamps[1]/(60*1000))*(60*1000);
+        }
+        
         Long startTimestamp = startAndEndTimestamps[0]>0 ? startAndEndTimestamps[0] : sortedTimestamps[0];
         Long endTimestamp = startAndEndTimestamps[1]>0 ? startAndEndTimestamps[1] : sortedTimestamps[sortedTimestamps.length - 1];
+
 
         // create a new datapoints map propagateDatpoints, which have all the
         // expected timestamps, then fill the missing value
         int index = 1;
         int numDatapoints = 0;
-        while (startTimestamp <= endTimestamp && numDatapoints++ < MAX_DATAPOINTS_FOR_FILL) {
+        
+        if(startTimestamp < endTimestamp && ((endTimestamp - startTimestamp)/(windowSizeInSeconds * 1000) >= MAX_DATAPOINTS_FOR_FILL)) {
+        	    throw new RuntimeException("Fill transform cannot generate more than -" + MAX_DATAPOINTS_FOR_FILL + " datapoints");
+        }
+
+        while (startTimestamp <= endTimestamp) {
             filledDatapoints.put(startTimestamp, sortedDatapoints.containsKey(startTimestamp) ? sortedDatapoints.get(startTimestamp) : null);
             if (index >= sortedDatapoints.size()) {
               	startTimestamp = startTimestamp + windowSizeInSeconds * 1000;
@@ -261,7 +273,7 @@ public class FillTransform implements Transform {
 
     @Override
     public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("Fill doesb't need list of list!");
+        throw new UnsupportedOperationException("Fill doesn't support multiple lists of metrics!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

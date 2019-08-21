@@ -35,36 +35,45 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.AlertService.Notifier.NotificationStatus;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
+import com.salesforce.dva.argus.service.alert.notifier.GusTransport.GetAuthenticationTokenFailureException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.util.AlertUtils;
+import com.salesforce.dva.argus.util.TemplateReplacer;
 
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.persistence.EntityManager;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.SocketTimeoutException;
 import java.net.URLEncoder;
 import java.sql.Date;
 import java.text.MessageFormat;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
-
-import javax.persistence.EntityManager;
-
-import com.salesforce.dva.argus.util.AlertUtils;
-import com.salesforce.dva.argus.util.TemplateReplacer;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
-import org.slf4j.Logger;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -73,13 +82,13 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
  *
  * @author  Fiaz Hossain (fiaz.hossain@salesforce.com)
  */
+@Singleton
 public class GOCNotifier extends AuditNotifier {
 
-	//~ Instance fields ******************************************************************************************************************************
-
-	@SLF4JTypeListener.InjectLogger
-	private Logger _logger;
-
+	private static final Logger _logger = LoggerFactory.getLogger(GOCNotifier.class);
+	private static final int MAX_ATTEMPTS_GOC_POST = 3;
+	private final MonitorService monitorService;
+	private volatile GusTransport gusTransport = null;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -94,34 +103,18 @@ public class GOCNotifier extends AuditNotifier {
 	 */
 	@Inject
 	public GOCNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
-					   SystemConfiguration config, Provider<EntityManager> emf) {
+					   SystemConfiguration config, Provider<EntityManager> emf,
+					   MonitorService monitorService) {
 		super(metricService, annotationService, auditService, config, emf);
 		requireArgument(config != null, "The configuration cannot be null.");
+		this.monitorService = monitorService;
 	}
 
 	//~ Methods **************************************************************************************************************************************
 
-	private PostMethod getRequestMethod(boolean refresh, String id) throws UnsupportedEncodingException {
-		GOCTransport gocTransport = new GOCTransport();
-		EndpointInfo endpointInfo = gocTransport.getEndpointInfo(_config, _logger, refresh);
-
-		// Create upsert URI with PATCH method
-		PostMethod post = new PostMethod(String.format("%s/services/data/v25.0/sobjects/SM_Alert__c/%s/%s", endpointInfo.getEndPoint(),
-				urlEncode(GOCData.SM_ALERT_ID__C_FIELD), urlEncode(id))) {
-
-			@Override
-			public String getName() {
-				return "PATCH";
-			}
-		};
-		post.setRequestHeader("Authorization", "Bearer " + endpointInfo.getToken());
-		return post;
-	}
-
 	/**
 	 * Sends an GOC++ message.
-	 *
-	 * @param  severity      The message severity
+	 *  @param  severity      The message severity
 	 * @param  className     The alert class name
 	 * @param  elementName   The element/instance name
 	 * @param  eventName     The event name
@@ -130,11 +123,30 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  srActionable  Is the GOC notification SR actionable
 	 * @param  lastNotified  The last message time. (typically current time)
 	 * @param triggeredOnMetric The corresponding metric
+	 * @param productTag
+	 * @param articleNumber
+     * @return true if succeed, false if fail
 	 */
-	public void sendMessage(Severity severity, String className, String elementName, String eventName, String message,
-							int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
-		requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
+	private boolean sendMessage(History history,
+								Severity severity,
+								String className,
+								String elementName,
+								String eventName,
+								String message,
+								int severityLevel,
+								boolean srActionable,
+								long lastNotified,
+								Metric triggeredOnMetric,
+								String productTag,
+								String articleNumber,
+								NotificationContext context) {
+    	requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
 		requireArgument(eventName != null && !eventName.isEmpty(), "EventName cannot be null or empty.");
+
+		boolean result = false;
+		String failureMsg = null;
+		int retries = 0;
+
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GOC_ENABLED))) {
 			try {
 				GOCDataBuilder builder = new GOCDataBuilder();
@@ -144,7 +156,8 @@ public class GOCNotifier extends AuditNotifier {
 				eventName = _truncateIfSizeGreaterThan(eventName, 100);
 
 				builder.withClassName(className).withElementName(elementName).withEventName(eventName).
-						withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message);
+						withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message)
+						.withArticleNumber(articleNumber);
 				if (severity == Severity.OK) {
 					builder.withActive(false).withClearedAt(lastNotified);
 				} else {
@@ -154,49 +167,127 @@ public class GOCNotifier extends AuditNotifier {
 				if (srActionable == true) {
 					builder.withUserdefined2(_config.getValue(AuditNotifier.Property.AUDIT_PRODOUTAGE_EMAIL_TEMPLATE.getName(), AuditNotifier.Property.AUDIT_PRODOUTAGE_EMAIL_TEMPLATE.getDefaultValue()));
 				}
+				if (productTag != null) {
+					builder.withProductTag(productTag);
+				}
 
 				GOCData gocData = builder.build();
 				boolean refresh = false;
-				GOCTransport gocTransport = new GOCTransport();
-				HttpClient httpclient = gocTransport.getHttpClient(_config);
+				CloseableHttpClient httpClient = getGusTransportInstance().getHttpClient();
 
-				for (int i = 0; i < 1; i++) {
+				for (int i = 0; i < MAX_ATTEMPTS_GOC_POST; i++) {
+					retries = i;
 
-					PostMethod post = null;
+					CloseableHttpResponse response = null;
 
 					try {
-						post=getRequestMethod(refresh, triggeredOnMetric.hashCode() + " " + gocData.getsm_Alert_Id__c());
-						post.setRequestEntity(new StringRequestEntity(gocData.toJSON(), "application/json", null));
+						GusTransport.EndpointInfo endpointInfo = getGusTransportInstance().getEndpointInfo(refresh);
+						// Create upsert URI with PATCH method
+						RequestBuilder rb = RequestBuilder.patch()
+								.setUri(String.format("%s/services/data/v25.0/sobjects/SM_Alert__c/%s/%s",
+										endpointInfo.getEndPoint(),
+										urlEncode(GOCData.SM_ALERT_ID__C_FIELD),
+										urlEncode(triggeredOnMetric.hashCode() + " " + gocData.getsm_Alert_Id__c())))
+								.setHeader("Authorization", "Bearer " + endpointInfo.getToken())
+								.setEntity(new StringEntity(gocData.toJSON(), ContentType.create("application/json")));
 
-						int respCode = httpclient.executeMethod(post);
+						response = httpClient.execute(rb.build());
+						int respCode = response.getStatusLine().getStatusCode();
 
 						// Check for success
 						if (respCode == 201 || respCode == 204) {
-							_logger.info("Success - send GOC++ having element '{}' event '{}' severity {}.", elementName, eventName, severity.name());
+							String infoMsg = MessageFormat.format("Success - send GOC++ having element {0} event {1} severity {2}.",
+									elementName, eventName, severity.name());
+							_logger.debug(infoMsg);
+							history.appendMessageNUpdateHistory(infoMsg, null, 0);
+
+							result = true;
 							break;
-						} else if (respCode == 401) {
-							// Indication that the session timedout, Need to refresh and retry
-							refresh = true;
 						} else {
-							_logger.error("Failure - send GOC++ having element '{}' event '{}' severity {}. Response code '{}' response '{}'",
-									elementName, eventName, severity.name(), respCode, post.getResponseBodyAsString());
+							final String gusPostResponseBody = EntityUtils.toString(response.getEntity());
+							failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. Response code {3} response {4}",
+									elementName, eventName, severity.name(), respCode, gusPostResponseBody);
+
+							if (respCode == 401) { // Indication that the session timed out, try refreshing token and retrying post
+								_logger.warn(failureMsg);
+								refresh = true;
+								continue; // retry
+							} else if (respCode == 400) {
+								List<Map<String, Object>> jsonResponseBody = null;
+								try {
+									jsonResponseBody = new Gson().fromJson(gusPostResponseBody, List.class);
+								} catch (RuntimeException e) {
+									_logger.warn("Failed to parse response", e);
+								}
+								if (jsonResponseBody != null && jsonResponseBody.size() > 0) {
+									Map<String, Object> responseBodyMap = jsonResponseBody.get(0);
+									if (responseBodyMap != null &&
+											("INVALID_HEADER_TYPE".equals(responseBodyMap.get("message")) ||
+													"INVALID_AUTH_HEADER".equals(responseBodyMap.get("errorCode")))) {
+										_logger.warn("Failed with invalid auth header, attempting to refresh token if possible");
+										refresh = true;
+										continue; // retry
+									}
+								}
+								_logger.error(failureMsg);
+								break; // do not retry
+							} else if (respCode >= 500 && respCode < 600) { // Server errors
+								_logger.warn(failureMsg);
+								continue; // retry
+							} else {
+								_logger.error(failureMsg);
+								break; // unknown error, do not retry
+							}
 						}
+					} catch (SocketTimeoutException e) {
+						failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. Exception {3}",
+								elementName, eventName, severity.name(), e.getMessage());
+						_logger.error(failureMsg, e);
+
+						refresh = false; // do not refresh token
+						continue; // retry
+					} catch (GetAuthenticationTokenFailureException e) {
+						failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. Exception {3}",
+								elementName, eventName, severity.name(), e.getMessage());
+						_logger.error(failureMsg, e);
+
+						refresh = true; // try forced refresh of token
+						continue; // retry
 					} catch (Exception e) {
-						_logger.error("Failure - send GOC++ having element '{}' event '{}' severity {}. Exception '{}'", elementName, eventName,
-								severity.name(), e);
+						failureMsg = MessageFormat.format("Failure - send GOC++ having element {0} event {1} severity {2}. Exception {3}",
+								elementName, eventName, severity.name(), e.getMessage());
+						_logger.error(failureMsg, e);
+						break; // unknown error, do not retry
 					} finally {
-						if(post != null){
-							post.releaseConnection();
+						try {
+							if (response != null) {
+								response.close();
+							}
+						} catch (IOException e) {
+							_logger.error("Exception while attempting to close post to GUS response", e);
 						}
 					}
 				}
 			} catch (RuntimeException ex) {
+				failureMsg = MessageFormat.format("Failure - send GOC++. Exception {0}",ex.getMessage());
+				history.appendMessageNUpdateHistory(failureMsg, null, 0);
 				throw new SystemException("Failed to send an GOC++ notification.", ex);
+			} finally {
+				monitorService.modifyCounter(MonitorService.Counter.GOC_NOTIFICATIONS_RETRIES, retries, null);
+				monitorService.modifyCounter(MonitorService.Counter.GOC_NOTIFICATIONS_FAILED, result ? 0 : 1, null);
 			}
 		} else {
-			_logger.info("Sending GOC++ notification is disabled.  Not sending message for element '{}' event '{}' severity {}.", elementName,
-					eventName, severity.name());
+			failureMsg = MessageFormat.format("Sending GOC++ notification is disabled.  Not sending message for element {0} event {1} severity {2}.",
+					elementName, eventName, severity.name());
+			_logger.warn(failureMsg);
 		}
+
+		context.setNotificationRetries(retries);
+		if (StringUtils.isNotBlank(failureMsg)) {
+			history.appendMessageNUpdateHistory(failureMsg, null, 0);
+		}
+		return result;
+
 	}
 
 	private static String _truncateIfSizeGreaterThan(String str, int maxAllowed) {
@@ -214,13 +305,17 @@ public class GOCNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
-		_sendAdditionalNotification(context, NotificationStatus.TRIGGERED);
+	protected boolean sendAdditionalNotification(NotificationContext context) {
+		requireArgument(context != null, "Notification context cannot be null.");
+		super.sendAdditionalNotification(context);
+		return _sendAdditionalNotification(context, NotificationStatus.TRIGGERED);
 	}
 
 	@Override
-	protected void clearAdditionalNotification(NotificationContext context) {
-		_sendAdditionalNotification(context, NotificationStatus.CLEARED);
+	protected boolean clearAdditionalNotification(NotificationContext context) {
+		requireArgument(context != null, "Notification context cannot be null.");
+		super.clearAdditionalNotification(context);
+		return _sendAdditionalNotification(context, NotificationStatus.CLEARED);
 	}
 
 	/**
@@ -229,15 +324,7 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  context  The notification context.  Cannot be null.
 	 * @param  status   The notification status.  If null, will set the notification severity to <tt>ERROR</tt>
 	 */
-	protected void _sendAdditionalNotification(NotificationContext context, NotificationStatus status) {
-		requireArgument(context != null, "Notification context cannot be null.");
-		
-		if(status == NotificationStatus.TRIGGERED) {
-		    super.sendAdditionalNotification(context);
-		}else {
-			super.clearAdditionalNotification(context);
-		}
-
+	protected boolean _sendAdditionalNotification(NotificationContext context, NotificationStatus status) {
 		Notification notification = null;
 		Trigger trigger = null;
 
@@ -259,8 +346,33 @@ public class GOCNotifier extends AuditNotifier {
 		String body = getGOCMessageBody(notification, trigger, context, status);
 		Severity sev = status == NotificationStatus.CLEARED ? Severity.OK : Severity.ERROR;
 
-		sendMessage(sev, TemplateReplacer.applyTemplateChanges(context, context.getNotification().getName()), TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName()), body,
-				context.getNotification().getSeverityLevel(),context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric());
+		String elementName = notification.getElementName();
+		String eventName = notification.getEventName();
+
+		if (elementName == null || elementName.isEmpty()) {
+			elementName = context.getAlert().getName();
+		}
+
+		if (eventName == null || eventName.isEmpty()) {
+			eventName = trigger.getName();
+		}
+
+		elementName = TemplateReplacer.applyTemplateChanges(context, elementName);
+		eventName = TemplateReplacer.applyTemplateChanges(context, eventName);
+
+		return sendMessage(context.getHistory(),
+				sev,
+				TemplateReplacer.applyTemplateChanges(context, notification.getName()),
+				elementName,
+				eventName,
+				body,
+				context.getNotification().getSeverityLevel(),
+				context.getNotification().getSRActionable(),
+				context.getTriggerFiredTime(),
+				context.getTriggeredMetric(),
+				notification.getProductTag(),
+				notification.getArticleNumber(),
+				context);
 	}
 
 	/**
@@ -278,12 +390,17 @@ public class GOCNotifier extends AuditNotifier {
 		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 		String notificationMessage = notificationStatus == NotificationStatus.TRIGGERED ? "Triggered" : "Cleared";
 		
-		sb.append(MessageFormat.format("Alert {0} was {1} at 21}\n", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), notificationMessage,
+		sb.append(MessageFormat.format("Alert {0} was {1} at {2}\n", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), notificationMessage,
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
 		String customText = context.getNotification().getCustomText();
 		if( customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
 			sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("\n");
 		}
+
+		context.getAlertEvaluationTrackingID().ifPresent(trackingID -> {
+			sb.append("Tracking ID: " + trackingID + "\n");
+		});
+
 		if(currentAlert.getNotifications().size() > 1)
 			sb.append(MessageFormat.format("Notification:  {0}\n", TemplateReplacer.applyTemplateChanges(context, notification.getName())));
 		if(currentAlert.getTriggers().size() > 1)
@@ -292,17 +409,23 @@ public class GOCNotifier extends AuditNotifier {
 		    sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		}
-		if(!expression.equals("")) {
-			sb.append(MessageFormat.format("URL for evaluated metric expression:  {0}\n", getExpressionUrl(expression)));
-		}else {
-			sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
+
+		if (context.getEvaluatedMetricSnapshotURL().isPresent() && !context.getEvaluatedMetricSnapshotURL().get().equals("")) {
+			sb.append(MessageFormat.format("Snapshot of the evaluated metric data: {0}\n", context.getEvaluatedMetricSnapshotURL().get()));
+		} else {
+			if(!expression.equals("")) {
+				sb.append(MessageFormat.format("URL for evaluated metric expression:  {0}\n", getExpressionUrl(expression)));
+			}
 		}
+
+		sb.append(MessageFormat.format("Current view of the metric expression:  {0}\n",
+				getExpressionUrl(context.getAlert().getExpression())));
 
 		if(context.getTriggeredMetric()!=null) {
 			if(notificationStatus == NotificationStatus.TRIGGERED){
-				sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+				sb.append(MessageFormat.format("Triggered on Metric: {0}", context.getTriggeredMetric().getIdentifier()));
 			}else {
-				sb.append(MessageFormat.format("<b>Cleared on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+				sb.append(MessageFormat.format("Cleared on Metric: {0}", context.getTriggeredMetric().getIdentifier()));
 			}
 		}
 		
@@ -329,6 +452,28 @@ public class GOCNotifier extends AuditNotifier {
 			notifierProps.put(property.getName(), property.getDefaultValue());
 		}
 		return notifierProps;
+	}
+
+	protected GusTransport getGusTransportInstance() {
+		if (gusTransport == null) {
+			synchronized (this) {
+				if (gusTransport == null) {
+					gusTransport = new GusTransport(_config.getValue(Property.GOC_PROXY_HOST.getName(), null), // no default since this is optional
+							_config.getValue(Property.GOC_PROXY_PORT.getName(), null), // no default since this is optional
+							_config.getValue(Property.GOC_PROXY_USERNAME.getName(), null), // no default since this is optional
+							_config.getValue(Property.GOC_PROXY_PASSWORD.getName(), null), // no default since this is optional
+							_config.getValue(Property.GOC_ENDPOINT.getName(), Property.GOC_ENDPOINT.getDefaultValue()) + "/services/oauth2/token",
+							_config.getValue(Property.GOC_CLIENT_ID.getName(), Property.GOC_CLIENT_ID.getDefaultValue()),
+							_config.getValue(Property.GOC_CLIENT_SECRET.getName(), Property.GOC_CLIENT_SECRET.getDefaultValue()),
+							_config.getValue(Property.GOC_USER.getName(), Property.GOC_USER.getDefaultValue()),
+							_config.getValue(Property.GOC_PWD.getName(), Property.GOC_PWD.getDefaultValue()),
+							new GusTransport.EndpointInfo(_config.getValue(Property.GOC_ENDPOINT.getName(), Property.GOC_ENDPOINT.getDefaultValue()), GusTransport.NO_TOKEN),
+							Integer.parseInt(_config.getValue(Property.GOC_CONNECTION_POOL_MAX_SIZE.getName(), Property.GOC_CONNECTION_POOL_MAX_SIZE.getDefaultValue())),
+							Integer.parseInt(_config.getValue(Property.GOC_CONNECTION_POOL_MAX_PER_ROUTE.getName(), Property.GOC_CONNECTION_POOL_MAX_PER_ROUTE.getDefaultValue())));
+				}
+			}
+		}
+		return gusTransport;
 	}
 
 	private String urlEncode(String s) throws UnsupportedEncodingException{
@@ -366,6 +511,10 @@ public class GOCNotifier extends AuditNotifier {
 		GOC_PROXY_HOST("notifier.property.proxy.host", ""),
 		/** The GOC port. */
 		GOC_PROXY_PORT("notifier.property.proxy.port", ""),
+		/** The GOC proxy username. */
+		GOC_PROXY_USERNAME("notifier.property.proxy.username", ""),
+		/** The GOC proxy password. */
+		GOC_PROXY_PASSWORD("notifier.property.proxy.password", ""),
 		/** The GOC client ID. */
 		GOC_CLIENT_ID("notifier.property.goc.client.id", "default_client_id"),
 		/** The GOC client secret. */
@@ -373,7 +522,11 @@ public class GOCNotifier extends AuditNotifier {
 		/** The alert URL template to be included with GOC notifications. */
 		EMAIL_ALERT_URL_TEMPLATE("notifier.property.goc.alerturl.template", "http://localhost:8080/argus/alertId"),
 		/** The metric URL template to be included with GOC notifications. */
-		EMAIL_METRIC_URL_TEMPLATE("notifier.property.goc.metricurl.template", "http://localhost:8080/argus/metrics");
+		EMAIL_METRIC_URL_TEMPLATE("notifier.property.goc.metricurl.template", "http://localhost:8080/argus/metrics"),
+		/** The connection pool size for connecting to GOC */
+		GOC_CONNECTION_POOL_MAX_SIZE("notifier.property.goc.connectionpool.maxsize", "55"),
+		/** The connection pool max per route for connecting to GOC */
+		GOC_CONNECTION_POOL_MAX_PER_ROUTE("notifier.property.goc.connectionpool.maxperroute", "20");
 
 		private final String _name;
 		private final String _defaultValue;
@@ -404,6 +557,15 @@ public class GOCNotifier extends AuditNotifier {
 
 	//~ Inner classes ********************************************************************************************************************************
 
+	public class PatchMethod extends PostMethod {
+		public PatchMethod(String uri) { super(uri); }
+
+		@Override
+		public String getName() {
+			return "PATCH";
+		}
+	}
+
 	/**
 	 * GOCData object to generate JSON.
 	 *
@@ -429,10 +591,12 @@ public class GOCNotifier extends AuditNotifier {
 		private static final String SM_SEVERITY__C_FIELD = "SM_Severity__c";
 		private static final String SM_SOURCEDOMAIN__C_FIELD = "SM_SourceDomain__c";
 		private static final String SR_ACTIONABLE__C_FIELD = "SR_Actionable__c";
-		private static final String SM_USERDEFINED2__C_FIELD = "SR_Userdefined2__c";
-		private static final String SM_USERDEFINED3__C_FIELD = "SR_Userdefined3__c";
-		private static final String SM_USERDEFINED10__C_FIELD = "SR_Userdefined10__c";
-		private static final String SM_USERDEFINED12__C_FIELD = "SR_Userdefined12__c";
+		private static final String SM_USERDEFINED2__C_FIELD = "SM_Userdefined2__c";
+		private static final String SM_USERDEFINED3__C_FIELD = "SM_Userdefined3__c";
+		private static final String SM_USERDEFINED10__C_FIELD = "SM_Userdefined10__c";
+		private static final String SM_USERDEFINED12__C_FIELD = "SM_Userdefined12__c";
+		private static final String SM_ARTICLE_NUMBER__C_FIELD = "SM_Article_Number__c";
+		private static final String SM_PRODUCTTAG__C_FIELD = "SM_Product_Tag__c";
 
 		//~ Instance fields ******************************************************************************************************************************
 
@@ -448,17 +612,22 @@ public class GOCNotifier extends AuditNotifier {
 		private final int smSeverityc; // Number(1, 0) (External ID) --> 0 through 5
 		private final String smSourceDomainc;
 		private final boolean srActionablec; // Checkbox --> true if SR needs to respond to this alert
+		// Userdefined fields
 		private final String smUserdefined2c;
 		private final String smUserdefined3c;
 		private final String smUserdefined10c;
 		private final String smUserdefined12c;
+		private final String smArticleNumber;
+		private final String smProductTag; // Product Tag associated with the alert object.
+
 
 
 		//~ Constructors *********************************************************************************************************************************
 
 		private GOCData(final boolean smActivec, final String smAlertIdc, final String smClassNamec, final long smClearedAtc, final long smCreatedAtc,
 						final String smElementNamec, final String smEventNamec, final String smEventTextc, final long smLastNotifiedAtc, final int smSeverityc,
-						final String smSourceDomainc, final boolean srActionablec, final String smUserdefined2c, final String smUserdefined3c, final String smUserdefined10c, final String smUserdefined12c) {
+						final String smSourceDomainc, final boolean srActionablec, final String smUserdefined2c, final String smUserdefined3c, final String smUserdefined10c, final String smUserdefined12c,
+						final String smArticleNumber, final String smProductTag) {
 			this.smActivec = smActivec;
 			this.smAlertIdc = smAlertIdc;
 			this.smClassNamec = smClassNamec;
@@ -475,6 +644,8 @@ public class GOCNotifier extends AuditNotifier {
 			this.smUserdefined3c = smUserdefined3c;
 			this.smUserdefined10c = smUserdefined10c;
 			this.smUserdefined12c = smUserdefined12c;
+			this.smArticleNumber = smArticleNumber;
+			this.smProductTag = smProductTag;
 
 		}
 
@@ -528,6 +699,12 @@ public class GOCNotifier extends AuditNotifier {
 			if(smUserdefined12c != null) {
 				gocData.addProperty(SM_USERDEFINED12__C_FIELD, smUserdefined12c);
 			}
+			if(smArticleNumber != null) {
+				gocData.addProperty(SM_ARTICLE_NUMBER__C_FIELD, smArticleNumber);
+			}
+			if(smProductTag != null) {
+				gocData.addProperty(SM_PRODUCTTAG__C_FIELD, smProductTag);
+			}
 			return gocData.toString();
 		}
 
@@ -559,6 +736,8 @@ public class GOCNotifier extends AuditNotifier {
 		private String smUserdefined3c = null;
 		private String smUserdefined10c = null;
 		private String smUserdefined12c = null;
+		private String smArticleNumber;
+		private String smProductTag;
 
 		/** Creates a new GOCDataBuilder object. */
 		public GOCDataBuilder() { }
@@ -686,7 +865,7 @@ public class GOCNotifier extends AuditNotifier {
 		/**
 		 * Specifies whether the userdefined2 field is defined.
 		 *
-		 * @param   smUserdefined2c  True if actionable.
+		 * @param   smUserdefined2c  user defined field.
 		 *
 		 * @return  The updated builder object.
 		 */
@@ -696,9 +875,9 @@ public class GOCNotifier extends AuditNotifier {
 		}
 
 		/**
-		 * Specifies whether the userdefined2 field is defined.
+		 * Specifies whether the userdefined3 field is defined.
 		 *
-		 * @param   smUserdefined3c  True if actionable.
+		 * @param   smUserdefined3c  user defined field.
 		 *
 		 * @return  The updated builder object.
 		 */
@@ -708,9 +887,9 @@ public class GOCNotifier extends AuditNotifier {
 		}
 
 		/**
-		 * Specifies whether the userdefined2 field is defined.
+		 * Specifies whether the userdefined10 field is defined.
 		 *
-		 * @param   smUserdefined10c  True if actionable.
+		 * @param   smUserdefined10c  user defined field.
 		 *
 		 * @return  The updated builder object.
 		 */
@@ -720,14 +899,39 @@ public class GOCNotifier extends AuditNotifier {
 		}
 
 		/**
-		 * Specifies whether the userdefined2 field is defined.
+		 * Specifies whether the userdefined12 field is defined.
 		 *
-		 * @param   smUserdefined12c  True if actionable.
+		 * @param   smUserdefined12c  user defined field.
 		 *
 		 * @return  The updated builder object.
 		 */
 		public GOCDataBuilder withUserdefined12(final String smUserdefined12c) {
 			this.smUserdefined12c = smUserdefined12c;
+			return this;
+		}
+
+		/**
+		 * Specifies whether the userdefined2 field is defined.
+		 *
+		 * @param   smArticleNumber  user defined field.
+		 *
+		 * @return  The updated builder object.
+		 */
+		public GOCDataBuilder withArticleNumber(String smArticleNumber) {
+			this.smArticleNumber = smArticleNumber;
+			return this;
+		}
+
+
+		/**
+		 * Specifies whether the userdefined2 field is defined.
+		 *
+		 * @param   smProductTag  user defined field.
+		 *
+		 * @return  The updated builder object.
+		 */
+		public GOCDataBuilder withProductTag(String smProductTag) {
+			this.smProductTag = smProductTag;
 			return this;
 		}
 
@@ -738,166 +942,9 @@ public class GOCNotifier extends AuditNotifier {
 		 */
 		public GOCData build() {
 			return new GOCData(smActivec, smElementNamec + ALERT_ID_SEPARATOR + smEventNamec, smClassNamec, smClearedAtc, smCreatedAtc,
-					smElementNamec, smEventNamec, smEventTextc, smLastNotifiedAtc, smSeverityc, SM_SOURCE_DOMAIN__C, srActionablec, smUserdefined2c, smUserdefined3c, smUserdefined10c, smUserdefined12c);
+					smElementNamec, smEventNamec, smEventTextc, smLastNotifiedAtc, smSeverityc, SM_SOURCE_DOMAIN__C, srActionablec, smUserdefined2c, smUserdefined3c, smUserdefined10c, smUserdefined12c, smArticleNumber, smProductTag);
 		}
 	}
 
-
-	/**
-	 * Manage GOC connections, oAuth and timeouts.
-	 *
-	 * @author  Fiaz Hossain (fiaz.hossain@salesforce.com)
-	 */
-	public class GOCTransport {
-
-		//~ Static fields/initializers *******************************************************************************************************************
-
-		private static final String UTF_8 = "UTF-8";
-		private static final String NO_TOKEN = "NO_TOKEN";
-		private static final long MIN_SESSION_REFRESH_THRESHOLD_MILLIS = 5 * 60 * 1000; // Wait at least 5 minutes between refresh attempts
-		private static final int CONNECTION_TIMEOUT_MILLIS = 10000;
-		private static final int READ_TIMEOUT_MILLIS = 10000;
-		private volatile EndpointInfo theEndpointInfo = null;
-		private volatile long lastRefresh = 0;
-		private final MultiThreadedHttpConnectionManager theConnectionManager;
-		{
-			theConnectionManager = new MultiThreadedHttpConnectionManager();
-
-			HttpConnectionManagerParams params = theConnectionManager.getParams();
-
-			params.setConnectionTimeout(CONNECTION_TIMEOUT_MILLIS);
-			params.setSoTimeout(READ_TIMEOUT_MILLIS);
-		}
-
-		//~ Methods **************************************************************************************************************************************
-
-		/**
-		 * Get authenticated endpoint and token.
-		 *
-		 * @param   config   The system configuration.  Cannot be null.
-		 * @param   logger   The logger.  Cannot be null.
-		 * @param   refresh  - If true get a new token even if one exists.
-		 *
-		 * @return  EndpointInfo - with valid endpoint and token. The token can be a dummy or expired.
-		 */
-		public  EndpointInfo getEndpointInfo(SystemConfiguration config, Logger logger, boolean refresh) {
-			if (theEndpointInfo == null || refresh) {
-				updateEndpoint(config, logger, lastRefresh);
-			}
-			return theEndpointInfo;
-		}
-
-		/**
-		 * Get HttpClient with proper proxy and timeout settings.
-		 *
-		 * @param   config  The system configuration.  Cannot be null.
-		 *
-		 * @return  HttpClient
-		 */
-		public  HttpClient getHttpClient(SystemConfiguration config) {
-			HttpClient httpclient = new HttpClient(theConnectionManager);
-
-			httpclient.getParams().setParameter("http.connection-manager.timeout", 2000L); // Wait for 2 seconds to get a connection from pool
-
-			String host = config.getValue(Property.GOC_PROXY_HOST.getName(), Property.GOC_PROXY_HOST.getDefaultValue());
-
-			if (host != null && host.length() > 0) {
-				httpclient.getHostConfiguration().setProxy(host,
-						Integer.parseInt(config.getValue(Property.GOC_PROXY_PORT.getName(), Property.GOC_PROXY_PORT.getDefaultValue())));
-			}
-			return httpclient;
-		}
-
-		/**
-		 * Update the global 'theEndpointInfo' state with a valid endpointInfo if login is successful or a dummy value if not successful.
-		 *
-		 * @param  config           The system configuration.  Cannot be null.
-		 * @param  logger           The logger.  Cannot be null.
-		 * @param  previousRefresh  The last refresh time.
-		 */
-		private synchronized void updateEndpoint(SystemConfiguration config, Logger logger, long previousRefresh) {
-			long diff = System.currentTimeMillis() - previousRefresh;
-
-			if (diff > MIN_SESSION_REFRESH_THRESHOLD_MILLIS) {
-				lastRefresh = System.currentTimeMillis();
-
-				PostMethod post = new PostMethod(config.getValue(Property.GOC_ENDPOINT.getName(), Property.GOC_ENDPOINT.getDefaultValue()) +
-						"/services/oauth2/token");
-
-				try {
-					post.addParameter("grant_type", "password");
-					post.addParameter("client_id",
-							URLEncoder.encode(config.getValue(Property.GOC_CLIENT_ID.getName(), Property.GOC_CLIENT_ID.getDefaultValue()), UTF_8));
-					post.addParameter("client_secret",
-							URLEncoder.encode(config.getValue(Property.GOC_CLIENT_SECRET.getName(), Property.GOC_CLIENT_SECRET.getDefaultValue()), UTF_8));
-					post.addParameter("username", config.getValue(Property.GOC_USER.getName(), Property.GOC_USER.getDefaultValue()));
-					post.addParameter("password", config.getValue(Property.GOC_PWD.getName(), Property.GOC_PWD.getDefaultValue()));
-
-					HttpClient httpclient = getHttpClient(config);
-					int respCode = httpclient.executeMethod(post);
-
-					// Check for success
-					if (respCode == 200) {
-						JsonObject authResponse = new Gson().fromJson(post.getResponseBodyAsString(), JsonObject.class);
-						String endpoint = authResponse.get("instance_url").getAsString();
-						String token = authResponse.get("access_token").getAsString();
-
-						logger.info("Success - getting access_token for endpoint '{}'", endpoint);
-						logger.debug("access_token '{}'", token);
-						theEndpointInfo = new EndpointInfo(endpoint, token);
-					}
-					else {
-						logger.error("Failure - getting oauth2 token, check username/password: '{}'", post.getResponseBodyAsString());
-					}
-
-				} catch (Exception e) {
-					logger.error("Failure - exception getting access_token '{}'", e);
-				} finally {
-					if (theEndpointInfo == null) {
-						theEndpointInfo = new EndpointInfo(config.getValue(Property.GOC_ENDPOINT.getName(), Property.GOC_ENDPOINT.getDefaultValue()),
-								NO_TOKEN);
-					}
-					post.releaseConnection();
-				}
-			}
-		}
-
-		//~ Inner Classes ********************************************************************************************************************************
-
-	}
-
-	/**
-	 * Utility class for endpoint information.
-	 *
-	 * @author  fiaz.hossain
-	 */
-	public class EndpointInfo {
-
-		private final String endPoint;
-		private final String token;
-
-		private EndpointInfo(final String endPoint, final String token) {
-			this.endPoint = endPoint;
-			this.token = token;
-		}
-
-		/**
-		 * Valid endpoint. Either from config or endpont after authentication
-		 *
-		 * @return  endpoint
-		 */
-		public String getEndPoint() {
-			return endPoint;
-		}
-
-		/**
-		 * Token can be either active, expired or a dummy value.
-		 *
-		 * @return  token
-		 */
-		public String getToken() {
-			return token;
-		}
-	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -43,16 +43,15 @@ import com.salesforce.dva.argus.entity.ServiceManagementRecord;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord.Service;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.DashboardService;
 import com.salesforce.dva.argus.service.MailService;
 import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.MetricStorageService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.ServiceManagementService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.UserService;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory.Function;
@@ -62,7 +61,14 @@ import com.salesforce.dva.argus.system.SystemException;
 import com.sun.management.OperatingSystemMXBean;
 import com.sun.management.UnixOperatingSystemMXBean;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.management.InstanceAlreadyExistsException;
+import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.NotCompliantMBeanException;
+import javax.management.ObjectName;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryPoolMXBean;
@@ -104,21 +110,24 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 	//~ Instance fields ******************************************************************************************************************************
 
-	@SLF4JTypeListener.InjectLogger
-	private Logger _logger;
-	private final TSDBService _tsdbService;
+	private final Logger _logger = LoggerFactory.getLogger(DefaultMonitorService.class);
+	private TSDBService _tsdbService;
 	private final UserService _userService;
 	private final AlertService _alertService;
 	private final ServiceManagementService _serviceManagementService;
 	private final DashboardService _dashboardService;
 	private final MetricService _metricService;
 	private final MailService _mailService;
-	private final GaugeExporter _gaugeExporter;
-	private final Map<Metric, Double> _metrics = new ConcurrentHashMap<>();
+	private final Map<Metric, GaugeMetric> _metrics;
+	private final Map<Metric, MetricMXBean> _registeredMetrics;
 	private final PrincipalUser _adminUser;
 	private final SystemConfiguration _sysConfig;
+	private final MBeanServer _mbeanServer;
 	private Thread _monitorThread;
-	private DataLagMonitor _dataLagMonitorThread;
+	private Thread _dataLagMonitorThread;
+	private DataLagService _dataLagService;
+	// TODO: remove this after data lag consumer offset service verification is over.
+	private MetricStorageService _metricStorageService;
 
 
 	//~ Constructors *********************************************************************************************************************************
@@ -137,8 +146,8 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	 */
 	@Inject
 	public DefaultMonitorService(TSDBService tsdbService, UserService userService, AlertService alertService,
-			ServiceManagementService serviceManagementService, DashboardService dashboardService, MetricService metricService, MailService mailService, 
-			GaugeExporter gaugeExporter, SystemConfiguration sysConfig) {
+								 ServiceManagementService serviceManagementService, DashboardService dashboardService, MetricService metricService, MailService mailService,
+								 SystemConfiguration sysConfig, DataLagService dataLagService, MetricStorageService metricStorageService) {
 		super(null, sysConfig);
 		requireArgument(tsdbService != null, "TSDB service cannot be null.");
 		requireArgument(userService != null, "User service cannot be null.");
@@ -154,7 +163,12 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		_metricService = metricService;
 		_mailService = mailService;
 		_adminUser = _userService.findAdminUser();
-		_gaugeExporter = gaugeExporter;
+		_mbeanServer = ManagementFactory.getPlatformMBeanServer();
+		_metrics = new ConcurrentHashMap<>();
+		_registeredMetrics = new ConcurrentHashMap<>();
+		_dataLagService = dataLagService;
+		// TODO: remove this after data lag consumer offset service verification is over.
+		_metricStorageService = metricStorageService;
 	}
 
 	//~ Methods **************************************************************************************************************************************
@@ -208,23 +222,26 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			_checkAlertExistence(true);
 			_monitorThread = new MonitorThread("system-monitor");
 
-			_monitorThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-
-				@Override
-				public void uncaughtException(Thread t, Throwable e) {
-					_logger.error("Uncaught exception occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, e.getMessage());
-					t.interrupt();
+			_monitorThread.setUncaughtExceptionHandler((t, e) -> {
+				_logger.error("Uncaught exception occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, e.getMessage());
+				t.interrupt();
 				}
-			});
+			);
 
 			_monitorThread.start();
 			_logger.info("System monitor thread started.");
 
-			if (Boolean.valueOf(_sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))) {
+			// TODO: remove this after data lag consumer offset service verification is over.
+			if (Boolean.valueOf(_sysConfig.getValue(DataLagService.Property.DATA_LAG_MONITOR_ENABLED.getName(), DataLagService.Property.DATA_LAG_MONITOR_ENABLED.getDefaultValue()))) {
 				_logger.info("Starting data lag monitor thread.");
-				_dataLagMonitorThread = new DataLagMonitor(_sysConfig, _metricService, _mailService);
+				_dataLagMonitorThread = new Thread(_dataLagService, "datalag-monitor-thread-" + _dataLagService.getClass().getSimpleName());
 				_dataLagMonitorThread.start();
 				_logger.info("Data lag monitor thread started.");
+
+				if(Boolean.valueOf(_sysConfig.getValue(DataLagMonitorConsumerOffset.Property.DATA_LAG_DEBUG.getName(), DataLagMonitorConsumerOffset.Property.DATA_LAG_DEBUG.getDefaultValue()))) {
+					_logger.info("Starting data lag consumer offset monitor thread in debug mode");
+					new Thread(new DataLagMonitorConsumerOffset(_sysConfig, _metricStorageService, _metricService, _tsdbService, _mailService)).start();
+				}
 			}
 		}
 	}
@@ -272,9 +289,8 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		requireArgument(name != null && !name.isEmpty(), "Cannot update a counter with null or empty name.");
 
 		Metric metric = _constructCounterKey(name, tags);
-		_gaugeExporter.exportGauge(metric, value);
 		_logger.debug("Updating {} counter for {} to {}.", name, tags, value);
-		_metrics.put(metric, value);
+		_metrics.computeIfAbsent(metric, k -> _getGaugeMXBeanInstance(k)).setValue(value);
 	}
 
 	@Override
@@ -282,7 +298,13 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		requireNotDisposed();
 		requireArgument(counter != null, "Cannot update a null counter.");
 		requireArgument(!"argus.jvm".equalsIgnoreCase(counter.getScope()), "Cannot update JVM counters");
-		updateCustomCounter(counter.getMetric(), value, tags);
+		Metric metric = _constructCounterKey(counter.getMetric(), tags);
+		if (Counter.MetricType.COUNTER.equals(counter.getMetricType())) {
+			_metrics.computeIfAbsent(metric, k -> _getCounterMXBeanInstance(k, counter)).setValue(value);
+		} else {
+			_metrics.computeIfAbsent(metric, k -> _getGaugeMXBeanInstance(k)).setValue(value);
+		}
+		_logger.debug("Updating {} counter for {} to {}.", metric.getMetric(), metric.getTags(), value);
 	}
 
 	@Override
@@ -290,15 +312,12 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		requireNotDisposed();
 		SystemAssert.requireArgument(name != null && !name.isEmpty(), "Cannot modify a counter with null or empty name.");
 
-		Metric key = _constructCounterKey(name, tags);
+		Metric metric = _constructCounterKey(name, tags);
 
 		synchronized (_metrics) {
-			Double value = _metrics.get(key);
-			double newValue = value == null ? delta : value + delta;
+			double newValue = _metrics.computeIfAbsent(metric, k -> _getGaugeMXBeanInstance(k)).addValue(delta);
 
-			_logger.debug("Modifying {} counter from {} to {}.", name, value, newValue);
-			_metrics.put(key, newValue);
-			_gaugeExporter.exportGauge(key, newValue);
+			_logger.debug("Modifying {} counter adding delta {} to get new sum {}.", name, delta, newValue);
 			return newValue;
 		}
 	}
@@ -308,7 +327,15 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		requireNotDisposed();
 		requireArgument(counter != null, "Cannot modify a null counter.");
 		requireArgument(!"argus.jvm".equalsIgnoreCase(counter.getScope()), "Cannot modify JVM counters");
-		return modifyCustomCounter(counter.getMetric(), delta, tags);
+		Metric metric = _constructCounterKey(counter.getMetric(), tags);
+		double v;
+		if (Counter.MetricType.COUNTER.equals(counter.getMetricType())) {
+			v = _metrics.computeIfAbsent(metric, k -> _getCounterMXBeanInstance(k, counter)).addValue(delta);
+		} else {
+			v = _metrics.computeIfAbsent(metric, k -> _getGaugeMXBeanInstance(k)).addValue(delta);
+		}
+		_logger.debug("Modifying {} counter {} adding delta {} to new sum {}.", metric.getMetric(), metric.getTags(), delta, v);
+		return v;
 	}
 
 	@Override
@@ -326,12 +353,10 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		Double value;
 
 		synchronized (_metrics) {
-			value = _metrics.get(metric);
-			if (value == null) {
-				value = Double.NaN;
-			}
+			GaugeMetric b = _metrics.get(metric);
+			value = b != null ? b.getCurrentGaugeAdderValue() : Double.NaN;
 		}
-		_logger.debug("Value for {} counter having tags {} is {}.", name, tags, value);
+		_logger.debug("Value for {} counter having tags {} is {}.", metric.getMetric(), metric.getTags(), value);
 		return value;
 	}
 
@@ -378,12 +403,28 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	}
 
 	@Override
-	public boolean isDataLagging() {
-		if(_dataLagMonitorThread!=null) {
-			return _dataLagMonitorThread.isDataLagging();
+	public boolean isDataLagging(String dataCenter) {
+		if(_dataLagMonitorThread != null) {
+			return _dataLagService.isDataLagging(dataCenter);
 		}else {
 			return false;
 		}
+	}
+
+	@Override
+	public void exportMetric(Metric metric, Double value) {
+		requireNotDisposed();
+		Counter counter = Counter.fromMetricName(metric.getMetric());
+		if (counter != null && Counter.MetricType.COUNTER.equals(counter.getMetricType())) {
+			_metrics.computeIfAbsent(metric, k -> _getCounterMXBeanInstance(k, counter)).setValue(value);
+		} else {
+			_metrics.computeIfAbsent(metric, k -> _getGaugeMXBeanInstance(k)).setValue(value);
+		}
+		_logger.debug("Exporting JMX counter {} {} new value {}.", metric.getMetric(), metric.getTags(), value);
+	}
+
+	public void setTSDBService(TSDBService tsdbService) {
+		_tsdbService = tsdbService;
 	}
 
 	private void _setServiceEnabled(boolean enabled) {
@@ -545,6 +586,12 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 				case DAEMON_THREADS:
 					value = (double) ManagementFactory.getThreadMXBean().getDaemonThreadCount();
 					break;
+				case MBEANSERVER_MBEAN_TOTAL:
+					value = _mbeanServer.getMBeanCount().doubleValue();
+					Metric metric = _constructCounterKey(counter.getMetric(), Collections.<String, String>emptyMap());
+					metric.setUnits(units);
+					_metrics.computeIfAbsent(metric, k -> _getGaugeMXBeanInstance(k)).setValue(value);
+					continue;
 				default:
 					throw new IllegalArgumentException("Unexpected Counter: This should never happen");
 				} // end switch
@@ -552,7 +599,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 					Metric metric = _constructCounterKey(counter.getMetric(), Collections.<String, String>emptyMap());
 
 					metric.setUnits(units);
-					_metrics.put(metric, value);
+					_metrics.computeIfAbsent(metric, k -> new GaugeMetric(k)).setValue(value);
 				}
 			} // end if
 		} // end for
@@ -574,6 +621,39 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			}
 		}
 		return dashboard;
+	}
+
+	private CounterMetric _getCounterMXBeanInstance(Metric m, Counter c) {
+		_logger.debug("Get CounterMetric=" + m.getMetric() + m.getTags());
+		return (CounterMetric)_registeredMetrics.computeIfAbsent(m, k -> _createAndRegisterCounterMXBean(k, c));
+	}
+
+	private CounterMetric _createAndRegisterCounterMXBean(Metric m, Counter c) {
+		CounterMetric b = new CounterMetric(m, c);
+		_registerMBean(b);
+		_logger.debug("Created and registered CounterMetric=" + b.getObjectName());
+		return b;
+	}
+
+	private GaugeMetric _getGaugeMXBeanInstance(Metric m) {
+		_logger.debug("Get GaugeMetric=" + m.getMetric() + m.getTags());
+		return (GaugeMetric)_registeredMetrics.computeIfAbsent(m, k -> _createAndRegisterGaugeMXBean(k));
+	}
+
+	private GaugeMetric _createAndRegisterGaugeMXBean(Metric m) {
+		GaugeMetric b = new GaugeMetric(m);
+		_registerMBean(b);
+		_logger.debug("Created and registered GaugeMetric=" + b.getObjectName());
+		return b;
+	}
+
+	private void _registerMBean(MetricMXBean b) {
+		try {
+			_mbeanServer.registerMBean(b, new ObjectName(b.getObjectName()));
+		} catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException
+				| MalformedObjectNameException e) {
+			_logger.error("Error registering MetricMXBean with name={}:", b.getObjectName(), e);
+		}
 	}
 
 	/**
@@ -633,7 +713,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 				default:
 					throw new SystemException("Attempting to create an unsupported monitoring alert" + alertName);
 				}
-				requireArgument(metricExpression != null && triggerType != null & triggerName != null, "Unsupported monitor alert " + alertName);
+				requireArgument(metricExpression != null && triggerType != null && triggerName != null, "Unsupported monitor alert " + alertName);
 
 				Alert alert = new Alert(_adminUser, _adminUser, _constructAlertName(alertName), metricExpression, "0 * * * *");
 				Notification notification = new Notification(NOTIFICATION_NAME, alert, AuditNotifier.class.getName(), new ArrayList<String>(),
@@ -682,7 +762,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 					try {
 						_pushCounters();
 					} catch (Exception ex) {
-						_logger.error("Error occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, ex.getMessage());
+						_logger.error("Error occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, ex);
 					}
 				}
 			}
@@ -692,7 +772,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			int sizeJVMMetrics = 0;
 			_logger.debug("Pushing monitor service counters for {}.", HOSTNAME);
 
-			Map<Metric, Double> counters = new HashMap<>();
+			Map<Metric, GaugeMetric> counters = new HashMap<>();
 
 			_updateJVMStatsCounters();
 
@@ -711,12 +791,13 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 			long timestamp = (System.currentTimeMillis() / 60000) * 60000L;
 
-			for (Entry<Metric, Double> entry : counters.entrySet()) {
-				Map<Long, Double> dataPoints = new HashMap<>(1);
+			for (Entry<Metric, GaugeMetric> entry : counters.entrySet()) {
+				GaugeMetric gauge = entry.getValue();
+				double value = gauge.computeNewGaugeValueAndResetGaugeAdder();
 
-				dataPoints.put(timestamp, entry.getValue());
+				Map<Long, Double> dataPoints = new HashMap<>(1);
+				dataPoints.put(timestamp, value);
 				entry.getKey().setDatapoints(dataPoints);
-				_gaugeExporter.exportGauge(entry.getKey(), entry.getValue());
 			}
 			if (!isDisposed()) {
 				_logger.info("Pushing {} monitoring metrics to TSDB.", counters.size());
@@ -733,11 +814,6 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 				interrupt();
 			}
 		}
-	}
-
-	@Override
-	public void exportMetric(Metric metric, Double value) {
-		_gaugeExporter.exportGauge(metric, value);		
 	}
 
 }

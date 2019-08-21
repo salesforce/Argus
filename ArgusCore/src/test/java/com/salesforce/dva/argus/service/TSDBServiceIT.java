@@ -28,11 +28,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.AbstractTestIT;
 import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
@@ -61,7 +61,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
-public class TSDBServiceIT extends AbstractTest {
+public class TSDBServiceIT extends AbstractTestIT {
 
     private static final long SLEEP_AFTER_PUT_IN_MILLIS = 2000;
 
@@ -127,10 +127,10 @@ public class TSDBServiceIT extends AbstractTest {
             service.dispose();
         }
     }
-    
+
     @Test
     public void testGetMetricsTagValueTooLarge() throws InterruptedException {
-    	
+
     	TSDBService service = system.getServiceFactory().getTSDBService();
         List<Metric> expected = createMetricWithMultipleTags("tagKey", 100);
 
@@ -152,7 +152,7 @@ public class TSDBServiceIT extends AbstractTest {
         } finally {
             service.dispose();
         }
-    	
+
     }
 
     private MetricQuery toWildcardOrQuery(List<Metric> metrics, String commonTagKey) {
@@ -167,7 +167,7 @@ public class TSDBServiceIT extends AbstractTest {
         	sb.append(m.getTag(commonTagKey)).append("|");
         }
         tags.put(commonTagKey, sb.substring(0, sb.length() - 1));
-        
+
         return new MetricQuery(metric.getScope(), metric.getMetric(), tags, start, end);
 	}
 
@@ -181,15 +181,15 @@ public class TSDBServiceIT extends AbstractTest {
         	Metric m = new Metric(scope, metric);
         	Map<Long, Double> datapoints = new HashMap<>();
         	datapoints.put(timestamp, Double.valueOf(i));
-        	
+
         	Map<String, String> tags = new HashMap<>();
         	tags.put(commonTagKey, "someverylooooooooooooooooooooooooooooooooooooooooongTagValue" + i);
-        	
+
         	m.setDatapoints(datapoints);
         	m.setTags(tags);
         	result.add(m);
         }
-        
+
         return result;
 	}
 
@@ -356,33 +356,6 @@ public class TSDBServiceIT extends AbstractTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testFractureMetrics() {
-        TSDBService service = system.getServiceFactory().getTSDBService();
-        Metric metric = new Metric("testscope", "testMetric");
-        Map<Long, Double> datapoints = new HashMap<>();
-
-        for (int i = 0; i <= 200; i++) {
-            datapoints.put(System.currentTimeMillis() + (i * 60000L), (double)(random.nextInt(50)));
-        }
-        metric.setDatapoints(datapoints);
-        try {
-            Method method = DefaultTSDBService.class.getDeclaredMethod("fractureMetric", Metric.class);
-
-            method.setAccessible(true);
-
-            List<Metric> metricList = (List<Metric>) method.invoke(service, metric);
-
-            assertEquals(3, metricList.size());
-            assertEquals(100, metricList.get(0).getDatapoints().size());
-            assertEquals(100, metricList.get(1).getDatapoints().size());
-            assertEquals(1, metricList.get(2).getDatapoints().size());
-        } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-            throw new SystemException("Failed to construct fracture metric method using reflection");
-        }
-    }
-
     private AnnotationQuery toQuery(Annotation annotation) {
         String scope = annotation.getScope();
         String metric = annotation.getMetric();
@@ -394,26 +367,18 @@ public class TSDBServiceIT extends AbstractTest {
     }
 
     @Test
-    public void isTSDBServiceSingleton() {
-        TSDBService service1 = system.getServiceFactory().getTSDBService();
-        TSDBService service2 = system.getServiceFactory().getTSDBService();
-
-        assertTrue(service1 == service2);
-    }
-    
-    @Test
     public void testPut_DatapointsContainNullValues() {
-    	
+
     	TSDBService service = system.getServiceFactory().getTSDBService();
-    	
+
     	Map<Long, Double> datapoints = new HashMap<>();
     	datapoints.put(1493973552000L, 100D);
     	datapoints.put(1493973652000L, null);
     	Metric m = new Metric("scope", "metric");
     	m.setDatapoints(datapoints);
-    	
+
     	service.putMetrics(Arrays.asList(m));
-    	
+
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

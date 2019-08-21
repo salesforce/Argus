@@ -16,7 +16,7 @@
         <div class="container">
             <div class="row">
                 <form novalidate class="form-horizontal">
-                    <div class="col-md-4">
+                    <div class="col-md-4 fixed-dashboard-info">
                         <label for="dashboardId">ID</label>
                         <input id="dashboardId" disabled="true" class="form-control" type="text" ng-model="dashboard.id" />
                         <label for="dashboardName">Name</label>
@@ -34,10 +34,19 @@
                         </div>
                         <br/>
                         <input class="btn btn-default" ng-show="isDashboardDirty()" type="button" ng-click="resetDashboard()" value="Revert"/>
-                        <input class="btn btn-primary" ng-disabled="!isDashboardDirty() || dashboardNotEditable" type="submit" ng-click="updateDashboard()" value="Save" />
+                            <button 
+                                type="button" 
+                                class="btn btn-primary" 
+                                ng-disabled="!isDashboardDirty() || dashboardNotEditable" 
+                                ng-click="updateDashboard()"
+                                title="{{dashboardNotEditable ? 'You are not the owner of the dashboard.' : '' }}"
+                            >
+                                {{saveButtonText}}
+                                <span ng-show="isSaving"><i class="glyphicon glyphicon-refresh spinning"></i></span>
+                            </button>
                         <a class="cloneTrooperIcon floatR" ng-click="cloneDashboard(dashboard)" title="Clone '{{dashboard.name}}'"></a>
                     </div>
-                    <div class="col-md-8">
+                    <div class="col-md-8" style="float: right;">
                         <h4>Markup (Fullscreen editor mode: Click on the editor and press Ctrl-Alt-F)</h4>
 						<h5><a href="https://github.com/salesforce/Argus/wiki/Dashboards">Need help for dashboard markup?</a></h5>
                         <div class="well well-sm">

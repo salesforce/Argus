@@ -36,15 +36,50 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.persist.jpa.JpaPersistModule;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
-import com.salesforce.dva.argus.service.*;
+import com.salesforce.dva.argus.service.AlertService;
+import com.salesforce.dva.argus.service.AnnotationService;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
+import com.salesforce.dva.argus.service.AuditService;
+import com.salesforce.dva.argus.service.AuthService;
+import com.salesforce.dva.argus.service.BatchService;
+import com.salesforce.dva.argus.service.CacheService;
+import com.salesforce.dva.argus.service.CallbackService;
+import com.salesforce.dva.argus.service.ChartService;
+import com.salesforce.dva.argus.service.CollectionService;
+import com.salesforce.dva.argus.service.DashboardService;
+import com.salesforce.dva.argus.service.DiscoveryService;
+import com.salesforce.dva.argus.service.DistributedSchedulingLockService;
+import com.salesforce.dva.argus.service.GlobalInterlockService;
+import com.salesforce.dva.argus.service.HistoryService;
+import com.salesforce.dva.argus.service.ImageService;
+import com.salesforce.dva.argus.service.ImageStorageService;
+import com.salesforce.dva.argus.service.MQService;
+import com.salesforce.dva.argus.service.MailService;
+import com.salesforce.dva.argus.service.ManagementService;
+import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.MetricStorageService;
+import com.salesforce.dva.argus.service.MonitorService;
+import com.salesforce.dva.argus.service.NamedBinding;
+import com.salesforce.dva.argus.service.NamespaceService;
+import com.salesforce.dva.argus.service.OAuthAuthorizationCodeService;
+import com.salesforce.dva.argus.service.QueryStoreService;
+import com.salesforce.dva.argus.service.RefocusService;
+import com.salesforce.dva.argus.service.SchedulingService;
+import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.service.ServiceManagementService;
+import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.UserService;
+import com.salesforce.dva.argus.service.WardenService;
+import com.salesforce.dva.argus.service.alert.notifier.RefocusForwarder;
 import com.salesforce.dva.argus.service.annotation.DefaultAnnotationService;
+import com.salesforce.dva.argus.service.annotation.ElasticSearchAnnotationService;
 import com.salesforce.dva.argus.service.batch.DefaultBatchService;
 import com.salesforce.dva.argus.service.collect.DefaultCollectionService;
+import com.salesforce.dva.argus.service.image.ElasticSearchImageService;
 import com.salesforce.dva.argus.service.jpa.DefaultChartService;
 import com.salesforce.dva.argus.service.jpa.DefaultDashboardService;
 import com.salesforce.dva.argus.service.jpa.DefaultDistributedSchedulingLockService;
@@ -53,17 +88,14 @@ import com.salesforce.dva.argus.service.jpa.DefaultNamespaceService;
 import com.salesforce.dva.argus.service.jpa.DefaultServiceManagementService;
 import com.salesforce.dva.argus.service.management.DefaultManagementService;
 import com.salesforce.dva.argus.service.metric.AsyncMetricService;
-import com.salesforce.dva.argus.service.monitor.CounterMetricJMXExporter;
+import com.salesforce.dva.argus.service.monitor.DataLagService;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
-import com.salesforce.dva.argus.service.monitor.GaugeExporter;
 import com.salesforce.dva.argus.service.oauth.DefaultOAuthAuthorizationCodeService;
-import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.CachedTSDBService;
 import com.salesforce.dva.argus.service.users.CachedUserService;
 import com.salesforce.dva.argus.service.users.DefaultUserService;
 import com.salesforce.dva.argus.system.SystemConfiguration.Property;
-
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
@@ -135,7 +167,7 @@ final class SystemInitializer extends AbstractModule {
         return props;
     }
 
-    private static void readFile(Properties props, String filePath) {
+    static void readFile(Properties props, String filePath) {
         if ((filePath != null) && !filePath.isEmpty()) {
             InputStream is = null;
             Properties result = new Properties();
@@ -228,7 +260,6 @@ final class SystemInitializer extends AbstractModule {
     }
 
     private void configureServices() {
-        bindConcreteClass(CounterMetricJMXExporter.class, GaugeExporter.class);
         bindConcreteClass(Property.CACHE_SERVICE_IMPL_CLASS, CacheService.class);
         bindConcreteClass(Property.MQ_SERVICE_IMPL_CLASS, MQService.class);
         bindConcreteClass(Property.ALERT_SERVICE_IMPL_CLASS, AlertService.class);
@@ -236,15 +267,25 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.MAIL_SERVICE_IMPL_CLASS, MailService.class);
         bindConcreteClass(Property.AUTH_SERVICE_IMPL_CLASS, AuthService.class);
         bindConcreteClass(Property.SCHEMA_SERVICE_IMPL_CLASS, SchemaService.class);
+        bindConcreteClass(Property.QUERYSTORE_SERVICE_IMPL_CLASS, QueryStoreService.class);
+        bindConcreteClass(Property.IMAGE_SERVICE_IMPL_CLASS, ImageService.class);
+        bindConcreteClass(Property.IMAGE_STORAGE_SERVICE_IMPL_CLASS, ImageStorageService.class);
         bindConcreteClass(Property.HISTORY_SERVICE_IMPL_CLASS, HistoryService.class);
         bindConcreteClass(Property.AUDIT_SERVICE_IMPL_CLASS, AuditService.class);
         bindConcreteClass(Property.CALLBACK_SERVICE_IMPL_CLASS, CallbackService.class);
         bindConcreteClass(Property.WARDEN_SERVICE_IMPL_CLASS, WardenService.class);
+        bindConcreteClass(Property.DISCOVERY_SERVICE_IMPL_CLASS, DiscoveryService.class);
+        bindConcreteClass(Property.ANNOTATION_STORAGE_SERVICE_IMPL_CLASS, AnnotationStorageService.class);
+        bindConcreteClass(Property.AKC_CONSUMER_OFFSET_STORAGE_SERVICE_IMPL_CLASS, MetricStorageService.class);
+        bindConcreteClass(Property.DATA_LAG_SERVICE_IMPL_CLASS, DataLagService.class);
 
         // Named annotation binding
         bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
         bindConcreteClassWithNamedAnnotation(DefaultDiscoveryService.class, DiscoveryService.class);
         bindConcreteClassWithNamedAnnotation(DefaultUserService.class, UserService.class);
+        bindConcreteClassWithNamedAnnotation(ElasticSearchAnnotationService.class, AnnotationStorageService.class);
+        bindConcreteClassWithNamedAnnotation(ElasticSearchImageService.class, ImageStorageService.class);
+
 
         // static binding
         bindConcreteClass(CachedTSDBService.class, TSDBService.class);
@@ -260,9 +301,9 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultManagementService.class, ManagementService.class);
         bindConcreteClass(DefaultServiceManagementService.class, ServiceManagementService.class);
         bindConcreteClass(DefaultNamespaceService.class, NamespaceService.class);
-        bindConcreteClass(CachedDiscoveryService.class, DiscoveryService.class);
         bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
         bindConcreteClass(DefaultChartService.class, ChartService.class);
+        bindConcreteClass(RefocusForwarder.class, RefocusService.class);
     }
 
     private <T> void bindConcreteClass(Property property, Class<T> type) {
@@ -297,12 +338,18 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.MAIL_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.AUTH_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.SCHEMA_SERVICE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.QUERYSTORE_SERVICE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.IMAGE_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.HISTORY_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.TSDB_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.ASYNCHBASE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.WARDEN_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.OAUTH_SERVICE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.ANNOTATION_STORAGE_SERVICE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.AKC_CONSUMER_OFFSET_STORAGE_SERVICE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.IDB_CLIENT_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.DATA_LAG_SERVICE_PROPERTY_FILE));
         return properties;
     }
 }

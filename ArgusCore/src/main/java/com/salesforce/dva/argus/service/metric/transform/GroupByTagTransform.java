@@ -31,12 +31,12 @@ public class GroupByTagTransform implements Transform {
 		SystemAssert.requireArgument(constants != null && constants.size() >= 2, "Constants list cannot be null and its size must be 2 or more.");
 
 		// Find a constant with a function name: expected syntax is: tagk[,tagk]*,transform[,transformConstant]*
-		// scanning back to find the transform function
+		// Scanning from front to avoid handling #UNION# as transform rather than as constant with DIVIDE and other similar transforms
 		TransformFactory.Function functionName = null;
 		int functionElementId = -1;
-
-		for (int i = constants.size() - 1; i >= 0; i--) {
-        	String constant = constants.get(i);
+		
+		for (int i = 0; i < constants.size(); i++) {
+		    String constant = constants.get(i);
         	try {
         		functionName = TransformFactory.Function.valueOf(constant);
         		functionElementId = i;
@@ -48,7 +48,7 @@ public class GroupByTagTransform implements Transform {
 		}
 
 		if (functionName == null) {
-			throw new UnsupportedOperationException("GroupByTag needs a function name to be provided");
+			throw new UnsupportedOperationException("GroupByTag needs a valid function name to be provided in uppercase.");
 		}
 
 		List<String> tags = constants.subList(0, functionElementId);
@@ -88,7 +88,7 @@ public class GroupByTagTransform implements Transform {
 
 	@Override
 	public List<Metric> transform(QueryContext queryContext, @SuppressWarnings("unchecked") List<Metric>... metrics) {
-		throw new UnsupportedOperationException("Group By Tags Transform doesn't need list of list!");
+		throw new UnsupportedOperationException("Group By Tags Transform doesn't support multiple lists of metrics!");
 	}
 
 	@Override

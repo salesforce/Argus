@@ -9,7 +9,8 @@ import com.salesforce.dva.argus.util.QueryContext;
 
 public class AliasByTagTransform implements Transform {
 	
-	static final String DELIMITER = ",";
+	public static final String DELIMITER = ",";
+	public static final String DEFAULT_SCOPE_NAME=TransformFactory.Function.ALIASBYTAG.name();
 
 	@Override
 	public List<Metric> transform(QueryContext context, List<Metric> metrics) {
@@ -25,6 +26,9 @@ public class AliasByTagTransform implements Transform {
 			if(!displayName.isEmpty()) {
 				displayName = displayName.substring(0, displayName.length() - 1);
 				metric.setDisplayName(displayName);
+				metric.setScope(DEFAULT_SCOPE_NAME);
+				metric.setMetric(displayName);
+				metric.setTags(null);
 			}
 		}
 		return metrics;
@@ -50,6 +54,9 @@ public class AliasByTagTransform implements Transform {
 			if(!displayName.isEmpty()) {
 				displayName = displayName.substring(0, displayName.length() - 1);
 				metric.setDisplayName(displayName);
+				metric.setScope(DEFAULT_SCOPE_NAME);
+				metric.setMetric(displayName);
+				metric.setTags(null);
 			}
 		}
 		return metrics;
@@ -57,7 +64,7 @@ public class AliasByTagTransform implements Transform {
 
 	@Override
 	public List<Metric> transform(QueryContext queryContext, @SuppressWarnings("unchecked") List<Metric>... metrics) {
-		throw new UnsupportedOperationException("ALIASBYTAG doesn't need a list of lists!");
+		throw new UnsupportedOperationException("ALIASBYTAG doesn't support multiple lists of metrics!");
 	}
 
 	@Override

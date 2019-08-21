@@ -18,7 +18,7 @@ public class GroupByTagTransformTest {
 	@Test
 	public void testGroupBySingleCommonTag() {
 		
-		GroupByTagTransform transform = new GroupByTagTransform(new TransformFactory(null));
+		GroupByTagTransform transform = new GroupByTagTransform(new TransformFactory(null, null));
 		
 		Map<Long, Double> datapoints = new HashMap<>();
         datapoints.put(1000L, 1.0);
@@ -79,7 +79,7 @@ public class GroupByTagTransformTest {
 	@Test
 	public void testGroupByTagTwoCommonTags() {
 
-		Transform transform = new GroupByTagTransform(new TransformFactory(null));
+		Transform transform = new GroupByTagTransform(new TransformFactory(null, null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         	datapoints.put(1000L, 1.0);
@@ -148,7 +148,7 @@ public class GroupByTagTransformTest {
 	@Test
 	public void testGroupByTagTwoTagsOnePartial() {
 		
-		Transform transform = new GroupByTagTransform(new TransformFactory(null));
+		Transform transform = new GroupByTagTransform(new TransformFactory(null, null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         	datapoints.put(1000L, 1.0);
@@ -220,7 +220,7 @@ public class GroupByTagTransformTest {
 	@Test
 	public void testGroupByTagOnePartial() {
 
-		Transform transform = new GroupByTagTransform(new TransformFactory(null));
+		Transform transform = new GroupByTagTransform(new TransformFactory(null, null));
 
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 		datapoints.put(1000L, 1.0);
@@ -290,7 +290,7 @@ public class GroupByTagTransformTest {
 	@Test
 	public void testGroupByTagWithTransformConstant() {
 		
-		Transform transform = new GroupByTagTransform(new TransformFactory(null));
+		Transform transform = new GroupByTagTransform(new TransformFactory(null, null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         	datapoints.put(1000L, 1.0);
@@ -371,7 +371,7 @@ public class GroupByTagTransformTest {
 	@Test
 	public void testGroupByTagNoTags() {
 		
-		Transform transform = new GroupByTagTransform(new TransformFactory(null));
+		Transform transform = new GroupByTagTransform(new TransformFactory(null, null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         datapoints.put(1000L, 1.0);
@@ -406,7 +406,7 @@ public class GroupByTagTransformTest {
 	@Test
 	public void testGroupByTagNoFunction() {
 
-		Transform transform = new GroupByTagTransform(new TransformFactory(null));
+		Transform transform = new GroupByTagTransform(new TransformFactory(null, null));
 
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 		datapoints.put(1000L, 1.0);

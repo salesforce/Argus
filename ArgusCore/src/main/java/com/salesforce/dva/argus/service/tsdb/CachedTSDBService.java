@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.DefaultService;
@@ -201,7 +202,8 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
         return query.getStartTimestamp() > System.currentTimeMillis() || query.getEndTimestamp() > System.currentTimeMillis() ||
             (System.currentTimeMillis() - query.getStartTimestamp() < LOWER_START_TIME_LIMIT_IN_MILLIS) ||
             (System.currentTimeMillis() - query.getStartTimestamp() > UPPER_START_TIME_LIMIT_IN_MILLIS) ||
-            (System.currentTimeMillis() - query.getEndTimestamp() > END_TIME_LIMIT_IN_MILLIS) || isQueryHavingTagWildcard(query);
+            (System.currentTimeMillis() - query.getEndTimestamp() > END_TIME_LIMIT_IN_MILLIS) || 
+            isQueryHavingTagWildcard(query) || isQueryHavingHistogram(query);
     }
 
     /**
@@ -512,7 +514,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
                     _logger.info("Time spent in mapping tags in tsdb metrics to tags in cache: {}", afterTime - beforeTime);
                 } // end if
             } catch (RuntimeException | IOException ex) {
-                _logger.error("Error occurred Reason:", ex.toString());
+                _logger.error("Error occurred Reason: {}", ex.toString());
                 uncached.add(new MetricQueryTimestamp(query, originalStartTimestamp, originalEndTimestamp, query.getStartTimestamp(),
                         query.getEndTimestamp()));
             } // end try-catch
@@ -559,6 +561,10 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
         }
         return false;
     }
+    
+    boolean isQueryHavingHistogram(MetricQuery query) {
+        return (query.getShowHistogramBuckets() == true || query.getPercentile() != null);
+    }
 
     @Override
     public void dispose() {
@@ -572,6 +578,11 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
         _defaultTsdbService.putMetrics(metrics);
     }
 
+    @Override
+    public void putHistograms(List<Histogram> histograms) {
+        _defaultTsdbService.putHistograms(histograms);
+    }
+    
     @Override
     public void putAnnotations(List<Annotation> annotations) {
         _defaultTsdbService.putAnnotations(annotations);
@@ -698,7 +709,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
             try {
                 _insertIntoCache();
             } catch (Exception ex) {
-                _logger.error("Error occurred Reason:", ex.toString());
+                _logger.error("Error occurred Reason: {}", ex.toString());
             }
         }
 
@@ -722,7 +733,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
                     }
                 }
             } catch (Exception e) {
-                _logger.error("Error occurred Reason:", e.toString());
+                _logger.error("Error occurred Reason: {}", e.toString());
             }
         }
     }

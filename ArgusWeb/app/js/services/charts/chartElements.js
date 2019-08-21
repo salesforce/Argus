@@ -23,7 +23,8 @@ angular.module('argus.services.charts.elements', [])
 	var annotationLabelFontSize = 14;
 	var extraYAxisPadding = ChartToolService.extraYAxisPadding;
 	this.customizedChartType = ['scatter', 'bar', 'stackbar'];
-
+	this.defaultChartHeight = 330;
+	this.smallChartHeight = 150;
 
 	var setGraphColorStyle = function (graph, color, chartType, opacity) {
 		graph.style('stroke', color);

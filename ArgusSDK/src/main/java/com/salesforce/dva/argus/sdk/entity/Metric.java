@@ -30,6 +30,8 @@
  */
 package com.salesforce.dva.argus.sdk.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.Map;
 import java.util.Objects;
 
@@ -38,6 +40,7 @@ import java.util.Objects;
  *
  * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Metric extends TSDBEntity {
 
     //~ Instance fields ******************************************************************************************************************************

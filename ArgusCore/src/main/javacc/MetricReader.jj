@@ -43,6 +43,7 @@ import com.salesforce.dva.argus.util.QueryContext;
 import com.salesforce.dva.argus.util.QueryContextHolder;
 import com.salesforce.dva.argus.util.TSDBQueryExpression;
 import static com.salesforce.dva.argus.system.SystemAssert.*;
+import com.salesforce.dva.argus.service.metric.ParseException;
 
 public class MetricReader<T> {
 
@@ -81,6 +82,70 @@ public class MetricReader<T> {
         return result;
     }
 
+
+    public static boolean validateExpression(String expression)
+    {
+        boolean result = true;
+
+        if(expression != null)
+        {
+            try
+            {
+                MetricReader reader = new MetricReader((TSDBService)null, (DiscoveryService)null, (TransformFactory)null);
+                if(!reader.isValidExpression(expression))
+                {
+                    result = false;
+                }
+            }
+            catch (ParseException e)
+            {
+                result = false;
+                String newMessage = simpleParseErrorMessage(e, expression);
+                throw new RuntimeException( newMessage, e);
+            }
+            catch (TokenMgrError e)
+            {
+                result = false;
+                String newMessage = simpleLexicalErrorMessage(e, expression);
+                throw new RuntimeException( newMessage, e);
+            }
+            catch (Exception e)
+            {
+                result = false;
+            }
+        }
+        return result;
+    }
+
+    protected static String simpleParseErrorMessage(ParseException e, String expression)
+    {
+        String msg = null;
+        if (e.currentToken != null)
+        {
+            msg = String.format("Syntax error in at line: %d column: %d in alert expression: %s",
+                                        e.currentToken.next.beginLine, e.currentToken.next.beginColumn, expression);
+        }
+        else
+        {
+            // TODO? - parse existing msg and regex match for  'at line\s+(\d+),\s*column\s+(\d+)'
+            //         would need to be revisted as we upgrade javacc
+            msg = String.format("Syntax error in alert expression: %s", expression );
+        }
+        return msg;
+    }
+
+    protected static String simpleLexicalErrorMessage(TokenMgrError e, String expression)
+    {
+        // Extract the first sentence from the message.
+        // This portion of the message includes the line and column of the lexical error.
+        String tokenErrMsg = e.getMessage();
+        int endOfSentence = tokenErrMsg.indexOf('.');
+        String locationMsg = (endOfSentence < 0)? tokenErrMsg : tokenErrMsg.substring(0, endOfSentence+1);
+
+        String msg = String.format("%s  Alert expression: %s", locationMsg, expression );
+        return msg;
+    }
+
     public static boolean isValid(String expression) {
         return isValid(Arrays.asList(new String[] {expression}));
     }
@@ -100,7 +165,7 @@ public class MetricReader<T> {
 	public String getQueryTimeWindow() {
   	 	return queryTimeWindow; 
   	}
-
+  	
 	public enum TimeUnit {
 
         SECOND("s", 1000),
@@ -169,6 +234,7 @@ TOKEN : { < #TSDB_ALLOWED_TEXT : ( <DIGIT> | <LETTER> | <HYPHEN> | <PERIOD> | <U
 TOKEN : { < #TAGK : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < #TAGV : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < #TAG : <TAGK>"="<TAGV> > }
+TOKEN : { < #TAG_NOT : <TAGK>"!="<TAGV> > }
 TOKEN : { < #DIGIT : ["0"-"9"] > }
 TOKEN : { < #LETTER :  ["a"-"z","A"-"Z"] > }
 TOKEN : { < #HYPHEN : "-" > }
@@ -244,6 +310,10 @@ TOKEN : { < ANOMALY_RPCA : "ANOMALY_RPCA" > }
 TOKEN : { < GROUPBY : "GROUPBY" > }
 TOKEN : { < GROUPBYTAG : "GROUPBYTAG" > }
 TOKEN : { < INTERPOLATE : "INTERPOLATE" > }
+TOKEN : { < RATE : "RATE" > }
+TOKEN : { < SLICE : "SLICE" > }
+TOKEN : { < METADATA_INCLUDE : "METADATA_INCLUDE" > }
+TOKEN : { < METADATA_EXCLUDE : "METADATA_EXCLUDE" > }
 
 TOKEN : { < COLON : ":" > }
 TOKEN : { < COMMA : "," > }
@@ -251,7 +321,7 @@ TOKEN : { < LEFT_CURLY : "{" > }
 TOKEN : { < RIGHT_CURLY : "}" > }
 TOKEN : { < LEFT_PARENTHESIS : "(" > }
 TOKEN : { < RIGHT_PARENTHESIS : ")" > }
-TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "mimmin" | "mimmax" | "count" | "none" > }
+TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "mimmin" | "mimmax" | "count" | "none" | "imin" | "imax" | "isum" | "first" | "last"> }
 
 TOKEN : { < TIME : (<DIGIT>)+ | <HYPHEN>(<DIGIT>)+<TIME_UNIT> > }
 TOKEN : { < DOWNSAMPLER : (<DIGIT>)+<TIME_UNIT><HYPHEN><AGGREGATOR> > }
@@ -259,7 +329,7 @@ TOKEN : { < DOWNSAMPLER : (<DIGIT>)+<TIME_UNIT><HYPHEN><AGGREGATOR> > }
 TOKEN : { < NAMESPACE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < SCOPE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < METRIC : <TSDB_ALLOWED_TEXT> > }
-TOKEN : { < TAGS : <TAG>(<COMMA><TAG>)* > }
+TOKEN : { < TAGS : (<TAG> | <TAG_NOT>)(<COMMA>(<TAG> | <TAG_NOT>))* > }
 TOKEN : { < CONSTANT : <POUND>(<ANYTHING>)+<POUND> > }
 
 boolean isValidExpression(String expression) :
@@ -560,8 +630,8 @@ private String getFunctionNameAndUpdateContext(QueryContextHolder contextHolder)
     { 
         updateQueryContextWithFunction(t.image, contextHolder);
         return t.image; 
-    }   
-	|	
+    }
+    |
 	t = <HIGHEST>
     { 
         updateQueryContextWithFunction(t.image, contextHolder);
@@ -710,7 +780,31 @@ private String getFunctionNameAndUpdateContext(QueryContextHolder contextHolder)
     { 
         updateQueryContextWithFunction(t.image, contextHolder);
         return t.image; 
-    }    
+    }  
+    |  
+    t = <RATE>
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }  
+    |  
+    t = <SLICE>
+    { 
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image; 
+    }
+    |
+    t = <METADATA_INCLUDE>
+    {
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image;
+    }
+    |
+    t = <METADATA_EXCLUDE>
+    {
+        updateQueryContextWithFunction(t.image, contextHolder);
+        return t.image;
+    }
 }
 
 private void updateQueryContextWithFunction(String functionName, QueryContextHolder contextHolder) :
@@ -775,6 +869,9 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
   	Aggregator downsampler = null;
   	Long downsamplingPeriod = null;
   	String downsampleTokenStr = null;
+  	String[] percentile = null;
+  	String optionalText = null;
+  	boolean showHistogramBuckets = false;
   	TSDBQueryExpression expression = new TSDBQueryExpression();
 }
 { 	
@@ -784,30 +881,61 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
   	(<LEFT_CURLY> tags = getTags() <RIGHT_CURLY>)?
   	<COLON>aggregator = getAggregator()
   	(LOOKAHEAD(2) <COLON>downsampleTokenStr = getDownsampleToken())?
-  	(<COLON>namespace = getString())?
+  	(<COLON>optionalText = getNamespace())?
 	{
-	    	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
+	    downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
 	    downsamplingPeriod = downsampleTokenStr != null ? getDownsamplingPeriod(downsampleTokenStr): null;
 	    endTimestamp = endTimestamp == null ? relativeTo : endTimestamp;
         
-	    expression.setNamespace(namespace);
+        // Parse out namespace and optional tsdb parameters
+        if(optionalText !=null && !optionalText.isEmpty()){
+            String[] parts = optionalText.split(":");
+        
+            for(int i=0; i< parts.length;i++){
+                if(parts[i].toLowerCase().startsWith("histogram-percentiles")){
+        	    percentile = getPercentile(parts[i].toLowerCase());
+                } else if(parts[i].toLowerCase().startsWith("histogram-buckets")){
+                    showHistogramBuckets = true;
+                } else{
+        	    namespace = parts[i];
+                }
+            }
+        }
+        expression.setNamespace(namespace);
         expression.setScope(scope);
         expression.setMetric(metric);
         expression.setAggregator(aggregator);
         expression.setTags(tags);
         expression.setStartTimestamp(startTimestamp);
         expression.setEndTimestamp(endTimestamp);
-        expression.setEndTimestamp(endTimestamp);
-        	expression.setDownsampler(downsampler);
+        expression.setDownsampler(downsampler);
         expression.setDownsamplingPeriod(downsamplingPeriod);
-        currentQueryContext.getChildExpressions().add(expression);
-	  	if(MetricQuery.class.equals(clazz)) {
+        expression.setPercentile(percentile);
+        expression.setShowHistogramBuckets(showHistogramBuckets);
+        
+        // if current context is a transform, we add the current expression as a child context to it
+        if(currentQueryContext.getTransform()!=null){
+            QueryContext currExpContext = new QueryContext();
+            currExpContext.setExpression(expression);
+            currExpContext.setParentContext(currentQueryContext);
+            currentQueryContext.getChildContexts().add(currExpContext);
+        }else{
+            currentQueryContext.setExpression(expression);
+        }
+	  	
+        if(MetricQuery.class.equals(clazz)) {
 	  	  
 	        MetricQuery query = new MetricQuery(scope, metric, tags, startTimestamp, endTimestamp);
 	        query.setNamespace(namespace);
 	        query.setAggregator(aggregator);
 	        query.setDownsampler(downsampler);
 	        query.setDownsamplingPeriod(downsamplingPeriod);
+	        if(percentile != null) {
+	            query.setPercentile(percentile);
+	        }
+            if(showHistogramBuckets != false) {
+                query.setShowHistogramBuckets(showHistogramBuckets);
+            }
 	        List<MetricQuery> queries = discoveryService.getMatchingQueries(query);
 	        return (List<T>) queries;
 	  	} else if(Metric.class.equals(clazz)) {
@@ -819,6 +947,13 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
 		        query.setAggregator(aggregator);
 		        query.setDownsampler(downsampler);
 		        query.setDownsamplingPeriod(downsamplingPeriod);
+	            if(percentile != null) {
+	            	query.setPercentile(percentile);
+	            }		        
+                if(showHistogramBuckets != false) {
+                    query.setShowHistogramBuckets(showHistogramBuckets);
+                }
+		        
 		        setQueryTimeWindow(query);
 		        List<MetricQuery> queries = discoveryService.getMatchingQueries(query);
 		        
@@ -869,9 +1004,9 @@ private String getString() :
  	t = <METRIC>
   	{ return t.image; }
   	|
- 	t = <NAMESPACE>
+  	t = <NAMESPACE>
   	{ return t.image; }
- 	|
+  	|
   	t = <AGGREGATOR>
   	{ return t.image; }
  	|
@@ -899,9 +1034,17 @@ private Map<String, String> getTags() :
   	  	String tagsStr = t.image;
   	  	String[] tags = tagsStr.split(",");
   	  	for(String tag : tags) {
-			String[] tagKVPair = tag.split("=");
-			String tagK = tagKVPair[0];
-			String tagV = tagKVPair[1];
+  	  	    String tagK = "";
+			String tagV = "";
+			String[] tagKVPair = tag.split("!=");
+			if(tagKVPair!=null && tagKVPair.length==2){
+			    tagK = tagKVPair[0];
+			    tagV = MetricQuery.TAG_NOT_EQUALS_INTERNAL_PREFIX + tagKVPair[1];
+			}else{
+			    tagKVPair = tag.split("=");
+			    tagK = tagKVPair[0];
+			    tagV = tagKVPair[1];
+			}
 			tagsMap.put(tagK, tagV);
   	 	}
   	 	return tagsMap;
@@ -947,4 +1090,15 @@ private Long getDownsamplingPeriod(String token) :
   	  	TimeUnit unit = TimeUnit.fromString(timeUnit);
   	  	return time * unit.getValue();
   	}
+}
+
+private String[] getPercentile(String token) :
+{}
+{
+  	{ 
+
+  		String percentileStr = token.substring("histogram-percentiles[".length(), token.length() -1);
+  		String[] percentiles = percentileStr.split("\\|");
+  		return percentiles;
+  	 }
 }

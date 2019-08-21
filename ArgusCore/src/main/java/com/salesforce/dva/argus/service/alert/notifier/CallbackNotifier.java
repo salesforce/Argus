@@ -13,25 +13,26 @@
  */
 package com.salesforce.dva.argus.service.alert.notifier;
 
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
+import java.text.MessageFormat;
+
+import javax.persistence.EntityManager;
+
+import org.apache.http.HttpResponse;
+import org.slf4j.Logger;
+
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.History;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.CallbackService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import javax.persistence.EntityManager;
-
 import com.salesforce.dva.argus.util.TemplateReplacer;
-import org.apache.http.HttpResponse;
-import org.slf4j.Logger;
-
-import java.text.MessageFormat;
-
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import org.slf4j.LoggerFactory;
 
 /**
  * Callback notifier sending the event via REST client to an endpoint defined within the notification subscription.
@@ -40,8 +41,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
  */
 public class CallbackNotifier extends AuditNotifier {
 
-	@SLF4JTypeListener.InjectLogger
-	private Logger _logger;
+	private final Logger _logger = LoggerFactory.getLogger(CallbackNotifier.class);
 
 	private final CallbackService _callbackService;
 	/**
@@ -55,8 +55,9 @@ public class CallbackNotifier extends AuditNotifier {
 	 * @param emf The entity manager factory. Cannot be null.
 	 */
 	@Inject
-	public CallbackNotifier(MetricService metricService, AnnotationService annotationService, AuditService
-			auditService, CallbackService callbackService, SystemConfiguration config, Provider<EntityManager> emf)
+	public CallbackNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
+							CallbackService callbackService, SystemConfiguration config,
+							Provider<EntityManager> emf)
 	{
 		super(metricService, annotationService, auditService, config, emf);
 		requireArgument(callbackService != null, "callback service cannot be null.");
@@ -72,29 +73,37 @@ public class CallbackNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(DefaultAlertService.NotificationContext context) {
-		requireArgument(context != null, "Notification context cannot be null.");
+	protected boolean sendAdditionalNotification(DefaultAlertService.NotificationContext context) {
+		if (Boolean.valueOf(_config.getValue(SystemConfiguration.Property.CALLBACK_ENABLED))) {
+			requireArgument(context != null, "Notification context cannot be null.");
 
-		String notificationName = TemplateReplacer.applyTemplateChanges(context, context.getNotification().getName());
+			String notificationName = TemplateReplacer.applyTemplateChanges(context, context.getNotification().getName());
 
-		History history = context.getHistory();
+			History history = context.getHistory();
 
-		super.sendAdditionalNotification(context);
-		HttpResponse response = _callbackService.sendNotification(context);
-		int code = response.getStatusLine().getStatusCode();
-		if (!(code >= 200 && code <= 300)) {
-			String errorMessage = MessageFormat.format("Notification {0} cannot be sent. {1}",
-					notificationName, response.getStatusLine().getReasonPhrase());
+			super.sendAdditionalNotification(context);
+			HttpResponse response = _callbackService.sendNotification(context, this);
+			int code = response.getStatusLine().getStatusCode();
+			if (!(code >= 200 && code <= 300)) {
+				String errorMessage = MessageFormat.format("Notification {0} cannot be sent. {1}",
+						notificationName, response.getStatusLine().getReasonPhrase());
 
-			history.appendMessageNUpdateHistory(errorMessage, null, 0);
-			_logger.error(errorMessage);
+				history.appendMessageNUpdateHistory(errorMessage, null, 0);
+				_logger.error(errorMessage);
+				return false;
+			} else {
+
+				String infoMessage = MessageFormat.format("Notification {0} sent. {1}",
+						notificationName, response.getStatusLine().getReasonPhrase());
+
+				history.appendMessageNUpdateHistory(infoMessage, null, 0);
+				_logger.info(infoMessage);
+			}
+
+			return true;
 		} else {
-
-			String infoMessage = MessageFormat.format("Notification {0} sent. {1}",
-					notificationName, response.getStatusLine().getReasonPhrase());
-
-			history.appendMessageNUpdateHistory(infoMessage, null, 0);
-			_logger.info(infoMessage);
+			_logger.info("Callback notifications are disabled");
+			return false;
 		}
 	}
 }

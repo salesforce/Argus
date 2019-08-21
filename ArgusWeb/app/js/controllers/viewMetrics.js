@@ -1,17 +1,15 @@
 /*global angular:false, console:false */
 'use strict';
 
-angular.module('argus.controllers.viewMetrics', ['ngResource'])
-.controller('ViewMetrics', ['$location', '$routeParams', '$scope', '$compile', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', 'InputTracker',
-	function ($location, $routeParams, $scope, $compile, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, InputTracker) {
+angular.module('argus.controllers.viewMetrics', ['ngResource', 'ui.codemirror'])
+.controller('ViewMetrics', ['$location', '$routeParams', '$scope', '$compile', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', 'UtilService',
+	function ($location, $routeParams, $scope, $compile, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, UtilService) {
 		var lastParams;
 		var noMorePages = false;
 		$scope.annotationType = 'ALERT';
 		$scope.expression = $routeParams.expression ? $routeParams.expression : null;
-		$scope.includeAnnotations = InputTracker.getDefaultValue('viewMetricsWithAnnotation', true);
-		$scope.$watch('includeAnnotations', function (newValue) {
-			InputTracker.updateDefaultValue('viewMetricsWithAnnotation', true, newValue);
-		});
+		// Do not query annotations by default
+		$scope.includeAnnotations = false;
 		// sub-views: (1) single chart, (2) metric discovery
 		$scope.checkMetricExpression = function() {
 			if ($scope.expression) {
@@ -214,7 +212,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
 			var agg_Str = '';
 			var namespace_Str = (n && n.length > 1) ? ':' + n : '';
-			var defaultDownsampler;
+			var defaultDownsampler = '';
 
 			/* Add default settings for: start, aggregator
 				full:  -1h:scope:metric{tags}:avg:namespace
@@ -238,15 +236,23 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 		// }
 
 		// -------------
-
+		
 		$scope.updateChart = function (series, annotationInfo, expressions) {
 			// if the metric expression is not empty
+			
+			//User configured chart type has higher priority
+			var chartType =  $scope.chartType || ChartDataProcessingService.getChartTypeByExpressions(expressions);
+			var chartMarkup = ChartDataProcessingService.getChartMarkupByType(chartType);
+
 			if (series && series.length > 0) {
 				var chartScope = $scope.$new(false);
 				chartScope.chartConfig = {
 					chartId: 'container',
 					expressions: expressions,
-					chartType: 'line'
+					chartType: chartType,
+					chart: {
+						height: 500
+					}
 				};
 				chartScope.dateConfig = {};
 				chartScope.series = series;
@@ -286,10 +292,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 							annotationCount.tot--;
 							if (annotationCount.tot === 0) {
 								$scope.chartLoaded = true;
-								angular.element('#' + 'container').append($compile(
-									'<div ngsf-fullscreen>' +
-									'<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
-									'</div>')(chartScope)
+								angular.element('#' + 'container').append($compile(chartMarkup)(chartScope)
 								);
 							}
 						}, function (error) {
@@ -297,24 +300,64 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 							annotationCount.tot--;
 							if (annotationCount.tot === 0) {
 								$scope.chartLoaded = true;
-								angular.element('#' + 'container').append($compile(
-									'<div ngsf-fullscreen>' +
-									'<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
-									'</div>')(chartScope)
+								angular.element('#' + 'container').append($compile(chartMarkup)(chartScope)
 								);
 							}
 						});
 					}
 				} else {
 					$scope.chartLoaded = true;
-					angular.element('#' + 'container').append($compile(
-						'<div ngsf-fullscreen>' +
-						'<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
-						'</div>')(chartScope)
+					angular.element('#' + 'container').append($compile(chartMarkup)(chartScope)
 					);
 				}
 			}
 		};
 
-		$scope.getMetricData(null);
+		$scope.resetChartType = function(type){
+			$scope.chartType = type;
+			$scope.getMetricData();
+		};
+
+		$scope.getMetricData();
+
+		$scope.editorShown = false;
+		$scope.treeText = '';
+		$scope.prettify = function() {
+			$scope.editorShown = true;
+			$scope.treeText = UtilService.prettifyExpression($scope.expression);
+		};
+		$scope.hide = function() {
+			$scope.editorShown = false;
+		};
+		$scope.textAreaOnChange = function() {
+			var tree = UtilService.getExpressionTree($scope.treeText);
+			$scope.expression = UtilService.flatTree(tree);
+		};
+		$scope.editorLoaded = function (editor) {
+			editor.setSize(null, 'auto');
+			editor.on('keydown', function(editor, event){
+				event.stopPropagation();
+			});
+		};
+		
+		$scope.editorOptions = {
+			lineWrapping: true,
+			lineNumbers: true,
+			mode: 'julia',
+			viewportMargin: Infinity,
+			tabSize: 2,
+			foldGutter: {
+				rangeFinder: UtilService.rangeFinderParentheses,
+			},
+			gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+			extraKeys: { /* key board short cuts in the the editor */
+				'Alt-Space': 'autocomplete',
+				'Ctrl-Alt-F': function(editor) {
+					editor.setOption('fullScreen', !editor.getOption('fullScreen'));
+				},
+				'Esc': function(editor) {
+					if (editor.getOption('fullScreen')) editor.setOption('fullScreen', false);
+				},
+			}
+		};
 	}]);

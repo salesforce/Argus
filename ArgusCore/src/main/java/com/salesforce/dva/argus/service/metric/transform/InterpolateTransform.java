@@ -210,7 +210,7 @@ public class InterpolateTransform implements Transform {
 
 	@Override
 	public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-		throw new UnsupportedOperationException("Interpolation Transform is not supposed to be used with a list of metric list!");
+		throw new UnsupportedOperationException("Interpolation Transform doesn't support multiple lists of metrics!");
 	}
 
 	@Override

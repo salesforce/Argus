@@ -20,18 +20,17 @@
 'use strict';
 
 angular.module("argus.urlConfig", [])
-.constant('CONFIG', {
-    version: '2.22',
-    wsUrl: '@@wsUrl',
-    wsBetaUrl: '@@wsBetaUrl',
-    emailUrl: '@@emailUrl',
-    feedUrl: '@@feedUrl',
-    wikiUrl: '@@wikiUrl',
-    docUrl: '@@docUrl',
-    issueUrl: '@@issueUrl',
-    templatePath: '@@templatePath',
-    acceptOAuthPath: '@@acceptOAuthPath',
-    checkOAuthAccessPath : '@@checkOAuthAccessPath',
-    oauthListPath: '@@oauthListPath',
-    oauthDeletePath: '@@oauthDeletePath'
-});
+    .constant('CONFIG', {
+        wsUrl: '@@wsUrl',
+        wsBetaUrl: '@@wsBetaUrl',
+        emailUrl: '@@emailUrl',
+        feedUrl: '@@feedUrl',
+        wikiUrl: '@@wikiUrl',
+        docUrl: '@@docUrl',
+        issueUrl: '@@issueUrl',
+        templatePath: '@@templatePath',
+        acceptOAuthPath: '@@acceptOAuthPath',
+        checkOAuthAccessPath: '@@checkOAuthAccessPath',
+        oauthListPath: '@@oauthListPath',
+        oauthDeletePath: '@@oauthDeletePath'
+    });

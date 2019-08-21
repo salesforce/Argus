@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.entity;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgumentP;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -44,6 +45,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
@@ -69,6 +72,8 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Selection;
 
+import com.salesforce.dva.argus.util.CommonUtils;
+import com.salesforce.dva.argus.util.Cron;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.eclipse.persistence.config.HintValues;
 import org.eclipse.persistence.config.QueryHints;
@@ -84,6 +89,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The entity which encapsulates information about a Dashboard.
@@ -115,35 +123,36 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 			@NamedQuery(
 					name = "Alert.findByNameAndOwner",
 					query =
-					"SELECT a FROM Alert a WHERE a.name = :name AND a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					"SELECT a FROM Alert a WHERE a.name = :name AND a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
 					),
 			@NamedQuery(
 					name = "Alert.findByOwner",
-					query = "SELECT a FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					query = "SELECT a FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
 					),
 			@NamedQuery(
-					name = "Alert.findAll", query = "SELECT a FROM Alert a WHERE a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					name = "Alert.findAll", query = "SELECT a FROM Alert a WHERE a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
 					),
 			@NamedQuery(
 					name = "Alert.findByStatus",
-					query = "SELECT a FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert) order by a.id asc"
+					query = "SELECT a FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) order by a.id asc"
 					),
 			@NamedQuery(
 					name = "Alert.findByRangeAndStatus",
-					query = "SELECT a FROM Alert a where a.id BETWEEN :fromId and :toId AND a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert) order by a.id asc"
+					query = "SELECT a FROM Alert a where a.id BETWEEN :fromId and :toId AND a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) order by a.id asc"
 					),			
 			@NamedQuery(
 					name = "Alert.findIDsByStatus",
-					query = "SELECT a.id FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert) order by a.id asc"
+					query = "SELECT a.id FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) order by a.id asc"
 					),
 			@NamedQuery(
 					name = "Alert.findAlertsModifiedAfterDate",
-					query = "SELECT a FROM Alert a where a.id in (SELECT jpa.id from JPAEntity jpa where TYPE(jpa)= Alert and jpa.modifiedDate >= :modifiedDate) order by a.id asc"
+					query = "SELECT a FROM Alert a where a.id in (SELECT jpa.id from JPAEntity jpa where TYPE(jpa)= Alert and jpa.modifiedDate >= :modifiedDate AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) order by a.id asc"
 					),
 			@NamedQuery(
 					name = "Alert.findByPrefix",
-					query = "SELECT a FROM Alert a where a.name LIKE :name AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
-					), @NamedQuery(name = "Alert.setEnabled", query = "UPDATE Alert a SET a.enabled=true WHERE a = :alert"),
+					query = "SELECT a FROM Alert a where a.name LIKE :name AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
+					),
+			@NamedQuery(name = "Alert.setEnabled", query = "UPDATE Alert a SET a.enabled=true WHERE a = :alert"),
 			@NamedQuery(name = "Alert.setDisabled", query = "UPDATE Alert a SET a.enabled=false WHERE a = :alert"),
 			@NamedQuery(name = "Alert.countByStatus", query = "SELECT count(a) from Alert a where a.enabled= :enabled"),
 			@NamedQuery(
@@ -157,29 +166,29 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 			// Count alert queries
 			@NamedQuery(
 					name = "Alert.countByOwner",
-					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
 					),
 			@NamedQuery(
 					name = "Alert.countByOwnerWithSearchText",
-					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) "
+					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) "
 							+ "AND (FUNCTION('LOWER', a.name) LIKE :searchtext OR FUNCTION('LOWER', a.owner.userName) LIKE :searchtext)"
 					),
 			@NamedQuery(
 					name = "Alert.countSharedAlerts",
-					query = "SELECT count(a) from Alert a where a.shared = true AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					query = "SELECT count(a) from Alert a where a.shared = true AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
 					),
 			@NamedQuery(
 					name = "Alert.countSharedAlertsWithSearchText",
-					query = "SELECT count(a) FROM Alert a WHERE a.shared = true AND a.id IN (SELECT jpa.id FROM JPAEntity jpa WHERE jpa.deleted = false) "
+					query = "SELECT count(a) FROM Alert a WHERE a.shared = true AND a.id IN (SELECT jpa.id FROM JPAEntity jpa WHERE jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) "
 							+ "AND (FUNCTION('LOWER', a.name) LIKE :searchtext OR FUNCTION('LOWER', a.owner.userName) LIKE :searchtext)"
 					),
 			@NamedQuery(
 					name = "Alert.countPrivateAlertsForPrivilegedUser",
-					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL))"
 					),
 			@NamedQuery(
 					name = "Alert.countPrivateAlertsForPrivilegedUserWithSearchText",
-					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) "
+					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false AND (jpa.createdBy IS NOT NULL AND jpa.modifiedBy IS NOT NULL)) "
 							+ "AND (FUNCTION('LOWER', a.name) LIKE :searchtext OR FUNCTION('LOWER', a.owner.userName) LIKE :searchtext)"
 					),
 		}
@@ -205,6 +214,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	@Metadata
 	private boolean enabled = false;
 
+	@Metadata
 	private boolean missingDataNotificationEnabled;
 
 	@OneToMany(mappedBy = "alert", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -221,6 +231,9 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	@Metadata
 	private boolean shared;
 
+	//~ Static Instance fields ***********************************************************************************************************************
+	private static final Logger LOGGER = LoggerFactory.getLogger(Alert.class);
+	
 	// Default values for page limit and page offset
 	private static int DEFAULT_PAGE_LIMIT = 10;
 	private static int DEFAULT_PAGE_OFFSET = 0;
@@ -249,9 +262,100 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		setName(name);
 		setExpression(expression);
 		setCronEntry(cronEntry);
-		setEnabled(false);
 		setMissingDataNotificationEnabled(false);
-		setShared(false); 
+		setShared(false);
+		setEnabled(false);
+	}
+
+	/**
+	 * Creates an alert object by creating a deep copy of another alert
+	 *
+	 * @param  other       The alert to be copied
+	 * @param  user        The owner of the new alert. Cannot be null.
+	 * @param  alertName   The name of the new alert. Cannot be null or empty.
+	 *
+	 * @throws  Exception  Throws exception if a problem is encountered while copying props of the original alert.
+	 */
+	public Alert(Alert other, String alertName, PrincipalUser user) throws Exception {
+		this(user, user, alertName, other.getExpression(), other.getCronEntry());
+
+		List<Trigger> clonedTriggers = new ArrayList<>();
+		List<Notification> clonedNotifications = new ArrayList<>();
+		Map<Integer, Trigger> triggersCreatedMapByHash = new HashMap<>();
+
+		/*For each existing notification, create new cloned notification.
+		 * For each existing trigger in the current notification, create new cloned trigger and add it to cloned notification.
+		 **/
+		for (Notification currentNotification : other.getNotifications()) {
+			Notification currentNotificationCloned = new Notification(
+					currentNotification.getName(),
+					this,
+					currentNotification.getNotifierName(),
+					currentNotification.getSubscriptions(),
+					currentNotification.getCooldownPeriod()
+			);
+
+			clonedNotifications.add(currentNotificationCloned);
+
+			CommonUtils.copyProperties(currentNotificationCloned, currentNotification);
+			currentNotificationCloned.setAlert(this);
+			currentNotificationCloned.setCreatedBy(user);
+			currentNotificationCloned.setModifiedBy(user);
+
+			List<Trigger> triggersInCurrentNotification = new ArrayList<>();
+			for (Trigger currentTrigger : currentNotification.getTriggers()) {
+				int currentTriggerHash = currentTrigger.hashCode();
+				if (!triggersCreatedMapByHash.containsKey(currentTriggerHash)) {
+					Trigger currentTriggerCloned = new Trigger(
+							this,
+							currentTrigger.getType(),
+							currentTrigger.getName(),
+							currentTrigger.getThreshold(),
+							currentTrigger.getSecondaryThreshold(),
+							currentTrigger.getInertia()
+					);
+					clonedTriggers.add(currentTriggerCloned);
+					CommonUtils.copyProperties(currentTriggerCloned, currentTrigger);
+					currentTriggerCloned.setCreatedBy(user);
+					currentTriggerCloned.setModifiedBy(user);
+					currentTriggerCloned.setAlert(this);
+					triggersCreatedMapByHash.put(currentTriggerHash, currentTriggerCloned);
+				}
+				triggersInCurrentNotification.add(triggersCreatedMapByHash.get(currentTriggerHash));
+			}
+			currentNotificationCloned.setTriggers(triggersInCurrentNotification);
+		}
+
+		/*
+		 * Triggers with no notifications attached
+		 * */
+		for (Trigger currentTrigger : other.getTriggers()) {
+			int currentTriggerHash = currentTrigger.hashCode();
+			if (!triggersCreatedMapByHash.containsKey(currentTriggerHash)) {
+				Trigger currentTriggerCloned = new Trigger(
+						this,
+						currentTrigger.getType(),
+						currentTrigger.getName(),
+						currentTrigger.getThreshold(),
+						currentTrigger.getSecondaryThreshold(),
+						currentTrigger.getInertia()
+				);
+				clonedTriggers.add(currentTriggerCloned);
+				CommonUtils.copyProperties(currentTriggerCloned, currentTrigger);
+				currentTriggerCloned.setCreatedBy(user);
+				currentTriggerCloned.setModifiedBy(user);
+				currentTriggerCloned.setAlert(this);
+				triggersCreatedMapByHash.put(currentTriggerHash, currentTriggerCloned);
+			}
+		}
+
+		// NOTE: whenever a new field gets added to an Alert object make sure to update this clone
+		this.setMissingDataNotificationEnabled(other.isMissingDataNotificationEnabled());
+		this.setShared(other.isShared());
+		this.setTriggers(clonedTriggers);
+		this.setNotifications(clonedNotifications);
+		this.setModifiedBy(user);
+		this.setEnabled(other.isEnabled()); // This should be last
 	}
 
 	/** Creates a new Alert object. */
@@ -386,7 +490,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(OWNER_KEY, owner);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, null, null, whereParams, null);
+			return getAlertsMetaPaged(em, null, null, whereParams, null, null, null);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -405,11 +509,15 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *            The starting offset of the result.
 	 * @param searchText
 	 * 			  The text to filter the search results.
-	 *
+	 * @param sortField 
+	 * 				The field of the alert that is used for sorting.
+	 * @param sortOrder 
+	 * 				The order for sorting.
+	 * 
 	 * @return The list of alerts for the owner.
 	 */
 	public static List<Alert> findByOwnerMetaPaged(EntityManager em, PrincipalUser owner, Integer limit,
-			Integer offset, String searchText) {
+			Integer offset, String searchText, String sortField, String sortOrder) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		requireArgument(owner != null, "Owner cannot be null");
 		
@@ -430,7 +538,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(OWNER_KEY, owner);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText);
+			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText, sortField, sortOrder);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -471,7 +579,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(DELETED_KEY, false);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, null, null, whereParams, null);
+			return getAlertsMetaPaged(em, null, null, whereParams, null, null, null);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -719,7 +827,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			}
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, limit, null, whereParams, null);
+			return getAlertsMetaPaged(em, limit, null, whereParams, null, null, null);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -736,10 +844,15 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *            The starting offset of the result.
 	 * @param searchText
 	 * 			  The text to filter the search results.
+	 *  @param sortField 
+	 * 				The field of the alert that is used for sorting.
+	 * @param sortOrder 
+	 * 				The order for sorting.
 	 * 
 	 * @return The list of shared alerts with given limit and offset.
 	 */
-	public static List<Alert> findSharedAlertsMetaPaged(EntityManager em, Integer limit, Integer offset, String searchText) {
+	public static List<Alert> findSharedAlertsMetaPaged(EntityManager em, Integer limit, Integer offset, String searchText,
+		String sortField, String sortOrder) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		
 		if (searchText != null) {
@@ -760,7 +873,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(SHARED_KEY, true);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText);
+			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText, sortField, sortOrder);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -775,10 +888,15 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * @param 	offset The starting offset of the result.
 	 * @param searchText
 	 * 			  The text to filter the search results.
-	 *
+	 * @param sortField 
+	 * 				The field of the alert that is used for sorting.
+	 * @param sortOrder
+	 * 				The order for sorting.
+	 * 
 	 * @return The list of private alerts' meta with given limit and offset.
 	 */
-	public static List<Alert> findPrivateAlertsForPrivilegedUserMetaPaged(EntityManager em, PrincipalUser owner, Integer limit, Integer offset, String searchText) {
+	public static List<Alert> findPrivateAlertsForPrivilegedUserMetaPaged(EntityManager em, PrincipalUser owner, Integer limit, Integer offset, String searchText,
+		String sortField, String sortOrder) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		
 		if (searchText != null) {
@@ -804,7 +922,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(SHARED_KEY, false);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText);
+			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText, sortField, sortOrder);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -884,7 +1002,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * limit and offset.
 	 */
 	private static List<Alert> getAlertsMetaPaged(EntityManager em, Integer limit, Integer offset,
-			Map<String, Object> whereParams, String searchText) {
+			Map<String, Object> whereParams, String searchText, String sortField, String sortOrder) {
 		CriteriaBuilder cb = em.getCriteriaBuilder();
 		CriteriaQuery<Tuple> cq = cb.createTupleQuery();
 		Root<Alert> e = cq.from(Alert.class);
@@ -928,9 +1046,32 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			cq.where(predicates.toArray(new Predicate[predicates.size()]));
 		}
 
-		// Sort result by alert id
-		cq.orderBy(cb.asc(e.get("id")));
+		// By default, do not sort
+		// Sort based or sortField and sortOrder if both are not null
+		if (sortField != null && sortOrder != null){
+			Expression<String> sortColumn;
+	
+			switch(SortFieldType.fromName(sortField)) {
+				case OWNER_NAME :
+					sortColumn = e.join("owner").get("userName");
+					break;
+				default :
+					sortColumn = e.get(sortField);
+					break;
+			}
 
+			switch(SortOrderType.fromName(sortOrder)){
+				case ASC :
+					cq.orderBy(cb.asc(sortColumn));
+					break;
+				case DESC :
+					cq.orderBy(cb.desc(sortColumn));
+					break;
+				default :
+					break;
+			}
+		}
+		
 		TypedQuery<Tuple> query = em.createQuery(cq);
 		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
@@ -949,19 +1090,24 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		List<Alert> alerts = new ArrayList<>();
 
 		for (Tuple tuple : result) {
+			try {
+				Alert a = new Alert(PrincipalUser.class.cast(tuple.get("createdBy")),
+						PrincipalUser.class.cast(tuple.get("owner")), String.class.cast(tuple.get("name")),
+						String.class.cast(tuple.get("expression")), String.class.cast(tuple.get("cronEntry")));
 
-			Alert a = new Alert(PrincipalUser.class.cast(tuple.get("createdBy")),
-					PrincipalUser.class.cast(tuple.get("owner")), String.class.cast(tuple.get("name")),
-					String.class.cast(tuple.get("expression")), String.class.cast(tuple.get("cronEntry")));
+				a.id = BigInteger.class.cast(tuple.get("id"));
+				a.enabled = Boolean.class.cast(tuple.get("enabled"));
+				a.createdDate = Date.class.cast(tuple.get("createdDate"));
+				a.modifiedDate = Date.class.cast(tuple.get("modifiedDate"));
+				a.shared = Boolean.class.cast(tuple.get("shared"));
+				a.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
+				a.missingDataNotificationEnabled = Boolean.class.cast(tuple.get("missingDataNotificationEnabled"));
 
-			a.id = BigInteger.class.cast(tuple.get("id"));
-			a.enabled = Boolean.class.cast(tuple.get("enabled"));
-			a.createdDate = Date.class.cast(tuple.get("createdDate"));
-			a.modifiedDate = Date.class.cast(tuple.get("modifiedDate"));
-			a.shared = Boolean.class.cast(tuple.get("shared"));
-			a.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
-
-			alerts.add(a);
+				alerts.add(a);
+			} catch (RuntimeException r) {
+				// TODO: Add logging?
+				continue;
+			}
 		}
 		
 		// Trim excessive items more then limit in the end
@@ -975,7 +1121,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	private static String _convertSearchTextWildCardForQuery(String searchText) {
 		return "%" + searchText.toLowerCase().replace("*", "%").replace("?","_") + "%";
 	}
-	
+
 	/**
 	 * Returns the CRON entry for the alert.
 	 *
@@ -992,6 +1138,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * @param  cronEntry  The new CRON entry. Cannot be null and must be valid CRON entry syntax.
 	 */
 	public void setCronEntry(String cronEntry) {
+		requireArgument(cronEntry != null && !cronEntry.isEmpty(), "CronEntry cannot be null or empty.");
 		this.cronEntry = cronEntry;
 	}
 
@@ -1047,8 +1194,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *
 	 * @param  expression  The alert expression. Cannot be null and must be valid metric expression syntax as defined in the <tt>MetricService</tt>
 	 */
-	public void setExpression(String expression) {
-		requireArgument(MetricReader.isValid(expression), "Invalid metric expression " + expression);
+	public void setExpression(String expression) throws RuntimeException {
+		requireArgument(expression != null && !expression.isEmpty(), "Expression cannot be null or empty.");
 		this.expression = expression;
 	}
 
@@ -1159,12 +1306,60 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		this.shared = shared;
 	}
 
+
+	/**
+	 * Validates all fields of an alert.
+	 * @throws RuntimeException
+	 */
+	public void validateAlert() throws RuntimeException {
+		requireArgumentP(this.expression, x -> MetricReader.validateExpression(x), "Invalid alert expression: " + this.expression, true);
+		requireArgument(Cron.isCronEntryValid(this.cronEntry), "Invalid cron entry: " + this.cronEntry);
+		requireArgument(this.owner != null, "Owner cannot be null.");
+		requireArgument(this.name != null && !this.name.isEmpty(), "Name cannot be null or empty.");
+	}
+
+	/**
+	 * Returns whether the alert is valid
+	 */
+	public boolean isValid() {
+		try
+		{
+			this.validateAlert();
+		}
+		catch (RuntimeException e)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Returns null if the alert is valid or the error message if it is not.
+	 */
+	public String validationMessage() {
+		try
+		{
+			this.validateAlert();
+		}
+		catch (RuntimeException e)
+		{
+			return e.getMessage();
+		}
+		return null;
+	}
+
 	@Override
 	public int hashCode() {
 		int hash = 5;
 
 		hash = 31 * hash + Objects.hashCode(this.name);
 		hash = 31 * hash + Objects.hashCode(this.owner);
+		hash = 31 * hash + Objects.hashCode(this.cronEntry);
+		hash = 31 * hash + Objects.hashCode(this.enabled);
+		hash = 31 * hash + Objects.hashCode(this.expression);
+		hash = 31 * hash + Objects.hashCode(this.missingDataNotificationEnabled);
+		hash = 31 * hash + Objects.hashCode(this.shared);
+
 		return hash;
 	}
 
@@ -1179,12 +1374,18 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 
 		final Alert other = (Alert) obj;
 
-		if (!Objects.equals(this.name, other.name)) {
+		if (this.hashCode() != other.hashCode()) {
 			return false;
 		}
-		if (!Objects.equals(this.owner, other.owner)) {
+
+		if (!CommonUtils.listsAreEquivelent(this.getTriggers(), other.getTriggers())) {
 			return false;
 		}
+
+		if (!CommonUtils.listsAreEquivelent(this.getNotifications(), other.getNotifications())) {
+			return false;
+		}
+
 		return true;
 	}
 
@@ -1209,6 +1410,9 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			jgen.writeBooleanField("enabled", alert.isEnabled());
 			jgen.writeBooleanField("missingDataNotificationEnabled", alert.isMissingDataNotificationEnabled());
 			jgen.writeObjectField("owner", alert.getOwner());
+			if(alert.getModifiedDate() != null) {
+				jgen.writeObjectField("modifiedDate", alert.getModifiedDate().getTime());
+			}
 
 			jgen.writeArrayFieldStart("triggers");
 			for(Trigger trigger : alert.getTriggers()) {
@@ -1226,6 +1430,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		}
 	}
 
+
+	// NOTE - ian - TODO - create a separate deserializer for testing OR handle missing info here?
 	public static class Deserializer extends JsonDeserializer<Alert> {
 
 		@Override
@@ -1249,13 +1455,15 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			alert.setName(name);
 
 			String expression = rootNode.get("expression").asText();
+      
 			alert.setExpression(expression);
 
 			String cronEntry = rootNode.get("cronEntry").asText();
 			alert.setCronEntry(cronEntry);
 
-			boolean enabled = rootNode.get("enabled").asBoolean();
-			alert.setEnabled(enabled);
+//			if(rootNode.get("modifiedDate") != null) {
+//				alert.setModifiedDate(Date.from(Instant.ofEpochMilli(rootNode.get("modifiedDate").asLong())));
+//			}
 
 			boolean missingDataNotificationEnabled = rootNode.get("missingDataNotificationEnabled").asBoolean();
 			alert.setMissingDataNotificationEnabled(missingDataNotificationEnabled);
@@ -1286,6 +1494,10 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 				}
 			}
 			alert.setNotifications(notifications);
+
+			// This needs to be last because alerts won't validate unless they are complete.
+			boolean enabled = rootNode.get("enabled").asBoolean();
+			alert.setEnabled(enabled);
 
 			return alert;
 		}
@@ -1348,8 +1560,91 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 
 			return user;
 		}
-
 	}
+
+		//~ Enums **************************************************************************************************************************************
+		public enum SortFieldType {
+
+			OWNER_NAME("ownerName"),
+			NAME("name"),
+			MODIFIED_DATE("modifiedDate"),
+			CREATED_DATE("createdDate");
+	
+			private String name_;
+			private SortFieldType(String name){
+				name_ = name;
+			}
+	
+			/**
+			 * Returns a given sort field type corresponding to the given name.
+			 * 
+			 * @param name  The sort field type name
+			 * 
+			 * @return			The sort field type
+			 */
+			public static SortFieldType fromName(String name) {
+				for (SortFieldType t: SortFieldType.values()) {
+					if (t.getName().equalsIgnoreCase(name)) {
+						return t;
+					}
+				}
+				String errorMessage = "SortFieldType " + name
+					+ " does not exist or is not supported. Allowed values are: "
+					+ Arrays.asList(SortFieldType.values()).stream().map(t -> t.getName()).collect(Collectors.toList());
+				
+				LOGGER.error(errorMessage + "\n");
+				throw new IllegalArgumentException(errorMessage);
+			}
+			
+			/**
+			 * Return sort field type name.
+			 * 
+			 * @return	The sort field type name\
+			 * 
+			 */
+			public String getName(){
+				return name_;
+			}
+		}
+		
+		
+		
+		public enum SortOrderType {
+	
+			ASC,
+			DESC;
+	
+			/**
+			 * Returns a given sort order type corresponding to the given name.
+			 * 
+			 * @param name 	The sort order type name
+			 * 
+			 * @return      The sort order type
+			 */
+			public static SortOrderType fromName(String name) {
+				for (SortOrderType t : SortOrderType.values()) {
+					if (t.getName().equalsIgnoreCase(name)) {
+						return t;
+					}
+				}
+				String errorMessage = "SortOrderType " + name
+					+ " does not exist or is not supported. Allowed values are: "
+					+ Arrays.asList(SortOrderType.values());
+	
+				LOGGER.error(errorMessage + "\n");
+				throw new IllegalArgumentException(errorMessage);
+			}
+	
+			/**
+			 * Return Sort order type name.
+			 * 
+			 * @return	The sort order type name
+			 * 
+			 */
+			public String getName(){
+				return this.toString();
+			}
+		}
 
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

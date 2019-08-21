@@ -62,7 +62,13 @@ public final class NotifierFactory {
     private Provider<CallbackNotifier> _callbackNotifierProvider;
     @Inject
     private Provider<RefocusNotifier> _refocusNotifierProvider;
-
+    // IMPORTANT - todo - is there anything needed to set these up?
+    @Inject
+    private Provider<RefocusBooleanNotifier> _refocusBooleanNotifierProvider;
+    @Inject
+    private Provider<RefocusValueNotifier> _refocusValueNotifierProvider;
+    @Inject
+    private Provider<PagerDutyNotifier> _pagerDutyNotifierProvider;
 
     public synchronized CallbackNotifier getCallbackNotifier() { return _callbackNotifierProvider.get(); }
 
@@ -129,5 +135,33 @@ public final class NotifierFactory {
     public synchronized RefocusNotifier getRefocusNotifier() {
         return _refocusNotifierProvider.get();
     }
+
+    /**
+     * Returns an instance of the Refocus Notifier.
+     *
+     * @return  An instance of the Refocus Notifier.
+     */
+    public synchronized RefocusBooleanNotifier getRefocusBooleanNotifier() {
+        return _refocusBooleanNotifierProvider.get();
+    }
+
+    /**
+     * Returns an instance of the Refocus Notifier.
+     *
+     * @return  An instance of the Refocus Notifier.
+     */
+    public synchronized RefocusValueNotifier getRefocusValueNotifier() {
+        return _refocusValueNotifierProvider.get();
+    }
+
+    /**
+     * Returns an instance of the PagerDuty Notifier.
+     *
+     * @return  An instance of the PagerDuty Notifier.
+     */
+    public synchronized PagerDutyNotifier getPagerDutyNotifier() {
+        return _pagerDutyNotifierProvider.get();
+    }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

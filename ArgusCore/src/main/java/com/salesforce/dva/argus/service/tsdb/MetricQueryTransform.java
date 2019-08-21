@@ -75,9 +75,14 @@ class MetricQueryTransform {
 			jgen.writeStringField("aggregator", agg == null ? MetricQuery.Aggregator.AVG.getDescription() : agg.getDescription());
 			jgen.writeStringField("metric", query.getTSDBMetricName());
 			if(!query.getTags().isEmpty()) {
+				// Rewrite tag values that start with the '~' internal not-equals indicator with the TSDB not-equals
 				jgen.writeObjectFieldStart("tags");
 				for(Map.Entry<String, String> tag : query.getTags().entrySet()) {
-					jgen.writeStringField(tag.getKey(), tag.getValue());
+					String value = tag.getValue();
+					if (value.charAt(0) == '~') {
+						value = MetricQuery.TAG_NOT_EQUALS_TSDB_PREFIX + value.substring(1) + MetricQuery.TAG_NOT_EQUALS_TSDB_SUFFIX;
+					}
+					jgen.writeStringField(tag.getKey(), value);
 				}
 				jgen.writeEndObject();
 			}
@@ -85,6 +90,19 @@ class MetricQueryTransform {
 			if(query.getDownsampler() != null) {
 				jgen.writeStringField("downsample", query.getDownsamplingPeriod() + "ms-" + query.getDownsampler().getDescription());
 			}
+
+			if(query.getPercentile() != null) {
+			    jgen.writeArrayFieldStart("percentiles");
+			    for(String percentile :  query.getPercentile()) {
+			        jgen.writeNumber(Float.parseFloat(percentile));
+			    }               
+			    jgen.writeEndArray();
+			}
+			
+			if(query.getShowHistogramBuckets() != false){
+			    jgen.writeBooleanField("showHistogramBuckets", true);
+			}
+            			
 			jgen.writeEndObject();
 			jgen.writeEndArray();
 			jgen.writeEndObject();

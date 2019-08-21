@@ -43,28 +43,14 @@ import com.salesforce.dva.argus.ws.dto.ItemsCountDto;
 import com.salesforce.dva.argus.ws.dto.NotificationDto;
 import com.salesforce.dva.argus.ws.dto.TriggerDto;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import java.math.BigInteger;
+import java.util.*;
 
 /**
  * Web services for Alert.
@@ -122,7 +108,7 @@ public class AlertResources extends AbstractResource {
 		if(shared) {
 			result.addAll(populateMetaFieldsOnly ? alertService.findSharedAlerts(true, null, limit) : alertService.findSharedAlerts(false, null, limit));
 		}
-		
+
 		return new ArrayList<>(result);
 	}
 	
@@ -169,12 +155,28 @@ public class AlertResources extends AbstractResource {
 										@QueryParam("ownername") String ownerName,
 										@QueryParam("pagesize")  Integer pageSize,
 										@QueryParam("pagenumber") Integer pageNumber,
-										@QueryParam("searchtext") String searchText) {
+										@QueryParam("searchtext") String searchText,
+										@QueryParam("sortfield") String sortField,
+										@QueryParam("sortorder") String sortOrder) {
 		
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
 		List<Alert> result = new ArrayList<>(); 
-		result = alertService.findAlertsByOwnerPaged(owner, pageSize, (pageNumber - 1) * pageSize, searchText);
-		return AlertDto.transformToDto(result);
+		try {
+			Map<String, Object> queryParams = new HashMap<>();
+			queryParams.put("pageSize", pageSize);
+			queryParams.put("pageNumber", pageNumber);
+			queryParams.put("sortField", sortField);
+			queryParams.put("sortOrder", sortOrder);
+			validateAlertQueryParams(queryParams);
+			Integer offset = null;
+			if(pageNumber != null && pageSize != null){
+				offset = (pageNumber - 1) * pageSize;
+			}
+			result = alertService.findAlertsByOwnerPaged(owner, pageSize, offset, searchText, sortField, sortOrder);
+			return AlertDto.transformToDto(result);
+		} catch (IllegalArgumentException ex) {
+			throw new WebApplicationException(ex.getMessage(), Status.BAD_REQUEST);
+		}
 	}
 	
 	@GET
@@ -198,11 +200,27 @@ public class AlertResources extends AbstractResource {
 	public List<AlertDto> getSharedAlertsMeta(@Context HttpServletRequest req,
 										@QueryParam("pagesize")  Integer pageSize,
 										@QueryParam("pagenumber") Integer pageNumber,
-										@QueryParam("searchtext") String searchText) {
+										@QueryParam("searchtext") String searchText,
+										@QueryParam("sortfield") String sortField,
+										@QueryParam("sortorder") String sortOrder) {
 		
 		List<Alert> result = new ArrayList<>(); 
-		result = alertService.findSharedAlertsPaged(pageSize, (pageNumber - 1) * pageSize, searchText);
-		return AlertDto.transformToDto(result);
+		try {
+			Map<String, Object> queryParams = new HashMap<>();
+			queryParams.put("pageSize", pageSize);
+			queryParams.put("pageNumber", pageNumber);
+			queryParams.put("sortField", sortField);
+			queryParams.put("sortOrder", sortOrder);
+			validateAlertQueryParams(queryParams);
+			Integer offset = null;
+			if(pageNumber != null && pageSize != null){
+				offset = (pageNumber - 1) * pageSize;
+			}
+			result = alertService.findSharedAlertsPaged(pageSize, offset, searchText, sortField, sortOrder);
+			return AlertDto.transformToDto(result);
+		} catch (IllegalArgumentException ex) {
+			throw new WebApplicationException(ex.getMessage(), Status.BAD_REQUEST);
+		}
 	}
 	
 	@GET
@@ -225,16 +243,31 @@ public class AlertResources extends AbstractResource {
 										@QueryParam("ownername") String ownerName,
 										@QueryParam("pagesize")  Integer pageSize,
 										@QueryParam("pagenumber") Integer pageNumber,
-										@QueryParam("searchtext") String searchText) {
+										@QueryParam("searchtext") String searchText,
+										@QueryParam("sortfield") String sortField,
+										@QueryParam("sortorder") String sortOrder) {
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
 		if (owner == null || !owner.isPrivileged()) {
 			return new ArrayList<>(0);
 		}
 		
-		List<Alert> result = new ArrayList<>(); 
-		result = alertService.findPrivateAlertsForPrivilegedUserPaged(owner, pageSize, (pageNumber - 1) * pageSize,
-				searchText);
-		return AlertDto.transformToDto(result);
+		List<Alert> result = new ArrayList<>();
+		try {
+			Map<String, Object> queryParams = new HashMap<>();
+			queryParams.put("pageSize", pageSize);
+			queryParams.put("pageNumber", pageNumber);
+			queryParams.put("sortField", sortField);
+			queryParams.put("sortOrder", sortOrder);
+			validateAlertQueryParams(queryParams);
+			Integer offset = null;
+			if(pageNumber != null && pageSize != null){
+				offset = (pageNumber - 1) * pageSize;
+			}
+			result = alertService.findPrivateAlertsForPrivilegedUserPaged(owner, pageSize, offset, searchText, sortField, sortOrder);
+			return AlertDto.transformToDto(result);
+		} catch (IllegalArgumentException ex) {
+			throw new WebApplicationException(ex.getMessage(), Status.BAD_REQUEST);
+		}
 	}
 	
 	@GET
@@ -642,11 +675,19 @@ public class AlertResources extends AbstractResource {
 			throw new WebApplicationException("Null alert object cannot be created.", Status.BAD_REQUEST);
 		}
 
-		PrincipalUser owner = validateAndGetOwner(req, alertDto.getOwnerName());
-		Alert alert = new Alert(getRemoteUser(req), owner, alertDto.getName(), alertDto.getExpression(), alertDto.getCronEntry());
-		alert.setShared(alertDto.isShared()); 
-		copyProperties(alert, alertDto);
-		return AlertDto.transformToDto(alertService.updateAlert(alert));
+		try
+		{
+			PrincipalUser owner = validateAndGetOwner(req, alertDto.getOwnerName());
+			Alert alert = new Alert(getRemoteUser(req), owner, alertDto.getName(), alertDto.getExpression(), alertDto.getCronEntry());
+			alert.setShared(alertDto.isShared());
+			copyProperties(alert, alertDto);
+			return AlertDto.transformToDto(alertService.updateAlert(alert));
+		}
+		catch (RuntimeException e)
+		{
+			// To debug - why throwing WebApplicationException seems to correlate with test failures
+			throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);
+		}
 	}
 
 	/**
@@ -681,11 +722,64 @@ public class AlertResources extends AbstractResource {
 		if (oldAlert == null) {
 			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 		}
-		
-		validateResourceAuthorization(req, oldAlert.getOwner(), owner);
-		copyProperties(oldAlert, alertDto);
-		oldAlert.setModifiedBy(getRemoteUser(req));
-		return AlertDto.transformToDto(alertService.updateAlert(oldAlert));
+
+		try
+		{
+			validateResourceAuthorization(req, oldAlert.getOwner(), owner);
+			copyProperties(oldAlert, alertDto);
+			oldAlert.setModifiedBy(getRemoteUser(req));
+			return AlertDto.transformToDto(alertService.updateAlert(oldAlert));
+		}
+		catch (RuntimeException e)
+		{
+			throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);
+		}
+	}
+
+	/**
+	 * Clones existing alert.
+	 *
+	 * @param   req       The HttpServlet request object. Cannot be null.
+	 * @param   alertId   The id of an alert. Cannot be null.
+	 * @param   newAlertName  The name of the cloned alert. Cannot be null or empty.
+	 *
+	 * @return  Updated alert object.
+	 *
+	 * @throws  WebApplicationException  The exception with 404 status will be thrown if the alert does not exist.
+	 */
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("{alertId}/clone")
+	@Description("Clones an alert having the given ID.")
+	public AlertDto cloneAlert(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId, @QueryParam("alertname") String newAlertName) {
+		try {
+			if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
+				throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
+			}
+
+			if (newAlertName == null || newAlertName.equals("")) {
+				throw new WebApplicationException("Alert name cannot be null or empty and must be unique non-empty string.", Status.BAD_REQUEST);
+			}
+
+			Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
+
+			if (oldAlert == null) {
+				throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
+			}
+
+			if (!oldAlert.isShared()) { // If the alert is not shared, it can only be created by the requesting owner.
+				PrincipalUser owner = validateAndGetOwner(req, oldAlert.getOwner().getUserName());
+				validateResourceAuthorization(req, oldAlert.getOwner(), owner);
+			}
+
+			// Create new alert object.
+			PrincipalUser requestedUser = getRemoteUser(req);
+			Alert clonedAlert = new Alert(oldAlert, newAlertName, requestedUser);
+
+			return AlertDto.transformToDto(alertService.updateAlert(clonedAlert));
+		} catch (Exception ex) {
+			throw new WebApplicationException(ex.getCause(), Status.BAD_REQUEST);
+		}
 	}
 
 	/**
@@ -719,6 +813,17 @@ public class AlertResources extends AbstractResource {
 			}
 
 			PrincipalUser owner = validateAndGetOwner(req, getRemoteUser(req).getUserName());
+
+			// IMPORTANT - address this!
+			// Refocus Notification V1 release only for search team (and for Argus team testing)
+			if (AlertService.SupportedNotifier.REFOCUS.getName().equals(notificationDto.getNotifierName())) {
+				String ownerUserName = owner.getUserName();
+				if (!"svc_monocle".equalsIgnoreCase(ownerUserName)  // search team username
+					&& !"svc_perfeng_tools".equalsIgnoreCase(ownerUserName)) { // argus team username
+				throw new WebApplicationException(Status.FORBIDDEN.getReasonPhrase(), Status.FORBIDDEN);
+				}
+			}
+
 			Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
 
 			if (oldAlert == null) {
@@ -727,7 +832,12 @@ public class AlertResources extends AbstractResource {
 			validateResourceAuthorization(req, oldAlert.getOwner(), owner);
 			for (Notification notification : oldAlert.getNotifications()) {
 				if (notificationId.equals(notification.getId())) {
+//TODO: If SRActionable is checked, article number should be present. We should umcooment this when UI change is out.
+//					if (!NotificationDto.validateSRActionableUpdate(notificationDto))
+//						throw new WebApplicationException("Article Number should be present if SR Actionable is set.");
+
 					copyProperties(notification, notificationDto);
+
 					oldAlert.setModifiedBy(getRemoteUser(req));
 
 					Alert alert = alertService.updateAlert(oldAlert);
@@ -815,6 +925,7 @@ public class AlertResources extends AbstractResource {
 				throw new WebApplicationException("Null notification object cannot be created.", Status.BAD_REQUEST);
 			}
 
+			// IMPORTANT - Why isn't the Refocus V1 Notifier ('Boolean Notifier') restricted to Search Team here?
 			Alert alert = alertService.findAlertByPrimaryKey(alertId);
 
 			if (alert != null) {
@@ -824,7 +935,12 @@ public class AlertResources extends AbstractResource {
 						notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
 				notification.setSRActionable(notificationDto.getSRActionable());
 				notification.setSeverityLevel(notificationDto.getSeverityLevel());
+
 				notification.setCustomText(notificationDto.getCustomText());
+				notification.setEventName(notificationDto.getEventName());
+				notification.setElementName(notificationDto.getElementName());
+				notification.setProductTag(notificationDto.getProductTag());
+				notification.setArticleNumber(notificationDto.getArticleNumber());
 
 				// TODO: 14.12.16 validateAuthorizationRequest notification
 
@@ -1283,6 +1399,54 @@ public class AlertResources extends AbstractResource {
 			}
 		}
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
+	}
+
+	/**
+	 * Validate alert query parameters, throws exception if any parameter is invalid.
+	 * 
+	 * @param		queryParams		The alert query parameters map.
+	 * @throws	IllegalArgumentException Throws exception if parameter is invalid.  
+	 * 
+	 */
+	public void validateAlertQueryParams(Map<String, Object> queryParams){
+		if (queryParams == null) {
+			throw new IllegalArgumentException("No parameter is provided.");
+		}
+
+		Integer pageSize, pageNumber;
+		String sortField, sortOrder;
+
+		try {
+			pageSize = (Integer) queryParams.get("pageSize");
+			pageNumber = (Integer) queryParams.get("pageNumber");
+			sortField = (String) queryParams.get("sortField");
+			sortOrder = (String) queryParams.get("sortOrder");
+		} catch (ClassCastException ex) {
+			throw new IllegalArgumentException("Invalid type for parameters.");
+		}
+
+		if( (pageSize != null && pageNumber == null) || (pageSize == null && pageNumber != null) ){
+			throw new IllegalArgumentException("pagenumber and pagesize must be provided at the same time");
+		}
+
+		if (pageSize != null && pageSize < 1) {
+			throw new IllegalArgumentException("pagesize cannot be smaller than 1");
+		}
+		if (pageNumber != null && pageNumber < 1) {
+			throw new IllegalArgumentException("pagenumber cannot be smaller than 1") ;
+		}
+		
+		if( (sortField != null && sortOrder == null) || (sortField == null && sortOrder != null) ){
+			throw new IllegalArgumentException("sortfield and sortorder must be provided at the same time");
+		}
+		
+		// If sortField/sortOrder is invalid, fromName method will throw IllegalArgumentException
+		if (sortField != null) {
+			Alert.SortFieldType.fromName(sortField);
+		}
+		if (sortOrder != null) {
+			Alert.SortOrderType.fromName(sortOrder);
+		}
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

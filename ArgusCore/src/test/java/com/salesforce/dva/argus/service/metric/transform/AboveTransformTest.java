@@ -122,6 +122,28 @@ public class AboveTransformTest {
     }
 
     @Test
+    public void testAboveTransformWithZeroDataPointsForMetric() {
+        Transform belowTransform = new MetricFilterWithInteralReducerTransform(new AboveValueFilter());
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints);
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("2");
+        constants.add("average");
+
+        List<Metric> result = belowTransform.transform(null, metrics, constants);
+
+        assertEquals(0, result.size());
+    }
+
+    @Test
     public void testAboveTransformWithLimitEqualMidDPsEvalDefault() {
         Transform aboveTransform = new MetricFilterWithInteralReducerTransform(new AboveValueFilter());
         Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();

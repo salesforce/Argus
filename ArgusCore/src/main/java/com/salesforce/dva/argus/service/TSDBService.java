@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Histogram;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
@@ -50,41 +51,22 @@ import java.util.TreeMap;
  *
  * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
  */
-public interface TSDBService extends Service {
+public interface TSDBService extends AnnotationStorageService, MetricStorageService {
+
+	public static final long MILLIS_IN_A_DAY = 86400000L;
+	
+	public static final long METRICS_RETENTION_PERIOD_MILLIS = 400*MILLIS_IN_A_DAY;
 
 	//~ Methods **************************************************************************************************************************************
 
 	/**
-	 * Writes metric data. Any existing data is overwritten.
+	 * Writes histogram data. Any existing data is overwritten.
 	 *
-	 * @param  metrics  The list of metrics to write. Cannot be null, but may be empty.
+	 * @param  histograms  The list of histograms to write. Cannot be null, but may be empty.
 	 */
-	void putMetrics(List<Metric> metrics);
+	void putHistograms(List<Histogram> histograms);	
 
-	/**
-	 * Reads metric data.
-	 *
-	 * @param   queries  The list of queries to execute. Cannot be null, but may be empty.
-	 *
-	 * @return  The query results as a map of query to the corresponding metrics it returns. Will never be null, but may be empty.
-	 */
-	Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries);
 
-	/**
-	 * Writes annotation data. Any existing data is overwritten.
-	 *
-	 * @param  annotations  The list of annotations to write. Cannot be null, but may be empty.
-	 */
-	void putAnnotations(List<Annotation> annotations);
-
-	/**
-	 * Reads annotation data.
-	 *
-	 * @param   queries  The list of queries to execute. Cannot be null, but may be empty.
-	 *
-	 * @return  The query results. Will never be null, but may be empty.
-	 */
-	List<Annotation> getAnnotations(List<AnnotationQuery> queries);
 
 	static void collate(List<Metric> metrics) {
 
@@ -109,7 +91,7 @@ public interface TSDBService extends Service {
 
 		for(Metric m : metrics) {
 
-			Map<String, String> tags = new TreeMap<>(m.getTags());
+			Map<String, String> tags = m.getTags();
 
 			StringBuilder sb = new StringBuilder();
 			for(Map.Entry<String, String> entry : tags.entrySet()) {
@@ -124,7 +106,6 @@ public interface TSDBService extends Service {
 			}
 
 			groupedMetricsMap.get(sb.toString()).add(m);
-
 		}
 
 		return groupedMetricsMap;
@@ -193,6 +174,55 @@ public interface TSDBService extends Service {
 			} else {
 				return QueryTimeWindow.WITHIN_24_HRS_AND_30_DAYS.getName();
 			}
+		}
+	}
+
+	/**
+	 * Enumeration of time window for a query
+	 *
+	 * @author  Sundeep Tiyyagura (stiyyagura@salesforce.com)
+	 */
+	public static enum QueryStartTimeWindow {
+
+		WITHIN_24_HRS("within_24_hrs", 0L, MILLIS_IN_A_DAY),
+		WITHIN_24_HRS_AND_7_DAYS("within_24_hrs_and_7_days", MILLIS_IN_A_DAY+1, 7*MILLIS_IN_A_DAY),
+		WITHIN_8_DAYS_AND_14_DAYS("within_8_days_and_14_days", 7*MILLIS_IN_A_DAY+1, 14*MILLIS_IN_A_DAY),
+		WITHIN_15_DAYS_AND_30_DAYS("within_15_days_and_30_days", 14*MILLIS_IN_A_DAY+1, 30*MILLIS_IN_A_DAY),
+		WITHIN_31_DAYS_AND_90_DAYS("within_31_days_and_90_days", 30*MILLIS_IN_A_DAY+1, 90*MILLIS_IN_A_DAY),
+		GREATER_THAN_90_DAYS("greater_than_90_days", 90*MILLIS_IN_A_DAY +1, 600*MILLIS_IN_A_DAY);
+
+		private String _name;
+
+		private long _startMillis;
+
+		private long _endMillis;
+
+		QueryStartTimeWindow(String name, long startMillis, long endMillis) {
+			this._name = name;
+			this._startMillis = startMillis;
+			this._endMillis = endMillis;
+		}
+
+		public String getName() {
+			return _name;
+		}
+
+		public long getStartMillis() {
+			return _startMillis;
+		}
+
+		public long getEndMillis() {
+			return _endMillis;
+		}
+
+		public static String getWindow(long windowInMillis) {
+
+			for(QueryStartTimeWindow window : QueryStartTimeWindow.values()) {
+				if(windowInMillis>=window.getStartMillis() && windowInMillis<=window.getEndMillis()) {
+					return window.getName();
+				}
+			}
+			return GREATER_THAN_90_DAYS.getName();
 		}
 	}
 

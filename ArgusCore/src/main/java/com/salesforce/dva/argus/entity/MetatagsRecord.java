@@ -31,12 +31,12 @@
 
 package com.salesforce.dva.argus.entity;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Map.Entry;
-import java.util.TreeMap;
 import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 
 /**
@@ -52,7 +52,7 @@ import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
  * @author  Kunal Nawale (knawale@salesforce.com)
  */
 
-public class MetatagsRecord {
+public class MetatagsRecord extends AbstractSchemaRecord {
     private Map<String, String> _metatags = new HashMap<>(0);
     private String _key = null;
 
@@ -139,5 +139,30 @@ public class MetatagsRecord {
      */
     public String removeMetatag(String metatagKey) {
         return _metatags.remove(metatagKey);
+    }
+
+    @Override
+    public String toBloomFilterKey() {
+        return getKey();
+    }
+
+    @Override
+    public int hashCode() {
+        return _key.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        MetatagsRecord other = (MetatagsRecord) obj;
+        return Objects.equals(_key, other._key) && Objects.equals(_metatags, other._metatags);
     }
 }

@@ -36,6 +36,7 @@ import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -87,6 +88,34 @@ public class Annotation extends TSDBEntity implements Serializable {
     }
 
     //~ Methods **************************************************************************************************************************************
+
+    /**
+     * Returns the size of the annotation in bytes.
+     *
+     * @return The size in bytes.
+     */
+    public int computeSizeBytes() {
+        int size = computeLength(_source);
+        size += computeLength(_id);
+        size += computeLength(_type);
+        size += computeLength(getScope());
+        size += Long.BYTES; // size of timestamp field
+        for (Map.Entry<String, String> e : _fields.entrySet()) {
+            size += e.getKey().length();
+            size += e.getValue().length();
+        }
+        for (Map.Entry<String, String> e : getTags().entrySet()) {
+            size += e.getKey().length();
+            size += e.getValue().length();
+        }
+        size += computeLength(getUid());
+        size += computeLength(getMetric());
+        return size;
+    }
+
+    private int computeLength(String s) {
+        return s != null ? s.length() : 0;
+    }
 
     /**
      * Returns the source of the annotation.
@@ -193,7 +222,7 @@ public class Annotation extends TSDBEntity implements Serializable {
      * @param  scope  The scope of the collection. Cannot be null or empty.
      */
     @Override
-    protected void setScope(String scope) {
+    public void setScope(String scope) {
         requireArgument(scope != null && !scope.trim().isEmpty(), "Scope cannot be null or empty.");
         super.setScope(scope);
     }
@@ -204,7 +233,7 @@ public class Annotation extends TSDBEntity implements Serializable {
      * @param  metric  The metric with which the annotation is associated. If not null, it cannot be empty.
      */
     @Override
-    protected void setMetric(String metric) {
+    public void setMetric(String metric) {
         requireArgument(metric == null || !metric.trim().isEmpty(), "Metric can be null, but if specified, cannot be empty");
         super.setMetric(metric);
     }
@@ -224,7 +253,7 @@ public class Annotation extends TSDBEntity implements Serializable {
      *
      * @param  timestamp  THe time stamp for the annotation. Cannot be null.
      */
-    private void setTimestamp(Long timestamp) {
+    public void setTimestamp(Long timestamp) {
         requireArgument(timestamp != null, "Timestamp cannot be null.");
         _timestamp = timestamp;
     }
@@ -268,6 +297,11 @@ public class Annotation extends TSDBEntity implements Serializable {
         String format = "timestamp=>{0,number,#}, scope=>{1}, metric=>{2}, tags=>{3}, type=>{4}, source=>{5}, sourceId=>{6}, fields=>{7}";
 
         return MessageFormat.format(format, params);
+    }
+    
+    public static String getIdentifierFieldsAsString(Annotation annotation) {
+        return new StringBuilder(annotation.getScope()).append(":").append(annotation.getMetric()).append(":")
+                .append(annotation.getTags().toString()).append(":").append(annotation.getType()).append(":").append(annotation.getTimestamp()).toString();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

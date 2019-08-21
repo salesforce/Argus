@@ -192,8 +192,11 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 		String limit = constants.get(0);
 		String type = constants.get(1);
 		Map<Metric, String> extendedSortedMap = createExtendedMap(metrics, type);
-		List<Metric> filteredMetricList = this.valueFilter.filter(extendedSortedMap, limit);
-
+		List<Metric> filteredMetricList = new ArrayList<Metric>();
+		if (extendedSortedMap.isEmpty()) {
+			return filteredMetricList;
+		}
+		filteredMetricList = this.valueFilter.filter(extendedSortedMap, limit);
 		return filteredMetricList;
 	}
 
@@ -202,7 +205,6 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 
 		for (Metric metric : metrics) {
 			String extendedEvaluation = internalReducer(metric, type);
-
 			if(extendedEvaluation!=null) {
 				extendedSortedMap.put(metric, extendedEvaluation);
 			}
@@ -212,7 +214,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 
 	@Override
 	public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-		throw new UnsupportedOperationException("Filter doesn't need list of list!");
+		throw new UnsupportedOperationException("Filter doesn't support multiple lists of metrics!");
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

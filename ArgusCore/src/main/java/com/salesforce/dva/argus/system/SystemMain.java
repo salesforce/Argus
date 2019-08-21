@@ -38,13 +38,14 @@ import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.NotifierFactory;
 import com.salesforce.dva.argus.service.Service;
 import com.salesforce.dva.argus.service.ServiceFactory;
-import static com.salesforce.dva.argus.system.SystemAssert.requireState;
 
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.Properties;
+
+import static com.salesforce.dva.argus.system.SystemAssert.requireState;
 
 /**
  * Loads the system configuration from disk and provides start up and shut down methods. Calling the shut down method before the start up method has
@@ -137,6 +138,9 @@ public final class SystemMain extends SystemService {
             _dispose(_serviceFactory.getTSDBService());
             _dispose(_serviceFactory.getCacheService());
             _dispose(_serviceFactory.getHistoryService());
+            _dispose(_serviceFactory.getAnnotationStorageService());
+            _dispose(_serviceFactory.getConsumerOffsetMetricStorageService());
+            // TODO - dispose of RefocusService.  QUESTION - where is alertservice disposed?
             _persistService.stop();
             _log.info("{} stopped.", getName());
         } catch (Exception ex) {
@@ -218,7 +222,7 @@ public final class SystemMain extends SystemService {
                     _mergeProperties(service.getServiceProperties());
                 } catch (Throwable e) {
                     _log.error(e.getMessage(), e);
-                    requireState(false, "Failed to load service properties for service factory method " + method.getName());
+                    requireState(false, "Failed to load service properties for service factory method; see previous logger error: " + method.getName());
                 }
             }
         }
@@ -245,7 +249,8 @@ public final class SystemMain extends SystemService {
                     method.setAccessible(accessible);
                     _mergeProperties(notifier.getNotifierProperties());
                 } catch (Exception e) {
-                    requireState(false, "Failed to load notifier properties for notifier factory method " + method.getName());
+                    _log.error(e.getMessage(), e);
+                    requireState(false, "Failed to load notifier properties for notifier factory method; See previous logger error: " + method.getName());
                 }
             }
         }

@@ -33,7 +33,6 @@ package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.service.monitor.GaugeExporter;
 
 import java.util.Map;
 
@@ -149,12 +148,12 @@ public interface MonitorService extends Service {
      *
      * @return isDataLagging boolean flag
      */
-    boolean isDataLagging();
+    boolean isDataLagging(String dataCenter);
 
 	/**
 	 * This is helper function so that we can export metrics to JMX metric exporter everywhere in the
 	 * system
-	 * 
+	 *
 	 * @param metric the metric to export
 	 * @param value  the value datapoint of the metric to be export
 	 */
@@ -190,61 +189,137 @@ public interface MonitorService extends Service {
         THREADS("argus.jvm", "thread.used"),
         PEAK_THREADS("argus.jvm", "thread.peak"),
         DAEMON_THREADS("argus.jvm", "thread.daemon"),
-        METRIC_WRITES("argus.core", "metric.writes"),
-        ANNOTATION_WRITES("argus.core", "annotation.writes"),
-        METRIC_READS("argus.core", "metric.reads"),
-        ANNOTATION_READS("argus.core", "annotation.reads"),
-        WARDEN_TRIGGERS("argus.core", "triggers.warden"),
-        SYSTEM_TRIGGERS("argus.core", "triggers.system"),
-        USER_TRIGGERS("argus.core", "triggers.user"),
-        JOBS_SCHEDULED("argus.core", "jobs.scheduled"),
+        MBEANSERVER_MBEAN_TOTAL("argus.jvm", "mbeanserver.mbean.total", MetricType.COUNTER),
+        METRIC_WRITES("argus.core", "metric.writes", MetricType.COUNTER),
+        ANNOTATION_WRITES("argus.core", "annotation.writes", MetricType.COUNTER),
+        ANNOTATION_DROPS_MAXSIZEEXCEEDED("argus.core", "annotation.drops.maxSizeExceeded", MetricType.COUNTER),
+        HISTOGRAM_WRITES("argus.core", "histogram.writes", MetricType.COUNTER),
+        HISTOGRAM_DROPPED("argus.core", "histogram.dropped", MetricType.COUNTER),
+        METRIC_READS("argus.core", "metric.reads", MetricType.COUNTER),
+        ANNOTATION_READS("argus.core", "annotation.reads", MetricType.COUNTER),
+        WARDEN_TRIGGERS("argus.core", "triggers.warden", MetricType.COUNTER),
+        SYSTEM_TRIGGERS("argus.core", "triggers.system", MetricType.COUNTER),
+        USER_TRIGGERS("argus.core", "triggers.user", MetricType.COUNTER),
+        JOBS_SCHEDULED("argus.core", "jobs.scheduled", MetricType.COUNTER),
         JOBS_MAX("argus.core", "jobs.max"),
+        ALERTS_KPI("argus.core", "alerts.kpi"),
         ALERTS_ENABLED("argus.core", "alerts.enabled"),
-        ALERTS_SCHEDULED("argus.core", "alerts.scheduled"),
+        ALERTS_SCHEDULED("argus.core", "alerts.scheduled", MetricType.COUNTER),
+        ALERTS_SCHEDULED_TOTAL("argus.core", "alerts.scheduled.total", MetricType.COUNTER),
         ALERTS_SCHEDULING_QUEUE_SIZE("argus.core", "alerts.scheduleQueue.size"),
-        ALERTS_EVALUATED("argus.core", "alerts.evaluated"),
-        ALERTS_FAILED("argus.core", "alerts.failed"),
-        ALERTS_EVALUATION_LATENCY("argus.core", "alerts.evaluation.latency"),
-        ALERTS_SKIPPED("argus.core", "alerts.skipped"),
-        NOTIFICATIONS_SENT("argus.core", "notifications.sent"),
-        TRIGGERS_VIOLATED("argus.core", "triggers.violated"),
-        ALERTS_MAX("argus.core", "alerts.max"),
-        ALERT_EVALUATION_KPI("argus.core", "alert.evaluation.kpi"),
-        DATAPOINT_READS("argus.core", "datapoint.reads"),
-        DATAPOINT_WRITES("argus.core", "datapoint.writes"),
-        UNIQUE_USERS("argus.core", "users.unique"),
-        DAILY_USERS("argus.core", "users.daily"),
-        MONTHLY_USERS("argus.core", "users.monthly"),
-        COMMIT_CLIENT_DATAPOINT_WRITES("argus.core", "commit.client.datapoint.writes"),
-        COMMIT_CLIENT_METRIC_WRITES("argus.core", "commit.client.metric.writes"),
-        SCHEMACOMMIT_CLIENT_METRIC_WRITES("argus.core", "schemacommit.client.metric.writes"),
+        ALERTS_EVALUATED("argus.core", "alerts.evaluated", MetricType.COUNTER),
+        ALERTS_EVALUATED_RAWTOTAL("argus.core", "alerts.evaluated.rawtotal", MetricType.COUNTER),
+        ALERTS_EVALUATED_TOTAL("argus.core", "alerts.evaluated.total", MetricType.COUNTER),
+        ALERTS_EVALUATION_STARTED("argus.alerts", "evaluation.started", MetricType.COUNTER),
+        ALERTS_EVALUATION_DELAYED("argus.alerts", "evaluation.delayed", MetricType.COUNTER),
+        ALERTS_FAILED("argus.core", "alerts.failed", MetricType.COUNTER),
+        ALERTS_EVALUATION_LATENCY("argus.core", "alerts.evaluation.latency", MetricType.COUNTER),
+        ALERTS_UPDATE_LATENCY("argus.core","alerts.update.latency"),
+        ALERTS_NEW_LATENCY("argus.core","alerts.new.latency"),
+        ALERTS_UPDATED_COUNT("argus.core","alerts.updated", MetricType.COUNTER),
+        ALERTS_CREATED_COUNT("argus.core","alerts.created", MetricType.COUNTER),
+        ALERTS_SKIPPED("argus.core", "alerts.skipped", MetricType.COUNTER),
+        TRANSFORMS_EVALUATED("argus.core", "transforms.evaluated", MetricType.COUNTER),
+        NOTIFICATIONS_SENT("argus.core", "notifications.sent", MetricType.COUNTER),
+        GOC_NOTIFICATIONS_FAILED("argus.core", "notifications.failed.goc", MetricType.COUNTER),
+        GUS_NOTIFICATIONS_FAILED("argus.core", "notifications.failed.gus", MetricType.COUNTER),
+        PAGERDUTY_NOTIFICATIONS_FAILED("argus.core", "notifications.failed.pagerduty", MetricType.COUNTER),
+        GOC_NOTIFICATIONS_RETRIES("argus.core", "notifications.retries.goc", MetricType.COUNTER),
+        GUS_NOTIFICATIONS_RETRIES("argus.core", "notifications.retries.gus", MetricType.COUNTER),
+        PAGERDUTY_NOTIFICATIONS_RETRIES("argus.core", "notifications.retries.pagerduty", MetricType.COUNTER),
+        TRIGGERS_VIOLATED("argus.core", "triggers.violated", MetricType.COUNTER),
+        ALERTS_MAX("argus.core", "alerts.max",MetricType.COUNTER),
+        ALERT_EVALUATION_KPI("argus.core", "alert.evaluation.kpi", MetricType.COUNTER),
+        DATAPOINT_READS("argus.core", "datapoint.reads", MetricType.COUNTER),
+        DATAPOINT_WRITES("argus.core", "datapoint.writes", MetricType.COUNTER),
+        UNIQUE_USERS("argus.core", "users.unique", MetricType.COUNTER),
+        DAILY_USERS("argus.core", "users.daily", MetricType.COUNTER),
+        MONTHLY_USERS("argus.core", "users.monthly", MetricType.COUNTER),
+        COMMIT_CLIENT_DATAPOINT_WRITES("argus.core", "commit.client.datapoint.writes", MetricType.COUNTER),
+        COMMIT_CLIENT_METRIC_WRITES("argus.core", "commit.client.metric.writes", MetricType.COUNTER),
+        SCHEMACOMMIT_CLIENT_METRIC_WRITES("argus.core", "schemacommit.client.metric.writes", MetricType.COUNTER),
 
-        SCOPEANDMETRICNAMES_WRITTEN("argus.core", "scopeandmetricnames.written"),
+        // MORE FINE GRAIN ALERT EVALUATION TIMERS
+        METRICQUERYPROCESSOR_EVALUATETSDBQUERY_LATENCY("argus.core", "metricqueryprocessor.evaluatetsdbquery.latency", MetricType.COUNTER),
+        METRICQUERYPROCESSOR_EVALUATETSDBQUERY_COUNT("argus.core", "metricqueryprocessor.evaluatetsdbquery.count", MetricType.COUNTER),
+        METRICS_GETMETRICS_LATENCY("argus.core", "metrics.getmetrics.latency", MetricType.COUNTER),
+        METRICS_GETMETRICS_COUNT("argus.core", "metrics.getmetrics.count", MetricType.COUNTER),
+        REDISCACHE_GET_LATENCY("argus.core", "rediscache.get.latency", MetricType.COUNTER),
+        REDISCACHE_GET_COUNT("argus.core", "rediscache.get.count", MetricType.COUNTER),
+        ALERTS_EVALUATION_ONLY_LATENCY("argus.core", "alerts.evaluation.nonotification.latency", MetricType.COUNTER),
+        ALERTS_EVALUATION_LATENCY_COUNT("argus.core", "alerts.evaluation.timer.count", MetricType.COUNTER),
+
+        SCOPEANDMETRICNAMES_WRITTEN("argus.core", "scopeandmetricnames.written", MetricType.COUNTER),
         SCOPEANDMETRICNAMES_WRITE_LATENCY("argus.core", "scopeandmetricnames.write.latency"),
-        SCOPEANDMETRICNAMES_QUERY_COUNT("argus.core", "scopeandmetricnames.query.count"),
+        SCOPEANDMETRICNAMES_QUERY_COUNT("argus.core", "scopeandmetricnames.query.count", MetricType.COUNTER),
         SCOPEANDMETRICNAMES_QUERY_LATENCY("argus.core", "scopeandmetricnames.query.latency"),
 
-        SCOPENAMES_WRITTEN("argus.core", "scopenames.written"),
+        QUERYSTORE_RECORDS_WRITTEN("argus.core", "querystore.records.written", MetricType.COUNTER),
+        QUERYSTORE_RECORDS_WRITE_LATENCY("argus.core", "querystore.records.write.latency"),
+
+        SCOPENAMES_WRITTEN("argus.core", "scopenames.written", MetricType.COUNTER),
         SCOPENAMES_WRITE_LATENCY("argus.core", "scopenames.write.latency"),
-        SCOPENAMES_QUERY_COUNT("argus.core", "scopenames.query.count"),
+        SCOPENAMES_QUERY_COUNT("argus.core", "scopenames.query.count", MetricType.COUNTER),
         SCOPENAMES_QUERY_LATENCY("argus.core", "scopenames.query.latency"),
 
-        SCHEMARECORDS_WRITTEN("argus.core", "schemarecords.written"),
+        SCHEMARECORDS_WRITTEN("argus.core", "schemarecords.written", MetricType.COUNTER),
         SCHEMARECORDS_WRITE_LATENCY("argus.core", "schemarecords.write.latency"),
-        SCHEMARECORDS_QUERY_COUNT("argus.core", "schemarecords.query.count"),
+        SCHEMARECORDS_QUERY_COUNT("argus.core", "schemarecords.query.count", MetricType.COUNTER),
+        SCHEMARECORDS_DOCS_PULLED("argus.core", "schemarecords.docs.pulled.count", MetricType.COUNTER),
         SCHEMARECORDS_QUERY_LATENCY("argus.core", "schemarecords.query.latency"),
 
-        METATAGS_WRITTEN("argus.core", "metatags.written"),
+        METATAGS_WRITTEN("argus.core", "metatags.written", MetricType.COUNTER),
         METATAGS_WRITE_LATENCY("argus.core", "metatags.write.latency"),
 
+        BLOOM_CREATED_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.created.approximate.element.count", MetricType.COUNTER),
+        BLOOM_MODIFIED_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.modified.approximate.element.count", MetricType.COUNTER),
 
-        BLOOMFILTER_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.approximate.element.count"),
-        BLOOMFILTER_SCOPE_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.only.approximate.element.count"),
-        BLOOMFILTER_SCOPE_AND_METRIC_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.and.metric.only.approximate.element.count"),
-        BLOOMFILTER_METATAGS_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.metatags.approximate.element.count");
+        QUERY_STORE_BLOOM_CREATED_APPROXIMATE_ELEMENT_COUNT("argus.core", "querystore.bloomfilter.created.approximate.element.count", MetricType.COUNTER),
+
+        DATALAG_PER_DC_TIME_LAG("argus.core", "datalag.seconds"),
+        DATALAG_PER_DC_OFFSET_LAG("argus.core", "datalag.offset"),
+        QUERY_DATAPOINTS_LIMIT_EXCEEDED("argus.core", "query.datapoints.limit.exceeded"),
+
+        ELASTIC_SEARCH_GET_FAILURES("argus.core", "elastic.search.get.failures", MetricType.COUNTER),
+
+        CONSUMER_OFFSET_RECORDS_WRITE_FAILURES("argus.core", "consumer.offset.records.write.failures", MetricType.COUNTER),
+        CONSUMER_OFFSET_RECORDS_WRITE_LATENCY("argus.core", "consumer.offset.records.write.latency", MetricType.COUNTER),
+        CONSUMER_OFFSET_RECORDS_READ_LATENCY("argus.core", "consumer.offset.records.read.latency", MetricType.COUNTER),
+
+
+        ANNOTATION_RECORDS_WRITE_FAILURES("argus.core", "annotation.records.write.failures", MetricType.COUNTER),
+        IMAGE_RECORDS_WRITE_FAILURES("argus.core", "image.records.write.failures", MetricType.COUNTER);
 
         private final String _scope;
         private final String _metric;
+        private final MetricType _type;
+        private final String _jmxMetricNameSuffix;
+
+        /**
+         * Creates a new Counter object.
+         *
+         * @param  scope   The counter scope name.
+         * @param  metric  The corresponding metric name.
+         * @param  type    The corresponding metric type.
+         * @param  jmxMetricNameSuffix This will be appended to the JMX metric name used by Prometheus.
+         */
+        Counter(String scope, String metric, MetricType type, String jmxMetricNameSuffix) {
+            _scope = scope;
+            _metric = metric;
+            _type = type;
+            _jmxMetricNameSuffix = jmxMetricNameSuffix;
+        }
+
+        /**
+         * Creates a new Counter object.
+         *
+         * @param  scope   The counter scope name.
+         * @param  metric  The corresponding metric name.
+         * @param  type    The corresponding metric type.
+         */
+        Counter(String scope, String metric, MetricType type) {
+            this(scope, metric, type, MetricType.COUNTER == type ? ".count" : "");
+        }
 
         /**
          * Creates a new Counter object.
@@ -253,8 +328,7 @@ public interface MonitorService extends Service {
          * @param  metric  The corresponding metric name.
          */
         Counter(String scope, String metric) {
-            _scope = scope;
-            _metric = metric;
+            this(scope, metric, MetricType.GAUGE, "");
         }
 
         /**
@@ -289,6 +363,23 @@ public interface MonitorService extends Service {
          */
         public String getMetric() {
             return _metric;
+        }
+
+        /**
+         * Retrieves the metric type for the counter.
+         *
+         * @return  The metric type for the counter. Will not be null.
+         */
+        public MetricType getMetricType() {
+            return _type;
+        }
+
+        public String getJMXMetricNameSuffix() {return _jmxMetricNameSuffix; }
+
+        public static enum MetricType {
+            COUNTER,
+            GAUGE,
+            TIMER
         }
     }
 }

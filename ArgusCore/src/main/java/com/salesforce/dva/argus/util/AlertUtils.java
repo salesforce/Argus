@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
 /**
  * Utility functions for the alert evaluation flow
  *
@@ -21,7 +23,7 @@ public class AlertUtils {
 
 	private static final Logger _logger = LoggerFactory.getLogger(AlertUtils.class);
 
-	public static boolean isScopePresentInWhiteList(String expression, List<Pattern> scopeRegexPatterns) {
+	public static boolean isPatternPresentInWhiteList(String expression, List<Pattern> scopeRegexPatterns) {
 		for(Pattern regexPattern : scopeRegexPatterns) {
 			if(regexPattern.matcher(expression.toLowerCase()).find()) {
 				return true;
@@ -35,7 +37,7 @@ public class AlertUtils {
 	     return times[1] - times[0];
 	}
 
-	public static Long[] getStartAndEndTimes(String originalExpression, Long relativeTo) {
+    public static Long[] getStartAndEndTimes(String originalExpression, Long relativeTo) {
 		String expression = "@" + originalExpression.replaceAll("[\\s\\t\\r\\n\\f]*", "");
 		String regexMatcherWithStartAndEnd = "(?i)\\-[0-9]+(d|m|h|s):\\-[0-9]+(d|m|h|s)";
 		String regexMatcherWithFILL = "(?i)FILL\\(#\\-[0-9]+(d|h|m|s),#\\-[0-9]+(d|h|m|s)";
@@ -46,6 +48,7 @@ public class AlertUtils {
 			Matcher m = Pattern.compile(regexMatcherWithStartAndEnd).matcher(expression);
 			while (m.find()) {
 				String[] times = m.group().split(":");
+				requireArgument(times.length == 2, MessageFormat.format("Regex matching returns single timestamp for string: {0} with regex: {1} and matched group: {2}", expression, regexMatcherWithStartAndEnd, m.group()));
 				Long currentLength = MetricReader.getTime(relativeTo, times[1]) - MetricReader.getTime(relativeTo, times[0]);
 				if(currentLength > longestLength) {
 				    longestLength = currentLength;
@@ -58,6 +61,7 @@ public class AlertUtils {
 			m = Pattern.compile(regexMatcherWithFILL).matcher(expression);
 			while (m.find()) {
 				String[] times = m.group().substring(6, m.group().length() - 1).split("#,#");
+				requireArgument(times.length == 2, MessageFormat.format("Regex matching returns single timestamp for string: {0} with regex: {1} and matched group: {2}", expression, regexMatcherWithStartAndEnd, m.group()));
 				Long currentLength = MetricReader.getTime(relativeTo, times[1]) - MetricReader.getTime(relativeTo, times[0]);
 				if(currentLength > longestLength) {
 				    longestLength = currentLength;
@@ -95,17 +99,18 @@ public class AlertUtils {
 
 			Matcher m = Pattern.compile(regexMatcherWithStartAndEnd).matcher(expression);
 			while (m.find()) {
-				for (String timeStr: m.group().split(":")) {
-					Long absoluteTime = MetricReader.getTime(relativeTo, timeStr);
-					expression = expression.replaceFirst(timeStr, ""  + absoluteTime);
-				}
+				String[] times = m.group().split(":");
+				requireArgument(times.length == 2, MessageFormat.format("Regex matching returns single timestamp for string: {0} with regex: {1} and matched group: {2}", expression, regexMatcherWithStartAndEnd, m.group()));
+				Long absoluteTimeStart = MetricReader.getTime(relativeTo, times[0]);
+				Long absoluteTimeEnd = MetricReader.getTime(relativeTo, times[1]);
+				expression = expression.replaceAll(m.group(), ""  + absoluteTimeStart + ":" + absoluteTimeEnd);
 			}
 
 			m = Pattern.compile(regexMatcherWithConstants).matcher(expression);
 			while (m.find()) {
 				String timeStr = m.group();
 				Long absoluteTime = MetricReader.getTime(relativeTo, timeStr.substring(1));
-				expression = expression.replaceFirst(timeStr, ("" + timeStr.charAt(0)) + absoluteTime);
+				expression = expression.replaceAll(timeStr, ("" + timeStr.charAt(0)) + absoluteTime);
 			}
 
 			m = Pattern.compile(regexMatcherWithoutEnd).matcher(expression);
@@ -121,5 +126,4 @@ public class AlertUtils {
 
 		return absoluteExpression;
 	}
-
 }

@@ -30,39 +30,10 @@
  */
 package com.salesforce.dva.argus.service.schedule;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.google.inject.persist.Transactional;
-import com.salesforce.dva.argus.entity.Alert;
-import com.salesforce.dva.argus.entity.DistributedSchedulingLock;
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.entity.Notification;
-import com.salesforce.dva.argus.entity.ServiceManagementRecord;
-import com.salesforce.dva.argus.entity.Trigger;
-import com.salesforce.dva.argus.entity.ServiceManagementRecord.Service;
-import com.salesforce.dva.argus.entity.Trigger.TriggerType;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
-import com.salesforce.dva.argus.service.AlertService;
-import com.salesforce.dva.argus.service.AuditService;
-import com.salesforce.dva.argus.service.DefaultService;
-import com.salesforce.dva.argus.service.DistributedSchedulingLockService;
-import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.GlobalInterlockService.LockType;
-import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.service.SchedulingService;
-import com.salesforce.dva.argus.service.ServiceManagementService;
-import com.salesforce.dva.argus.service.TSDBService;
-import com.salesforce.dva.argus.service.UserService;
-import com.salesforce.dva.argus.service.alert.AlertDefinitionsCache;
-import com.salesforce.dva.argus.service.monitor.GaugeExporter;
-import com.salesforce.dva.argus.system.SystemConfiguration;
-
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.slf4j.Logger;
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +45,34 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.slf4j.Logger;
+
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import com.google.inject.persist.Transactional;
+import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.DistributedSchedulingLock;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.ServiceManagementRecord;
+import com.salesforce.dva.argus.entity.ServiceManagementRecord.Service;
+import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.service.AlertService;
+import com.salesforce.dva.argus.service.AuditService;
+import com.salesforce.dva.argus.service.DefaultService;
+import com.salesforce.dva.argus.service.DistributedSchedulingLockService;
+import com.salesforce.dva.argus.service.GlobalInterlockService.LockType;
+import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.MonitorService;
+import com.salesforce.dva.argus.service.SchedulingService;
+import com.salesforce.dva.argus.service.ServiceManagementService;
+import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.UserService;
+import com.salesforce.dva.argus.service.alert.AlertDefinitionsCache;
+import com.salesforce.dva.argus.system.SystemConfiguration;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of Distributed scheduling using database
@@ -88,8 +86,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 
 	//~ Instance fields ******************************************************************************************************************************
 
-	@SLF4JTypeListener.InjectLogger
-	private Logger _logger;
+	private final Logger _logger = LoggerFactory.getLogger(DistributedDatabaseSchedulingService.class);
 	private final AlertService _alertService;
 	private final UserService _userService;
 	private final ServiceManagementService _serviceManagementRecordService;
@@ -301,7 +298,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 		 * Creates a new SchedulingThread object.
 		 *
 		 * @param  name      The name of the thread.
-		 * @param  Schedulingtype  Type of the schedule. Cannot be null.
+		 * @param  lockType  Type of the lockType. TODO: this isn't used?
 		 */
 		public SchedulingThread(String name, LockType lockType) {
 			super(name);
@@ -446,7 +443,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 						notification.setTriggers(alert.getTriggers());
 					}
 					alert = _alertService.updateAlert(alert);
-					Metric trackerMetric = new Metric("argus.core", "alerts.kpi");
+					Metric trackerMetric = new Metric(MonitorService.Counter.ALERTS_KPI.getScope(), MonitorService.Counter.ALERTS_KPI.getMetric());
 					trackerMetric.setTag("host",SystemConfiguration.getHostname());
 					Map<Long, Double> datapoints = new HashMap<>();
 					datapoints.put(fiveMinuteStartTime, 1.0);
@@ -454,6 +451,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					//sleeping for a minute to make sure the new alert is updated in cache
 					sleep(60*1000);
 					
+					_alertService.exportMetric(trackerMetric, 1.0);
 					try {
 						_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackerMetric}));
 					} catch (Exception ex) {
@@ -466,27 +464,26 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					boolean alertEvaluated = false;
 					while(System.currentTimeMillis() < currCycleEndTime) {
 						try {
-							List<Metric> metrics = _metricService.getMetrics("-5m:notifications.sent:alert-"+alert.getId().intValue()+":zimsum:1m-sum");
-							if(metrics!=null && !metrics.isEmpty()) {
-								for(Metric metric : metrics) {
-									if(metric.getDatapoints()!=null && metric.getDatapoints().keySet().size()>0) {
-										List<Long> notificationTimestamps = new ArrayList<Long>(metric.getDatapoints().keySet());
-										Collections.sort(notificationTimestamps);
-										long notificationSentTime = notificationTimestamps.get(0);
-										long alertEvaluationTime = notificationSentTime - metricPublishTime;
-										alertEvaluated = true;
-										publishKPIMetric(fiveMinuteStartTime, new Double(alertEvaluationTime));
-									}
-								}
+							List<Metric> metrics = _metricService.getMetrics("-5m:argus.alerts:notifications.sent{alertId="+alert.getId().intValue()+"}:zimsum:1m-sum").getMetricsList();
+							if(metrics != null && !metrics.isEmpty()) {
+								_logger.info("AlertEvaluationKPIReporter: Found notifications.sent.alert for dedicated test alert:{}", alert.getId());
+
+								long notificationSeenTime = System.currentTimeMillis();
+								long alertEvaluationTime = notificationSeenTime - metricPublishTime;
+								alertEvaluated = true;
+								publishKPIMetric(fiveMinuteStartTime, new Double(alertEvaluationTime));
+								break;
 							}else {
                                  sleep(10*1000);
 							}
-							if(alertEvaluated){
-								break;
-							}
 						}catch(Exception ex) {
-							_logger.info("Exception occured when getting notification related datapoints - "+ ex.getMessage());
-							 sleep(10*1000);
+							//NOTE: donot log error for missing expected metrics, as it may take time to be available
+							if (!ex.getMessage().startsWith("Failed to get metrics")){
+								_logger.error("AlertEvaluationKPIReporter: Hit exception when generating alert.evaluation.kpi metrics - "+ ex.getMessage());
+							} else {
+								_logger.warn("AlertEvaluationKPIReporter: Expected test alert {}:{} has not been sent, wait for 10 more seconds...", alert.getId(), alert.getName());
+							}
+							sleep(10*1000);
 						}
 					}
 
@@ -497,7 +494,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 				} catch(Exception e) {
 					_logger.error("Exception occured when computing alert evaluation kpi metric - "+ ExceptionUtils.getFullStackTrace(e));
 				} finally {
-					_logger.error("marking alert with name {} and id {} for deletion", alert.getName(), alert.getId() == null? null: alert.getId().intValue());
+					_logger.info("marking alert with name {} and id {} for deletion", alert.getName(), alert.getId() == null? null: alert.getId().intValue());
 					_alertService.markAlertForDeletion(alert.getName(), _userService.findAdminUser());
 				}
 			}

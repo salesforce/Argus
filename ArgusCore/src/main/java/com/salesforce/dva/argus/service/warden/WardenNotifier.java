@@ -47,6 +47,7 @@ import com.salesforce.dva.argus.service.WardenService;
 import com.salesforce.dva.argus.service.WardenService.SubSystem;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.DefaultNotifier;
+import com.salesforce.dva.argus.service.mail.EmailContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import java.math.BigInteger;
 import java.text.MessageFormat;
@@ -135,7 +136,7 @@ public abstract class WardenNotifier extends DefaultNotifier {
     }
 
     @Override
-    protected abstract void sendAdditionalNotification(NotificationContext context);
+    protected abstract boolean sendAdditionalNotification(NotificationContext context);
 
     /**
      * Add annotation for user suspension to the <tt>triggers.warden</tt> metric..
@@ -197,11 +198,21 @@ public abstract class WardenNotifier extends DefaultNotifier {
         } else {
             message.append(MessageFormat.format("<br>Reinstatement Time: {0}", DATE_FORMATTER.get().format(new Date(record.getSuspendedUntil()))));
         }
-        _mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
+
+        EmailContext.Builder emailContextBuilder = new EmailContext.Builder()
+                .withRecipients(to)
+                .withSubject(subject)
+                .withEmailBody(message.toString())
+                .withContentType("text/html; charset=utf-8")
+                .withEmailPriority(MailService.Priority.HIGH);
+        _mailService.sendMessage(emailContextBuilder.build());
         to.clear();
         to.add("argus-admin@salesforce.com");
         message.append("<p><a href='").append(getAlertUrl(context.getAlert().getId())).append("'>Click here to view alert definition.</a><br/>");
-        _mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
+        emailContextBuilder = emailContextBuilder
+                .withRecipients(to)
+                .withEmailBody(message.toString());
+        _mailService.sendMessage(emailContextBuilder.build());
     }
 
     private String getAlertUrl(BigInteger id) {
@@ -232,11 +243,11 @@ public abstract class WardenNotifier extends DefaultNotifier {
      * @param notificationContext The notification context. 
      */
     @Override
-    public void clearNotification(NotificationContext notificationContext) { }
+    public boolean clearNotification(NotificationContext notificationContext) {  return true; }
 
     /** No additional action needs to be taken for clearing warden notifications as they are not stateful.  This implementation is empty. */
     @Override
-    protected void clearAdditionalNotification(NotificationContext context) { }
+    protected boolean clearAdditionalNotification(NotificationContext context) { return true; }
     
     @Override
     public Properties getNotifierProperties() {

@@ -415,8 +415,11 @@ public class DefaultWardenService extends DefaultJPAService implements WardenSer
         if (wardenAlert == null) {
             wardenAlert = _constructWardenAlertForUser(user, counter);
         }
-        wardenAlert.setEnabled(true);
-        _alertService.updateAlert(wardenAlert);
+        
+        if(!wardenAlert.isEnabled()) {
+            wardenAlert.setEnabled(true);
+           _alertService.updateAlert(wardenAlert);
+        }
     }
 
     private void _enableWarden(boolean enabled) {
@@ -526,7 +529,7 @@ public class DefaultWardenService extends DefaultJPAService implements WardenSer
                 try {
                     _logger.info("Disabling warden alert:{}", alert.getName());
 
-                    List<Metric> metrics = _metricService.getMetrics(alert.getExpression());
+                    List<Metric> metrics = _metricService.getMetrics(alert.getExpression()).getMetricsList();
                     Metric metric = metrics.isEmpty() ? null : metrics.get(0);
 
                     if (metric == null || metric.getDatapoints().isEmpty()) {

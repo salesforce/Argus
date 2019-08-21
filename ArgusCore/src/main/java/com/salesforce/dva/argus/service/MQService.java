@@ -156,6 +156,8 @@ public interface MQService extends Service {
         METRIC("argusMetricQueue"),
         /** The name of the queue into which submitted annotation data is put. */
         ANNOTATION("argusAnnotationQueue"),
+        /** The name of the queue into which submitted histogram data is put. */
+        HISTOGRAM("argusHistogramQueue"),
         /** The name of the queue into which all enabled jobs are put. 
          * The scheduler then enqueues them and determines whether they are to be scheduled or not. */
         TASKQUEUE("argusTaskQueue"),

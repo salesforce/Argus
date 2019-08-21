@@ -36,6 +36,8 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.util.QueryContext;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Transforms the name of one or more metrics.<br>
@@ -113,6 +115,7 @@ public class AliasTransform implements Transform {
             	String newScopeName = metric.getScope().replaceAll(scopeSearchRegex, scopeReplaceText);
             	metric.setScope(newScopeName);
             }
+            metric.setDisplayName(getDisplayName(metric));
         }
         
         return metrics;
@@ -125,7 +128,41 @@ public class AliasTransform implements Transform {
 
     @Override
     public List<Metric> transform(QueryContext queryContext, @SuppressWarnings("unchecked") List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("Alias doesn't need list of list!");
+        throw new UnsupportedOperationException("Alias doesn't support multiple lists of metrics!");
     }
+
+    private String getDisplayName(Metric metric) {
+    		StringBuilder result = new StringBuilder();
+    		if(metric.getScope() != null && metric.getScope().length()>0 && !metric.getScope().equals(AliasByTagTransform.DEFAULT_SCOPE_NAME)) {
+    			result.append(metric.getScope());
+    		}
+    		if(metric.getScope() != null && metric.getScope().length()>0 && !metric.getScope().equals(AliasByTagTransform.DEFAULT_SCOPE_NAME)
+    				&& metric.getMetric() != null && metric.getMetric().length()>0) {
+    			result.append(':');    			
+    		}
+    		if(metric.getMetric() != null && metric.getMetric().length()>0) {
+    			result.append(metric.getMetric());
+    		}
+    		
+    		result.append(createTagString(metric.getTags())); 
+    		return result.toString();
+    }
+    
+    private String createTagString(Map<String, String> tags) {
+    		StringBuilder result = new StringBuilder();
+    		if(tags != null && tags.size()>0) {
+    			result.append('{');
+    			for(Entry<String, String> tag:tags.entrySet()) {
+    				result.append(tag.getKey());
+    				result.append('=');
+    				result.append(tag.getValue());
+    				result.append(',');
+    			}
+    			result.deleteCharAt(result.length()-1);
+    			result.append('}');
+    		}
+    		return result.toString();
+    }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

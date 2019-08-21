@@ -263,6 +263,10 @@ angular.module('argus.directives.charts.heatmap', [])
 						.style('display', displayProperty)
 						.attr('displayProperty', displayProperty);//this is for recording the display property when circle is outside range
 				}
+				// change chart type
+				$scope.changeChartType = function (type) {
+					$scope.$parent.resetChartType(type);
+				}
 			}],
 			// compile: function (iElement, iAttrs, transclude) {},
 			link: function (scope, element) {
@@ -336,7 +340,7 @@ angular.module('argus.directives.charts.heatmap', [])
 				// color scheme
 				var z = ChartToolService.setColorScheme(scope.menuOption.colorPalette);
 				// determine chart layout and dimensions
-				var containerHeight = isSmallChart ? 150 : 330;
+				var containerHeight = isSmallChart ? ChartElementService.smallChartHeight : ChartElementService.defaultChartHeight;
 				var containerWidth = $('#' + chartId).width();
 				// remember the original size
 				var defaultContainerWidth = -1;

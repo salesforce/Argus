@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -27,7 +28,9 @@ import com.salesforce.dva.argus.entity.SchemaQuery;
 import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.DiscoveryService;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.NamedBinding;
+import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
@@ -41,6 +44,8 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final int EXPIRY_TIME_SECS = 3600;
 	private final long UPPER_LIMIT_TIME_GET_QUERIES_IN_MILLIS;
+    private final long _maxDataPointsPerQuery;
+    private final boolean _enforceDatapointsLimit;
 	
 	//~ Instance fields ******************************************************************************************************************************
 
@@ -48,11 +53,12 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
     private final DiscoveryService _discoveryService;
     private final CacheService _cacheService;
     private final ExecutorService _executorService;
+    private final MonitorService _monitorService;
 
     //~ Constructors *********************************************************************************************************************************
 
     @Inject
-    public CachedDiscoveryService(CacheService cacheService, @NamedBinding DiscoveryService discoveryService, SystemConfiguration config) {
+    public CachedDiscoveryService(CacheService cacheService, @NamedBinding DiscoveryService discoveryService, SystemConfiguration config, MonitorService monitorService) {
     	super(config);
     	SystemAssert.requireArgument(cacheService != null, "Cache Service cannot be null.");
         SystemAssert.requireArgument(discoveryService != null, "Discovery Service cannot be null.");
@@ -63,6 +69,9 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
         _cacheService = cacheService;
         _discoveryService = discoveryService;
         _executorService = Executors.newCachedThreadPool();
+        _maxDataPointsPerQuery = Long.valueOf(config.getValue(SystemConfiguration.Property.MAX_DATAPOINTS_ALLOWED_PER_QUERY));
+        _enforceDatapointsLimit = Boolean.valueOf(config.getValue(SystemConfiguration.Property.ENFORCE_DATAPOINTS_LIMIT));
+        this._monitorService = monitorService;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -114,25 +123,27 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 		if(DiscoveryService.isWildcardQuery(query)) {
 			String value = _cacheService.get(_getKey(query));
 			if(value == null) { // Cache Miss
-				_logger.info(MessageFormat.format("CACHE MISS for Wildcard Query: '{'{0}'}'. Will read from persistent storage.", query));
+				_logger.debug(MessageFormat.format("CACHE MISS for Wildcard Query: {0}. Will read from persistent storage.", query));
 				queries = _discoveryService.getMatchingQueries(query);
 				
 				long timeToGetQueriesMillis = (System.nanoTime() - start) / 1000000;
-				_logger.info("Time to get matching queries from store in ms: " + timeToGetQueriesMillis);
+				_logger.debug("Time to get matching queries from store in ms: " + timeToGetQueriesMillis);
 				if(timeToGetQueriesMillis > UPPER_LIMIT_TIME_GET_QUERIES_IN_MILLIS){
 					_logger.warn("Long time to get matching queries in ms: {} for query {}", timeToGetQueriesMillis, query);
 				}
 				
 				_executorService.submit(new CacheInsertWorker(query, queries));
 			} else { // Cache Hit
-				_logger.info(MessageFormat.format("CACHE HIT for Wildcard Query: '{'{0}'}'", query));
-				_logger.info("Time to get matching queries from cache in ms: " + (System.nanoTime() - start) / 1000000);
+				_logger.debug(MessageFormat.format("CACHE HIT for Wildcard Query: {0}", query));
+				_logger.debug("Time to get matching queries from cache in ms: " + (System.nanoTime() - start) / 1000000);
 				try {
 					JavaType type = MAPPER.getTypeFactory().constructCollectionType(List.class, MetricQuery.class);
 					List<MetricQuery> matchedQueries = MAPPER.readValue(value, type);
 					_checkIfExceedsLimits(query, matchedQueries);
 					for(int i=0; i<matchedQueries.size(); i++) {
 						MetricQuery q = new MetricQuery(query);
+						q.setShowHistogramBuckets(query.getShowHistogramBuckets());
+						q.setPercentile((query.getPercentile()));
 						_replaceWildcardFieldsFromCachedQuery(matchedQueries.get(i), q);
 						queries.add(q);
 					}
@@ -143,7 +154,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 				}
 			}
 		} else {
-			_logger.info(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
+			_logger.debug(MessageFormat.format("MetricQuery {0} does not have any wildcards", query));
 			queries.add(query);
 		}
 
@@ -188,14 +199,14 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 	
 	private void _checkIfExceedsLimits(MetricQuery query, List<MetricQuery> matchedQueries) {
 		
-		int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query);
+		int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query, _maxDataPointsPerQuery);
 		int numOfExpandedTimeseries = 1;
 		for(MetricQuery mq : matchedQueries) {
 			numOfExpandedTimeseries += DiscoveryService.numApproxTimeseriesForQuery(mq);
 		}
 		
 		if(numOfExpandedTimeseries > noOfTimeseriesAllowed) {
-			throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
+		    DiscoveryService.throwMaximumDatapointsExceededException(query, _maxDataPointsPerQuery, _enforceDatapointsLimit, _monitorService, _logger);
 		}
 	}
 
@@ -246,7 +257,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 		try {
 			Map<String, String> sortedTags = Collections.emptyMap();
 			if(query.getTags() != null && !query.getTags().isEmpty()) {
-				sortedTags = new TreeMap<>(query.getTags());
+				sortedTags = query.getTags();
 			}
 			
 			String key = MessageFormat.format("{0}:{1}'{'{2}'}'", query.getScope(), query.getMetric(), MAPPER.writeValueAsString(sortedTags));

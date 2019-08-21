@@ -32,8 +32,12 @@
 package com.salesforce.dva.argus.util;
 
 import java.util.Date;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.TriggerBuilder;
 
@@ -44,125 +48,100 @@ import org.quartz.TriggerBuilder;
  */
 public class Cron {
 
-	//~ Static fields/initializers *******************************************************************************************************************
-
-	private static final String ANNUALLY = "@ANNUALLY";
-	private static final String YEARLY = "@YEARLY";
-	private static final String MONTHLY = "@MONTHLY";
-	private static final String WEEKLY = "@WEEKLY";
-	private static final String DAILY = "@DAILY";
-	private static final String MIDNIGHT = "@MIDNIGHT";
-	private static final String HOURLY = "@HOURLY";
-
 	//~ Constructors *********************************************************************************************************************************
 
 	private Cron() { }
 
 	//~ Methods **************************************************************************************************************************************
 
-	/**
-	 * Determines if the given CRON entry is runnable at this current moment in time. This mimics the original implementation of the CRON table.
-	 *
-	 * <p>This implementation supports only the following types of entries:</p>
-	 *
-	 * <ol>
-	 *   <li>Standard Entries having form: &lt;minutes&gt; &lt;hours&gt; &lt;days&gt; &lt;months&gt; &lt;days of week&gt;
-	 *
-	 *     <ul>
-	 *       <li>* : All</li>
-	 *       <li>*\/n : Only mod n</li>
-	 *       <li>n : Numeric</li>
-	 *       <li>n-n : Range</li>
-	 *       <li>n,n,...,n : List</li>
-	 *       <li>n,n-n,...,n : List having ranges</li>
-	 *     </ul>
-	 *   </li>
-	 *   <li>Special Entries
-	 *
-	 *     <ul>
-	 *       <li>@annually : equivalent to "0 0 1 1 *"</li>
-	 *       <li>@yearly : equivalent to "0 0 1 1 *"</li>
-	 *       <li>@monthly : equivalent to "0 0 1 * *"</li>
-	 *       <li>@weekly : equivalent to "0 0 * * 0"</li>
-	 *       <li>@daily : equivalent to "0 0 * * *"</li>
-	 *       <li>@midnight : equivalent to "0 0 * * *"</li>
-	 *       <li>@hourly : equivalent to "0 * * * *"</li>
-	 *     </ul>
-	 *   </li>
-	 * </ol>
-	 *
-	 * @param   entry   The CRON entry to evaluate.
-	 * @param   atTime  The time at which to evaluate the entry.
-	 *
-	 * @return  true if the the current time is a valid runnable time with respect to the supplied entry.
-	 */
-	public static boolean shouldRun(String entry, Date atTime) {
-		entry = entry.trim().toUpperCase();
-		if (ANNUALLY.equals(entry) || (YEARLY.equals(entry))) {
-			entry = "0 0 1 1 *";
-		} else if (MONTHLY.equals(entry)) {
-			entry = "0 0 1 * *";
-		} else if (WEEKLY.equals(entry)) {
-			entry = "0 0 * * 0";
-		} else if (DAILY.equals(entry) || (MIDNIGHT.equals(entry))) {
-			entry = "0 0 * * *";
-		} else if (HOURLY.equals(entry)) {
-			entry = "0 * * * *";
-		}
-		return new CronTabEntry(entry).isRunnable(atTime);
-	}
-
-	/**
-	 * Indicates if a CRON entry should run at the current moment in time.
-	 *
-	 * @param   entry  The CRON entry to evaluate.
-	 *
-	 * @return  true if the the current time is a valid runnable time with respect to the supplied entry.
-	 */
-	public static boolean shouldRun(String entry) {
-		return Cron.shouldRun(entry, new Date());
-	}
-
-	/**
-	 * Determines if an entry is valid CRON syntax.
-	 *
-	 * @param   entry  The CRON entry.
-	 *
-	 * @return  True if the entry is valid CRON syntax.
-	 */
-	public static boolean isValid(String entry) {
-		boolean result = true;
-
-		try {
-			shouldRun(entry);
-		} catch (Exception ex) {
-			result = false;
-		}
-		return result;
-	}
-
 	public static boolean isCronEntryValid(String cronEntry) {
-		String quartzCronEntry = convertToQuartzCronEntry(cronEntry);
 
 		try {
-			// throws runtime exception if the cronEntry is invalid
+			String quartzCronEntry = convertToQuartzCronEntry(cronEntry);
 			TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(quartzCronEntry)).build();
-		}catch(Exception e) {
+		} catch(Exception e) {
 			return false;
 		}
 		return true;
 	}
 
-	public static String convertToQuartzCronEntry(String cronEntry) {
-		// adding seconds field
-		cronEntry = "0 " + cronEntry.trim();
+	// Quartz Cron fields:
+	// Seconds = 0
+	// Minutes = 1
+	// Hours   = 2
+	private static final int DayOfMonth = 3;
+	// Month   = 4
+	private static final int DayOfWeek = 5;
+	// Year    = 6
 
-		// if day of the week is not specified, substitute it with ?, so as to prevent conflict with month field
-		if(cronEntry.charAt(cronEntry.length() - 1) == '*') {
-			return cronEntry.substring(0, cronEntry.length() - 1) + "?";
-		}else {
-			return cronEntry;
+	/*  @name: convertToQuartzCronEntry
+	    @description: Argus accepts and stores 5 field Quartz Cron entries because it is not designed to schedule
+	                  alert evaluation more often than once per minute.  This function normalizes 5 
+	                  field cron entries to 6 field cron entries by prepending the seconds field, and is a bit more
+	                  permissive in accepting * where ? should be used in valid Quartz cron entries.
+
+	    @param: cronEntry: A Quartz Cron Entry with seconds absent (normally 5 fields).
+	               Day of week may also be absent (4 fields).  Year is optional.
+	               Does NOT support special values (@yearly, @monthly, @daily, etc.)
+
+	    @returns: A valid Quartz Cron entry.
+	 */  
+	// TODO - rename to convertArgusCronToQuartzCron(), normalizeArgusQuartzCron(), etc.
+
+	public static String convertToQuartzCronEntry(String cronEntry) {
+
+		String tmpCron = "0 " + cronEntry.trim();
+
+		List<String> parts = new ArrayList<String>(Arrays.asList(tmpCron.split("\\s+")));
+		if (parts.size() < 5 || parts.size() > 7 )
+		{
+			throw new RuntimeException("Invalid input cron expression: " + cronEntry + ", too many or too few fields");
 		}
+
+		// if day of week is not specified, add '?' so as to prevent conflict with the month field.
+		if (parts.size() == 5) {
+			parts.add("?");
+		}
+
+		// Quartz doesn't support specification of both DOM and DOW, but for some reason it thinks that
+		// * is an explicit specification in these context, whereas ? is handled as any.
+		// Translation table: dom,dow -> dom,dow
+		// -------------------------------------------------
+		//  DOM         *            ?            X
+		//  DOW *     {?,*}         {*,?}        {X,?}
+		//      ?     {*,?}         {?,*}        {X,?}
+		//      X     {?,X}         {?,X}        {X,X}
+
+
+		String dom   = parts.get(DayOfMonth);
+		String dow   = parts.get(DayOfWeek);
+
+		// NOTE - no adjustments to dom, dow because alerts can be modified by calls to the UI and the WS.
+
+		if ( dow.equals("*") && dom.equals("*"))
+		{
+			dom = "?";
+		}
+		else if ( dow.equals("*") && !dom.equals("?") && !dom.equals("*"))
+		{
+			dow = "?";
+		}
+		else if (dom.equals("*") && !dow.equals("?") && !dow.equals("*"))
+		{
+			dom = "?";
+		}
+		else if (dom.equals("?") && dow.equals("?"))
+		{
+			dow = "*";
+		}
+
+		parts.set(DayOfMonth, dom);
+		parts.set(DayOfWeek, dow);
+
+
+		String quartzCron = String.join(" ", parts);
+		return quartzCron;
 	}
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

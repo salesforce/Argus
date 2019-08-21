@@ -28,74 +28,93 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.service.GlobalInterlockService.LockType;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class GlobalInterlockServiceTest extends AbstractTest {
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+
+public class GlobalInterlockServiceTest {
 
     private static final long EXPIRATION_MS = 750;
 
+    private SystemMain system;
+    private GlobalInterlockService globalInterlockService;
+
+    @Before
+    public void setUp() {
+        system = TestUtils.getInstance();
+        system.start();
+        globalInterlockService = system.getServiceFactory().getGlobalInterlockService();
+    }
+
+    @After
+    public void tearDown() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
+
+
     @Test
     public void testReleaseNonexistentScheduleLock() {
-        GlobalInterlockService service = system.getServiceFactory().getGlobalInterlockService();
 
-        assertFalse(service.releaseLock(LockType.ALERT_SCHEDULING, String.valueOf(System.currentTimeMillis())));
+        assertFalse(globalInterlockService.releaseLock(LockType.ALERT_SCHEDULING, String.valueOf(System.currentTimeMillis())));
     }
 
     @Test
     public void testObtainReleaseLock() {
-        GlobalInterlockService service = system.getServiceFactory().getGlobalInterlockService();
-        String key = service.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note");
+        String key = globalInterlockService.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note");
 
-        assertNull(service.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note"));
-        assertTrue(service.releaseLock(LockType.ALERT_SCHEDULING, key));
-        assertFalse(service.releaseLock(LockType.ALERT_SCHEDULING, key));
+        assertNull(globalInterlockService.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note"));
+        assertTrue(globalInterlockService.releaseLock(LockType.ALERT_SCHEDULING, key));
+        assertFalse(globalInterlockService.releaseLock(LockType.ALERT_SCHEDULING, key));
     }
 
     @Test
     public void testObtainRefreshLock() throws InterruptedException {
-        GlobalInterlockService service = system.getServiceFactory().getGlobalInterlockService();
-        String key = service.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note");
+        String key = globalInterlockService.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note");
 
         assertNotNull(key);
         Thread.sleep(2000L);
 
-        String refreshed = service.refreshLock(LockType.ALERT_SCHEDULING, key, "note");
+        String refreshed = globalInterlockService.refreshLock(LockType.ALERT_SCHEDULING, key, "note");
 
         assertNotNull(refreshed);
         assertFalse(key.equals(refreshed));
-        assertTrue(service.releaseLock(LockType.ALERT_SCHEDULING, refreshed));
-        assertNull(service.refreshLock(LockType.ALERT_SCHEDULING, key, "note"));
+        assertTrue(globalInterlockService.releaseLock(LockType.ALERT_SCHEDULING, refreshed));
+        assertNull(globalInterlockService.refreshLock(LockType.ALERT_SCHEDULING, key, "note"));
     }
 
     @Test
     public void testObtainOnExpiredScheduleLock() throws InterruptedException {
-        GlobalInterlockService service = system.getServiceFactory().getGlobalInterlockService();
 
-        assertNotNull(service.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note"));
-        assertNull(service.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note"));
+        assertNotNull(globalInterlockService.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note"));
+        assertNull(globalInterlockService.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note"));
         Thread.sleep(2000L);
 
-        String key = service.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note");
+        String key = globalInterlockService.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note");
 
         assertNotNull(key);
-        service.releaseLock(LockType.ALERT_SCHEDULING, key);
+        globalInterlockService.releaseLock(LockType.ALERT_SCHEDULING, key);
     }
 
     @Test
     public void testLockExclusivity() {
-        GlobalInterlockService service = system.getServiceFactory().getGlobalInterlockService();
-        String keyA = service.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note");
-        String keyB = service.obtainLock(EXPIRATION_MS, LockType.COLLECTION_SCHEDULING, "Note");
+        String keyA = globalInterlockService.obtainLock(EXPIRATION_MS, LockType.ALERT_SCHEDULING, "Note");
+        String keyB = globalInterlockService.obtainLock(EXPIRATION_MS, LockType.COLLECTION_SCHEDULING, "Note");
 
-        assertTrue(service.releaseLock(LockType.ALERT_SCHEDULING, keyA));
-        assertTrue(service.releaseLock(LockType.COLLECTION_SCHEDULING, keyB));
+        assertTrue(globalInterlockService.releaseLock(LockType.ALERT_SCHEDULING, keyA));
+        assertTrue(globalInterlockService.releaseLock(LockType.COLLECTION_SCHEDULING, keyB));
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

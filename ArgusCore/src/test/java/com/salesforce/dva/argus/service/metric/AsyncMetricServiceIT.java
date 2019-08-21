@@ -1,6 +1,6 @@
 package com.salesforce.dva.argus.service.metric;
 
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.AbstractTestIT;
 import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.AsyncBatchedMetricQuery;
 import com.salesforce.dva.argus.entity.BatchMetricQuery;
@@ -18,7 +18,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
-public class AsyncMetricServiceIT extends AbstractTest {
+public class AsyncMetricServiceIT extends AbstractTestIT {
 
     @Test
     public void testQueueAndProcessAsyncMetric() throws InterruptedException {

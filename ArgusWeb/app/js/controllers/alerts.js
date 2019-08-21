@@ -22,7 +22,6 @@
 
 angular.module('argus.controllers.alerts', ['ngResource'])
 .controller('Alerts', ['Auth', '$scope', 'growl', 'Alerts', 'TableListService', 'Storage', function (Auth, $scope, growl, Alerts, TableListService, Storage) {
-
 	$scope.colName = {
 		id:'ID',
 		name:'Name',
@@ -34,7 +33,8 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 	};
 	$scope.properties = {
 		title: 'Alert',
-		type: 'alerts'
+		type: 'alerts',
+		path: 'alertsdeprecated'
 	};
 	$scope.tabNames = {
 		userPrivileged: Auth.isPrivileged(),

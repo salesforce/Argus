@@ -28,17 +28,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
-import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.TestUtils;
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.service.monitor.DataLagMonitorGoldenMetric;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
+import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.system.SystemMain;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
+import org.powermock.reflect.Whitebox;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,21 +63,53 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-public class MonitorServiceTest extends AbstractTest {
+
+@RunWith(MockitoJUnitRunner.class)
+public class MonitorServiceTest {
+    private static final double DOUBLE_COMPARISON_MAX_DELTA = 0.001;
+    private static final String HOSTNAME = SystemConfiguration.getHostname();
+    private MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+
+    private SystemMain system;
+
+    @Before
+    public void setUp() {
+        system = TestUtils.getInstance();
+        system.start();
+    }
+
+    @After
+    public void tearDown() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
+
+    @Mock
+    private TSDBService tsdbMock;
+
+    @Mock
+    private MetricService metricServiceMock;
 
     @Test
     public void testServiceIsSingleton() {
         assertTrue(system.getServiceFactory().getMonitorService() == system.getServiceFactory().getMonitorService());
     }
 
-    @Test(timeout = 10000L)
-    public void testConcurrentUpdates() throws NoSuchFieldException, IllegalAccessException, InterruptedException {
-        final MonitorService _monitorService = system.getServiceFactory().getMonitorService();
+    @Test(timeout = 5000L)
+    public void testGaugeConcurrentUpdates() throws Exception {
+        final String metricName = "test.custom.metric";
+        final DefaultMonitorService _monitorService = (DefaultMonitorService) system.getServiceFactory().getMonitorService();
+        _monitorService.setTSDBService(tsdbMock);
         Field field = DefaultMonitorService.class.getDeclaredField("TIME_BETWEEN_RECORDINGS");
 
+        final int TIME_BETWEEN_RECORDINGS_MS = 2000;
+        final int RESET_TIME_AFTER_TEST_MS = 3000; // enough time for reset to have occurred.
         field.setAccessible(true);
-        field.setLong(null, 10 * 1000);
+        field.setLong(null, TIME_BETWEEN_RECORDINGS_MS);
         _monitorService.startRecordingCounters();
 
         final CountDownLatch gate = new CountDownLatch(1);
@@ -77,7 +125,7 @@ public class MonitorServiceTest extends AbstractTest {
                         try {
                             gate.await();
                             for (int j = 0; j < iterations; j++) {
-                                _monitorService.modifyCustomCounter("test.custom.metric", 1, Collections.<String, String>emptyMap());
+                                _monitorService.modifyCustomCounter(metricName, 1, Collections.<String, String>emptyMap());
                             }
                         } catch (InterruptedException ex) {
                             org.junit.Assert.fail("This should never happen.");
@@ -91,15 +139,94 @@ public class MonitorServiceTest extends AbstractTest {
         }
         gate.countDown();
         for (Thread worker : workers) {
-            worker.join(5000);
+            worker.join(1500);
         }
 
-        int customCounter = (int) _monitorService.getCustomCounter("test.custom.metric", Collections.<String, String>emptyMap());
+        // gauge value should be iterations * workerCount
+        double customCounter = _monitorService.getCustomCounter(metricName, Collections.<String, String>emptyMap());
+        double expectedCounterValue = iterations * workerCount;
+        assertEquals(expectedCounterValue, customCounter, DOUBLE_COMPARISON_MAX_DELTA);
 
-        assertEquals(iterations * workerCount, customCounter);
-        _monitorService.resetCustomCounters();
-        customCounter = (int) _monitorService.getCustomCounter("test.custom.metric", Collections.<String, String>emptyMap());
-        assertEquals(0, customCounter);
+        // jmx gauge should be 0 since gauge value should be init to 0
+        ObjectName jmxName = new ObjectName("ArgusMetrics:type=Gauge,scope=argus.custom,metric=" + metricName + ",host=" + HOSTNAME);
+        double jmxValue = (Double)mbeanServer.getAttribute(jmxName, "Value");
+        assertEquals(0, jmxValue, DOUBLE_COMPARISON_MAX_DELTA);
+
+        // wait for MonitorThread to run
+        Thread.sleep(RESET_TIME_AFTER_TEST_MS);
+
+        // gauge value should have reset
+        customCounter = _monitorService.getCustomCounter(metricName, Collections.<String, String>emptyMap());
+        assertEquals(Double.NaN, customCounter, DOUBLE_COMPARISON_MAX_DELTA);
+
+        // jmx gauge value should now reflect iterations * workerCount
+        jmxValue = (Double)mbeanServer.getAttribute(jmxName, "Value");
+        assertEquals(expectedCounterValue, jmxValue, DOUBLE_COMPARISON_MAX_DELTA);
+    }
+
+    @Test(timeout = 5000L)
+    public void testMonotonicCounterConcurrentUpdates() throws Exception {
+        final MonitorService.Counter counter = MonitorService.Counter.ALERTS_SCHEDULED;
+        final DefaultMonitorService _monitorService = (DefaultMonitorService) system.getServiceFactory().getMonitorService();
+        _monitorService.setTSDBService(tsdbMock);
+        Field field = DefaultMonitorService.class.getDeclaredField("TIME_BETWEEN_RECORDINGS");
+
+        final int TIME_BETWEEN_RECORDINGS_MS = 2000;
+        final int RESET_TIME_AFTER_TEST_MS = 3000; // enough time for reset to have occurred.
+        field.setAccessible(true);
+        field.setLong(null, TIME_BETWEEN_RECORDINGS_MS);
+        _monitorService.startRecordingCounters();
+
+        final CountDownLatch gate = new CountDownLatch(1);
+        int workerCount = 3;
+        final int iterations = 100;
+        Thread[] workers = new Thread[workerCount];
+
+        for (int i = 0; i < workers.length; i++) {
+            Thread thread = new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    try {
+                        gate.await();
+                        for (int j = 0; j < iterations; j++) {
+                            _monitorService.modifyCounter(counter, 1, Collections.<String, String>emptyMap());
+                        }
+                    } catch (InterruptedException ex) {
+                        org.junit.Assert.fail("This should never happen.");
+                    }
+                }
+            });
+
+            thread.setDaemon(true);
+            thread.start();
+            workers[i] = thread;
+        }
+        gate.countDown();
+        for (Thread worker : workers) {
+            worker.join(1500);
+        }
+
+        // gauge value should be iterations * workerCount
+        double expectedCounterValue = iterations * workerCount;
+        double customCounter = _monitorService.getCounter(counter, Collections.<String, String>emptyMap());
+        assertEquals(expectedCounterValue, customCounter, DOUBLE_COMPARISON_MAX_DELTA);
+
+        // jmx counter value should be iterations * workerCount as well
+        ObjectName jmxName = new ObjectName("ArgusMetrics:type=Counter,scope=argus.core,metric=" + counter.getMetric() + counter.getJMXMetricNameSuffix() + ",host=" + HOSTNAME);
+        double jmxValue = (Double)mbeanServer.getAttribute(jmxName, "Value");
+        assertEquals(expectedCounterValue, jmxValue, DOUBLE_COMPARISON_MAX_DELTA);
+
+        // wait for MonitorThread to run, which clears gauge metrics
+        Thread.sleep(RESET_TIME_AFTER_TEST_MS);
+
+        // counter value should NOT have reset
+        customCounter = _monitorService.getCounter(counter, Collections.<String, String>emptyMap());
+        assertEquals(Double.NaN, customCounter, DOUBLE_COMPARISON_MAX_DELTA);
+
+        // jmx counter value should NOT reset either
+        jmxValue = (Double)mbeanServer.getAttribute(jmxName, "Value");
+        assertEquals(expectedCounterValue, jmxValue, DOUBLE_COMPARISON_MAX_DELTA);
     }
 
     @Test

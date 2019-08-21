@@ -4,13 +4,12 @@
 
     <groupId>com.salesforce.argus</groupId>
     <artifactId>argus</artifactId>
-    <version>2.22.3</version>
+    <version>4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Argus</name>
     <description>A pom for all Argus projects. It provides standards for plugin versions, configuration and a number of other things.</description>
     <inceptionYear>2016</inceptionYear>
-    <url>https://www.github.com/salesforce/argus</url>
     <organization>
         <name>Salesforce</name>
         <url>http://www.salesforce.com</url>
@@ -103,31 +102,28 @@
             <organization>Salesforce</organization>
         </developer>
     </developers>
-    <scm>
-        <connection>scm:git:git://github.com/salesforce/Argus.git</connection>
-        <developerConnection>scm:git:ssh://github.com:salesforce/Argus.git</developerConnection>
-        <url>https://github.com/salesforce/Argus/tree/master</url>
-        <tag>argus-2.2.0</tag>
-    </scm>
-
     <properties>
         <top>${project.basedir}</top>
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
         <dockerImages.base.name>salesforce</dockerImages.base.name>
-        <project.version>2.22.3</project.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.9.5</jackson.version>
         <httpclient.version>4.5.3</httpclient.version>
         <junit.version>4.12</junit.version>
+        <jacoco-maven-plugin.version>0.7.9</jacoco-maven-plugin.version>
+        <jmx.prometheus.version>0.11.0</jmx.prometheus.version>
     </properties>
+     <!-- Add repositories here instead of maintaining in maven-settings.xml
+         Please add <server> information in ~/.m2/settings.xml -->
     <build>
-        <filters>
-            <filter>${top}/argus-build.properties</filter>
-        </filters>
+      <filters>
+        <filter>${top}/argus-build.properties</filter>
+      </filters>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -138,6 +134,9 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-deploy-plugin</artifactId>
+                    <configuration>
+                      <deployAtEnd>true</deployAtEnd>
+                    </configuration>
                     <version>2.8.2</version>
                 </plugin>
                 <plugin>
@@ -145,28 +144,43 @@
                     <artifactId>docker-maven-plugin</artifactId>
                     <version>0.4.11</version>
                     <configuration>
+                      <skipDockerBuild>true</skipDockerBuild>
                         <imageName>${dockerImages.base.name}/${project.artifactId}</imageName>
                         <dockerDirectory>${project.basedir}/src/main/docker</dockerDirectory>
                         <forceTags>true</forceTags>
                         <imageTags>
-                            <imageTag>${project.version}</imageTag>
+                            <imageTag>${image.version}</imageTag>
                         </imageTags>
                     </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.3</version>
-                <configuration>
-                    <autoVersionSubmodules>true</autoVersionSubmodules>
-                    <useReleaseProfile>false</useReleaseProfile>
-                    <releaseProfiles>release</releaseProfiles>
-                    <goals>deploy</goals>
-                </configuration>
-            </plugin>
+          <plugin>
+            <groupId>com.github.danielflower.mavenplugins</groupId>
+            <artifactId>multi-module-maven-release-plugin</artifactId>
+            <version>3.0.3</version>
+            <configuration>
+              <noChangesAction>ReleaseNone</noChangesAction>
+              <releaseGoals>
+                <releaseGoal>deploy</releaseGoal>
+              </releaseGoals>
+              <releaseProfiles>
+                <releaseProfile>release</releaseProfile>
+              </releaseProfiles>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-release-plugin</artifactId>
+            <version>2.5.3</version>
+            <configuration>
+              <autoVersionSubmodules>true</autoVersionSubmodules>
+              <useReleaseProfile>false</useReleaseProfile>
+              <releaseProfiles>release</releaseProfiles>
+              <goals>deploy</goals>
+            </configuration>
+          </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -175,7 +189,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.7.7.201606060606</version>
+                <version>${jacoco-maven-plugin.version}</version>
                 <configuration>
                     <excludes>
                         <exclude>**/AnnotationReader*.class</exclude>
@@ -209,7 +223,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.18.1</version>
+                <version>2.22.0</version>
+                <configuration>
+                    <argLine>-Xmx2G</argLine>
+                </configuration>
                 <executions>
                     <execution>
                         <id>default-test</id>
@@ -227,6 +244,11 @@
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>2.19.1</version>
+                <!-- Disable ITs by default -->
+                <configuration>
+                  <skipITs>true</skipITs>
+                </configuration>
+                <!-- Disable ITs by default
                 <executions>
                     <execution>
                         <id>default-test</id>
@@ -242,7 +264,8 @@
                             <reuseForks>true</reuseForks>
                         </configuration>
                     </execution>
-                </executions>
+                    </executions>
+                    -->
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -304,69 +327,8 @@
             </plugin>
         </plugins>
     </reporting>
-    <profiles>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.8</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>3.0.1</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.0.0</version>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                                <configuration>
-                                    <doclint>none</doclint>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
+
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -424,21 +386,8 @@
     </dependencyManagement>
     <modules>
         <module>ArgusCore</module>
-        <module>ArgusWeb</module>
         <module>ArgusWebServices</module>
         <module>ArgusClient</module>
         <module>ArgusSDK</module>
     </modules>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-
 </project>

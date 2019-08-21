@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.Metric;
 
 /**
  * The system service factory module. All services should be obtained from this class via injection.
@@ -45,6 +46,8 @@ public final class ServiceFactory {
 
     @Inject
     Provider<TSDBService> _tsdbServiceProvider;
+    @Inject
+    Provider<AnnotationStorageService> _annotationStorageServiceProvider;
     @Inject
     Provider<CollectionService> _collectionServiceProvider;
     @Inject
@@ -91,6 +94,16 @@ public final class ServiceFactory {
     Provider<BatchService> _batchServiceProvider;
     @Inject
     Provider<ChartService> _chartServiceProvider;
+    @Inject
+    Provider<ServiceManagementService> _serviceManagementServiceProvider;
+    @Inject
+    Provider<RefocusService> _refocusServiceProvider;
+    @Inject
+    Provider<QueryStoreService> _queryStoreServiceProvider;
+    @Inject
+    Provider<ImageService> _imageServiceProvider;
+    @Inject
+    Provider<MetricStorageService> _consumerOffsetMetricStorageService;
 
 
     //~ Methods **************************************************************************************************************************************
@@ -102,6 +115,15 @@ public final class ServiceFactory {
      */
     public synchronized TSDBService getTSDBService() {
         return _tsdbServiceProvider.get();
+    }
+    
+    /**
+     * Returns an instance of the annotation storage service.
+     *
+     * @return  An instance of the annotation storage service.
+     */
+    public synchronized AnnotationStorageService getAnnotationStorageService() {
+        return _annotationStorageServiceProvider.get();
     }
 
     /**
@@ -311,5 +333,49 @@ public final class ServiceFactory {
         return _chartServiceProvider.get();
     }
 
+    /**
+     * Returns an instance of the service management service.
+     *
+     * @return  An instance of the service management service.
+     */
+    public synchronized ServiceManagementService getServiceManagementService() {
+        return _serviceManagementServiceProvider.get();
+    }
+
+    /**
+     * Returns an instance of the refocus service.
+     *
+     * @return  An instance of the refocus service.
+     */
+    public synchronized RefocusService getRefocusService() {
+        return _refocusServiceProvider.get();
+    }
+  
+   /**
+     * Returns an instance of the Queries Store service.
+     *
+     * @return  An instance of the Queries Store service.
+     */
+    public synchronized QueryStoreService getQueryStoreService() {
+        return _queryStoreServiceProvider.get();
+    }
+
+    /**
+     * Returns an instance of the Image service.
+     *
+     * @return  An instance of the Image service.
+     */
+    public synchronized ImageService getImageService() {
+        return _imageServiceProvider.get();
+    }
+
+
+    /***
+     * Returns an instance of the Metric Storage service.
+     *
+     * @return  An instance of the Metric Storage service.
+     */
+    public synchronized MetricStorageService getConsumerOffsetMetricStorageService() { return _consumerOffsetMetricStorageService.get();}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+

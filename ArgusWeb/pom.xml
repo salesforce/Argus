@@ -4,15 +4,17 @@
     <parent>
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
-        <version>2.22.3</version>
+        <version>4-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-web</artifactId>
+    <version>4.75-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>ArgusWeb</name>
     <description>Web frontend for the Argus Production Monitoring Tool.</description>
     <properties>
         <top>${project.basedir}/${project.parent.relativePath}</top>
+        <sonar.exclusions>**</sonar.exclusions>
     </properties>
     <build>
         <plugins>

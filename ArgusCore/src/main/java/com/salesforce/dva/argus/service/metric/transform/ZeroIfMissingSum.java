@@ -113,7 +113,7 @@ public class ZeroIfMissingSum implements Transform {
 
     @Override
     public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a list of metric list!");
+        throw new UnsupportedOperationException("Zero if missing Sum Transform doesn't support multiple lists of metrics!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

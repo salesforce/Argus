@@ -5,24 +5,39 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 .controller('DashboardsDetail', ['Storage', '$scope','$http', '$routeParams', '$location', '$window', 'growl', 'Dashboards', 'History','$sessionStorage', 'Auth',
 	function (Storage, $scope,$http, $routeParams, $location, $window, growl, Dashboards, History, $sessionStorage, Auth) {
 		$scope.dashboardNotEditable = true;
+		$scope.needToRefreshView = false;
+		$scope.isSaving = false;
+		$scope.saveButtonText = 'Saved';
 		$scope.isDashboardDirty = function () {
-			return !angular.equals($scope.dashboard, $scope.unmodifiedDashboard);
+			if (angular.equals($scope.dashboard, $scope.unmodifiedDashboard)){
+				$scope.saveButtonText = 'Saved';
+				return false;
+			}else{
+				$scope.saveButtonText = 'Save';
+				return true;
+			}
 		};
 
 		$scope.updateDashboard = function () {
 			if ($scope.isDashboardDirty()) {
 				var dashboard = $scope.dashboard;
+				$scope.isSaving = true;
+				$scope.saveButtonText = 'Saving';
 				Dashboards.update({dashboardId: dashboard.id}, dashboard, function () {
+					$scope.isSaving = false;
 					$scope.unmodifiedDashboard = angular.copy(dashboard);
 					growl.success(('Updated "') + dashboard.name + '"');
 					$scope.fetchHistory();
 					// remove existing session storage for update
 					if ($sessionStorage.dashboards !== undefined) delete $sessionStorage.dashboards.cachedData;
-					$window.location.reload();
+					// $window.location.reload();
 				}, function () {
 					growl.error('Failed to update "' + dashboard.name + '"');
+					$scope.isSaving = false;
+					$scope.saveButtonText = 'Save';
 				});
 			}
+			$scope.needToRefreshView = true;
 		};
 
 		$scope.resetDashboard = function () {
@@ -39,6 +54,15 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 
 		$scope.selectTab = function (tab) {
 			$scope.selectedTab = tab;
+			if(tab === 1 && $scope.needToRefreshView){
+				var url = $window.location.href;
+				var indexOfQuery = url.indexOf('?');
+				if (indexOfQuery > 0){
+					url = url.substring(0, indexOfQuery); //clear the query paramter
+					window.location.href = url;
+				}
+				window.location.reload();
+			}
 		};
 
 		$scope.fetchHistory = function() {

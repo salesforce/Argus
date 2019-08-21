@@ -34,17 +34,19 @@ package com.salesforce.dva.argus.service.annotation;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
+import com.salesforce.dva.argus.service.NamedBinding;
+import com.salesforce.dva.argus.service.AnnotationStorageService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import org.slf4j.Logger;
-import java.util.ArrayList;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -63,12 +65,12 @@ public class DefaultAnnotationService extends DefaultService implements Annotati
     //~ Static fields/initializers *******************************************************************************************************************
 
     private static final String USER_FIELD_NAME = "user";
+    protected static final int MAX_ANNOTATION_SIZE_BYTES = 2000;
 
     //~ Instance fields ******************************************************************************************************************************
 
-    @SLF4JTypeListener.InjectLogger
-    private Logger _logger;
-    private final TSDBService _tsdbService;
+    private Logger _logger = LoggerFactory.getLogger(getClass());
+    private final AnnotationStorageService _annotationStorageService;
     private final MonitorService _monitorService;
 
     //~ Constructors *********************************************************************************************************************************
@@ -76,14 +78,14 @@ public class DefaultAnnotationService extends DefaultService implements Annotati
     /**
      * Creates a new DefaultAnnotationService object.
      *
-     * @param  tsdbService     The TSDB service used to perform annotation operations. Cannot be null.
-     * @param  monitorService  The monitor service instance to use. Cannot be null.
+     * @param  annotationStorageService     The storage service used to perform annotation operations. Cannot be null.
+     * @param  monitorService               The monitor service instance to use. Cannot be null.
      */
     @Inject
-    DefaultAnnotationService(TSDBService tsdbService, MonitorService monitorService, SystemConfiguration config) {
+    DefaultAnnotationService(AnnotationStorageService annotationStorageService, MonitorService monitorService, SystemConfiguration config) {
     	super(config);
-        requireArgument(tsdbService != null, "The TSDB service cannot be null.");
-        _tsdbService = tsdbService;
+        requireArgument(annotationStorageService != null, "The annotation storage service cannot be null.");
+        _annotationStorageService = annotationStorageService;
         _monitorService = monitorService;
     }
 
@@ -94,15 +96,16 @@ public class DefaultAnnotationService extends DefaultService implements Annotati
         requireNotDisposed();
         requireArgument(AnnotationReader.isValid(expression), "Invalid annotation expression: " + expression);
 
-        AnnotationReader<Annotation> reader = new AnnotationReader<Annotation>(_tsdbService);
+        AnnotationReader<Annotation> reader = new AnnotationReader<Annotation>(_annotationStorageService);
         List<Annotation> annotations = new LinkedList<>();
 
         try {
-            _logger.debug("Retrieving annotations using {}.", expression);
+            _logger.info("Retrieving annotations using {}.", expression);
             annotations.addAll(reader.parse(expression, Annotation.class));
         } catch (ParseException ex) {
             throw new SystemException("Failed to parse the given expression", ex);
         }
+        _logger.info("Number of annotations read={}", annotations.size());
         _monitorService.modifyCounter(Counter.ANNOTATION_READS, annotations.size(), null);
         return annotations;
     }
@@ -112,7 +115,7 @@ public class DefaultAnnotationService extends DefaultService implements Annotati
         requireNotDisposed();
         requireArgument(AnnotationReader.isValid(expression), "Invalid annotation expression: " + expression);
 
-        AnnotationReader<AnnotationQuery> reader = new AnnotationReader<AnnotationQuery>(_tsdbService);
+        AnnotationReader<AnnotationQuery> reader = new AnnotationReader<AnnotationQuery>(_annotationStorageService);
         List<AnnotationQuery> queries = new LinkedList<>();
 
         try {
@@ -128,11 +131,22 @@ public class DefaultAnnotationService extends DefaultService implements Annotati
     public void updateAnnotations(Map<Annotation, PrincipalUser> annotations) {
         requireNotDisposed();
         requireArgument(annotations != null, "The set of annotations cannot be null.");
+        List<Annotation> putAnnotationList = new LinkedList<>();
         for (Entry<Annotation, PrincipalUser> entry : annotations.entrySet()) {
             PrincipalUser user = entry.getValue();
             Annotation annotation = entry.getKey();
 
             requireArgument(annotation != null, "The annotation cannot be null.");
+            if (annotation.computeSizeBytes() > MAX_ANNOTATION_SIZE_BYTES) {
+                _logger.debug("Annotation size of {} bytes exceeded max size {} allowed for annotation {}.",
+                        annotation.computeSizeBytes(),
+                        MAX_ANNOTATION_SIZE_BYTES,
+                        annotation);
+                Map<String, String> tags = new HashMap<>();
+                tags.put("source", annotation.getSource());
+                _monitorService.modifyCounter(Counter.ANNOTATION_DROPS_MAXSIZEEXCEEDED, 1, tags);
+                continue;
+            }
 
             Map<String, String> fields = new HashMap<>(annotation.getFields());
             String userName;
@@ -143,9 +157,12 @@ public class DefaultAnnotationService extends DefaultService implements Annotati
                 fields.put(USER_FIELD_NAME, userName);
             }
             annotation.setFields(fields);
+            putAnnotationList.add(annotation);
         }
-        _monitorService.modifyCounter(Counter.ANNOTATION_WRITES, annotations.size(), null);
-        _tsdbService.putAnnotations(new ArrayList<>(annotations.keySet()));
+        _monitorService.modifyCounter(Counter.ANNOTATION_WRITES, putAnnotationList.size(), null);
+        if (!putAnnotationList.isEmpty()) {
+            _annotationStorageService.putAnnotations(putAnnotationList);
+        }
     }
 
     @Override

@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.jpa;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Audit;
 import com.salesforce.dva.argus.entity.Identifiable;
 import com.salesforce.dva.argus.entity.JPAEntity;
@@ -40,7 +41,9 @@ import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
@@ -59,6 +62,9 @@ public abstract class DefaultJPAService extends DefaultService {
 	//~ Instance fields ******************************************************************************************************************************
 
 	protected final AuditService _auditService;
+    @Inject
+    protected Provider<EntityManager> emf;
+
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -138,6 +144,7 @@ public abstract class DefaultJPAService extends DefaultService {
 		requireArgument(em != null, "The entity manager cannot be null.");
 		requireArgument(id != null && id.compareTo(ZERO) > 0, "ID must be positive and non-zero");
 		requireArgument(type != null, "The entity cannot be null.");
+
 		em.getEntityManagerFactory().getCache().evictAll();
 		return em.find(type, id);
 	}
@@ -160,5 +167,10 @@ public abstract class DefaultJPAService extends DefaultService {
 		em.getEntityManagerFactory().getCache().evictAll();
 		return JPAEntity.findEntitiesMarkedForDeletion(em, type, limit);
 	}
+
+    public void setEntityManagerProvider(Provider<EntityManager> emProv) {
+        emf = emProv;
+    }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

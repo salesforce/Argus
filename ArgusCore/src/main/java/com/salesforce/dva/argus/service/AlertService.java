@@ -37,6 +37,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.alert.AlertsCountContext;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.*;
@@ -119,9 +120,9 @@ public interface AlertService extends Service {
 	 * @param   alertCount  The maximum number of alerts to dequeue.
 	 * @param   timeout     The maximum amount of time in milliseconds to attempt to dequeue alerts.
 	 *
-	 * @return  returns Job history of alerts executed.
+	 * @return  number of alerts evaluated.
 	 */
-	List<History> executeScheduledAlerts(int alertCount, int timeout);
+	Integer executeScheduledAlerts(int alertCount, int timeout);
 
 	/**
 	 * Enqueues alerts to be executed by the next available alert client.
@@ -129,6 +130,19 @@ public interface AlertService extends Service {
 	 * @param  alerts  The alerts to enqueue. Cannot be null, but may be empty.
 	 */
 	void enqueueAlerts(List<Alert> alerts);
+
+	/**
+	 * Evaluates the serialized alert and delivers results to the result cache.
+	 * Used by historical testing.
+	 *
+	 * @param   serializedAlert  The serializedAlert
+	 * @param   when             The time at which to evaluate the alert.
+	 * @param   testUuid         The test UUID.
+	 *
+	 * @return  returns Job history of alerts executed.
+	 */
+	// TODO - improve architecture - test spec, and callback class for delivering results.
+	void testEvaluateAlert(String serializedAlert, Long when, String testUuid);
 
 	/**
 	 * Returns a list of alerts for an owner.
@@ -146,10 +160,12 @@ public interface AlertService extends Service {
 	 * @param limit The number of items to fetch.
 	 * @param offset The starting point of current page.
 	 * @param searchText The text to filter on the search results if not null or empty.
+	 * @param sortField The field of the alert that is used for sorting.
+	 * @param sortOrder The order for sorting.
 	 *
 	 * @return The list of alerts.
 	 */
-	List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText);
+	List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText, String sortField, String sortOrder);
 	
 	/**
 	 * Returns a list of alerts that have been marked for deletion.
@@ -288,10 +304,12 @@ public interface AlertService extends Service {
 	 * @param limit The number of items to fetch.
 	 * @param offset The starting point of current page.
 	 * @param searchText The text to filter on the search results if not null or empty.
-	 *
+	 * @param sortField The field of the alert that is used for sorting.
+	 * @param sortOrder The order for sorting.
+	 * 
 	 * @return The list of shared alerts.
 	 */
-	List<Alert> findSharedAlertsPaged(Integer limit, Integer offset, String searchText);
+	List<Alert> findSharedAlertsPaged(Integer limit, Integer offset, String searchText, String sortField, String sortOrder);
 
 	/**
 	 * Returns the list of supported notifiers.
@@ -323,10 +341,12 @@ public interface AlertService extends Service {
 	 * @param limit The number of items to fetch.
 	 * @param offset The starting point of current page.
 	 * @param searchText The text to filter on the search results if not null or empty.
-	 *
+	 * @param sortField The field of the alert that is used for sorting.
+	 * @param sortOrder The order for sorting.
+	 * 
 	 * @return The list of private alerts if privileged user.
 	 */
-	List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText);
+	List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText, String sortField, String sortOrder);
 	
 	/**
 	 * Count alerts with the given AlertsCountContext.
@@ -337,6 +357,14 @@ public interface AlertService extends Service {
 	 */
 	int countAlerts(AlertsCountContext context);
 	
+	/**
+	 * This is helper function to post counter value to tsdb and JMX exporter
+	 * 
+	 * @param counter the counter to export
+	 * @param value   the value of the counterx
+	 */
+	void updateCounter(Counter counter, Double value);
+
 	/**
 	 * This is helper function so that we can export metrics to JMX metric exporter everywhere in the
 	 * system
@@ -362,7 +390,13 @@ public interface AlertService extends Service {
 		WARDENPOSTING(WardenPostingNotifier.class.getName()),
 		GUS(GusNotifier.class.getName()),
 		CALLBACK(CallbackNotifier.class.getName()),
-		REFOCUS(RefocusNotifier.class.getName());
+		PAGERDUTY(PagerDutyNotifier.class.getName()),
+		REFOCUS(RefocusNotifier.class.getName()),
+        REFOCUS_BOOLEAN(RefocusBooleanNotifier.class.getName()),
+		REFOCUS_VALUE(RefocusValueNotifier.class.getName());
+
+		// , NOOP(NoOpNotifier.class.getName()
+
 
 		String name;
 
@@ -413,15 +447,17 @@ public interface AlertService extends Service {
 
 		/**
 		 * Sends notifications for the trigger on which the alert condition occurred.
-		 *
+		 * 
+		 * @param  notificationContext  The context for the notification. Cannot be null.
+		 * @return true for success, false for failure
 		 */
-		void sendNotification(NotificationContext notificationContext);
+		boolean sendNotification(NotificationContext notificationContext);
 
 		/**
 		 * Clears notifications for the trigger on which the alert condition occurred.
-		 *
+		 * @return true for success, false for failure
 		 */
-		void clearNotification(NotificationContext notificationContext);
+		boolean clearNotification(NotificationContext notificationContext);
 
 		/**
 		 * Returns the name of the notifier.

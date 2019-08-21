@@ -28,10 +28,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Audit;
 import com.salesforce.dva.argus.system.SystemException;
@@ -42,17 +41,41 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class AuditServiceTest extends AbstractTest {
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.TestUtils;
+
+public class AuditServiceTest {
+
+    static private SystemMain system;
+    static AuditService auditService;
+    static AlertService alertService;
+    static UserService userService;
+
+    @BeforeClass
+    static public void setUpClass() {
+        system = TestUtils.getInstance();
+        system.start();
+        auditService = system.getServiceFactory().getAuditService();
+        alertService = system.getServiceFactory().getAlertService();
+        userService = system.getServiceFactory().getUserService();
+    }
+
+    @AfterClass
+    static public void tearDownClass() {
+        if (system != null) {
+            system.getServiceFactory().getManagementService().cleanupRecords();
+            system.stop();
+        }
+    }
 
     private static final String expression =
         "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
 
     @Test
     public void testCreateAudit() {
-        AuditService auditService = system.getServiceFactory().getAuditService();
-        AlertService alertService = system.getServiceFactory().getAlertService();
-        UserService userService = system.getServiceFactory().getUserService();
-        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "test_alert-name", expression, "* * * * *");
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "test_alert-name1", expression, "* * * * *");
 
         alert = alertService.updateAlert(alert);
 
@@ -64,10 +87,7 @@ public class AuditServiceTest extends AbstractTest {
 
     @Test(expected = SystemException.class)
     public void testUpdateAudit() {
-        AuditService auditService = system.getServiceFactory().getAuditService();
-        AlertService alertService = system.getServiceFactory().getAlertService();
-        UserService userService = system.getServiceFactory().getUserService();
-        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "test_alert-name", expression, "* * * * *");
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "test_alert-name2", expression, "* * * * *");
 
         alert = alertService.updateAlert(alert);
 
@@ -79,14 +99,11 @@ public class AuditServiceTest extends AbstractTest {
 
     @Test
     public void testFindByJPAEntity() {
-        AuditService auditService = system.getServiceFactory().getAuditService();
-        AlertService alertService = system.getServiceFactory().getAlertService();
-        UserService userService = system.getServiceFactory().getUserService();
-        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "test_alert-name", expression, "* * * * *");
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "test_alert-name3", expression, "* * * * *");
 
         alert = alertService.updateAlert(alert);
 
-        int expectedAuditcount = random.nextInt(10) + 1;
+        int expectedAuditcount = TestUtils.random.nextInt(10) + 1;
         List<Audit> expectedResult = new ArrayList<>(auditService.findByEntity(alert.getId()));
 
         for (int i = 0; i < expectedAuditcount; i++) {
@@ -100,15 +117,12 @@ public class AuditServiceTest extends AbstractTest {
 
     @Test
     public void testFindByHostName() {
-        AuditService auditService = system.getServiceFactory().getAuditService();
-        AlertService alertService = system.getServiceFactory().getAlertService();
-        UserService userService = system.getServiceFactory().getUserService();
-        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "test_alert-name", expression, "* * * * *");
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "test_alert-name4", expression, "* * * * *");
 
         alert = alertService.updateAlert(alert);
 
         String hostName = "test@salesforce.com";
-        int expectedAuditcount = random.nextInt(10) + 1;
+        int expectedAuditcount = TestUtils.random.nextInt(10) + 1;
         List<Audit> expectedResult = new ArrayList<Audit>();
 
         for (int i = 0; i < expectedAuditcount; i++) {
@@ -122,14 +136,11 @@ public class AuditServiceTest extends AbstractTest {
 
     @Test
     public void testFindAll() {
-        AuditService auditService = system.getServiceFactory().getAuditService();
-        AlertService alertService = system.getServiceFactory().getAlertService();
-        UserService userService = system.getServiceFactory().getUserService();
-        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "test_alert-name", expression, "* * * * *");
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "test_alert-name5", expression, "* * * * *");
 
         alert = alertService.updateAlert(alert);
 
-        int expectedAuditcount = random.nextInt(10) + 1;
+        int expectedAuditcount = TestUtils.random.nextInt(10) + 1;
         List<Audit> expectedResult = new ArrayList<Audit>(auditService.findAll());
 
         for (int i = 0; i < expectedAuditcount; i++) {
@@ -143,19 +154,16 @@ public class AuditServiceTest extends AbstractTest {
 
     @Test
     public void testFindByMessage() {
-        AuditService auditService = system.getServiceFactory().getAuditService();
-        AlertService alertService = system.getServiceFactory().getAlertService();
-        UserService userService = system.getServiceFactory().getUserService();
-        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "test_alert-name", expression, "* * * * *");
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "test_alert-name6", expression, "* * * * *");
 
         alert = alertService.updateAlert(alert);
 
         List<Audit> expectedResult = new ArrayList<Audit>();
-        int expectedAuditcount = random.nextInt(10) + 1;
+        int expectedAuditcount = TestUtils.random.nextInt(10) + 1;
         String message = "test_message";
 
         for (int i = 0; i < expectedAuditcount; i++) {
-            expectedResult.add(auditService.createAudit(new Audit(createRandomName() + message + createRandomName(), "test@salesforce.com", alert)));
+            expectedResult.add(auditService.createAudit(new Audit(TestUtils.createRandomName() + message + TestUtils.createRandomName(), "test@salesforce.com", alert)));
         }
 
         List<Audit> actualRusits = auditService.findByMessage(message);
