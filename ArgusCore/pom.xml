@@ -16,7 +16,7 @@
     <description>Argus core services.</description>
     <properties>
         <top>${project.basedir}/${project.parent.relativePath}</top>
-        <kafka.version>2.1.1</kafka.version>
+        <kafka.version>2.3.1</kafka.version>
     </properties>
     <build>
         <plugins>
@@ -404,7 +404,7 @@
         <dependency>
             <groupId>org.apache.phoenix</groupId>
             <artifactId>phoenix-core</artifactId>
-            <version>4.13.1-HBase-0.98</version>
+            <version>5.0.0-HBase-2.0</version>
             <exclusions>
                 <exclusion>
                     <artifactId>jersey-core</artifactId>
