@@ -21,7 +21,7 @@
 		"angular-utils-pagination": "~0.11.1",
 		"angulartics": "~0.17.2",
 		"bootstrap": "~3.3.7",
-		"codemirror": "~5.39.0",
+		"codemirror": "~5.54.0",
 		"d3": "^4.2.1",
 		"d3fc-rebind": "^4.1.1",
 		"d3fc-sample": "^3.0.4",
