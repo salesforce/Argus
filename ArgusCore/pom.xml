@@ -16,7 +16,7 @@
     <description>Argus core services.</description>
     <properties>
         <top>${project.basedir}/${project.parent.relativePath}</top>
-        <kafka.version>2.1.1</kafka.version>
+        <kafka.version>2.2.2</kafka.version>
     </properties>
     <build>
         <plugins>
