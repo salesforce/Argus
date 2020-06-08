@@ -7,7 +7,7 @@
 		"url": "https://github.com/salesforce/Argus.git"
 	},
 	"dependencies": {
-		"angular": "~1.5.5",
+		"angular": "~1.8.0",
 		"angular-animate": "~1.5.5",
 		"angular-bootstrap-datetimepicker": "~0.3.12",
 		"angular-growl-v2": "~0.7.3",
