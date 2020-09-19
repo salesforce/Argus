@@ -112,7 +112,7 @@
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
         <dockerImages.base.name>salesforce</dockerImages.base.name>
         <logback.version>1.2.3</logback.version>
-        <jackson.version>2.9.5</jackson.version>
+        <jackson.version>2.9.10.6</jackson.version>
         <httpclient.version>4.5.3</httpclient.version>
         <junit.version>4.12</junit.version>
         <jacoco-maven-plugin.version>0.7.9</jacoco-maven-plugin.version>
