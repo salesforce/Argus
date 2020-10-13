@@ -114,7 +114,7 @@
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.9.5</jackson.version>
         <httpclient.version>4.5.3</httpclient.version>
-        <junit.version>4.12</junit.version>
+        <junit.version>4.13.1</junit.version>
         <jacoco-maven-plugin.version>0.7.9</jacoco-maven-plugin.version>
         <jmx.prometheus.version>0.11.0</jmx.prometheus.version>
     </properties>
